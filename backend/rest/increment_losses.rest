@@ -1,1 +1,1 @@
-PUT http://localhost:3001/users/1/loss
+PUT http://localhost:3001/api/users/1/loss

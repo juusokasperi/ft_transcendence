@@ -1,7 +1,7 @@
-POST http://localhost:3001/users
+POST http://localhost:3001/api/signup
 Content-Type: application/json
 
 {
-	"username": "testUser",
-	"password": "testPassword"
+	"username": "testUser2",
+	"password": "testPassword2"
 }

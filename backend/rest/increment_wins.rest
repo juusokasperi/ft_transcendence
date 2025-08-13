@@ -1,1 +1,2 @@
-PUT http://localhost:3001/users/1/win
+PUT http://localhost:3001/api/users/b2cab573-91d5-4fee-ace2-7097b7f627ca/win
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6InRlc3RVc2VyIiwidXVpZCI6ImMwNDNmZjI0LWI2YWEtNGQ2YS1hNWRhLTFiZjViYWE2ZWU4MiIsImlhdCI6MTc1NTExNTc2MCwiZXhwIjoxNzU1MTE5MzYwfQ.eMLXDnMGe4YNPO1y7OSS-tPucKPZH_eZBdq08MWF2Gw

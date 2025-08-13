@@ -1,1 +1,2 @@
-DELETE http://localhost:3001/users/367bbcd4-7b43-4ae9-acee-69ad78a6c39d
+DELETE http://localhost:3001/api/users/75a3d1f6-6ac3-4e9e-b31a-c957ff5724cc
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6InRlc3RVc2VyIiwidXVpZCI6ImMwNDNmZjI0LWI2YWEtNGQ2YS1hNWRhLTFiZjViYWE2ZWU4MiIsImlhdCI6MTc1NTExNDg3MCwiZXhwIjoxNzU1MTE4NDcwfQ.iQVtkeISS40ZgVc3j-uA89UEVauOJMnMmkJIC3pzg2w

@@ -1,6 +1,10 @@
 import type { FastifyInstance } from 'fastify';
-import type { FastifyRequest, FastifyReply } from 'fastify';
+import type { FastifyReply, FastifyRequest } from 'fastify';
+
 import { prisma } from '../utils/prisma_client.ts';
+import authPreHandler from '../hooks/auth.ts';
+import { SECRET } from '../utils/config.ts';
+import jwt from 'jsonwebtoken';
 import bcrypt from 'bcrypt';
 
 export async function userRoutes(app: FastifyInstance) {
@@ -24,22 +28,11 @@ export async function userRoutes(app: FastifyInstance) {
 		res.send({ ...safeUser, total });
 	});
 
-	// Post a new user
-	app.post('/', async (req: FastifyRequest, res: FastifyReply) => {
-		const { username, password } = req.body as { username: string; password:string };
-		const passwordHash = await bcrypt.hash(password, 10);
-		const user = await prisma.user.create({
-			data: {
-				username,
-				passwordHash,
-			},
-		});
-		res.send(user);
-	});
-
 	// Increment wins of a user
-	app.put('/:uuid/win', async (req: FastifyRequest, res: FastifyReply) => {
+	app.put('/:uuid/win', { preHandler: [authPreHandler] }, async (req: FastifyRequest, res: FastifyReply) => {
 		const { uuid } = req.params as { uuid: string };
+		if (req.user?.uuid !== uuid)
+			return res.status(403).send({ error: 'Forbidden' });
 		const user = await prisma.user.findUnique({
 			where: { uuid },
 		});
@@ -54,8 +47,10 @@ export async function userRoutes(app: FastifyInstance) {
 	})
 
 	// Increment losses of a user
-	app.put('/:uuid/loss', async (req: FastifyRequest, res: FastifyReply) => {
+	app.put('/:uuid/loss', { preHandler: [authPreHandler] }, async (req: FastifyRequest, res: FastifyReply) => {
 		const { uuid } = req.params as { uuid: string };
+		if (req.user?.uuid !== uuid)
+			return res.status(403).send({ error: 'Forbidden' });
 		const user = await prisma.user.findUnique({
 			where: { uuid },
 		});
@@ -70,8 +65,10 @@ export async function userRoutes(app: FastifyInstance) {
 	});
 
 	// Delete a user from database
-	app.delete('/:uuid', async (req: FastifyRequest, res: FastifyReply) => {
+	app.delete('/:uuid', { preHandler: [authPreHandler] }, async (req: FastifyRequest, res: FastifyReply) => {
 		const { uuid } = req.params as { uuid: string };
+		if (req.user?.uuid !== uuid)
+			return res.status(403).send({ error: 'Forbidden' });
 		const user = await prisma.user.findUnique({ where: { uuid }, });
 		if (!user)
 			return res.status(404).send({ error: 'User not found' });

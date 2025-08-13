@@ -10,7 +10,7 @@ datasource db {
 model User {
   id              Int       @id @default(autoincrement())
   uuid            String    @unique @default(uuid())
-  username        String
+  username        String    @unique
   passwordHash    String
   wins            Int       @default(0)
   losses          Int       @default(0)
