@@ -12,3 +12,13 @@ export interface JWTPayload {
 	iat?: number;
 	exp?: number;
 }
+
+export interface User {
+	id: number;
+	uuid: string;
+	username: string;
+	passwordHash: string;
+	wins: number;
+	losses: number;
+	createdAt: string;
+}

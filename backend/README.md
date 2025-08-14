@@ -1,5 +1,9 @@
-### Backend w/ database
+## Backend w/ database
 
-To run backend, on first run do `npm run prisma:migrate init` to create the table into the database.
+Uses `better-sqlite3` to interact with the SQLite database. Migrations are handled with `Umzug`.
 
-Once the database file is created, `npm run dev` starts the server.
+### Usage
+1. Create `.env` file (see `.env.example`)
+2. Start server: `npm run dev`
+	- On startup, server will run migrations automatically.
+3. To rollback a migration, `npm run migration:down`

@@ -3,11 +3,14 @@ import { PORT } from './utils/config.ts';
 import { userRoutes } from './controllers/users.ts';
 import { loginRoutes } from './controllers/login.ts';
 import { signupRoutes } from './controllers/signup.ts';
+import { runMigrations } from './utils/migrations.ts';
 import './types.ts';
 
 const app = fastify({
 	logger: true
-})
+});
+
+await runMigrations();
 
 app.register(userRoutes, { prefix: '/api/users' });
 app.register(loginRoutes, { prefix: '/api/login' });

@@ -9,22 +9,25 @@
   "scripts": {
     "ts-node": "ts-node",
     "dev": "nodemon index.ts",
-    "prisma:migrate": "prisma migrate dev --name",
-    "prisma:reset": "rm -f ./sqlite_data.db && prisma migrate dev reset",
-    "prisma:generate": "prisma generate"
+    "migration:down": "ts-node utils/rollback.ts"
   },
   "devDependencies": {
     "@types/bcrypt": "^6.0.0",
+    "@types/better-sqlite3": "^7.6.13",
+    "@types/node": "^24.2.1",
+    "@types/umzug": "^2.3.9",
+    "@types/uuid": "^10.0.0",
     "nodemon": "^3.1.10",
-    "prisma": "^6.14.0",
     "ts-node": "^10.9.2",
     "typescript": "^5.9.2"
   },
   "dependencies": {
-    "@prisma/client": "^6.14.0",
     "bcrypt": "^6.0.0",
+    "better-sqlite3": "^12.2.0",
     "dotenv": "^17.2.1",
     "fastify": "^5.5.0",
-    "jsonwebtoken": "^9.0.2"
+    "jsonwebtoken": "^9.0.2",
+    "umzug": "^3.8.2",
+    "uuid": "^11.1.0"
   }
 }

@@ -1,26 +1,21 @@
-import type { FastifyInstance } from 'fastify';
-import type { FastifyReply, FastifyRequest } from 'fastify';
+import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
+import type { User } from '../types.ts';
 
-import { prisma } from '../utils/prisma_client.ts';
+import db from '../utils/sqlite_client.ts';
 import authPreHandler from '../hooks/auth.ts';
-import { SECRET } from '../utils/config.ts';
-import jwt from 'jsonwebtoken';
-import bcrypt from 'bcrypt';
 
 export async function userRoutes(app: FastifyInstance) {
 	// Returns all users without the passwordHash field
 	app.get('/', async (req: FastifyRequest, res: FastifyReply) => {
-		const users = await prisma.user.findMany();
+		const users = db.prepare('SELECT * FROM User').all() as User[];
 		const safeUsers = users.map(({ passwordHash, ...user }) => user);
-		res.send(safeUsers);
+		res.status(200).send(safeUsers);
 	});
 
 	// Returns all users without the passwordHash field
 	app.get('/:uuid', async (req: FastifyRequest, res: FastifyReply) => {
 		const { uuid } = req.params as { uuid: string };
-		const user = await prisma.user.findUnique({
-			where: { uuid },
-		});
+		const user = db.prepare('SELECT * FROM User WHERE uuid = ?').get(uuid) as User | undefined;
 		if (!user)
 			return res.status(404).send({ error: 'User not found' });
 		const { passwordHash, ...safeUser } = user;
@@ -33,35 +28,31 @@ export async function userRoutes(app: FastifyInstance) {
 		const { uuid } = req.params as { uuid: string };
 		if (req.user?.uuid !== uuid)
 			return res.status(403).send({ error: 'Forbidden' });
-		const user = await prisma.user.findUnique({
-			where: { uuid },
-		});
+		const user = db.prepare('SELECT * FROM User WHERE uuid = ?').get(uuid) as User | undefined;
 		if (!user)
 			return res.status(404).send({ error: 'User not found' });
-		const updatedUser = await prisma.user.update({
-			where: { uuid },
-			data: { wins: { increment: 1 }},
-		});
-		const total = updatedUser.wins + updatedUser.losses;
-		res.send({ ...updatedUser, total });
-	})
+		const updateResult = db.prepare('UPDATE User SET wins = wins + 1 WHERE uuid = ?').run(uuid);
+		if (updateResult.changes !== 1)
+			return res.status(500).send({ error: 'Failed to increment user\'s wins' });
+		user.wins += 1;
+		const total = user.wins + user.losses;
+		res.send({ ...user, total });
+	});
 
 	// Increment losses of a user
 	app.put('/:uuid/loss', { preHandler: [authPreHandler] }, async (req: FastifyRequest, res: FastifyReply) => {
 		const { uuid } = req.params as { uuid: string };
 		if (req.user?.uuid !== uuid)
 			return res.status(403).send({ error: 'Forbidden' });
-		const user = await prisma.user.findUnique({
-			where: { uuid },
-		});
+		const user = db.prepare('SELECT * FROM User WHERE uuid = ?').get(uuid) as User | undefined;
 		if (!user)
 			return res.status(404).send({ error: 'User not found' });
-		const updatedUser = await prisma.user.update({
-			where: { uuid },
-			data: { losses: { increment: 1 }},
-		});
-		const total = updatedUser.wins + updatedUser.losses;
-		res.send({ ...updatedUser, total });
+		const updateResult = db.prepare('UPDATE User SET losses = losses + 1 WHERE uuid = ?').run(uuid);
+		if (updateResult.changes !== 1)
+			return res.status(500).send({ error: 'Failed to increment user\'s losses' });
+		user.losses += 1;
+		const total = user.wins + user.losses;
+		res.send({ ...user, total });
 	});
 
 	// Delete a user from database
@@ -69,10 +60,12 @@ export async function userRoutes(app: FastifyInstance) {
 		const { uuid } = req.params as { uuid: string };
 		if (req.user?.uuid !== uuid)
 			return res.status(403).send({ error: 'Forbidden' });
-		const user = await prisma.user.findUnique({ where: { uuid }, });
+		const user = db.prepare('SELECT * FROM User where uuid = ?').get(uuid) as User | undefined;
 		if (!user)
 			return res.status(404).send({ error: 'User not found' });
-		await prisma.user.delete({ where: { uuid }});
+		const deleteResult = db.prepare('DELETE FROM User WHERE uuid = ?').run(uuid);
+		if (deleteResult.changes !== 1)
+			return res.status(500).send({ error: 'Failed to delete user' });
 		res.status(204).send();
 	});
 };
