@@ -7,8 +7,7 @@
   "type": "module",
   "main": "index.js",
   "scripts": {
-    "ts-node": "ts-node",
-    "dev": "nodemon index.ts",
+    "dev": "nodemon --watch ./ --ext ts --exec \"node --loader ts-node/esm\" index.ts",
     "migration:down": "ts-node utils/rollback.ts"
   },
   "devDependencies": {
@@ -22,6 +21,7 @@
     "typescript": "^5.9.2"
   },
   "dependencies": {
+    "@fastify/cors": "^11.1.0",
     "bcrypt": "^6.0.0",
     "better-sqlite3": "^12.2.0",
     "dotenv": "^17.2.1",

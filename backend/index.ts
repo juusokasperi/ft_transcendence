@@ -1,4 +1,5 @@
 import fastify from 'fastify';
+import cors from '@fastify/cors';
 import { PORT } from './utils/config.ts';
 import { userRoutes } from './controllers/users.ts';
 import { loginRoutes } from './controllers/login.ts';
@@ -8,6 +9,10 @@ import './types.ts';
 
 const app = fastify({
 	logger: true
+});
+
+await app.register(cors, {
+	origin: true
 });
 
 await runMigrations();
