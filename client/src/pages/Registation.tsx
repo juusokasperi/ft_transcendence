@@ -9,12 +9,13 @@ const Registration: React.FC = () => {
   const { axios, login, navigate } = useAppContext();
   const [loading, setLoading] = useState(false);
 
-  const handleRegister = async (data: { username: string; password: string; confirmPassword?: string }) => {
+  const handleRegister = async (data: { username: string; nickname?: string; password: string; confirmPassword?: string }) => {
     setLoading(true);
     try {
       // POST to /api/signup
       const res = await axios.post("/api/signup", {
         username: data.username,
+        nickname: data.nickname,
         password: data.password,
       });
 

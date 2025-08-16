@@ -9,7 +9,7 @@ const containerVariants: Variants = {
   visible: {
     transition: {
       staggerChildren: 0.4,
-      delayChildren: 0.9,
+      delayChildren: 0.6,
     },
   },
 }
@@ -19,7 +19,7 @@ const itemVariants: Variants = {
   visible: { 
     opacity: 1, 
     y: 0, 
-    transition: { duration: 0.7, ease: 'easeOut' }
+    transition: { duration: 0.2, ease: 'easeOut' }
   },
 }
 

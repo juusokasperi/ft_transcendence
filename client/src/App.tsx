@@ -1,9 +1,10 @@
-import { useState } from 'react'
 import Navbar from './components/Navbar'
 import { Route, Routes } from 'react-router-dom'
 import Registration from './pages/Registation'
 import Login from './pages/Login'
 import Home from './pages/Home'
+import Layout from './pages/Layout'
+import Profile from './pages/Profile'
 
 
 function App() {
@@ -16,6 +17,9 @@ function App() {
         <Route path={'/'} element={<Home/>} />
         <Route path={'/signup'} element={<Registration/>} />
         <Route path={'/login'} element={<Login/>} />
+        <Route path={'/profile'} element={<Layout/>}>
+          <Route index element={<Profile/>} />
+        </Route>
       </Routes>
     </div>
   )

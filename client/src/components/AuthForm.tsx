@@ -2,11 +2,12 @@ import React, { useState } from "react";
 
 interface AuthFormProps {
   type: "login" | "register";
-  onSubmit: (data: { username: string; password: string; confirmPassword?: string }) => void;
+  onSubmit: (data: { username: string; password: string; nickname?: string; confirmPassword?: string }) => void;
 }
 
 const AuthForm: React.FC<AuthFormProps> = ({ type, onSubmit }) => {
   const [username, setUsername] = useState("");
+  const [nickname, setNickname] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [success, setSuccess] = useState<string | null>(null);
@@ -31,6 +32,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ type, onSubmit }) => {
     onSubmit({
       username,
       password,
+      nickname,
       confirmPassword: type === "register" ? confirmPassword : undefined,
     });
   };
@@ -49,6 +51,18 @@ const AuthForm: React.FC<AuthFormProps> = ({ type, onSubmit }) => {
           className="w-full border rounded px-3 py-2"
         />
       </div>
+
+      {type === "register" && (
+        <div>
+          <label className="block mb-1 font-medium">Nickname</label>
+          <input
+            type="nickname"
+            value={nickname}
+            onChange={(e) => setNickname(e.target.value)}
+            className="w-full border rounded px-3 py-2"
+          />
+        </div>
+          )}
 
       <div>
         <label className="block mb-1 font-medium">Password</label>
