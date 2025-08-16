@@ -19,12 +19,13 @@ const Login: React.FC = () => {
       });
 
       // adapt to your backend response shape
-      const { token, user } = res.data as { token: string; user: User };
+      const { token, username } = res.data as { token: string; username: User };
 
-      if (!token || !user) throw new Error("Invalid server response");
+      if (!token || !username) throw new Error("Invalid server response");
+      console.log("LOGGED IN!!");
 
       // set auth in context (AppContext should expose login)
-      login(user, token);
+      login(username, token);
 
       toast.success("Logged in");
       navigate("/"); // redirect to home / dashboard

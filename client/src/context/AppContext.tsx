@@ -35,7 +35,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const logout = () => {
     authLogout();
     setUser(null);
-    navigate("/login");
+    navigate("/");
   };
 
   // Opcional: interceptor para adjuntar token automáticamente
