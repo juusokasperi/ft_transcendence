@@ -7,5 +7,5 @@ if (!process.env.DATABASE_URL || !process.env.SECRET) {
   }
 
 export const DATABASE_URL = process.env.DATABASE_URL as string;
-export const PORT = (process.env.port || 3001) as number;
+export const PORT = (process.env.PORT || 3001) as number;
 export const SECRET = process.env.SECRET as string;
