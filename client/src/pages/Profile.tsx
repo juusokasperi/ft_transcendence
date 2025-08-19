@@ -9,7 +9,7 @@ interface PasswordState {
 }
 
 const Profile: React.FC = () => {
-  const { axios, user, getToken} = useAppContext();
+  const { axios, user, getToken, logout} = useAppContext();
 
   const [image, setImage] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string>("src/assets/react.svg");
@@ -35,13 +35,13 @@ const Profile: React.FC = () => {
     try {
         const uuid = user?.uuid;
         const token = getToken();
-        console.log(uuid);
-        await axios.delete(`/api/${uuid}`, {
+        await axios.delete(`/api/users/${uuid}`, {
             headers: {
             Authorization: `Bearer ${token}`,
         },
         });
         toast.success("Account deleted");
+        logout();
       // redirect or logout logic here
     } catch (err: any) {
       toast.error(err.response?.data?.message || "Delete failed");
@@ -54,7 +54,8 @@ const Profile: React.FC = () => {
       <form className="space-y-4">
         {/* Profile Image */}
         <div>
-          <label className="block mb-2 font-medium">Profile Image</label>
+          <label className="block mb-2 ml-3 font-medium">Avatar</label>
+
           {imagePreview && (
             <img
               src={imagePreview}
@@ -72,7 +73,7 @@ const Profile: React.FC = () => {
 
         {/* Nickname */}
         <div>
-          <label className="block mb-2 font-medium">Nickname</label>
+          <label className="block mb-2 font-medium">Change Username</label>
           <input
             type="text"
             value={nickname}

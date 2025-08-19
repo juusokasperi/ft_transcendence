@@ -3,8 +3,8 @@ export interface User {
   id: number;
   uuid: string;
   username: string;
-  nickname: string;
+  email: string;
   wins: number;
   losses: number;
-  createdAt: string; // Prisma DateTime llega como string en JSON
+  createdAt: string;
 }

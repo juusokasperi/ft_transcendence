@@ -19,17 +19,17 @@ interface AppContextType {
   axios: AxiosInstance;
 }
 
-const AppContext = createContext<AppContextType | undefined>(undefined);
+export const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const navigate = useNavigate();
   const { user, setUser } = useUser();
   const { getToken, login: authLogin, logout: authLogout } = useAuth();
 
-  // wrapper: persiste token (authLogin) + actualiza estado in-memory (setUser)
+  
   const login = (userData: User, token: string) => {
-    authLogin(userData, token); // guarda en localStorage
-    setUser(userData); // actualiza estado react
+    authLogin(userData, token); // save in localStorage
+    setUser(userData); // updates react state
   };
 
   const logout = () => {
@@ -38,7 +38,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     navigate("/");
   };
 
-  // Opcional: interceptor para adjuntar token automáticamente
+  // Optional: Attaches Token automatically
   axios.interceptors.request.use(async (config) => {
     const token = await getToken();
     if (token && config.headers) {

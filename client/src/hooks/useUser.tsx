@@ -6,7 +6,6 @@ export const useUser = () => {
   const [user, setUser] = useState<User | null>(null);
 
   useEffect(() => {
-    // carga inicial desde localStorage (si hay)
     const stored = localStorage.getItem("user");
     if (stored) {
       try {

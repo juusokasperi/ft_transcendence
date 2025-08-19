@@ -6,6 +6,7 @@ import Home from './pages/Home'
 import Layout from './pages/Layout'
 import Profile from './pages/Profile'
 import { Toaster } from 'react-hot-toast'
+import Friends from './pages/Friends'
 
 
 function App() {
@@ -21,6 +22,7 @@ function App() {
         <Route path={'/login'} element={<Login/>} />
         <Route path={'/profile'} element={<Layout/>}>
           <Route index element={<Profile/>} />
+          <Route path={'/profile/friends'} element={<Friends/>} />
         </Route>
       </Routes>
     </div>

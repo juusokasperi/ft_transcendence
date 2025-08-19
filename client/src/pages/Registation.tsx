@@ -9,13 +9,13 @@ const Registration: React.FC = () => {
   const { axios, login, navigate } = useAppContext();
   const [loading, setLoading] = useState(false);
 
-  const handleRegister = async (data: { username: string; nickname?: string; password: string; confirmPassword?: string }) => {
+  const handleRegister = async (data: { username: string; email?: string; password: string; confirmPassword?: string }) => {
     setLoading(true);
     try {
       // POST to /api/signup
       const res = await axios.post("/api/signup", {
         username: data.username,
-        nickname: data.nickname,
+        email: data.email,
         password: data.password,
       });
 
@@ -33,9 +33,9 @@ const Registration: React.FC = () => {
       toast.success("Registration successful! Please log in.");
       navigate("/login");
     } catch (err: any) {
-      const axiosErr = err as AxiosError;
+      const axiosErr = err as AxiosError<{error?:string}>;
       const message =
-        axiosErr?.response?.data?.message || axiosErr?.message || "Signup failed";
+        axiosErr?.response?.data?.error || "Signup failed";
       toast.error(String(message));
     } finally {
       setLoading(false);
