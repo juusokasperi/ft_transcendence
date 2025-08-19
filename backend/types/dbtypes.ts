@@ -13,6 +13,7 @@ export interface UserDb {
 export interface UserStatsDb {
 	username: string;
 	uuid: string;
+	email: string | null;
 	avatar: string | null;
 	ranking: number;
 	created_at: string;

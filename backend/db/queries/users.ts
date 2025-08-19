@@ -96,7 +96,7 @@ export function getUserStats(uuid: string): UserStats | null;
 export function getUserStats(uuid?: string): UserStats[] | UserStats | null {
 	const baseQuery = `
 		SELECT
-			u.username, u.uuid, u.avatar, u.ranking, u.created_at,
+			u.username, u.uuid, u.email, u.avatar, u.ranking, u.created_at,
 			COUNT(g.id) as total_games,
 			COUNT(CASE
 				WHEN (gp.team_number = 1 AND g.team_1_score > g.team_2_score)
@@ -124,6 +124,7 @@ export function getUserStats(uuid?: string): UserStats[] | UserStats | null {
 		return {
 			username: result.username,
 			uuid: result.uuid,
+			email: result.email,
 			avatar: result.avatar,
 			ranking: result.ranking,
 			createdAt: result.created_at,
@@ -144,6 +145,7 @@ export function getUserStats(uuid?: string): UserStats[] | UserStats | null {
 	return results.map(dbUser => ({
 		username: dbUser.username,
 		uuid: dbUser.uuid,
+		email: dbUser.email,
 		avatar: dbUser.avatar,
 		ranking: dbUser.ranking,
 		createdAt: dbUser.created_at,

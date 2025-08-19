@@ -28,6 +28,7 @@ export interface User {
 export interface UserStats {
 	username: string;
 	uuid: string;
+	email: string | null;
 	avatar: string | null;
 	ranking: number;
 	createdAt: string;
