@@ -1,5 +1,8 @@
 import fastify from 'fastify';
 import cors from '@fastify/cors';
+import fastifyMultipart from '@fastify/multipart';
+import fastifyStatic from '@fastify/static';
+import path from 'path';
 import { PORT } from './utils/config.ts';
 import { userRoutes } from './routes/users.ts';
 import { loginRoutes } from './routes/login.ts';
@@ -16,6 +19,18 @@ await app.register(cors, {
 	origin: true,
 	methods: ['GET', 'POST', 'PUT', 'DELETE']
 });
+
+app.register(fastifyMultipart, {
+	limits: {
+		fileSize: 1024 * 1024,
+		files: 1
+	},
+}); // For avatar uploads
+
+app.register(fastifyStatic, {
+	root: path.join(process.cwd(), 'uploads'),
+	prefix: '/uploads/',
+}); // Serving the avatar images to frontend via http://<backend-url>/uploads/<filename>
 
 await runMigrations();
 

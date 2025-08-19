@@ -17,7 +17,7 @@ export function getUserByUuid(uuid:string): User | undefined {
 		createdAt: user.created_at,
 		googleId: user.google_id
 	};
-}
+};
 
 export function getUserByUsername(username: string): User | undefined {
 	const user = db.prepare('SELECT * FROM Users where username = ?').get(username) as UserDb | null;
@@ -47,6 +47,44 @@ export function addUser(uuid: string, username: string, passwordHash: string, em
 					INSERT INTO Users (uuid, username, password_hash, email, avatar)
 					VALUES (?, ?, ?, ?, ?)
 					`).run(uuid, username, passwordHash, email, avatar ? avatar : null);
+		return result.changes === 1;
+	} catch (error) {
+		return false;
+	}
+};
+
+export function updateUser(uuid: string, username?: string, avatar?: string , passwordHash?: string, deleteAvatar?: boolean): boolean {
+	try {
+		console.log('updateUser params:', { uuid, username, avatar, passwordHash });
+		const fields: string[] = [];
+		const params: any[] = [];
+		if (username)
+		{
+			fields.push('username = ?');
+			params.push(username);
+		}
+		if (deleteAvatar)
+			fields.push('avatar = NULL');
+		else if (avatar)
+		{
+			fields.push('avatar = ?');
+			params.push(avatar);
+		}
+		if (passwordHash)
+		{
+			fields.push('password_hash = ?');
+			params.push(passwordHash);
+		}
+		if (fields.length === 0)
+			return false;
+
+		params.push(uuid);
+		const result = db.prepare(`
+			UPDATE USERS
+			SET ${fields.join(', ')}
+			WHERE uuid = ?
+			`).run(...params);
+
 		return result.changes === 1;
 	} catch (error) {
 		return false;
