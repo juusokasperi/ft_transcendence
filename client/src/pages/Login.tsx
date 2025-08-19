@@ -30,7 +30,7 @@ const Login: React.FC = () => {
       toast.success("Logged in");
       navigate("/"); // redirect to home / dashboard
     } catch (err: any) {
-      const axiosErr = err as AxiosError;
+      const axiosErr = err as AxiosError<{message?:string}>;
       const message =
         axiosErr?.response?.data?.message || axiosErr?.message || "Login failed";
       toast.error(String(message));
