@@ -7,6 +7,7 @@ import { PORT } from './utils/config.ts';
 import { userRoutes } from './routes/users.ts';
 import { loginRoutes } from './routes/login.ts';
 import { signupRoutes } from './routes/signup.ts';
+import { friendsRoutes } from './routes/friends.ts';
 import { runMigrations } from './db/migrations.ts';
 import './types/types.ts';
 
@@ -35,6 +36,7 @@ app.register(fastifyStatic, {
 await runMigrations();
 
 app.register(userRoutes, { prefix: '/api/users' });
+app.register(friendsRoutes, { prefix: '/api/friends' });
 app.register(loginRoutes, { prefix: '/api/login' });
 app.register(signupRoutes, { prefix: '/api/signup' });
 

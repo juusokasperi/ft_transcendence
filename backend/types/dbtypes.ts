@@ -37,3 +37,11 @@ export interface GamePlayerDb {
 	ranking: number | null;
 	created_at: string | null;
 };
+
+export interface PublicUserDb {
+	uuid: string;
+	username: string;
+	avatar: string | null;
+	ranking: number;
+	created_at: string;
+}
