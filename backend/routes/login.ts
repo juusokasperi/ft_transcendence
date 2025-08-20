@@ -1,21 +1,24 @@
 import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
-import { getUserByUsername } from '../db/queries/users.ts';
+import { getUserByEmail } from '../db/queries/users.ts';
 import bcrypt from 'bcrypt';
 import { SECRET } from '../utils/config.ts';
 import jwt from 'jsonwebtoken';
 
-// TODO Add a preValidation hook using 'zod' for username/password validness
+// TODO:
+// preValidation hook using 'zod' for username/password validness
+// Extra checks and route for 2FA
+
 export async function loginRoutes(app: FastifyInstance) {
 	app.post('/', async (req: FastifyRequest, res: FastifyReply) => {
 		try {
-			const { username, password } = req.body as { username: string; password:string };
+			const { email, password } = req.body as { email: string; password:string };
 
-			const userInDb = getUserByUsername(username);
+			const userInDb = getUserByEmail(email);
 			if (!userInDb)
-				return (res.status(400).send({ error: 'Invalid username or password' }));
+				return (res.status(400).send({ error: 'Invalid credentials' }));
  			const isValidPassword = await bcrypt.compare(password, userInDb.passwordHash || '');
 			if (!isValidPassword)
-				return (res.status(400).send({ error: 'Invalid username or password' }));
+				return (res.status(400).send({ error: 'Invalid credentials' }));
 
 			const userForToken = {
 				username: userInDb.username,

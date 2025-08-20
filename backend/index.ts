@@ -17,7 +17,7 @@ const app = fastify({
 // replace origin: true with origin: ['frontend-address'] !!!!!!
 await app.register(cors, {
 	origin: true,
-	methods: ['GET', 'POST', 'PUT', 'DELETE']
+	methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH']
 });
 
 app.register(fastifyMultipart, {

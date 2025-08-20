@@ -4,9 +4,17 @@ import fs from 'fs';
 import fsAsync from 'fs/promises';
 import path from 'path';
 import bcrypt from 'bcrypt';
-import { SECRET } from '../utils/config.ts';
-import { getUserStats, deleteUser, updateUser } from '../db/queries/users.ts';
+import { getUserStats, getUserByUuid, deleteUser, updateUsername, updatePassword, updateAvatar, getUserByUsername } from '../db/queries/users.ts';
 import authPreHandler from '../hooks/auth.ts';
+
+/*
+	TO DO:
+
+	// Add routes for 2 Factor Auth? Which will also require some additional
+	// fields to User table in database. At least one for the secret, maybe one for backup codes?
+
+	// Add username, email & password validation, zod?
+*/
 
 export async function userRoutes(app: FastifyInstance) {
 	app.get('/', async (req: FastifyRequest, res: FastifyReply) => {
@@ -37,89 +45,155 @@ export async function userRoutes(app: FastifyInstance) {
 				return res.status(403).send({ error: 'Forbidden' });
 			const deleteResult = deleteUser(uuid);
 			if (!deleteResult)
-				return res.status(500).send({ error: 'User not found' });
+				return res.status(404).send({ error: 'User not found' });
 			res.status(204).send();
 		} catch (error) {
 			res.status(500).send({ error: 'Failed to delete user' });
 		}
 	});
 
-	app.put('/update', { preHandler: [authPreHandler] }, async (req: FastifyRequest, res: FastifyReply) => {
-		const ACCEPTED_TYPES = ['image/png', 'image/jpeg', 'image/jpg'];
+	// Update username
+	// Add validation for username
+	app.patch('/:uuid', { preHandler: [authPreHandler] }, async (req: FastifyRequest, res: FastifyReply) => {
 		try {
-			const uuid = req.user?.uuid;
+			const { newUsername } = req.body as { newUsername: string; };
+			const { uuid } = req.params as { uuid: string };
 			if (!uuid)
-				return res.status(500).send({ error: 'No uuid in token' });
+				return res.status(400).send({ error: 'No uuid in request' });
+			if (!req.user?.uuid || (req.user.uuid !== uuid))
+				return res.status(403).send({ error: 'Token mismatch' });
+
+			const user = getUserStats(uuid);
+			if (!user)
+				return res.status(404).send({ error: 'User not found' });
+			const newUser = getUserByUsername(newUsername);
+			if (newUser)
+				return res.status(400).send({ error: 'Username already in use' });
+
+
+			const updateResult = updateUsername(uuid, newUsername);
+			if (!updateResult)
+				return res.status(400).send({ error: 'Update failed' });
+			user.username = newUsername;
+			res.status(200).send(user);
+		} catch (error) {
+			res.status(500).send({ error: 'Failed to update user' });
+		}
+	});
+
+	// Update password
+	app.patch('/:uuid/password', { preHandler: [authPreHandler] }, async (req: FastifyRequest, res: FastifyReply) => {
+		try {
+			const { newPassword, currentPassword } = req.body as { newPassword: string; currentPassword: string; };
+			const { uuid } = req.params as { uuid: string };
+			if (!uuid)
+				return res.status(400).send({ error: 'No uuid in request' });
+			if (!req.user?.uuid || (req.user.uuid !== uuid))
+				return res.status(403).send({ error: 'Token mismatch' });
+
+			const user = getUserByUuid(uuid);
+			if (!user)
+				return res.status(404).send({ error: 'User not found' });
+
+			const isValidPassword = await bcrypt.compare(currentPassword, user.passwordHash || '');
+			if (!isValidPassword)
+				return (res.status(400).send({ error: 'Invalid password' }));
+
+			const newPasswordHash = await bcrypt.hash(newPassword, 10);
+			const updateResult = updatePassword(uuid, newPasswordHash);
+			if (!updateResult)
+				return res.status(400).send({ error: 'Update failed' });
+			res.status(200).send();
+		} catch (error) {
+			res.status(500).send({ error: 'Failed to update user' });
+		}
+	});
+
+	// Change avatar picture
+	app.patch('/:uuid/avatar', { preHandler: [authPreHandler] }, async (req: FastifyRequest, res: FastifyReply) => {
+		try {
+			const { uuid } = req.params as { uuid: string };
+			if (!uuid)
+				return res.status(400).send({ error: 'No uuid in request' });
+			if (!req.user?.uuid || (req.user.uuid !== uuid))
+				return res.status(403).send({ error: 'Token mismatch' });
 			const user = getUserStats(uuid);
 			if (!user)
 				return res.status(404).send({ error: 'User not found' });
 
-			const parts = req.parts();
-			let username: string | undefined;
-			let password: string | undefined;
-			let avatarPath: string | undefined;
-			let deleteAvatar = false;
+			const file = await req.file();
+			if (!file)
+				return res.status(400).send({ error: 'No file in request' });
+			if (file.fieldname !== 'avatar')
+				return res.status(400).send({ error: 'Invalid fieldname' });
 
-			for await (const part of parts)
+			const ACCEPTED_TYPES = ['image/png', 'image/jpeg', 'image/jpg'];
+			if (!ACCEPTED_TYPES.includes(file.mimetype))
+				return res.status(400).send({ error: 'Invalid avatar file type.' });
+
+			const uploadDir = path.join(process.cwd(), 'uploads');
+			try {
+				await fsAsync.mkdir(uploadDir, { recursive: true });
+			} catch (err) {
+				return res.status(500).send({ error: 'Failure saving avatar' });;
+			}
+
+			const fileExtension = getExtensionFromMime(file.mimetype);
+			const filePath = path.join(uploadDir, `${uuid}_${Date.now()}_avatar${fileExtension}`);
+			const writeStream = fs.createWriteStream(filePath);
+			await new Promise((resolve, reject) => {
+				file.file.pipe(writeStream)
+					.on('finish', () => resolve(undefined))
+					.on('error', reject);
+				});
+
+			// Delete old avatar (if exists)
+			if (user.avatar)
 			{
-				if (part.fieldname === 'avatar')
-				{
-					if (part.type === 'file')
-					{
-						if (!ACCEPTED_TYPES.includes(part.mimetype))
-							return res.status(400).send({ error: 'Invalid avatar file type.' });
-						const uploadDir = path.join(process.cwd(), 'uploads');
-						try {
-							await fsAsync.mkdir(uploadDir, { recursive: true });
-						} catch (err) {
-							console.log('Could not create the upload directory');
-						}
-						const fileExtension = getExtensionFromMime(part.mimetype);
-						const filePath = path.join(uploadDir, `${uuid}_${Date.now()}_avatar${fileExtension}`);
-						const writeStream = fs.createWriteStream(filePath);
-						await new Promise((resolve, reject) => {
-							part.file.pipe(writeStream)
-								.on('finish', () => resolve(undefined))
-								.on('error', reject);
-							});
-						avatarPath = filePath;
-						if (user.avatar)
-						{
-							try {
-								await fsAsync.unlink(user.avatar);
-							} catch (err) {
-							console.log('Error deleting old avatar picture');
-							}
-						}
-					}
-					else
-					{
-						if (user.avatar)
-						{
-							deleteAvatar = true;
-							try {
-								await fsAsync.unlink(user.avatar);
-							} catch (err) {
-								console.log('Error deleting old avatar picture');
-							}
-						}
-					}
-				}
-				else if (part.type === 'field')
-				{
-					if (part.fieldname === 'username' && part.value)
-						username = part.value as string;
-					else if (part.fieldname === 'password' && part.value)
-						password = part.value as string;
+				try {
+					await fsAsync.unlink(user.avatar);
+				} catch (err) {
+					console.log('Error deleting old avatar picture');
 				}
 			}
-			const passwordHash = password ? await bcrypt.hash(password, 10) : undefined;
-			const updateResult = updateUser(uuid, username, avatarPath, passwordHash, deleteAvatar);
+
+			const updateResult = updateAvatar(uuid, filePath);
 			if (!updateResult)
-				return res.status(400).send({ error: 'No fields to update or update failed' });
-			res.status(200).send({ success: true });
+				return res.status(400).send({ error: 'Update failed' });
+			user.avatar = filePath;
+			res.status(200).send(user);
 		} catch (error) {
 			res.status(500).send({ error: 'Failed to update user' });
+		}
+	});
+
+	// Delete avatar picture
+	app.delete('/:uuid/avatar', { preHandler: [authPreHandler] }, async (req: FastifyRequest, res: FastifyReply) => {
+		try {
+			const { uuid } = req.params as { uuid: string };
+			if (!uuid)
+				return res.status(400).send({ error: 'No uuid in request' });
+			if (!req.user?.uuid || (req.user.uuid !== uuid))
+				return res.status(403).send({ error: 'Token mismatch' });
+			const user = getUserStats(uuid);
+			if (!user)
+				return res.status(404).send({ error: 'User not found' });
+			if (!user.avatar)
+				return res.status(400).send({ error: 'No avatar to delete' });
+
+			try {
+				await fsAsync.unlink(user.avatar);
+			} catch (err) {
+				console.log('Error deleting old avatar picture');
+			}
+
+			const updateResult = updateAvatar(uuid);
+			if (!updateResult)
+				return res.status(400).send({ error: 'Avatar delete failed' });
+			user.avatar = null;
+			res.status(200).send(user);
+		} catch (error) {
+			res.status(500).send({ error: 'Failed to delete avatar' });
 		}
 	})
 };

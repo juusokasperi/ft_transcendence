@@ -36,6 +36,23 @@ export function getUserByUsername(username: string): User | undefined {
 	};
 }
 
+export function getUserByEmail(email: string): User | undefined {
+	const user = db.prepare('SELECT * FROM Users where email = ?').get(email) as UserDb | null;
+	if (!user)
+		return undefined;
+	return {
+		uuid: user.uuid,
+		username: user.username,
+		email: user.email,
+		passwordHash: user.password_hash,
+		tfa: user.tfa,
+		avatar: user.avatar,
+		ranking: user.ranking,
+		createdAt: user.created_at,
+		googleId: user.google_id
+	};
+}
+
 export function deleteUser(uuid: string): boolean {
 	const result = db.prepare('DELETE FROM Users WHERE uuid = ?').run(uuid);
 	return result.changes === 1;
@@ -53,38 +70,44 @@ export function addUser(uuid: string, username: string, passwordHash: string, em
 	}
 };
 
-export function updateUser(uuid: string, username?: string, avatar?: string , passwordHash?: string, deleteAvatar?: boolean): boolean {
+// Update or delete avatar (if no avatarPath; then delete)
+export function updateAvatar(uuid: string, avatarPath?: string): boolean {
 	try {
-		console.log('updateUser params:', { uuid, username, avatar, passwordHash });
-		const fields: string[] = [];
-		const params: any[] = [];
-		if (username)
-		{
-			fields.push('username = ?');
-			params.push(username);
-		}
-		if (deleteAvatar)
-			fields.push('avatar = NULL');
-		else if (avatar)
-		{
-			fields.push('avatar = ?');
-			params.push(avatar);
-		}
-		if (passwordHash)
-		{
-			fields.push('password_hash = ?');
-			params.push(passwordHash);
-		}
-		if (fields.length === 0)
-			return false;
-
-		params.push(uuid);
+		let avatar;
+		if (!avatarPath)
+			avatar = null;
+		else
+			avatar = avatarPath;
 		const result = db.prepare(`
 			UPDATE USERS
-			SET ${fields.join(', ')}
-			WHERE uuid = ?
-			`).run(...params);
+			SET avatar = ?
+			WHERE uuid = ?`).run(avatar, uuid);
+		return result.changes === 1;
+	} catch (error) {
+		return false;
+	}
+};
 
+// Change password
+export function updatePassword(uuid: string, passwordHash: string): boolean {
+	try {
+		const result = db.prepare(`
+			UPDATE USERS
+			SET password_hash = ?
+			WHERE uuid = ?`).run(passwordHash, uuid);
+		return result.changes === 1;
+	} catch (error) {
+		return false;
+	}
+};
+
+export function updateUsername(uuid: string, username: string): boolean {
+	try {
+		const result = db.prepare(`
+			UPDATE USERS
+			SET username = ?
+			WHERE uuid = ?
+			`).run(username, uuid);
 		return result.changes === 1;
 	} catch (error) {
 		return false;

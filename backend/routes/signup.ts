@@ -1,5 +1,5 @@
 import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
-import { getUserByUsername, addUser } from '../db/queries/users.ts';
+import { getUserByUsername, addUser, getUserByEmail } from '../db/queries/users.ts';
 import bcrypt from 'bcrypt';
 import { SECRET } from '../utils/config.ts';
 import jwt from 'jsonwebtoken';
@@ -11,9 +11,10 @@ export async function signupRoutes(app: FastifyInstance) {
 	app.post('/', async (req: FastifyRequest, res: FastifyReply) => {
 		try {
 			const { username, password, email } = req.body as { username: string; password:string; email: string; };
-			const existingUser = getUserByUsername(username);
-			if (existingUser)
+			if (getUserByUsername(username))
 				return res.status(400).send({ error: 'Username already taken' });
+			if (getUserByEmail(email))
+				return res.status(400).send({ error: 'E-mail already taken' });
 
 			const passwordHash = await bcrypt.hash(password, 10);
 			const uuid = uuidv4();
