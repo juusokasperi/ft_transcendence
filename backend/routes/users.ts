@@ -1,11 +1,10 @@
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
-
 import fs from 'fs';
 import fsAsync from 'fs/promises';
 import path from 'path';
 import bcrypt from 'bcrypt';
 import { getUserStats, getUserByUuid, deleteUser, updateUsername, updatePassword, updateAvatar, getUserByUsername } from '../db/queries/users.ts';
-import authPreHandler from '../hooks/auth.ts';
+import { authPreHandler, tokenUuidCheck } from '../hooks/auth.ts';
 
 /*
 	TO DO:
@@ -17,6 +16,7 @@ import authPreHandler from '../hooks/auth.ts';
 */
 
 export async function userRoutes(app: FastifyInstance) {
+	// Get all users
 	app.get('/', async (req: FastifyRequest, res: FastifyReply) => {
 		try {
 			const users = getUserStats();
@@ -26,6 +26,7 @@ export async function userRoutes(app: FastifyInstance) {
 		}
 	});
 
+	// Get a single user
 	app.get('/:uuid', async (req: FastifyRequest, res: FastifyReply) => {
 		try {
 			const { uuid } = req.params as { uuid: string };
@@ -38,11 +39,10 @@ export async function userRoutes(app: FastifyInstance) {
 		}
 	});
 
-	app.delete('/:uuid', { preHandler: [authPreHandler] }, async (req: FastifyRequest, res: FastifyReply) => {
+	// Delete user, requires token
+	app.delete('/me', { preHandler: [authPreHandler, tokenUuidCheck] }, async (req: FastifyRequest, res: FastifyReply) => {
 		try {
-			const { uuid } = req.params as { uuid: string };
-			if (req.user?.uuid !== uuid)
-				return res.status(403).send({ error: 'Forbidden' });
+			const uuid = req.user!.uuid;
 			const deleteResult = deleteUser(uuid);
 			if (!deleteResult)
 				return res.status(404).send({ error: 'User not found' });
@@ -52,24 +52,20 @@ export async function userRoutes(app: FastifyInstance) {
 		}
 	});
 
-	// Update username
+	// Update username, requires token and { newUsername } as request body
 	// Add validation for username
-	app.patch('/:uuid', { preHandler: [authPreHandler] }, async (req: FastifyRequest, res: FastifyReply) => {
+	app.patch('/me', { preHandler: [authPreHandler, tokenUuidCheck] }, async (req: FastifyRequest, res: FastifyReply) => {
 		try {
 			const { newUsername } = req.body as { newUsername: string; };
-			const { uuid } = req.params as { uuid: string };
-			if (!uuid)
-				return res.status(400).send({ error: 'No uuid in request' });
-			if (!req.user?.uuid || (req.user.uuid !== uuid))
-				return res.status(403).send({ error: 'Token mismatch' });
+			const uuid = req.user!.uuid;
 
 			const user = getUserStats(uuid);
 			if (!user)
 				return res.status(404).send({ error: 'User not found' });
+
 			const newUser = getUserByUsername(newUsername);
 			if (newUser)
 				return res.status(400).send({ error: 'Username already in use' });
-
 
 			const updateResult = updateUsername(uuid, newUsername);
 			if (!updateResult)
@@ -81,16 +77,11 @@ export async function userRoutes(app: FastifyInstance) {
 		}
 	});
 
-	// Update password
-	app.patch('/:uuid/password', { preHandler: [authPreHandler] }, async (req: FastifyRequest, res: FastifyReply) => {
+	// Update password, requires token and { newPassword, currentPassword } as request body
+	app.patch('/me/password', { preHandler: [authPreHandler, tokenUuidCheck] }, async (req: FastifyRequest, res: FastifyReply) => {
 		try {
 			const { newPassword, currentPassword } = req.body as { newPassword: string; currentPassword: string; };
-			const { uuid } = req.params as { uuid: string };
-			if (!uuid)
-				return res.status(400).send({ error: 'No uuid in request' });
-			if (!req.user?.uuid || (req.user.uuid !== uuid))
-				return res.status(403).send({ error: 'Token mismatch' });
-
+			const uuid = req.user!.uuid;
 			const user = getUserByUuid(uuid);
 			if (!user)
 				return res.status(404).send({ error: 'User not found' });
@@ -109,14 +100,11 @@ export async function userRoutes(app: FastifyInstance) {
 		}
 	});
 
-	// Change avatar picture
-	app.patch('/:uuid/avatar', { preHandler: [authPreHandler] }, async (req: FastifyRequest, res: FastifyReply) => {
+	// Change avatar picture, requires token and multipart form with { avatar } file
+	app.patch('/me/avatar', { preHandler: [authPreHandler, tokenUuidCheck] }, async (req: FastifyRequest, res: FastifyReply) => {
 		try {
-			const { uuid } = req.params as { uuid: string };
-			if (!uuid)
-				return res.status(400).send({ error: 'No uuid in request' });
-			if (!req.user?.uuid || (req.user.uuid !== uuid))
-				return res.status(403).send({ error: 'Token mismatch' });
+			const uuid = req.user!.uuid;
+
 			const user = getUserStats(uuid);
 			if (!user)
 				return res.status(404).send({ error: 'User not found' });
@@ -167,14 +155,11 @@ export async function userRoutes(app: FastifyInstance) {
 		}
 	});
 
-	// Delete avatar picture
-	app.delete('/:uuid/avatar', { preHandler: [authPreHandler] }, async (req: FastifyRequest, res: FastifyReply) => {
+	// Delete avatar picture, requires token
+	app.delete('/me/avatar', { preHandler: [authPreHandler, tokenUuidCheck] }, async (req: FastifyRequest, res: FastifyReply) => {
 		try {
-			const { uuid } = req.params as { uuid: string };
-			if (!uuid)
-				return res.status(400).send({ error: 'No uuid in request' });
-			if (!req.user?.uuid || (req.user.uuid !== uuid))
-				return res.status(403).send({ error: 'Token mismatch' });
+			const uuid = req.user!.uuid;
+
 			const user = getUserStats(uuid);
 			if (!user)
 				return res.status(404).send({ error: 'User not found' });
