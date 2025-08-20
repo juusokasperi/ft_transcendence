@@ -79,7 +79,7 @@ export function updateAvatar(uuid: string, avatarPath?: string): boolean {
 		else
 			avatar = avatarPath;
 		const result = db.prepare(`
-			UPDATE USERS
+			UPDATE Users
 			SET avatar = ?
 			WHERE uuid = ?`).run(avatar, uuid);
 		return result.changes === 1;
@@ -92,7 +92,7 @@ export function updateAvatar(uuid: string, avatarPath?: string): boolean {
 export function updatePassword(uuid: string, passwordHash: string): boolean {
 	try {
 		const result = db.prepare(`
-			UPDATE USERS
+			UPDATE Users
 			SET password_hash = ?
 			WHERE uuid = ?`).run(passwordHash, uuid);
 		return result.changes === 1;
@@ -104,7 +104,7 @@ export function updatePassword(uuid: string, passwordHash: string): boolean {
 export function updateUsername(uuid: string, username: string): boolean {
 	try {
 		const result = db.prepare(`
-			UPDATE USERS
+			UPDATE Users
 			SET username = ?
 			WHERE uuid = ?
 			`).run(username, uuid);
