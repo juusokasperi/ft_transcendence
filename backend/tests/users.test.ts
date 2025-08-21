@@ -19,8 +19,8 @@ describe('User Functions', () => {
 		vi.clearAllMocks();
 	});
 
-	it('Add user and get it by UUID and username', async () => {
-		const { addUser, getUserByUuid, getUserByUsername } = await import('../db/queries/users.ts');
+	it('Add user and test the getter functions', async () => {
+		const { addUser, getUserByUuid, getUserByUsername, getUserByEmail, getUserStats } = await import('../db/queries/users.ts');
 		const player1Id = 'uuid-1';
 		const user = addUser(player1Id, 'Joe', 'hashPass', 'test@mail.com');
 		expect(user).toBeTruthy();
@@ -31,8 +31,102 @@ describe('User Functions', () => {
 		const userByUsername = getUserByUsername('Joe');
 		expect(userByUsername).toBeTruthy();
 		expect(userByUsername!.username).toBe('Joe');
+		const userByEmail = getUserByEmail('test@mail.com');
+		expect(userByEmail).toBeTruthy();
+		expect(userByEmail!.username).toBe('Joe');
+		const userStats = getUserStats(player1Id);
+		expect(userStats).toBeTruthy();
+		expect(userStats!.username).toBe('Joe');
+
+		const allUserstats = getUserStats();
+		expect(allUserstats).toBeTruthy();
+		expect(allUserstats).toHaveLength(1);
+		expect(allUserstats[0]!.username).toBe('Joe');
 	});
 
-	// it('Create a friendship between two users, check that uniqueness is enforced', async () => {
-	// });
+	it('Delete user', async () => {
+		const { addUser, getUserStats, deleteUser } = await import('../db/queries/users.ts');
+		const playerId = 'uuid-1';
+		const user = addUser(playerId, 'Joe', 'hashPass', 'test@mail.com');
+		expect(user).toBeTruthy();
+
+		let users = getUserStats();
+		expect(users).toBeTruthy();
+		expect(users).toHaveLength(1);
+		expect(users[0]!.username).toBe('Joe');
+
+		const deletedUser = deleteUser(playerId);
+		expect(deletedUser).toBeTruthy();
+
+		users = getUserStats();
+		expect(users).toBeTruthy();
+		expect(users).toHaveLength(0);
+	});
+
+	it('Test avatar creation & deletion', async () => {
+		const { addUser, getUserStats, updateAvatar } = await import('../db/queries/users.ts');
+		const playerId = 'uuid-1';
+		const user = addUser(playerId, 'Joe', 'hashPass', 'test@mail.com');
+		expect(user).toBeTruthy();
+
+		let userStats = getUserStats(playerId);
+		expect(userStats).toBeTruthy();
+		expect(userStats!.username).toBe('Joe');
+		expect(userStats!.avatar).toBeNull;
+
+		let updateResult = updateAvatar(playerId, '/img.png');
+		expect(updateResult).toBeTruthy();
+
+		userStats = getUserStats(playerId);
+		expect(userStats).toBeTruthy();
+		expect(userStats!.username).toBe('Joe');
+		expect(userStats!.avatar).toBe('/img.png');
+
+		updateResult = updateAvatar(playerId);
+		expect(updateResult).toBeTruthy();
+
+		userStats = getUserStats(playerId);
+		expect(userStats).toBeTruthy();
+		expect(userStats!.username).toBe('Joe');
+		expect(userStats!.avatar).toBeNull;
+	});
+
+	it('Test password change', async () => {
+		const { addUser, getUserByUuid, updatePassword } = await import('../db/queries/users.ts');
+		const playerId = 'uuid-1';
+		const user = addUser(playerId, 'Joe', 'hashPass', 'test@mail.com');
+		expect(user).toBeTruthy();
+
+		let userInDb = getUserByUuid(playerId);
+		expect(userInDb).toBeTruthy();
+		let isValidPassword = 'hashPass' === userInDb?.passwordHash;
+		expect(isValidPassword).toBeTruthy();
+
+		const updateResult = updatePassword(playerId, 'newPass');
+		expect(updateResult).toBeTruthy();
+
+		userInDb = getUserByUuid(playerId);
+		expect(userInDb).toBeTruthy();
+		isValidPassword = 'newPass' === userInDb?.passwordHash;
+		expect(isValidPassword).toBeTruthy();
+	});
+
+	it('Test username change', async () => {
+		const { addUser, getUserStats, updateUsername } = await import('../db/queries/users.ts');
+		const playerId = 'uuid-1';
+		const user = addUser(playerId, 'Joe', 'hashPass', 'test@mail.com');
+		expect(user).toBeTruthy();
+
+		let userStats = getUserStats(playerId);
+		expect(userStats).toBeTruthy();
+		expect(userStats!.username).toBe('Joe');
+
+		const updateResult = updateUsername(playerId, 'Bob');
+		expect(updateResult).toBeTruthy();
+
+		userStats = getUserStats(playerId);
+		expect(userStats).toBeTruthy();
+		expect(userStats!.username).toBe('Bob');
+	});
+
 });

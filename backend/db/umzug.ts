@@ -7,6 +7,13 @@ import type { Database } from 'better-sqlite3';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+const silentLogger = {
+	info() {},
+	warn() {},
+	error() {},
+	debug() {}
+};
+
 export function createUmzug(database: Database = db): Umzug<any> {
 	return new Umzug({
 		migrations: {
@@ -33,7 +40,7 @@ export function createUmzug(database: Database = db): Umzug<any> {
 			? path.join(__dirname, './migrations/.umzug.json')
 			: path.join(process.cwd(), 'tests/.migrations')
 		}),
-		logger: console,
+		logger: database === db ? console : silentLogger,
 	});
 }
 
