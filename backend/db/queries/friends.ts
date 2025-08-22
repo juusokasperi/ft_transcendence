@@ -47,7 +47,7 @@ export function getFriends(user1Uuid: string): UserStats[] {
 };
 
 // Pending requests sent to me (I can accept / decline)
-export function getPendingFriendRequestsToMe(user1Uuid: string): PublicUser[] {
+export function getPendingFriendRequestsReceived(user1Uuid: string): PublicUser[] {
 	try {
 		const results = db.prepare(`
 		SELECT

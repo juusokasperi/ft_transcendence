@@ -1,5 +1,5 @@
 import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
-import { deleteFriend, addFriend, respondToFriendReq, getFriends, getPendingFriendRequestsSent, getPendingFriendRequestsToMe } from '../db/queries/friends.ts';
+import { deleteFriend, addFriend, respondToFriendReq, getFriends, getPendingFriendRequestsSent, getPendingFriendRequestsReceived } from '../db/queries/friends.ts';
 import { authPreHandler, tokenUuidCheck } from '../hooks/auth.ts';
 
 export async function friendsRoutes(app: FastifyInstance) {
@@ -20,7 +20,7 @@ export async function friendsRoutes(app: FastifyInstance) {
 	app.get('/pending/received', { preHandler: [authPreHandler, tokenUuidCheck] }, async (req: FastifyRequest, res: FastifyReply) => {
 		try {
 			const uuid = req.user!.uuid;
-			const results = getPendingFriendRequestsToMe(uuid);
+			const results = getPendingFriendRequestsReceived(uuid);
 			if (!results)
 				return res.status(500).send({ error: 'Failed to get pending friends' });
 			return res.status(200).send(results);
