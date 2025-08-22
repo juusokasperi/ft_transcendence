@@ -14,7 +14,7 @@ const silentLogger = {
 	debug() {}
 };
 
-export function createUmzug(database: Database = db): Umzug<any> {
+export function createUmzug(database: Database = db, migrationFile?: string): Umzug<any> {
 	return new Umzug({
 		migrations: {
 			glob: path.join(__dirname, './migrations/*.ts'),
@@ -36,9 +36,9 @@ export function createUmzug(database: Database = db): Umzug<any> {
 		},
 		context: database,
 		storage: new JSONStorage({
-			path: database === db
-			? path.join(__dirname, './migrations/.umzug.json')
-			: path.join(process.cwd(), 'tests/.migrations')
+			path: migrationFile
+			? path.join(process.cwd(), migrationFile)
+			: path.join(__dirname, './migrations/.umzug.json')
 		}),
 		logger: database === db ? console : silentLogger,
 	});

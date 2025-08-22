@@ -44,6 +44,32 @@ describe('User Functions', () => {
 		expect(allUserstats[0]!.username).toBe('Joe');
 	});
 
+	it('Test uuid, email, username uniqueness', async () => {
+		const { addUser, getUserStats } = await import('../db/queries/users.ts');
+		const player1Id = 'uuid-1';
+		const user1 = addUser(player1Id, 'Joe', 'hashPass', 'test@mail.com');
+		expect(user1).toBeTruthy();
+
+		// Same UUID as user 1
+		const user2 = addUser(player1Id, 'Bob', 'hashPass', 'test1@mail.com');
+		expect(user2).toBeFalsy();
+
+		// Same username as user 1
+		const player2Id = 'uuid-2';
+		const user3 = addUser(player2Id, 'Joe', 'hashPass', 'test2@mail.com');
+		expect(user3).toBeFalsy();
+
+		// Same email as user 1
+		const player3Id = 'uuid-3';
+		const user4 = addUser(player3Id, 'Bobby', 'hashPass', 'test@mail.com');
+		expect(user3).toBeFalsy();
+
+		// Make sure only the first addUser call was successful
+		const users = getUserStats();
+		expect(users).toBeTruthy();
+		expect(users).toHaveLength(1);
+	});
+
 	it('Delete user', async () => {
 		const { addUser, getUserStats, deleteUser } = await import('../db/queries/users.ts');
 		const playerId = 'uuid-1';
