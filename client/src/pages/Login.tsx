@@ -10,12 +10,12 @@ const Login: React.FC = () => {
   const { axios, login, navigate } = useAppContext();
   const [loading, setLoading] = useState(false);
 
-  const handleLogin = async (data: { username: string; password: string}) => {
+  const handleLogin = async (data: { email: string; password: string}) => {
     setLoading(true);
     try {
       // POST to /api/login (no Authorization header expected)
       const res = await axios.post("/api/login", {
-        username: data.username,
+        email: data.email,
         password: data.password,
       });
 

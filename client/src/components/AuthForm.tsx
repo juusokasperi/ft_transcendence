@@ -2,7 +2,7 @@ import React, { useState } from "react";
 
 interface AuthFormProps {
   type: "login" | "register";
-  onSubmit: (data: { username: string;password: string; email?: string; confirmPassword?: string }) => void;
+  onSubmit: (data: { username?: string;password: string; email: string; confirmPassword?: string }) => void;
 }
 
 const AuthForm: React.FC<AuthFormProps> = ({ type, onSubmit }) => {
@@ -18,7 +18,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ type, onSubmit }) => {
     setError(null);
     setSuccess(null);
 
-    if (!username || !password || (type === "register" && !confirmPassword)) {
+    if (!email || !password || (type === "register" && !confirmPassword && !username)) {
       setError("All fields are required.");
       return;
     }
@@ -43,26 +43,26 @@ const AuthForm: React.FC<AuthFormProps> = ({ type, onSubmit }) => {
       {success && <p className="text-green-600">{success}</p>}
 
       <div>
-        <label htmlFor="username" className="block mb-1 font-medium">Username</label>
+        <label htmlFor="email" className="block mb-1 font-medium">Email</label>
         <input
-          id="username"
+          id="email"
           type="text"
-          placeholder="Username"
-          value={username}
-          onChange={(e) => setUsername(e.target.value)}
+          placeholder="Email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
           className="w-full border rounded px-3 py-2"
         />
       </div>
 
       {type === "register" && (
         <div>
-          <label htmlFor="email"  className="block mb-1 font-medium">Email</label>
+          <label htmlFor="username"  className="block mb-1 font-medium">Username</label>
           <input
-            id="email"
-            type="email"
-            placeholder="Email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            id="usermame"
+            type="username"
+            placeholder="Username"
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
             className="w-full border rounded px-3 py-2"
           />
         </div>
