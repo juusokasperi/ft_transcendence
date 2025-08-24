@@ -1,6 +1,7 @@
-import React, { useState, ChangeEvent, FormEvent } from "react";
+import React, { useState, ChangeEvent, FormEvent, useEffect } from "react";
 import { useAppContext } from "../context/AppContext";
 import toast from "react-hot-toast";
+import type { AxiosError } from "axios";
 
 interface PasswordState {
   currentPassword: string;
@@ -12,7 +13,10 @@ const Profile: React.FC = () => {
   const { axios, user, getToken, logout} = useAppContext();
 
   const [image, setImage] = useState<File | null>(null);
-  const [imagePreview, setImagePreview] = useState<string>("src/assets/react.svg");
+  const [imagePreview, setImagePreview] = useState<string>(user?.avatar || "src/assets/react.svg");
+
+
+  console.log(user?.username);
   const [nickname, setNickname] = useState<string>("");
   const [newPassword, setNewPasswords] = useState<PasswordState>({
     currentPassword: "",
@@ -22,20 +26,86 @@ const Profile: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(false);
 
   // Handle image selection
-  const handleImageChange = (e: ChangeEvent<HTMLInputElement>) => {
+  const handleImageChange = async (e: ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files) return;
     const file = e.target.files[0];
+    console.log(file);
     setImage(file);
     setImagePreview(URL.createObjectURL(file));
+
   };
+
+  /*useEffect(() => {
+    setImagePreview(user?.avatar);
+
+  }, [user])*/
+
+
+  const handlePasswordChange = async () => {
+    try {
+        if (!newPassword.newPassword || !newPassword.currentPassword || !newPassword.confirmPassword)
+          return ;
+        const token = getToken();
+        await axios.patch('/api/users/me/password',{
+          newPassword:newPassword.newPassword,
+          currentPassword:newPassword.currentPassword
+        }, {
+            headers: {
+            Authorization: `Bearer ${token}`,
+        },
+        });
+        toast.success("Account password changed");
+    } catch (err: any) {
+      setLoading(false);
+      toast.error(err.response?.data?.message || "Could not update password");
+    }
+  };
+
+
+  const handleUpdate = async (e: React.FormEvent) => {
+    try {
+      e.preventDefault(); // ✨ prevent form submission
+      setLoading(true);
+      await handlePasswordChange();
+      if (image)
+      {
+        try{
+          const token = await getToken();
+          
+          // Create a FormData instance
+          const formData = new FormData();
+          formData.append("avatar", image); // "avatar" is the field name expected by backend
+
+          await axios.patch("/api/users/me/avatar", formData, {
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "multipart/form-data", // Axios sets the correct boundary automatically
+            },
+          });
+        toast.success("Account avatar has been changed");
+      }
+      catch(err: any){
+        setLoading(false);
+        const axiosErr = err as AxiosError<{error?:string}>;
+        const message =
+          axiosErr?.response?.data?.error;
+        toast.error(String(message));
+      }
+      }
+        
+    } catch (error) {
+      
+    }
+
+  }
 
   // Delete account
   const handleDelete = async () => {
     if (!window.confirm("Are you sure you want to delete your account?")) return;
     try {
-        const uuid = user?.uuid;
+      
         const token = getToken();
-        await axios.delete(`/api/users/${uuid}`, {
+        await axios.delete(`/api/users/me`, {
             headers: {
             Authorization: `Bearer ${token}`,
         },
@@ -121,6 +191,7 @@ const Profile: React.FC = () => {
         <div className="flex justify-between items-center">
           <button
             type="submit"
+            onClick={handleUpdate}
             disabled={loading}
             className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 disabled:opacity-50"
           >

@@ -4,6 +4,7 @@ export interface User {
   uuid: string;
   username: string;
   email: string;
+  avatar: string;
   wins: number;
   losses: number;
   createdAt: string;
