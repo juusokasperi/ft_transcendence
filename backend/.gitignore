@@ -5,3 +5,4 @@ node_modules/
 *.db*
 .umzug.json
 package-lock.json
+uploads/
