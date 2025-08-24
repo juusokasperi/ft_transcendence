@@ -24,8 +24,9 @@ export async function loginRoutes(app: FastifyInstance) {
 				username: userInDb.username,
 				uuid: userInDb.uuid
 			};
+
 			const token = jwt.sign(userForToken, SECRET, { expiresIn: '1h' });
-			res.status(200).send({ token, user: { username: userInDb.username, uuid: userInDb.uuid } });
+			res.status(200).send({ token, user: { username: userInDb.username, uuid: userInDb.uuid, avatar: userInDb.avatar } });
 		} catch (error) {
 			res.status(500).send({ error: 'Failed to fetch login info from database.' });
 		}
