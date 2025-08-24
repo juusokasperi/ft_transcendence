@@ -127,7 +127,8 @@ export async function userRoutes(app: FastifyInstance) {
 			}
 
 			const fileExtension = getExtensionFromMime(file.mimetype);
-			const filePath = path.join(uploadDir, `${uuid}_${Date.now()}_avatar${fileExtension}`);
+			const fileName = `${uuid}_${Date.now()}_avatar${fileExtension}`;
+			const filePath = path.join(uploadDir, fileName);
 			const writeStream = fs.createWriteStream(filePath);
 			await new Promise((resolve, reject) => {
 				file.file.pipe(writeStream)
@@ -144,11 +145,10 @@ export async function userRoutes(app: FastifyInstance) {
 					console.log('Error deleting old avatar picture');
 				}
 			}
-
-			const updateResult = updateAvatar(uuid, filePath);
+			const updateResult = updateAvatar(uuid, fileName);
 			if (!updateResult)
 				return res.status(400).send({ error: 'Update failed' });
-			user.avatar = filePath;
+			user.avatar = fileName;
 			res.status(200).send(user);
 		} catch (error) {
 			res.status(500).send({ error: 'Failed to update user' });
