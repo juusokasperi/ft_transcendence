@@ -37,7 +37,26 @@ export function getUserByUsername(username: string): User | undefined {
 }
 
 export function getUserByEmail(email: string): User | undefined {
-	const user = db.prepare('SELECT * FROM Users where email = ?').get(email) as UserDb | null;
+	const user = db.prepare('SELECT * FROM Users WHERE email = ?').get(email) as UserDb | null;
+	if (!user)
+		return undefined;
+	return {
+		uuid: user.uuid,
+		username: user.username,
+		email: user.email,
+		passwordHash: user.password_hash,
+		tfa: user.tfa,
+		avatar: user.avatar,
+		ranking: user.ranking,
+		createdAt: user.created_at,
+		googleId: user.google_id
+	};
+}
+
+export function getUser(identifier: string): User | undefined {
+	const user = db.prepare(
+		`SELECT * FROM Users WHERE uuid = ? OR username = ? OR email = ?
+		`).get(identifier, identifier, identifier) as UserDb | null;
 	if (!user)
 		return undefined;
 	return {

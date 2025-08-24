@@ -1,5 +1,6 @@
 import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { deleteFriend, addFriend, respondToFriendReq, getFriends, getPendingFriendRequestsSent, getPendingFriendRequestsReceived } from '../db/queries/friends.ts';
+import { getUser } from '../db/queries/users.ts';
 import { authPreHandler, tokenUuidCheck } from '../hooks/auth.ts';
 
 export async function friendsRoutes(app: FastifyInstance) {
@@ -60,10 +61,16 @@ export async function friendsRoutes(app: FastifyInstance) {
 	})
 
 	// Send a friend request
-	app.post('/:user2Uuid', { preHandler: [authPreHandler, tokenUuidCheck] }, async (req: FastifyRequest, res: FastifyReply) => {
+	app.post('/:user2Identifier', { preHandler: [authPreHandler, tokenUuidCheck] }, async (req: FastifyRequest, res: FastifyReply) => {
 		try {
 			const user1Uuid = req.user!.uuid;
-			const { user2Uuid } = req.params as { user2Uuid: string };
+			const { user2Identifier } = req.params as { user2Identifier: string };
+
+			const userResult = getUser(user2Identifier);
+			if (!userResult)
+				return res.status(400).send({ error: 'Target of friend request not existing.' });
+
+			const user2Uuid = userResult.uuid;
 			const result = addFriend(user1Uuid, user2Uuid);
 			if (!result)
 				return res.status(400).send({ error: 'Already friends or request pending' });
