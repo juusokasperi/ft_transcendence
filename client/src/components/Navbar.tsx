@@ -19,6 +19,8 @@ const Navbar = () => {
       <div className="space-x-4">
         {user ? (
           <div className="flex justify-between space-x-4">
+
+          <span className="text-amber-500 text-center">Welcome {user.username} :D</span>
           <Link
             to="/profile"
             className="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded"

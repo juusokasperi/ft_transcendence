@@ -10,20 +10,37 @@ interface PasswordState {
 }
 
 const Profile: React.FC = () => {
-  const { axios, user, getToken, logout} = useAppContext();
+  const { axios, user,setUser ,getToken, logout, navigate} = useAppContext();
 
   const [image, setImage] = useState<File | null>(null);
-  const [imagePreview, setImagePreview] = useState<string>(user?.avatar || "src/assets/react.svg");
-
-
-  console.log(user?.username);
-  const [nickname, setNickname] = useState<string>("");
+  const [imagePreview, setImagePreview] = useState<string>("src/assets/react.svg");
+  const [username, setUsername] = useState<string>("");
   const [newPassword, setNewPasswords] = useState<PasswordState>({
     currentPassword: "",
     newPassword: "",
     confirmPassword: "",
   });
+
+
   const [loading, setLoading] = useState<boolean>(false);
+
+  const getImage = async () => {
+    
+    try {
+      const res = await axios.get(`/uploads/${user?.avatar}`,
+        {responseType:"blob",});
+      setImagePreview(URL.createObjectURL(res.data));
+      
+    } catch (error) {
+    }
+  }
+
+  useEffect(() => {
+    console.log(user?.avatar)
+    getImage();
+  } ,[user]);
+
+
 
   // Handle image selection
   const handleImageChange = async (e: ChangeEvent<HTMLInputElement>) => {
@@ -35,11 +52,30 @@ const Profile: React.FC = () => {
 
   };
 
-  /*useEffect(() => {
-    setImagePreview(user?.avatar);
 
-  }, [user])*/
 
+  const handleUsernameChange = async () => {
+    try {
+        if (!username)
+          return ;
+        const token = getToken();
+        const res = await axios.patch('/api/users/me',{
+          newUsername:username,
+        }, {
+            headers: {
+            Authorization: `Bearer ${token}`,
+        },
+        });
+        setUser((prev) =>
+        prev ? { ...prev, username: res.data.username} : res.data);
+        toast.success("Account username changed");
+    } catch (err: any) {
+        const axiosErr = err as AxiosError<{error?:string}>;
+        const message =
+        axiosErr?.response?.data?.error;
+        toast.error(String(message));
+    }
+  };
 
   const handlePasswordChange = async () => {
     try {
@@ -56,8 +92,10 @@ const Profile: React.FC = () => {
         });
         toast.success("Account password changed");
     } catch (err: any) {
-      setLoading(false);
-      toast.error(err.response?.data?.message || "Could not update password");
+        const axiosErr = err as AxiosError<{error?:string}>;
+        const message =
+        axiosErr?.response?.data?.error;
+        toast.error(String(message));
     }
   };
 
@@ -66,6 +104,7 @@ const Profile: React.FC = () => {
     try {
       e.preventDefault(); // ✨ prevent form submission
       setLoading(true);
+      await handleUsernameChange();
       await handlePasswordChange();
       if (image)
       {
@@ -76,12 +115,16 @@ const Profile: React.FC = () => {
           const formData = new FormData();
           formData.append("avatar", image); // "avatar" is the field name expected by backend
 
-          await axios.patch("/api/users/me/avatar", formData, {
+          const res = await axios.patch("/api/users/me/avatar", formData, {
             headers: {
               Authorization: `Bearer ${token}`,
               "Content-Type": "multipart/form-data", // Axios sets the correct boundary automatically
             },
           });
+         
+        setUser((prev) =>
+        prev ? { ...prev, avatar: res.data.avatar} : res.data);
+        getImage();
         toast.success("Account avatar has been changed");
       }
       catch(err: any){
@@ -90,11 +133,15 @@ const Profile: React.FC = () => {
         const message =
           axiosErr?.response?.data?.error;
         toast.error(String(message));
+        }
       }
-      }
-        
-    } catch (error) {
-      
+      setLoading(false);
+    } catch (err: any) {
+        setLoading(false);
+        const axiosErr = err as AxiosError<{error?:string}>;
+        const message =
+          axiosErr?.response?.data?.error;
+        toast.error(String(message));
     }
 
   }
@@ -146,8 +193,9 @@ const Profile: React.FC = () => {
           <label className="block mb-2 font-medium">Change Username</label>
           <input
             type="text"
-            value={nickname}
-            onChange={(e) => setNickname(e.target.value)}
+            value={username}
+            placeholder={user?.username}
+            onChange={(e) => setUsername(e.target.value)}
             className="border p-2 rounded w-full"
           />
         </div>

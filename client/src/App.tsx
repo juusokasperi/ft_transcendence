@@ -31,21 +31,6 @@ function isTokenExpired(token: string | null): boolean {
 
 function App() {
 
-  const {user ,getToken, logout} = useAppContext();
-
-
-  useEffect( () => { 
-
-  const checkToken = async() => {
-  const token = await getToken();
-   if (!token || isTokenExpired(token))
-   {
-      console.log("testing");
-      logout();
-   }
-  }
-  checkToken();
-  }, [user]);
   
   return (
     <div>

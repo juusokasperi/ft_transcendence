@@ -16,6 +16,7 @@ interface AppContextType {
   getToken: () => Promise<string | null>;
   login: (user: User, token: string) => void;
   logout: () => void;
+  setUser: React.Dispatch<React.SetStateAction<User | null>>;
   axios: AxiosInstance;
 }
 
@@ -48,7 +49,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   });
 
   return (
-    <AppContext.Provider value={{ navigate, user, getToken, login, logout, axios }}>
+    <AppContext.Provider value={{ navigate, user, getToken, login, logout, axios, setUser }}>
       {children}
     </AppContext.Provider>
   );
