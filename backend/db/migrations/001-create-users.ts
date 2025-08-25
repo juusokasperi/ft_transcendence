@@ -16,7 +16,7 @@ export async function up(db: Database) {
 	password_hash TEXT,
 	tfa	BOOLEAN NOT NULL DEFAULT FALSE,
 	avatar TEXT,
-	ranking INTEGER DEFAULT 1000,
+	ranking INTEGER NOT NULL DEFAULT 1000,
 	created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
 	google_id TEXT UNIQUE,
 	CHECK (password_hash IS NOT NULL OR google_id IS NOT NULL)
