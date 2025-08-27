@@ -1,5 +1,5 @@
 import nodemailer from 'nodemailer';
-import { confirmationEmailHtml, resetPasswordHtml } from './emailHtml.ts';
+import { confirmationEmailHtml, resetPasswordHtml, deleteUserHtml } from './emailHtml.ts';
 import { FRONTEND_URL } from '../config.ts';
 
 /*
@@ -34,7 +34,7 @@ export async function sendConfirmationEmail(recipientEmail: string, token: strin
 		console.log('\x1b[0;32mPreview URL\x1b[0m: %s', nodemailer.getTestMessageUrl(info));
 		return info.accepted.length > 0;
 	} catch (error) {
-		console.error('Error sending confirmation email:', error);
+		console.error('\x1b[0;31mError sending confirmation email\x1b[0m:', error);
 		return false;
 	}
 };
@@ -51,10 +51,29 @@ export async function sendResetPasswordEmail(recipientEmail: string, token: stri
 			subject: "Reset your password for BabylonPong",
 			html: html
 		});
-		console.log('Preview URL: %s', nodemailer.getTestMessageUrl(info));
+		console.log('\x1b[0;32mPreview URL\x1b[0m: %s', nodemailer.getTestMessageUrl(info));
 		return info.accepted.length > 0;
 	} catch (error) {
-		console.error('Error sending confirmation email:', error);
+		console.error('\x1b[0;31mError sending confirmation email\x1b[0m:', error);
 		return false;
 	}
 };
+
+export async function sendDeleteEmail(recipientEmail: string, token: string)
+{
+	try {
+		const transporter = await createTestTransporter();
+		const url = `${FRONTEND_URL}/delete-user/${token}`;
+		const html = deleteUserHtml(url, FRONTEND_URL);
+		const info = await transporter.sendMail({
+			from: '"No Reply" <no-reply@babylonpong.com>',
+			to: recipientEmail,
+			subject: "Reset your password for BabylonPong",
+			html: html
+		});
+		console.log('\x1b[0;32mPreview URL\x1b[0m: %s', nodemailer.getTestMessageUrl(info));
+		return info.accepted.length > 0;
+	} catch (error) {
+		console.error('\x1b[0;31mError sending confirmation email\x1b[0m:', error);
+	}
+}

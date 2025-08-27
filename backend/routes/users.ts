@@ -3,8 +3,11 @@ import fs from 'fs';
 import fsAsync from 'fs/promises';
 import path from 'path';
 import bcrypt from 'bcrypt';
-import { getUserStats, getUserByUuid, deleteUser, updateUsername, updatePassword, updateAvatar, getUserByUsername, getUserByEmail } from '../db/queries/users.ts';
+import crypto from 'crypto';
+import { getUserStats, getUserByUuid, updateUsername, updatePassword, updateAvatar, getUserByUsername, getUserByEmail } from '../db/queries/users.ts';
+import { deleteUser, markUserForDelete, removeTokenFromDelete, findUserToDeleteAndClear } from '../db/queries/userDelete.ts';
 import { authPreHandler, tokenUuidCheck } from '../hooks/auth.ts';
+import { sendDeleteEmail } from '../utils/nodemailer/index.ts';
 
 /*
 	TO DO:
@@ -39,18 +42,44 @@ export async function userRoutes(app: FastifyInstance) {
 		}
 	});
 
-	// Delete user, requires token
+	// Sends a email confirmation for user deletion
 	app.delete('/me', { preHandler: [authPreHandler, tokenUuidCheck] }, async (req: FastifyRequest, res: FastifyReply) => {
 		try {
 			const uuid = req.user!.uuid;
-			const deleteResult = deleteUser(uuid);
-			if (!deleteResult)
+			const user = getUserByUuid(uuid);
+			if (!user)
 				return res.status(404).send({ error: 'User not found' });
+			const confirmationToken = crypto.randomBytes(32).toString('hex');
+			const result = markUserForDelete(user.uuid,  confirmationToken);
+			if (!result)
+				return res.status(500).send({ error: 'Failed to mark user for deletion.' });
+			const emailSent = await sendDeleteEmail(user.email, confirmationToken);
+			if (!emailSent) {
+				removeTokenFromDelete(confirmationToken);
+				return res.status(500).send({ error: 'Failed to send confirmation email.' });
+			}
+			res.status(200).send({ success: 'Confirmation link sent to email.' });
+		} catch (error) {
+			res.status(500).send({ error: 'Failed to process user delete request' });
+		}
+	});
+
+	// Delete user with a valid delete token
+	app.post('/me/confirm-delete/:token', { preHandler: [authPreHandler, tokenUuidCheck] }, async (req: FastifyRequest, res: FastifyReply) => {
+		try {
+			const { token } = req.params as { token: string };
+			const uuid = req.user!.uuid;
+			const uuidForDelete = findUserToDeleteAndClear(token);
+			if (!uuidForDelete || uuidForDelete !== uuid)
+				return res.status(400).send({ error: 'Invalid or expired token.' });
+			const deleteResult = deleteUser(uuidForDelete);
+			if (!deleteResult)
+				return res.status(500).send({ error: 'Failed to delete user' });
 			res.status(204).send();
 		} catch (error) {
 			res.status(500).send({ error: 'Failed to delete user' });
 		}
-	});
+	})
 
 	// Update username, requires token and { newUsername } as request body
 	// Add validation for username

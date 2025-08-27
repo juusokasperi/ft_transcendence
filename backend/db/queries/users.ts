@@ -89,11 +89,6 @@ export function getUser(identifier: string): User | undefined {
 	};
 }
 
-export function deleteUser(uuid: string): boolean {
-	const result = db.prepare('DELETE FROM Users WHERE uuid = ?').run(uuid);
-	return result.changes === 1;
-};
-
 export function addUser(uuid: string, username: string, passwordHash: string, email: string, avatar?: string): boolean {
 	try {
 		const result = db.prepare(`
