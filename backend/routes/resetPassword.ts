@@ -12,7 +12,7 @@ export async function resetPasswordRoutes(app: FastifyInstance) {
 		try {
 			const { email } = req.body as { email: string };
 			if (!email)
-				return res.status(400).send({ error: 'Email is required' });
+				return res.status(400).send({ message: 'Email is required' });
 			const user = getUserByEmail(email);
 
 			if (user)
@@ -34,7 +34,7 @@ export async function resetPasswordRoutes(app: FastifyInstance) {
 			// existing emails in database
 			res.status(200).send({ success: 'Password reset link sent to email if exists.' });
 		} catch (error) {
-			res.status(500).send({ error: 'Failed to process password reset request.' });
+			res.status(500).send({ message: 'Failed to process password reset request.' });
 		}
 	});
 
@@ -43,21 +43,21 @@ export async function resetPasswordRoutes(app: FastifyInstance) {
 			const { resetToken } = req.params as { resetToken: string };
 			const { newPassword } = req.body as { newPassword: string };
 			if (!newPassword)
-				return res.status(400).send({ error: 'New password is required.'});
+				return res.status(400).send({ message: 'New password is required.'});
 
 			// REMOVE THIS and add a interval based cleanup?
 			clearExpiredTokens();
 
 			const uuid = findAndClearResetToken(resetToken);
 			if (!uuid)
-				return res.status(400).send({ error: 'Invalid or expired token.' });
+				return res.status(400).send({ message: 'Invalid or expired token.' });
 			const passwordHash = await bcrypt.hash(newPassword, 10);
 			const result = updatePassword(uuid, passwordHash);
 			if (!result)
-				return res.status(500).send({ error: 'Failed to update password.' });
+				return res.status(500).send({ message: 'Failed to update password.' });
 			return res.status(200).send({ message: 'Password succesfully updated.' });
 		} catch (error) {
-			res.status(500).send({ error: 'Failed to process password reset request.' });
+			res.status(500).send({ message: 'Failed to process password reset request.' });
 		}
 	});
 };

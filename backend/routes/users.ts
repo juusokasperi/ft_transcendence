@@ -25,7 +25,7 @@ export async function userRoutes(app: FastifyInstance) {
 			const users = getUserStats();
 			res.status(200).send(users);
 		} catch (error) {
-			res.status(500).send({ error: 'Failed to fetch users' });
+			res.status(500).send({ message: 'Failed to fetch users' });
 		}
 	});
 
@@ -35,10 +35,10 @@ export async function userRoutes(app: FastifyInstance) {
 			const { uuid } = req.params as { uuid: string };
 			const user = getUserStats(uuid);
 			if (!user)
-				return res.status(404).send({ error: 'User not found' });
+				return res.status(404).send({ message: 'User not found' });
 			res.status(200).send(user);
 		} catch (error) {
-			res.status(500).send({ error: 'Failed to fetch user' });
+			res.status(500).send({ message: 'Failed to fetch user' });
 		}
 	});
 
@@ -48,19 +48,19 @@ export async function userRoutes(app: FastifyInstance) {
 			const uuid = req.user!.uuid;
 			const user = getUserByUuid(uuid);
 			if (!user)
-				return res.status(404).send({ error: 'User not found' });
+				return res.status(404).send({ message: 'User not found' });
 			const confirmationToken = crypto.randomBytes(32).toString('hex');
 			const result = markUserForDelete(user.uuid,  confirmationToken);
 			if (!result)
-				return res.status(500).send({ error: 'Failed to mark user for deletion.' });
+				return res.status(500).send({ message: 'Failed to mark user for deletion.' });
 			const emailSent = await sendDeleteEmail(user.email, confirmationToken);
 			if (!emailSent) {
 				removeTokenFromDelete(confirmationToken);
-				return res.status(500).send({ error: 'Failed to send confirmation email.' });
+				return res.status(500).send({ message: 'Failed to send confirmation email.' });
 			}
 			res.status(200).send({ success: 'Confirmation link sent to email.' });
 		} catch (error) {
-			res.status(500).send({ error: 'Failed to process user delete request' });
+			res.status(500).send({ message: 'Failed to process user delete request' });
 		}
 	});
 
@@ -71,13 +71,13 @@ export async function userRoutes(app: FastifyInstance) {
 			const uuid = req.user!.uuid;
 			const uuidForDelete = findUserToDeleteAndClear(token);
 			if (!uuidForDelete || uuidForDelete !== uuid)
-				return res.status(400).send({ error: 'Invalid or expired token.' });
+				return res.status(400).send({ message: 'Invalid or expired token.' });
 			const deleteResult = deleteUser(uuidForDelete);
 			if (!deleteResult)
-				return res.status(500).send({ error: 'Failed to delete user' });
+				return res.status(500).send({ message: 'Failed to delete user' });
 			res.status(204).send();
 		} catch (error) {
-			res.status(500).send({ error: 'Failed to delete user' });
+			res.status(500).send({ message: 'Failed to delete user' });
 		}
 	})
 
@@ -90,19 +90,19 @@ export async function userRoutes(app: FastifyInstance) {
 
 			const user = getUserStats(uuid);
 			if (!user)
-				return res.status(404).send({ error: 'User not found' });
+				return res.status(404).send({ message: 'User not found' });
 
 			const newUser = getUserByUsername(newUsername);
 			if (newUser)
-				return res.status(400).send({ error: 'Username already in use' });
+				return res.status(400).send({ message: 'Username already in use' });
 
 			const updateResult = updateUsername(uuid, newUsername);
 			if (!updateResult)
-				return res.status(400).send({ error: 'Update failed' });
+				return res.status(400).send({ message: 'Update failed' });
 			user.username = newUsername;
 			res.status(200).send(user);
 		} catch (error) {
-			res.status(500).send({ error: 'Failed to update user' });
+			res.status(500).send({ message: 'Failed to update user' });
 		}
 	});
 
@@ -113,19 +113,19 @@ export async function userRoutes(app: FastifyInstance) {
 			const uuid = req.user!.uuid;
 			const user = getUserByUuid(uuid);
 			if (!user)
-				return res.status(404).send({ error: 'User not found' });
+				return res.status(404).send({ message: 'User not found' });
 
 			const isValidPassword = await bcrypt.compare(currentPassword, user.passwordHash || '');
 			if (!isValidPassword)
-				return (res.status(400).send({ error: 'Invalid password' }));
+				return (res.status(400).send({ message: 'Invalid password' }));
 
 			const newPasswordHash = await bcrypt.hash(newPassword, 10);
 			const updateResult = updatePassword(uuid, newPasswordHash);
 			if (!updateResult)
-				return res.status(400).send({ error: 'Update failed' });
+				return res.status(400).send({ message: 'Update failed' });
 			res.status(200).send();
 		} catch (error) {
-			res.status(500).send({ error: 'Failed to update user' });
+			res.status(500).send({ message: 'Failed to update user' });
 		}
 	});
 
@@ -136,23 +136,23 @@ export async function userRoutes(app: FastifyInstance) {
 
 			const user = getUserStats(uuid);
 			if (!user)
-				return res.status(404).send({ error: 'User not found' });
+				return res.status(404).send({ message: 'User not found' });
 
 			const file = await req.file();
 			if (!file)
-				return res.status(400).send({ error: 'No file in request' });
+				return res.status(400).send({ message: 'No file in request' });
 			if (file.fieldname !== 'avatar')
-				return res.status(400).send({ error: 'Invalid fieldname' });
+				return res.status(400).send({ message: 'Invalid fieldname' });
 
 			const ACCEPTED_TYPES = ['image/png', 'image/jpeg', 'image/jpg'];
 			if (!ACCEPTED_TYPES.includes(file.mimetype))
-				return res.status(400).send({ error: 'Invalid avatar file type.' });
+				return res.status(400).send({ message: 'Invalid avatar file type.' });
 
 			const uploadDir = path.join(process.cwd(), 'uploads');
 			try {
 				await fsAsync.mkdir(uploadDir, { recursive: true });
 			} catch (err) {
-				return res.status(500).send({ error: 'Failure saving avatar' });;
+				return res.status(500).send({ message: 'Failure saving avatar' });;
 			}
 
 			const fileExtension = getExtensionFromMime(file.mimetype);
@@ -176,11 +176,11 @@ export async function userRoutes(app: FastifyInstance) {
 			}
 			const updateResult = updateAvatar(uuid, fileName);
 			if (!updateResult)
-				return res.status(400).send({ error: 'Update failed' });
+				return res.status(400).send({ message: 'Update failed' });
 			user.avatar = fileName;
 			res.status(200).send(user);
 		} catch (error) {
-			res.status(500).send({ error: 'Failed to update user' });
+			res.status(500).send({ message: 'Failed to update user' });
 		}
 	});
 
@@ -191,9 +191,9 @@ export async function userRoutes(app: FastifyInstance) {
 
 			const user = getUserStats(uuid);
 			if (!user)
-				return res.status(404).send({ error: 'User not found' });
+				return res.status(404).send({ message: 'User not found' });
 			if (!user.avatar)
-				return res.status(400).send({ error: 'No avatar to delete' });
+				return res.status(400).send({ message: 'No avatar to delete' });
 
 			try {
 				await fsAsync.unlink(user.avatar);
@@ -203,11 +203,11 @@ export async function userRoutes(app: FastifyInstance) {
 
 			const updateResult = updateAvatar(uuid);
 			if (!updateResult)
-				return res.status(400).send({ error: 'Avatar delete failed' });
+				return res.status(400).send({ message: 'Avatar delete failed' });
 			user.avatar = null;
 			res.status(200).send(user);
 		} catch (error) {
-			res.status(500).send({ error: 'Failed to delete avatar' });
+			res.status(500).send({ message: 'Failed to delete avatar' });
 		}
 	});
 };

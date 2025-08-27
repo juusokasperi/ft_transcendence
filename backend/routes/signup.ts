@@ -17,7 +17,7 @@ export async function signupRoutes(app: FastifyInstance) {
 			const { username, password, email, googleAuth } =
 				req.body as { username: string; password: string | undefined; email: string; googleAuth: string | undefined};
 			if (checkUserExists(username, email))
-				return res.status(400).send({ error: 'Username or email already taken' });
+				return res.status(400).send({ message: 'Username or email already taken' });
 			if (googleAuth)
 			{
 				// do google auth stuff,
@@ -27,26 +27,26 @@ export async function signupRoutes(app: FastifyInstance) {
 				// like addUserGoogle( that takes in google auth number instead of pass)
 			}
 			if (!password)
-				return res.status(400).send({ error: 'Missing password field' });
+				return res.status(400).send({ message: 'Missing password field' });
 			const normalizedPassword = password.normalize("NFKC");
 			const passwordNotValid = validatePassword(normalizedPassword);
 			if (passwordNotValid)
-				return res.status(400).send({ error: passwordNotValid });
+				return res.status(400).send({ message: passwordNotValid });
 
 			const passwordHash = await bcrypt.hash(normalizedPassword, 10);
 			const confirmationToken = crypto.randomBytes(32).toString('hex');
 			const result = addUserToPending(username, email, passwordHash,  confirmationToken);
 			if (!result)
-				return res.status(500).send({ error: 'Failed to create user' });
+				return res.status(500).send({ message: 'Failed to create user' });
 			const emailSent = await sendConfirmationEmail(email, confirmationToken);
 			if (!emailSent) {
 				removeFromPending(confirmationToken);
-				return res.status(500).send({ error: 'Failed to send confirmation email.' });
+				return res.status(500).send({ message: 'Failed to send confirmation email.' });
 			}
 
 			res.status(200).send({ success: 'Confirmation link sent to email.' });
 		} catch (error) {
-			res.status(500).send({ error: 'Failed adding user to database.' });
+			res.status(500).send({ message: 'Failed adding user to database.' });
 		}
 	});
 
@@ -56,14 +56,14 @@ export async function signupRoutes(app: FastifyInstance) {
 			const { token } = req.params as { token: string };
 			const user = getPendingUserByToken(token);
 			if (!user)
-				return res.status(400).send({ error: 'Invalid or expired token.' });
+				return res.status(400).send({ message: 'Invalid or expired token.' });
 
 			const uuid = uuidv4();
 			const result = confirmUser(token, uuid, user);
 			if (!result)
 			{
 				removeFromPending(token);
-				return res.status(500).send({ error: 'Failed to add user to database, try signing up again.' });
+				return res.status(500).send({ message: 'Failed to add user to database, try signing up again.' });
 			}
 
 			const username = user.username;
@@ -73,7 +73,7 @@ export async function signupRoutes(app: FastifyInstance) {
 			// Does the front need UUID anymore?
 			res.status(200).send({ token: jwtoken, user: { username, uuid } });
 		} catch (error) {
-			res.status(500).send({ error: 'Failed validating user e-mail.' });
+			res.status(500).send({ message: 'Failed validating user e-mail.' });
 		}
 	})
 };

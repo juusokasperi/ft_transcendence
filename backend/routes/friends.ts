@@ -10,10 +10,10 @@ export async function friendsRoutes(app: FastifyInstance) {
 			const uuid = req.user!.uuid;
 			const results = getFriends(uuid);
 			if (!results)
-				return res.status(500).send({ error: 'Failed to get friends' });
+				return res.status(500).send({ message: 'Failed to get friends' });
 			return res.status(200).send(results);
 		} catch (error) {
-			return res.status(500).send({ error: 'Failed to get friends' });
+			return res.status(500).send({ message: 'Failed to get friends' });
 		}
 	});
 
@@ -23,10 +23,10 @@ export async function friendsRoutes(app: FastifyInstance) {
 			const uuid = req.user!.uuid;
 			const results = getPendingFriendRequestsReceived(uuid);
 			if (!results)
-				return res.status(500).send({ error: 'Failed to get pending friends' });
+				return res.status(500).send({ message: 'Failed to get pending friends' });
 			return res.status(200).send(results);
 		} catch (error) {
-			return res.status(500).send({ error: 'Failed to get pending friends' });
+			return res.status(500).send({ message: 'Failed to get pending friends' });
 		}
 	});
 
@@ -36,10 +36,10 @@ export async function friendsRoutes(app: FastifyInstance) {
 			const uuid = req.user!.uuid;
 			const results = getPendingFriendRequestsSent(uuid);
 			if (!results)
-				return res.status(500).send({ error: 'Failed to get pending friends' });
+				return res.status(500).send({ message: 'Failed to get pending friends' });
 			return res.status(200).send(results);
 		} catch (error) {
-			return res.status(500).send({ error: 'Failed to get pending friends' });
+			return res.status(500).send({ message: 'Failed to get pending friends' });
 		}
 	});
 
@@ -50,13 +50,13 @@ export async function friendsRoutes(app: FastifyInstance) {
 			const { senderUuid } = req.params as { senderUuid: string };
 			const { accept } = req.body as { accept: boolean };
 			if (typeof accept !== 'boolean')
-				return res.status(400).send({ error: 'Missing \'accept\' boolean from request body' });
+				return res.status(400).send({ message: 'Missing \'accept\' boolean from request body' });
 			const result = respondToFriendReq(recipientUuid, senderUuid, accept);
 			if (!result)
-				return res.status(400).send({ error: 'No pending request found.' });
+				return res.status(400).send({ message: 'No pending request found.' });
 			res.status(200).send();
 		} catch (error) {
-			return res.status(500).send({ error: 'Failed to respond to friend request' });
+			return res.status(500).send({ message: 'Failed to respond to friend request' });
 		}
 	})
 
@@ -68,15 +68,15 @@ export async function friendsRoutes(app: FastifyInstance) {
 
 			const userResult = getUser(user2Identifier);
 			if (!userResult)
-				return res.status(400).send({ error: 'Target of friend request not existing.' });
+				return res.status(400).send({ message: 'Target of friend request not existing.' });
 
 			const user2Uuid = userResult.uuid;
 			const result = addFriend(user1Uuid, user2Uuid);
 			if (!result)
-				return res.status(400).send({ error: 'Already friends or request pending' });
+				return res.status(400).send({ message: 'Already friends or request pending' });
 			res.status(201).send();
 		} catch (error) {
-			return res.status(500).send({ error: 'Failed to send friend request' });
+			return res.status(500).send({ message: 'Failed to send friend request' });
 		}
 	});
 
@@ -87,10 +87,10 @@ export async function friendsRoutes(app: FastifyInstance) {
 			const user1Uuid = req.user!.uuid;
 			const result = deleteFriend(user1Uuid, user2Uuid);
 			if (!result)
-				return res.status(400).send({ error: 'No friendship found with supplied UUIDs.' });
+				return res.status(400).send({ message: 'No friendship found with supplied UUIDs.' });
 			res.status(204).send();
 		} catch (error ) {
-			return res.status(500).send({ error: 'Failed to delete friendship' });
+			return res.status(500).send({ message: 'Failed to delete friendship' });
 		}
 	});
 };

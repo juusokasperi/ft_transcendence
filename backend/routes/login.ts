@@ -15,11 +15,11 @@ export async function loginRoutes(app: FastifyInstance) {
 
 			const userInDb = getUserByEmail(email);
 			if (!userInDb)
-				return (res.status(400).send({ error: 'Invalid credentials' }));
+				return (res.status(400).send({ message: 'Invalid credentials' }));
 			const normalizedPassword = password.normalize("NFKC");
  			const isValidPassword = await bcrypt.compare(normalizedPassword, userInDb.passwordHash || '');
 			if (!isValidPassword)
-				return (res.status(400).send({ error: 'Invalid credentials' }));
+				return (res.status(400).send({ message: 'Invalid credentials' }));
 
 			const userForToken = {
 				username: userInDb.username,
@@ -31,7 +31,7 @@ export async function loginRoutes(app: FastifyInstance) {
 			// Does the front need UUID anymore?
 			res.status(200).send({ token, user: { username: userInDb.username, uuid: userInDb.uuid, avatar: userInDb.avatar } });
 		} catch (error) {
-			res.status(500).send({ error: 'Failed to fetch login info from database.' });
+			res.status(500).send({ message: 'Failed to fetch login info from database.' });
 		}
 	});
 };
