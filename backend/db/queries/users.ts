@@ -19,6 +19,23 @@ export function getUserByUuid(uuid:string): User | undefined {
 	};
 };
 
+export function getUserByUsernameOrEmail(username: string, email: string): User | undefined {
+	const user = db.prepare('SELECT * FROM Users where username = ? OR email = ?').get(username, email) as UserDb | null;
+	if (!user)
+		return undefined;
+	return {
+		uuid: user.uuid,
+		username: user.username,
+		email: user.email,
+		passwordHash: user.password_hash,
+		tfa: user.tfa,
+		avatar: user.avatar,
+		ranking: user.ranking,
+		createdAt: user.created_at,
+		googleId: user.google_id
+	};
+}
+
 export function getUserByUsername(username: string): User | undefined {
 	const user = db.prepare('SELECT * FROM Users where username = ?').get(username) as UserDb | null;
 	if (!user)
@@ -166,14 +183,13 @@ export function getUserStats(uuid?: string): UserStats[] | UserStats | null {
 		return {
 			username: result.username,
 			uuid: result.uuid,
-			email: result.email,
 			avatar: result.avatar,
 			ranking: result.ranking,
 			createdAt: result.created_at,
 			wins: result.wins,
 			losses: result.losses,
 			totalGames: result.total_games
-		};
+		} as UserStats;
 	}
 
 	// Otherwise, get all user stats
@@ -187,12 +203,11 @@ export function getUserStats(uuid?: string): UserStats[] | UserStats | null {
 	return results.map(dbUser => ({
 		username: dbUser.username,
 		uuid: dbUser.uuid,
-		email: dbUser.email,
 		avatar: dbUser.avatar,
 		ranking: dbUser.ranking,
 		createdAt: dbUser.created_at,
 		wins: dbUser.wins,
 		losses: dbUser.losses,
 		totalGames: dbUser.total_games
-	}));
+	})) as UserStats[];
 };

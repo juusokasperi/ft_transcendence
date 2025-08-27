@@ -8,6 +8,7 @@ import { userRoutes } from './routes/users.ts';
 import { loginRoutes } from './routes/login.ts';
 import { signupRoutes } from './routes/signup.ts';
 import { friendsRoutes } from './routes/friends.ts';
+import { resetPasswordRoutes } from './routes/resetPassword.ts';
 import { runMigrations } from './db/migrations.ts';
 import './types/types.ts';
 
@@ -39,6 +40,7 @@ app.register(userRoutes, { prefix: '/api/users' });
 app.register(friendsRoutes, { prefix: '/api/friends' });
 app.register(loginRoutes, { prefix: '/api/login' });
 app.register(signupRoutes, { prefix: '/api/signup' });
+app.register(resetPasswordRoutes, { prefix: '/api/reset-password'})
 
 app.listen({ port: PORT }, function(err, address) {
 	if (err) {

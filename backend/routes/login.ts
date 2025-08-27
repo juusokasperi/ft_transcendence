@@ -16,7 +16,8 @@ export async function loginRoutes(app: FastifyInstance) {
 			const userInDb = getUserByEmail(email);
 			if (!userInDb)
 				return (res.status(400).send({ error: 'Invalid credentials' }));
- 			const isValidPassword = await bcrypt.compare(password, userInDb.passwordHash || '');
+			const normalizedPassword = password.normalize("NFKC");
+ 			const isValidPassword = await bcrypt.compare(normalizedPassword, userInDb.passwordHash || '');
 			if (!isValidPassword)
 				return (res.status(400).send({ error: 'Invalid credentials' }));
 
@@ -25,7 +26,9 @@ export async function loginRoutes(app: FastifyInstance) {
 				uuid: userInDb.uuid
 			};
 
-			const token = jwt.sign(userForToken, SECRET, { expiresIn: '1h' });
+			const token = jwt.sign(userForToken, SECRET, { expiresIn: '4h' });
+
+			// Does the front need UUID anymore?
 			res.status(200).send({ token, user: { username: userInDb.username, uuid: userInDb.uuid, avatar: userInDb.avatar } });
 		} catch (error) {
 			res.status(500).send({ error: 'Failed to fetch login info from database.' });

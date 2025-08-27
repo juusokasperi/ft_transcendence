@@ -3,7 +3,7 @@ import fs from 'fs';
 import fsAsync from 'fs/promises';
 import path from 'path';
 import bcrypt from 'bcrypt';
-import { getUserStats, getUserByUuid, deleteUser, updateUsername, updatePassword, updateAvatar, getUserByUsername } from '../db/queries/users.ts';
+import { getUserStats, getUserByUuid, deleteUser, updateUsername, updatePassword, updateAvatar, getUserByUsername, getUserByEmail } from '../db/queries/users.ts';
 import { authPreHandler, tokenUuidCheck } from '../hooks/auth.ts';
 
 /*
@@ -180,7 +180,7 @@ export async function userRoutes(app: FastifyInstance) {
 		} catch (error) {
 			res.status(500).send({ error: 'Failed to delete avatar' });
 		}
-	})
+	});
 };
 
 const getExtensionFromMime = (mimetype: string): string => {

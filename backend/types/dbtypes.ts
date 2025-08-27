@@ -44,4 +44,13 @@ export interface PublicUserDb {
 	avatar: string | null;
 	ranking: number;
 	created_at: string;
-}
+};
+
+export interface PendingUserDb {
+	username: string;
+	email: string;
+	password_hash: string;
+	confirmation_token: string;
+	expires_at: string;
+	created_at: string;
+};

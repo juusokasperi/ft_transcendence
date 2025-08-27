@@ -43,11 +43,13 @@ export function addGame(
 
 		for (const playerId of team1Players) {
 			const result = addGamePlayerHelper(gameId, playerId, 1);
-			if (!result) throw new Error(`Failed to add team 1 player: ${playerId}`);
+			if (!result)
+				throw new Error(`Failed to add team 1 player: ${playerId}`);
 		}
 		for (const playerId of team2Players) {
 			const result = addGamePlayerHelper(gameId, playerId, 2);
-			if (!result) throw new Error(`Failed to add team 2 player: ${playerId}`);
+			if (!result)
+				throw new Error(`Failed to add team 2 player: ${playerId}`);
 		}
 
 		return gameId;
