@@ -71,7 +71,8 @@ describe('User Functions', () => {
 	});
 
 	it('Delete user', async () => {
-		const { addUser, getUserStats, deleteUser } = await import('../db/queries/users.ts');
+		const { addUser, getUserStats } = await import('../db/queries/users.ts');
+		const { deleteUser } = await import('../db/queries/userDelete.ts');
 		const playerId = 'uuid-1';
 		const user = addUser(playerId, 'Joe', 'hashPass', 'test@mail.com');
 		expect(user).toBeTruthy();
