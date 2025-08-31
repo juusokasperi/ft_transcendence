@@ -4,6 +4,7 @@ import { useAppContext } from "../context/AppContext";
 import type { User } from "../types";
 import { toast } from "react-hot-toast";
 import type { AxiosError } from "axios";
+import type { AxiosResponse } from "axios";
 
 const Registration: React.FC = () => {
   const { axios, login, navigate } = useAppContext();
@@ -30,13 +31,16 @@ const Registration: React.FC = () => {
       }
 
       // if server doesn't return token, fall back to showing success and asking user to login
-      toast.success("Registration successful! Please log in.");
+      console.log(res.data.success)
+      const axiosRes =  res as AxiosResponse<{success?:string}>;
+      const msg = axiosRes.data.success;
+      toast.success(String(msg));
       navigate("/login");
     } catch (err: any) {
-      const axiosErr = err as AxiosError<{error?:string}>;
-      const message =
-        axiosErr?.response?.data?.error || "Signup failed";
-      toast.error(String(message));
+      const axiosErr = err as AxiosError<{message?:string}>;
+      const msg = axiosErr?.response?.data?.message;
+      console.log(axiosErr)
+      toast.error(String(msg));
     } finally {
       setLoading(false);
     }

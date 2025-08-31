@@ -29,11 +29,10 @@ const Login: React.FC = () => {
       toast.success("Logged in");
       navigate("/"); // redirect to home
     } catch (err: any) {
-      const axiosErr = err as AxiosError<{error?:string}>;
-      const message =
-        axiosErr?.response?.data?.error;
-        console.log(err);
-      toast.error(String(message));
+      const axiosErr = err as AxiosError<{message?:string}>;
+      const msg = axiosErr?.response?.data?.message;
+      console.log(msg);
+      toast.error(String(msg));
     } finally {
       setLoading(false);
     }
