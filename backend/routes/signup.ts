@@ -6,12 +6,14 @@ import { SECRET } from '../utils/config.ts';
 import jwt from 'jsonwebtoken';
 import { v4 as uuidv4 } from 'uuid';
 import { sendConfirmationEmail } from '../utils/nodemailer/index.ts';
-import { validatePassword } from '../utils/validation/validateCredentials.ts';
+import { validationHook, normalizePassword } from '../hooks/auth.ts';
+import { validateSignup } from '../utils/validate.ts';
 
-// Add a preValidation hook using 'zod' for username/password validness. TODO
 export async function signupRoutes(app: FastifyInstance) {
 	// Post a new user and logs them in
-	app.post('/', async (req: FastifyRequest, res: FastifyReply) => {
+	app.post('/',
+		{ preValidation: [normalizePassword, validationHook(validateSignup)] },
+		async (req: FastifyRequest, res: FastifyReply) => {
 		try {
 			deleteExpiredUsers();
 			const { username, password, email, googleAuth } =
@@ -28,12 +30,8 @@ export async function signupRoutes(app: FastifyInstance) {
 			}
 			if (!password)
 				return res.status(400).send({ message: 'Missing password field' });
-			const normalizedPassword = password.normalize("NFKC");
-			const passwordNotValid = validatePassword(normalizedPassword);
-			if (passwordNotValid)
-				return res.status(400).send({ message: passwordNotValid });
 
-			const passwordHash = await bcrypt.hash(normalizedPassword, 10);
+			const passwordHash = await bcrypt.hash(password, 10);
 			const confirmationToken = crypto.randomBytes(32).toString('hex');
 			const result = addUserToPending(username, email, passwordHash,  confirmationToken);
 			if (!result)
