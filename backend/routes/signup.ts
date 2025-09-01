@@ -6,13 +6,13 @@ import { SECRET } from '../utils/config.ts';
 import jwt from 'jsonwebtoken';
 import { v4 as uuidv4 } from 'uuid';
 import { sendConfirmationEmail } from '../utils/nodemailer/index.ts';
-import { validationHook, normalizePassword } from '../hooks/auth.ts';
+import { validationHook, normalizeCredentials } from '../hooks/auth.ts';
 import { validateSignup } from '../utils/validate.ts';
 
 export async function signupRoutes(app: FastifyInstance) {
 	// Post a new user and logs them in
 	app.post('/',
-		{ preValidation: [normalizePassword, validationHook(validateSignup)] },
+		{ preValidation: [normalizeCredentials, validationHook(validateSignup)] },
 		async (req: FastifyRequest, res: FastifyReply) => {
 		try {
 			deleteExpiredUsers();
@@ -73,5 +73,5 @@ export async function signupRoutes(app: FastifyInstance) {
 		} catch (error) {
 			res.status(500).send({ message: 'Failed validating user e-mail.' });
 		}
-	})
+	});
 };

@@ -4,10 +4,11 @@ import fsAsync from 'fs/promises';
 import path from 'path';
 import bcrypt from 'bcrypt';
 import crypto from 'crypto';
-import { getUserStats, getUserByUuid, updateUsername, updatePassword, updateAvatar, getUserByUsername, getUserByEmail } from '../db/queries/users.ts';
+import { getUserStats, getUserByUuid, updateUsername, updatePassword, updateAvatar, getUserByUsername } from '../db/queries/users.ts';
 import { deleteUser, markUserForDelete, removeTokenFromDelete, findUserToDeleteAndClear } from '../db/queries/userDelete.ts';
 import { authPreHandler, tokenUuidCheck } from '../hooks/auth.ts';
 import { sendDeleteEmail } from '../utils/nodemailer/index.ts';
+import { normalizeCredentials } from '../hooks/auth.ts';
 
 /*
 	TO DO:
@@ -15,7 +16,6 @@ import { sendDeleteEmail } from '../utils/nodemailer/index.ts';
 	// Add routes for 2 Factor Auth? Which will also require some additional
 	// fields to User table in database. At least one for the secret, maybe one for backup codes?
 
-	// Add username, email & password validation, zod?
 */
 
 export async function userRoutes(app: FastifyInstance) {
@@ -43,7 +43,9 @@ export async function userRoutes(app: FastifyInstance) {
 	});
 
 	// Sends a email confirmation for user deletion
-	app.delete('/me', { preHandler: [authPreHandler, tokenUuidCheck] }, async (req: FastifyRequest, res: FastifyReply) => {
+	app.delete('/me',
+		{ preHandler: [authPreHandler, tokenUuidCheck] },
+		async (req: FastifyRequest, res: FastifyReply) => {
 		try {
 			const uuid = req.user!.uuid;
 			const user = getUserByUuid(uuid);
@@ -65,7 +67,9 @@ export async function userRoutes(app: FastifyInstance) {
 	});
 
 	// Delete user with a valid delete token
-	app.post('/me/confirm-delete/:token', { preHandler: [authPreHandler, tokenUuidCheck] }, async (req: FastifyRequest, res: FastifyReply) => {
+	app.post('/me/confirm-delete/:token',
+		{ preHandler: [authPreHandler, tokenUuidCheck] },
+		async (req: FastifyRequest, res: FastifyReply) => {
 		try {
 			const { token } = req.params as { token: string };
 			const uuid = req.user!.uuid;
@@ -79,11 +83,13 @@ export async function userRoutes(app: FastifyInstance) {
 		} catch (error) {
 			res.status(500).send({ message: 'Failed to delete user' });
 		}
-	})
+	});
 
 	// Update username, requires token and { newUsername } as request body
 	// Add validation for username
-	app.patch('/me', { preHandler: [authPreHandler, tokenUuidCheck] }, async (req: FastifyRequest, res: FastifyReply) => {
+	app.patch('/me',
+		{ preValidation: [normalizeCredentials], preHandler: [authPreHandler, tokenUuidCheck] },
+		async (req: FastifyRequest, res: FastifyReply) => {
 		try {
 			const { newUsername } = req.body as { newUsername: string; };
 			const uuid = req.user!.uuid;
@@ -93,7 +99,7 @@ export async function userRoutes(app: FastifyInstance) {
 				return res.status(404).send({ message: 'User not found' });
 
 			const newUser = getUserByUsername(newUsername);
-			if (newUser)
+			if (newUser && newUser.uuid !== uuid)
 				return res.status(400).send({ message: 'Username already in use' });
 
 			const updateResult = updateUsername(uuid, newUsername);
@@ -107,7 +113,9 @@ export async function userRoutes(app: FastifyInstance) {
 	});
 
 	// Update password, requires token and { newPassword, currentPassword } as request body
-	app.patch('/me/password', { preHandler: [authPreHandler, tokenUuidCheck] }, async (req: FastifyRequest, res: FastifyReply) => {
+	app.patch('/me/password',
+		{ preValidation: [normalizeCredentials], preHandler: [authPreHandler, tokenUuidCheck] },
+		async (req: FastifyRequest, res: FastifyReply) => {
 		try {
 			const { newPassword, currentPassword } = req.body as { newPassword: string; currentPassword: string; };
 			const uuid = req.user!.uuid;
@@ -130,7 +138,9 @@ export async function userRoutes(app: FastifyInstance) {
 	});
 
 	// Change avatar picture, requires token and multipart form with { avatar } file
-	app.patch('/me/avatar', { preHandler: [authPreHandler, tokenUuidCheck] }, async (req: FastifyRequest, res: FastifyReply) => {
+	app.patch('/me/avatar',
+		{ preHandler: [authPreHandler, tokenUuidCheck] },
+		async (req: FastifyRequest, res: FastifyReply) => {
 		try {
 			const uuid = req.user!.uuid;
 
@@ -185,7 +195,9 @@ export async function userRoutes(app: FastifyInstance) {
 	});
 
 	// Delete avatar picture, requires token
-	app.delete('/me/avatar', { preHandler: [authPreHandler, tokenUuidCheck] }, async (req: FastifyRequest, res: FastifyReply) => {
+	app.delete('/me/avatar',
+		{ preHandler: [authPreHandler, tokenUuidCheck] },
+		async (req: FastifyRequest, res: FastifyReply) => {
 		try {
 			const uuid = req.user!.uuid;
 

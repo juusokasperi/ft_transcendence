@@ -1,7 +1,8 @@
 import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { deleteFriend, addFriend, respondToFriendReq, getFriends, getPendingFriendRequestsSent, getPendingFriendRequestsReceived } from '../db/queries/friends.ts';
 import { getUser } from '../db/queries/users.ts';
-import { authPreHandler, tokenUuidCheck } from '../hooks/auth.ts';
+import { authPreHandler, tokenUuidCheck, validationHook } from '../hooks/auth.ts';
+import { validateFriendResponse } from '../utils/validate.ts';
 
 export async function friendsRoutes(app: FastifyInstance) {
 	// Get all (accepted) friends of user
@@ -44,13 +45,13 @@ export async function friendsRoutes(app: FastifyInstance) {
 	});
 
 	// Accept or decline a friend request
-	app.patch('/respond/:senderUuid', { preHandler: [authPreHandler, tokenUuidCheck] }, async (req: FastifyRequest, res: FastifyReply) => {
+	app.patch('/respond/:senderUuid',
+		{ preValidation: [validationHook(validateFriendResponse)], preHandler: [authPreHandler, tokenUuidCheck] },
+		async (req: FastifyRequest, res: FastifyReply) => {
 		try {
 			const recipientUuid = req.user!.uuid;
 			const { senderUuid } = req.params as { senderUuid: string };
 			const { accept } = req.body as { accept: boolean };
-			if (typeof accept !== 'boolean')
-				return res.status(400).send({ message: 'Missing \'accept\' boolean from request body' });
 			const result = respondToFriendReq(recipientUuid, senderUuid, accept);
 			if (!result)
 				return res.status(400).send({ message: 'No pending request found.' });
@@ -58,7 +59,7 @@ export async function friendsRoutes(app: FastifyInstance) {
 		} catch (error) {
 			return res.status(500).send({ message: 'Failed to respond to friend request' });
 		}
-	})
+	});
 
 	// Send a friend request
 	app.post('/:user2Identifier', { preHandler: [authPreHandler, tokenUuidCheck] }, async (req: FastifyRequest, res: FastifyReply) => {

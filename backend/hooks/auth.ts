@@ -25,7 +25,8 @@ export function tokenUuidCheck(req: FastifyRequest, res: FastifyReply, done: Fun
 	done();
 };
 
-export function normalizePassword(req: FastifyRequest, res: FastifyReply, done: Function) {
+// Normalizes credentials if present in request
+export function normalizeCredentials(req: FastifyRequest, res: FastifyReply, done: Function) {
 	if (typeof req.body !== 'object' || req.body === null)
 		done();
 
@@ -34,15 +35,20 @@ export function normalizePassword(req: FastifyRequest, res: FastifyReply, done: 
 		const val = body[key];
 		if (typeof val === 'string')
 		{
-			const nw = val.normalize('NFKC');
-			body[key] = nw.length > 0 ? nw : undefined;
+			const normalizedVal = val.normalize('NFKC');
+			body[key] = normalizedVal.length > 0 ? normalizedVal : undefined;
 		}
 	};
+	normalize('username');
+	normalize('newUsername');
 	normalize('password');
 	normalize('newPassword');
+	normalize('currentPassword');
+	normalize('email');
 	done();
 }
 
+// Validates request body
 export function validationHook(validator) {
 	return async function(req: FastifyRequest, res: FastifyReply) {
 		const check = validator(req.body);

@@ -4,8 +4,9 @@ import { clearResetTokensForId, createResetToken, clearExpiredTokens, findAndCle
 import bcrypt from 'bcrypt';
 import crypto from 'crypto';
 import { sendResetPasswordEmail } from '../utils/nodemailer/index.ts';
+import { validationHook, normalizeCredentials } from '../hooks/auth.ts';
+import { validateChangePassword } from '../utils/validate.ts';
 
-// Add a preValidation hook using 'zod' for username/password validness. TODO
 export async function resetPasswordRoutes(app: FastifyInstance) {
 	// Request a password reset email
 	app.post('/', async (req: FastifyRequest, res: FastifyReply) => {
@@ -38,7 +39,9 @@ export async function resetPasswordRoutes(app: FastifyInstance) {
 		}
 	});
 
-	app.post('/:resetToken', async (req: FastifyRequest, res: FastifyReply) => {
+	app.post('/:resetToken',
+		{ preValidation: [normalizeCredentials, validationHook(validateChangePassword)] },
+		async (req: FastifyRequest, res: FastifyReply) => {
 		try {
 			const { resetToken } = req.params as { resetToken: string };
 			const { newPassword } = req.body as { newPassword: string };

@@ -68,7 +68,13 @@ export const schemas = {
 			max: 39,
 			custom: usernameValidator
 		}
-	}
+	},
+
+	respondToFriendRequest: {
+		accept: {
+			type: "boolean"
+		}
+	},
 };
 
 export const validator = v;
@@ -76,3 +82,4 @@ export const validateSignup = v.compile(schemas.signup);
 export const validateLogin = v.compile(schemas.login);
 export const validateChangePassword = v.compile(schemas.changePassword);
 export const validateChangeUsername = v.compile(schemas.changeUsername);
+export const validateFriendResponse = v.compile(schemas.respondToFriendRequest);

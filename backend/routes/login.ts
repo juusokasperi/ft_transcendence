@@ -3,13 +3,14 @@ import { getUserByEmail } from '../db/queries/users.ts';
 import bcrypt from 'bcrypt';
 import { SECRET } from '../utils/config.ts';
 import jwt from 'jsonwebtoken';
+import { normalizeCredentials } from '../hooks/auth.ts';
 
 // TODO:
-// preValidation hook using 'zod' for username/password validness
 // Extra checks and route for 2FA
-
 export async function loginRoutes(app: FastifyInstance) {
-	app.post('/', async (req: FastifyRequest, res: FastifyReply) => {
+	app.post('/',
+		{ preValidation: [normalizeCredentials] },
+		async (req: FastifyRequest, res: FastifyReply) => {
 		try {
 			const { email, password } = req.body as { email: string; password:string };
 
