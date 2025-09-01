@@ -1,8 +1,8 @@
 import Database from 'better-sqlite3';
 import type { Database as DatabaseType } from 'better-sqlite3';
-import { DATABASE_URL } from '../utils/config.ts';
+import { DATABASE_PATH } from '../utils/config.ts';
 
-const db: DatabaseType = new Database(DATABASE_URL);
+const db: DatabaseType = new Database(DATABASE_PATH);
 
 db.pragma('journal_mode = WAL');		// Write-Ahead Logging Mode, allows reads while writes happen
 db.pragma('synchronous = NORMAL');		// Doesn't wait for OS confirm about writes

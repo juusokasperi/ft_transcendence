@@ -5,7 +5,7 @@ Uses `better-sqlite3` to interact with the SQLite database. Migrations are handl
 ## Usage
 1. Install packages `npm install`
 2. Run `npm run seed:secret`
-3. Add `FRONTEND_URL` to `.env.` (f.ex. `FRONTEND_URL=localhost:5173`)
+3. Add `FRONTEND_URL` to `.env.` (see `.env.example`)
 4. Start server: `npm run dev`
 	- On startup, server will run migrations automatically.
 5. To rollback a migration, `npm run migration:down`
