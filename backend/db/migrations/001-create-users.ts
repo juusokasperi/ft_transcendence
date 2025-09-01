@@ -11,14 +11,16 @@ export async function up(db: Database) {
 	db.exec(`
 	CREATE TABLE IF NOT EXISTS Users (
 	uuid TEXT PRIMARY KEY NOT NULL UNIQUE,
-	username TEXT NOT NULL UNIQUE,
-	email TEXT NOT NULL UNIQUE,
+	username TEXT NOT NULL COLLATE NOCASE,
+	email TEXT NOT NULL COLLATE NOCASE,
 	password_hash TEXT,
 	tfa	BOOLEAN NOT NULL DEFAULT FALSE,
 	avatar TEXT,
 	ranking INTEGER NOT NULL DEFAULT 1000,
 	created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
 	google_id TEXT UNIQUE,
+	UNIQUE(username),
+	UNIQUE(email),
 	CHECK (password_hash IS NOT NULL OR google_id IS NOT NULL)
 	);`);
 }
