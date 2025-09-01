@@ -7,9 +7,10 @@
   "type": "module",
   "main": "index.js",
   "scripts": {
-    "dev": "nodemon --watch ./ --ext ts --exec \"node --loader ts-node/esm\" index.ts",
+    "dev": "mkdir -p data/ && nodemon --watch ./ --ext ts --exec \"node --loader ts-node/esm\" index.ts",
     "migration:down": "ts-node utils/rollback.ts",
-    "test": "vitest"
+    "test": "vitest",
+    "db:reset": "rm -rf data/ && rm ./db/migrations/.umzug.json"
   },
   "devDependencies": {
     "@types/bcrypt": "^6.0.0",
