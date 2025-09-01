@@ -3,11 +3,14 @@
 Uses `better-sqlite3` to interact with the SQLite database. Migrations are handled with `Umzug`.
 
 ## Usage
-1. Create `.env` file (see `.env.example`)
-2. Install packages `npm install`
-3. Start server: `npm run dev`
+1. Install packages `npm install`
+2. Run `npm run seed:secret`
+3. Add `FRONTEND_URL` to `.env.` (f.ex. `FRONTEND_URL=localhost:5173`)
+4. Start server: `npm run dev`
 	- On startup, server will run migrations automatically.
-4. To rollback a migration, `npm run migration:down`
+5. To rollback a migration, `npm run migration:down`
+6. To clear data from database, run `npm run db:reset`
+7. To run tests, `npm run test`
 
 ## Routes
 

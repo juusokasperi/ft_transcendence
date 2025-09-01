@@ -8,9 +8,10 @@
   "main": "index.js",
   "scripts": {
     "dev": "mkdir -p data/ && nodemon --watch ./ --ext ts --exec \"node --loader ts-node/esm\" index.ts",
-    "migration:down": "ts-node utils/rollback.ts",
+    "migration:down": "npx tsx utils/rollback.ts",
     "test": "vitest",
-    "db:reset": "rm -rf data/ && rm ./db/migrations/.umzug.json"
+    "db:reset": "rm -rf data/ && rm -f ./db/migrations/.umzug.json",
+    "seed:secret": "npx tsx utils/seedSecrets.ts"
   },
   "devDependencies": {
     "@types/bcrypt": "^6.0.0",
