@@ -8,7 +8,7 @@
   "main": "index.js",
   "scripts": {
     "ts-node": "ts-node",
-    "dev": "mkdir -p data/ && nodemon --watch ./ --ext ts --exec \"node --loader ts-node/esm\" index.ts",
+    "dev": "tsx watch index.ts",
     "prisma:migrate": "prisma migrate dev --name",
     "prisma:reset": "rm -f ./sqlite_data.db && prisma migrate dev reset",
     "prisma:generate": "prisma generate",
@@ -20,13 +20,13 @@
   "devDependencies": {
     "@types/bcrypt": "^6.0.0",
     "@types/better-sqlite3": "^7.6.13",
-    "@types/node": "^24.2.1",
+    "@types/node": "^24.3.0",
     "@types/nodemailer": "^7.0.1",
     "@types/umzug": "^2.3.9",
     "@types/uuid": "^10.0.0",
-    "nodemon": "^3.1.10",
     "prisma": "^6.14.0",
     "ts-node": "^10.9.2",
+    "tsx": "^4.20.5",
     "typescript": "^5.9.2",
     "vitest": "^3.2.4"
   },
@@ -44,5 +44,8 @@
     "nodemailer": "^7.0.5",
     "umzug": "^3.8.2",
     "uuid": "^11.1.0"
+  },
+  "engines": {
+    "node": ">=20.19.0 || >=22.12.0"
   }
 }
