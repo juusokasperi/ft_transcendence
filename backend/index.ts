@@ -3,7 +3,7 @@ import cors from '@fastify/cors';
 import fastifyMultipart from '@fastify/multipart';
 import fastifyStatic from '@fastify/static';
 import path from 'path';
-import { PORT } from './utils/config.ts';
+import { UPLOAD_DIR, BACKEND_HOST, BACKEND_PORT, FRONTEND_URL, NGINX_PORT } from './utils/config.ts';
 import { userRoutes } from './routes/users.ts';
 import { loginRoutes } from './routes/login.ts';
 import { signupRoutes } from './routes/signup.ts';
@@ -18,8 +18,17 @@ const app = fastify({
 
 // replace origin: true with origin: ['frontend-address'] !!!!!!
 await app.register(cors, {
-	origin: true,
-	methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH']
+	origin: (origin, cb) => {
+	// Allow direct FE and Nginx FE
+	const allowed = [
+	  FRONTEND_URL,
+	  'http://localhost:' + (NGINX_PORT)
+	];
+	if (!origin || allowed.includes(origin)) return cb(null, true);
+	return cb(null, false);
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH']
 });
 
 app.register(fastifyMultipart, {
@@ -30,7 +39,7 @@ app.register(fastifyMultipart, {
 }); // For avatar uploads
 
 app.register(fastifyStatic, {
-	root: path.join(process.cwd(), 'uploads'),
+	root: UPLOAD_DIR,
 	prefix: '/uploads/',
 }); // Serving the avatar images to frontend via http://<backend-url>/uploads/<filename>
 
@@ -42,7 +51,7 @@ app.register(loginRoutes, { prefix: '/api/login' });
 app.register(signupRoutes, { prefix: '/api/signup' });
 app.register(resetPasswordRoutes, { prefix: '/api/reset-password'})
 
-app.listen({ port: PORT }, function(err, address) {
+app.listen({ host: BACKEND_HOST, port: BACKEND_PORT }, function(err, address) {
 	if (err) {
 		app.log.error(err);
 		process.exit(1);
