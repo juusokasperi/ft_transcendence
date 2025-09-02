@@ -75,6 +75,15 @@ export const schemas = {
 			type: "boolean"
 		}
 	},
+
+	addFriend: {
+		username: {
+			type: "string",
+			min: 1,
+			max: 39,
+			custom: usernameValidator
+		}
+	}
 };
 
 export const validator = v;
@@ -83,3 +92,4 @@ export const validateLogin = v.compile(schemas.login);
 export const validateChangePassword = v.compile(schemas.changePassword);
 export const validateChangeUsername = v.compile(schemas.changeUsername);
 export const validateFriendResponse = v.compile(schemas.respondToFriendRequest);
+export const validateFriendAdd = v.compile(schemas.addFriend);

@@ -2,7 +2,7 @@ import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { deleteFriend, addFriend, respondToFriendReq, getFriends, getPendingFriendRequestsSent, getPendingFriendRequestsReceived } from '../db/queries/friends.ts';
 import { getUser } from '../db/queries/users.ts';
 import { authPreHandler, tokenUuidCheck, validationHook } from '../hooks/auth.ts';
-import { validateFriendResponse } from '../utils/validate.ts';
+import { validateFriendResponse, validateFriendAdd } from '../utils/validate.ts';
 
 export async function friendsRoutes(app: FastifyInstance) {
 	// Get all (accepted) friends of user
@@ -62,10 +62,10 @@ export async function friendsRoutes(app: FastifyInstance) {
 	});
 
 	// Send a friend request
-	app.post('/:user2Identifier', { preHandler: [authPreHandler, tokenUuidCheck] }, async (req: FastifyRequest, res: FastifyReply) => {
+	app.post('/', { preValidation: [validationHook(validateFriendAdd)], preHandler: [authPreHandler, tokenUuidCheck] }, async (req: FastifyRequest, res: FastifyReply) => {
 		try {
 			const user1Uuid = req.user!.uuid;
-			const { user2Identifier } = req.params as { user2Identifier: string };
+			const user2Identifier = (req.body as { username: string }).username;
 
 			const userResult = getUser(user2Identifier);
 			if (!userResult)
