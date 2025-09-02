@@ -6,13 +6,16 @@
 #    By: irychkov <irychkov@student.hive.fi>        +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2025/09/02 21:00:08 by irychkov          #+#    #+#              #
-#    Updated: 2025/09/03 01:15:55 by irychkov         ###   ########.fr        #
+#    Updated: 2025/09/03 01:32:20 by irychkov         ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
 NAME=transcendence
 
 all:
+	if [ ! -d "./backend/data/sqlite/uploads" ]; then \
+		mkdir -p ./backend/data/sqlite/uploads; \
+	fi
 	docker compose -p $(NAME) -f docker-compose.yml --env-file .env up --build
 
 down:
