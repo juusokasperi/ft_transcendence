@@ -1,37 +1,65 @@
+# Docker Compose configuration for DEV environment
 services:
   frontend:
-    build: ./client
-    container_name: frontend
+    build:
+      context: ./client
+      dockerfile: Dockerfile.dev
+      labels:
+        - project=transcendence
+      network: host  # to allow npm to download dependencies without proxy issues
+    container_name: dev_frontend
+    env_file: .env
     ports:
-      - "3001:3001"   # Vite dev server
+      - "${FRONTEND_PORT}:5173"   # direct access: http://localhost:5173
+    expose:
+      - "5173"                    # for nginx upstream
     volumes:
       - ./client:/app
       - /app/node_modules
-    environment:
-      - CHOKIDAR_USEPOLLING=true  # for live reload on windows/macOS
+    networks:
+      - devnet
 
   backend:
-    build: ./backend
-    container_name: backend
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.dev
+      labels:
+        - project=transcendence
+      network: host # to allow npm to download dependencies without proxy issues
+    container_name: dev_backend
+    env_file: .env
     ports:
-      - "5173:5173"  # Fastify dev server
+      - "${BACKEND_PORT}:3001"  # direct access: http://localhost:3001
+    expose:
+      - "3001"                   # for nginx upstream
     volumes:
       - ./backend:/app
       - /app/node_modules
-      - sqlite_data:/data   # volume for SQLite
-    environment:
-      - DATABASE_URL=/data/db.sqlite
+      - ./backend/data/sqlite:/data       # DATABASE_PATH points into /data
+      - ./backend/data/sqlite/uploads:/data/uploads # for user-uploaded files
+    networks:
+      - devnet
 
   nginx:
-    image: nginx:latest
-    container_name: nginx
+    build:
+      context: ./nginx
+      dockerfile: Dockerfile.dev
+      labels:
+        - project=transcendence
+    container_name: dev_nginx
+    env_file: .env
     ports:
-      - "80:80"
+      - "${NGINX_PORT}:80"
     volumes:
-      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
     depends_on:
       - frontend
       - backend
+    networks:
+      - devnet
 
-volumes:
-  sqlite_data:
+networks:
+  devnet:
+    driver: bridge
+    labels:
+      - project=transcendence
