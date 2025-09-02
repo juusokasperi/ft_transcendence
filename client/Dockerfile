@@ -1,0 +1,13 @@
+FROM node:lts-alpine3.22
+
+WORKDIR /app
+
+COPY package*.json ./
+
+RUN npm install --include=dev # "dev" dependencies for development
+
+COPY . .
+
+EXPOSE 3001
+
+CMD ["npm", "start"]
