@@ -22,7 +22,7 @@ jobs:
           node-version: 22.19.0
 
       - name: Install dependencies
-        run: npm install
+        run: npm install --include=dev 
 
       - name: Set up .env
         run: cp .env.example .env
