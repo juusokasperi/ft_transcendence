@@ -11,7 +11,7 @@
     "dev": "tsx watch index.ts",
     "migration:down": "npx tsx utils/rollback.ts",
     "test": "vitest",
-    "db:reset": "rm -rf data/ && rm -f ./db/migrations/.umzug.json",
+    "db:reset": "rm -rf data/",
     "seed:secret": "npx tsx utils/seedSecrets.ts"
   },
   "devDependencies": {
