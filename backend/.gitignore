@@ -1,7 +1,6 @@
 node_modules/
 .env
-/generated/prisma
 .DS_Store
 *.db*
 .umzug.json
-uploads/
+data/
