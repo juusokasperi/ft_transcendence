@@ -6,7 +6,7 @@
 #    By: irychkov <irychkov@student.hive.fi>        +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2025/09/02 21:00:08 by irychkov          #+#    #+#              #
-#    Updated: 2025/09/03 10:58:04 by irychkov         ###   ########.fr        #
+#    Updated: 2025/09/03 11:54:17 by irychkov         ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -19,6 +19,12 @@ all:
 		mkdir -p ./backend/data/sqlite/uploads; \
 	fi
 	docker compose -p $(NAME) -f docker-compose.yml --env-file .env up --build
+	
+detached:
+	if [ ! -d "./backend/data/sqlite/uploads" ]; then \
+		mkdir -p ./backend/data/sqlite/uploads; \
+	fi
+	docker compose -p $(NAME) -f docker-compose.yml --env-file .env up --build -d
 
 down:
 	docker compose -p $(NAME) -f docker-compose.yml down --remove-orphans
@@ -38,6 +44,7 @@ re: fclean all
 help:
 	@echo "Usage:"
 	@echo "  make                      # Build & start all services"
+	@echo "  make detached             # Build & start all services in detached mode"
 	@echo "  make all                  # Build & start all services"
 	@echo "  make down                 # Stop all services and remove containers"
 	@echo "  make fclean               # Stop and remove all services, volumes, images"
@@ -110,4 +117,4 @@ restart-%:
 	@echo "Unknown command: $@"
 	@$(MAKE) help
 
-.PHONY: all down fclean re ps logs-% sh-% bash-% stop restart restart-%
+.PHONY: all detached down fclean re ps logs-% sh-% bash-% stop restart restart-%
