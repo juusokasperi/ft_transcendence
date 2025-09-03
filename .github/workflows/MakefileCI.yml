@@ -26,7 +26,10 @@ jobs:
         uses: docker/setup-buildx-action@v3
 
       - name: Build all services
-        run: make detached
+        run: |
+          set +e
+          make detached
+          echo "BUILD_STATUS=$?" >> $GITHUB_ENV
 
       - name: Stop all services
         run: make down
@@ -37,7 +40,7 @@ jobs:
         continue-on-error: true
 
       - name: Comment on PR if CI fails
-        if: ${{ failure() && github.event_name == 'pull_request' }}
+        if: ${{ env.BUILD_STATUS != '0' && github.event_name == 'pull_request' }}
         uses: actions/github-script@v7
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
