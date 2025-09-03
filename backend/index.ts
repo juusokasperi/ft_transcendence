@@ -42,10 +42,7 @@ app.register(fastifyStatic, {
 	prefix: '/uploads/',
 }); // Serving the avatar images to frontend via http://<backend-url>/uploads/<filename>
 
-const fastifyHealthcheck = require('@fastify/healthcheck');
-await app.register(fastifyHealthcheck, {
-  healthcheckUrl: '/health'
-})
+app.get('/health', async () => ({ status: 'ok' }))
 
 await runMigrations();
 
