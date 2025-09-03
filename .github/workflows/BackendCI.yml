@@ -1,0 +1,31 @@
+name: Backend CI
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main, dev ]
+  pull_request:
+    branches: [ main, dev ]
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js 22.19.0 LTS
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22.19.0
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Run dev server and check health endpoint
+        run: |
+          nohup npm run dev > server.log 2>&1 &
+          sleep 10
+          curl -f http://localhost:3001/health || (cat server.log && exit 1)
