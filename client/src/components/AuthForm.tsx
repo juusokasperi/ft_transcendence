@@ -58,7 +58,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ type, onSubmit }) => {
         <div>
           <label htmlFor="username"  className="block mb-1 font-medium">Username</label>
           <input
-            id="usermame"
+            id="username"
             type="username"
             placeholder="Username"
             value={username}
