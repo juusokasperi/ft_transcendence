@@ -51,3 +51,6 @@ jobs:
               repo: context.repo.repo,
               body: "⚠️ CI failed. Please check the logs above to identify and fix the issues. ⚠️"
             })
+      - name: Fail the job if build failed
+        if: ${{ env.BUILD_STATUS != '0' }}
+        run: exit 1
