@@ -26,9 +26,38 @@ jobs:
 
       - name: Set up .env
         run: cp .env.example .env
-
-      - name: Run dev server and check health endpoint
+      # -------------------------------
+      # 1️⃣ Run backend server for smoke/integration
+      # -------------------------------
+      - name: Run backend server
         run: |
-          nohup npm run dev > server.log 2>&1 &
-          sleep 10
-          curl -f http://localhost:3001/health || (cat server.log && exit 1)
+          PORT=3001 npm run dev > server.log 2>&1 &
+          SERVER_PID=$!
+          echo "Server PID: $SERVER_PID"
+          for i in {1..15}; do
+            if curl -s http://localhost:3001/health > /dev/null; then
+              echo "Server is up!"
+              break
+            fi
+            sleep 2
+          done
+          if ! curl -f http://localhost:3001/health > /dev/null; then
+            echo "Server failed to start:"
+            cat server.log
+            kill $SERVER_PID
+            exit 1
+          fi
+          echo "SERVER_PID=$SERVER_PID" >> $GITHUB_ENV
+
+      # -------------------------------
+      # 2️⃣ Run backend tests
+      # -------------------------------
+      - name: Run backend tests
+        run: npm run test -- --run --reporter=dot
+
+      # -------------------------------
+      # 3️⃣ Stop backend server
+      # -------------------------------
+      - name: Stop backend server
+        if: always()
+        run: kill ${{ env.SERVER_PID }}
