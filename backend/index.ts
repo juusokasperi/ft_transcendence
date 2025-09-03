@@ -2,7 +2,6 @@ import fastify from 'fastify';
 import cors from '@fastify/cors';
 import fastifyMultipart from '@fastify/multipart';
 import fastifyStatic from '@fastify/static';
-import fastifyHealthcheck from '@fastify/healthcheck'
 import { UPLOAD_DIR, BACKEND_HOST, BACKEND_PORT, FRONTEND_URL, NGINX_PORT } from './utils/config.ts';
 import { userRoutes } from './routes/users.ts';
 import { loginRoutes } from './routes/login.ts';
@@ -43,6 +42,7 @@ app.register(fastifyStatic, {
 	prefix: '/uploads/',
 }); // Serving the avatar images to frontend via http://<backend-url>/uploads/<filename>
 
+const fastifyHealthcheck = require('@fastify/healthcheck');
 await app.register(fastifyHealthcheck, {
   healthcheckUrl: '/health'
 })
