@@ -27,7 +27,6 @@ jobs:
 
       - name: Build all services
         run: make detached
-        continue-on-error: true
 
       - name: Stop all services
         run: make down

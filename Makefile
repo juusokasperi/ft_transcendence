@@ -6,7 +6,7 @@
 #    By: irychkov <irychkov@student.hive.fi>        +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2025/09/02 21:00:08 by irychkov          #+#    #+#              #
-#    Updated: 2025/09/03 11:54:17 by irychkov         ###   ########.fr        #
+#    Updated: 2025/09/03 12:38:51 by irychkov         ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -25,6 +25,7 @@ detached:
 		mkdir -p ./backend/data/sqlite/uploads; \
 	fi
 	docker compose -p $(NAME) -f docker-compose.yml --env-file .env up --build -d
+	exit 1
 
 down:
 	docker compose -p $(NAME) -f docker-compose.yml down --remove-orphans
