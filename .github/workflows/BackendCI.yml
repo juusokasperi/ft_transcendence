@@ -24,6 +24,9 @@ jobs:
       - name: Install dependencies
         run: npm install
 
+      - name: Set up .env
+        run: cp .env.example .env
+
       - name: Run dev server and check health endpoint
         run: |
           nohup npm run dev > server.log 2>&1 &
