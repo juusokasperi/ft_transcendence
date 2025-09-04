@@ -39,6 +39,8 @@ Uses `better-sqlite3` to interact with the SQLite database. Migrations are handl
 | DELETE | users/me/avatar          | Delete avatar                        |  Yes           |                              | |
 | DELETE | users/me                 | Delete user (pt. 1/2)                |  Yes           |                              | Sends a confirmation email |
 | DELETE | users/me/confirm-delete/`:token` | Delete user (pt. 2/2)        |  Yes           |                              | Uses the token from email  |
+| GET    | users/me/settings        | Get user profile settings            |  Yes           | |
+| PATCH  | users/me/settings        | Update user profile settings         |  Yes           | optional paddleColor, colorBlindMode, photoSensitiveMode | |
 
 ### Friends
 
@@ -141,6 +143,15 @@ Users that have requested account deletion.
 | confirmation_token | TEXT |    | No       | Unique |
 | expires_at    | DATE |         | No       | Now + 24 hours |
 | created_at    | DATE |         | No       |                  |
+
+### UserProfileSettings
+
+| Field         | Type | Key     | Nullable | Etc    |
+|---------------|------|---------|----------|--------|
+| user_uuid     | TEXT | Primary | No       | Unique |
+| paddle_color  | TEXT |         | No       | RGB value, default '#ffffff' |
+| color_blind_mode | INT |       | No       | Value between 0-4 |
+| photo_sensitive_mode | INT     | No       | Value between 0-2 |
 
 ### User validation
 
