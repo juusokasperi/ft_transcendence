@@ -1,6 +1,5 @@
 import { Umzug, JSONStorage } from 'umzug';
 import path from 'path';
-import { fileURLToPath } from 'url';
 import db from './client.ts';
 import type { Database } from 'better-sqlite3';
 
