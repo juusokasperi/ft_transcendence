@@ -1,6 +1,5 @@
 node_modules/
 .env
-/generated/prisma
 .DS_Store
 *.db*
 package-lock.json

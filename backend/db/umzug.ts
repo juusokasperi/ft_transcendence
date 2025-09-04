@@ -38,7 +38,7 @@ export function createUmzug(database: Database = db, migrationFile?: string): Um
 		storage: new JSONStorage({
 			path: migrationFile
 			? path.join(process.cwd(), migrationFile)
-			: path.join(__dirname, './migrations/.umzug.json')
+			: path.join(__dirname, '../data/.umzug.json')
 		}),
 		logger: database === db ? console : silentLogger,
 	});

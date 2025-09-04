@@ -1,0 +1,34 @@
+name: Frontend CI
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main, dev, feat/devops-test ]
+  pull_request:
+    branches: [ main, dev ]
+
+jobs:
+  frontend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: client
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js 22.19.0 LTS
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22.19.0
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Set up .env
+        run: cp .env.example .env
+
+      - name: Run dev server
+        run: |
+          nohup npm run dev > frontend.log 2>&1 &
+          sleep 10
+          curl -f http://localhost:5173 || (cat frontend.log && exit 1)
