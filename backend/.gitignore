@@ -3,6 +3,5 @@ node_modules/
 /generated/prisma
 .DS_Store
 *.db*
-.umzug.json
 package-lock.json
-uploads/
+data/
