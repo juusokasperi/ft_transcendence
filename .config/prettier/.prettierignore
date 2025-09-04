@@ -1,0 +1,11 @@
+node_modules
+dist
+build
+coverage
+backend/dist
+frontend/dist
+*.log
+.vscode
+data
+.env
+**/.env*
