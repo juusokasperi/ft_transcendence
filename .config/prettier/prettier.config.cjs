@@ -17,16 +17,6 @@ module.exports = {
       },
     },
 
-    // --- YAML ---
-    {
-      files: ["**/*.yml", "**/*.yaml"],
-      options: {
-        // YAML uses its own quoting rules; singleQuote doesn’t apply
-        tabWidth: 2,
-        // no other special options usually needed
-      },
-    },
-
     // --- JSON / JSONC / JSON5 ---
     // Prettier already enforces valid JSON (no trailing commas),
     // but these make parsing explicit and let you tweak width if you want.

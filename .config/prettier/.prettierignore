@@ -4,8 +4,13 @@ build
 coverage
 backend/dist
 frontend/dist
+**/.next/**
+**/.vite/**
 *.log
 .vscode
 data
 .env
 **/.env*
+*.yaml
+*.yml
+*.cjs
