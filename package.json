@@ -5,10 +5,7 @@
   "main": "index.js",
   "scripts": {
     "format": "prettier . --check --config .config/prettier/prettier.config.cjs --ignore-path .config/prettier/.prettierignore",
-    "format:write": "prettier . --write --config .config/prettier/prettier.config.cjs --ignore-path .config/prettier/.prettierignore",
-    "lint": "eslint .",
-    "lint:fix": "eslint . --fix",
-    "typecheck": "tsc -b ./backend ./client"
+    "format:write": "prettier . --write --config .config/prettier/prettier.config.cjs --ignore-path .config/prettier/.prettierignore"
   },
   "repository": {
     "type": "git",
@@ -22,16 +19,6 @@
   },
   "homepage": "https://github.com/juusokasperi/ft_transcendence#readme",
   "devDependencies": {
-    "@eslint/js": "^9.34.0",
-    "eslint": "^9.34.0",
-    "eslint-config-prettier": "^10.1.8",
-    "eslint-plugin-import": "^2.32.0",
-    "eslint-plugin-jsx-a11y": "^6.10.2",
-    "eslint-plugin-react": "^7.37.5",
-    "eslint-plugin-react-hooks": "^5.2.0",
-    "globals": "^16.3.0",
-    "prettier": "^3.6.2",
-    "typescript": "^5.9.2",
-    "typescript-eslint": "^8.42.0"
+    "prettier": "^3.6.2"
   }
 }
