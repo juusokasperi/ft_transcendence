@@ -4,13 +4,14 @@ import fsAsync from 'fs/promises';
 import path from 'path';
 import bcrypt from 'bcrypt';
 import crypto from 'crypto';
-import { getUserStats, getUserByUuid, updateUsername, updatePassword, updateAvatar, getUserByUsername } from '../db/queries/users.ts';
+import { getUserStats, getUserByUuid, updateUsername, updatePassword, updateAvatar, getUserByUsername, getUserSettings, updateUserSettings } from '../db/queries/users.ts';
 import { deleteUser, markUserForDelete, removeTokenFromDelete, findUserToDeleteAndClear } from '../db/queries/userDelete.ts';
-import { authPreHandler, tokenUuidCheck } from '../hooks/auth.ts';
+import { authPreHandler, tokenUuidCheck, validationHook } from '../hooks/auth.ts';
 import { sendDeleteEmail } from '../utils/nodemailer/index.ts';
 import { normalizeCredentials } from '../hooks/auth.ts';
 import { updateLastSeenHandler } from '../hooks/updateLastSeen.ts';
 import { UPLOAD_DIR } from '../utils/config.ts';
+import { validateUserSettings } from '../utils/validate.ts';
 
 /*
 	TO DO:
@@ -219,6 +220,44 @@ export async function userRoutes(app: FastifyInstance) {
 			res.status(200).send(user);
 		} catch (error) {
 			res.status(500).send({ message: 'Failed to delete avatar' });
+		}
+	});
+
+	app.get('/me/settings',
+		{ preHandler: [authPreHandler, tokenUuidCheck, updateLastSeenHandler] },
+		async (req: FastifyRequest, res: FastifyReply) => {
+		try {
+			const uuid = req.user!.uuid;
+			const settings = getUserSettings(uuid);
+			if (!settings)
+				return res.status(404).send({ message: 'Failed to fetch user settings' });
+			res.status(200).send(settings);
+		} catch (err) {
+			res.status(500).send({ message: 'Failed to fetch user profile settings' });
+		}
+	});
+
+	app.patch('/me/settings',
+		{ preValidation: [validationHook(validateUserSettings)],
+		preHandler: [authPreHandler, tokenUuidCheck, updateLastSeenHandler] },
+		async (req: FastifyRequest, res: FastifyReply) => {
+		try {
+			const uuid = req.user!.uuid;
+			const { paddleColor, colorBlindMode, photoSensitiveMode } = req.body as { paddleColor?: string; colorBlindMode?: number; photoSensitiveMode?: number; };
+			const updateFields: Record<string, unknown> = {};
+			if (paddleColor !== undefined)
+				updateFields.paddle_color = paddleColor;
+			if (colorBlindMode !== undefined)
+				updateFields.color_blind_mode = colorBlindMode;
+			if (photoSensitiveMode !== undefined)
+				updateFields.photo_sensitive_mode = photoSensitiveMode;
+			const success = updateUserSettings(uuid, updateFields);
+			if (!success)
+				return res.status(400).send({ message: 'Failed to update settings.' });
+			const settings = getUserSettings(uuid);
+			res.status(200).send(settings);
+		} catch (err) {
+			res.status(500).send({ message: 'Failed to update user profile settings.' });
 		}
 	});
 };

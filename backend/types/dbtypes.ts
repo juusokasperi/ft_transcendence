@@ -56,3 +56,10 @@ export interface PendingUserDb {
 	expires_at: string;
 	created_at: string;
 };
+
+export interface UserSettingsDb {
+	user_uuid: string;
+	paddle_color: string;
+	color_blind_mode: number;
+	photo_sensitive_mode: number;
+}

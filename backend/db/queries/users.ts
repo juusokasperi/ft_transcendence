@@ -1,6 +1,6 @@
 import db from '../client.ts';
-import type { User, UserStats } from '../../types/types.ts';
-import type { UserDb, UserStatsDb } from '../../types/dbtypes.ts';
+import type { User, UserStats, UserSettings } from '../../types/types.ts';
+import type { UserDb, UserStatsDb, UserSettingsDb } from '../../types/dbtypes.ts';
 
 export function getUserByUuid(uuid:string): User | undefined {
 	const user = db.prepare('SELECT * FROM Users where uuid = ?').get(uuid) as UserDb | null;
@@ -222,4 +222,40 @@ export function updateLastSeen(uuid: string, date?: Date): Boolean {
 		WHERE uuid = ?
 		`).run(dateSqliteFormat, uuid);
 	return result.changes === 1;
+};
+
+export function getUserSettings(uuid: string): UserSettings | null {
+	const result = db.prepare(`
+		SELECT * FROM UserProfileSettings
+		WHERE user_uuid = ?`).get(uuid) as UserSettingsDb | null;
+	if (!result)
+		return null;
+	return {
+		uuid: result.user_uuid,
+		paddleColor: result.paddle_color,
+		colorBlindMode: result.color_blind_mode,
+		photoSensitiveMode: result.photo_sensitive_mode
+	};
+};
+
+export function updateUserSettings(uuid: string, settings: Partial<Omit<UserSettingsDb, 'user_uuid'>>): boolean {
+	const fields: string[] = [];
+	const values: any[] = [];
+	for (const [key, value] of Object.entries(settings)) {
+		fields.push(`${key} = ?`);
+		values.push(value);
+	}
+	if (fields.length === 0)
+		return false;
+	values.push(uuid);
+	const sqlQuery = `
+		UPDATE UserProfileSettings
+		SET ${fields.join(', ')}
+		WHERE user_uuid = ?`;
+	try {
+		const result = db.prepare(sqlQuery).run(...values);
+		return result.changes === 1;
+	} catch (error) {
+		return false;
+	}
 };

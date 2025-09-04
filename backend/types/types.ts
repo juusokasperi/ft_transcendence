@@ -55,3 +55,10 @@ export interface GameWithPlayers {
 	};
 	playedAt: string;
 };
+
+export interface UserSettings {
+	uuid: string;
+	paddleColor: string;
+	colorBlindMode: number;
+	photoSensitiveMode: number;
+};
