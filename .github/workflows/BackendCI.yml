@@ -3,9 +3,9 @@ name: Backend CI
 on:
   workflow_dispatch:
   push:
-    branches: [ main, dev, feat/devops-test ]
+    branches: [ main, development, feat/devops-test ]
   pull_request:
-    branches: [ main, dev ]
+    branches: [ main, development ]
 
 jobs:
   backend:
