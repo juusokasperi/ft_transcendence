@@ -6,6 +6,7 @@ import path from 'path';
 import { PORT } from './utils/config.ts';
 import { userRoutes } from './routes/users.ts';
 import { loginRoutes } from './routes/login.ts';
+import { logoutRoutes } from './routes/logout.ts';
 import { signupRoutes } from './routes/signup.ts';
 import { friendsRoutes } from './routes/friends.ts';
 import { resetPasswordRoutes } from './routes/resetPassword.ts';
@@ -39,6 +40,7 @@ await runMigrations();
 app.register(userRoutes, { prefix: '/api/users' });
 app.register(friendsRoutes, { prefix: '/api/friends' });
 app.register(loginRoutes, { prefix: '/api/login' });
+app.register(logoutRoutes, { prefix: 'api/logout' });
 app.register(signupRoutes, { prefix: '/api/signup' });
 app.register(resetPasswordRoutes, { prefix: '/api/reset-password'})
 

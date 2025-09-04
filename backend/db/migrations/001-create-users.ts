@@ -18,6 +18,7 @@ export async function up(db: Database) {
 	avatar TEXT,
 	ranking INTEGER NOT NULL DEFAULT 1000,
 	created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+	last_seen DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
 	google_id TEXT UNIQUE,
 	UNIQUE(username),
 	UNIQUE(email),

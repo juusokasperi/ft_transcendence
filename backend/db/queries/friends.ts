@@ -15,7 +15,11 @@ export function getFriends(user1Uuid: string): UserStats[] {
 			COUNT(CASE
 				WHEN (gp.team_number = 1 AND g.team_1_score < g.team_2_score)
 				  OR (gp.team_number = 2 AND g.team_2_score < g.team_1_score)
-				THEN 1 END) as losses
+				THEN 1 END) as losses,
+			CASE
+				WHEN u.last_seen >= datetime('now', '-5 minutes') THEN 1
+				ELSE 0
+			END as online
 			FROM Friends f
 			JOIN Users u on u.uuid = (
 				CASE
@@ -39,7 +43,8 @@ export function getFriends(user1Uuid: string): UserStats[] {
 			createdAt: dbUser.created_at,
 			wins: dbUser.wins,
 			losses: dbUser.losses,
-			totalGames: dbUser.total_games
+			totalGames: dbUser.total_games,
+			online: !!dbUser.online
 		}));
 	} catch (error) {
 		return [];

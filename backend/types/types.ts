@@ -34,6 +34,7 @@ export interface UserStats {
 	wins: number;
 	losses: number;
 	totalGames: number;
+	online: boolean;
 };
 
 export interface PublicUser {

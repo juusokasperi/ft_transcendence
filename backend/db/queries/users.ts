@@ -66,7 +66,7 @@ export function getUserByEmail(email: string): User | undefined {
 		avatar: user.avatar,
 		ranking: user.ranking,
 		createdAt: user.created_at,
-		googleId: user.google_id
+		googleId: user.google_id,
 	};
 }
 
@@ -150,7 +150,7 @@ export function getUserStats(uuid: string): UserStats | null;
 export function getUserStats(uuid?: string): UserStats[] | UserStats | null {
 	const baseQuery = `
 		SELECT
-			u.username, u.uuid, u.email, u.avatar, u.ranking, u.created_at,
+			u.username, u.uuid, u.email, u.avatar, u.ranking, u.created_at, u.last_seen,
 			COUNT(g.id) as total_games,
 			COUNT(CASE
 				WHEN (gp.team_number = 1 AND g.team_1_score > g.team_2_score)
@@ -159,7 +159,11 @@ export function getUserStats(uuid?: string): UserStats[] | UserStats | null {
 			COUNT(CASE
 				WHEN (gp.team_number = 1 AND g.team_1_score < g.team_2_score)
 				  OR (gp.team_number = 2 AND g.team_2_score < g.team_1_score)
-				THEN 1 END) as losses
+				THEN 1 END) as losses,
+			CASE
+				WHEN u.last_seen >= datetime('now', '-5 minutes') THEN 1
+				ELSE 0
+			END as online
 			FROM Users u
 			LEFT JOIN GamePlayers gp on u.uuid = gp.user_uuid
 			LEFT JOIN Games g on gp.game_id = g.id
@@ -172,7 +176,7 @@ export function getUserStats(uuid?: string): UserStats[] | UserStats | null {
 			${baseQuery}
 			WHERE u.uuid = ?
 			GROUP BY u.uuid
-			`).get(uuid) as UserStatsDb | null;
+			`).get(uuid) as UserStatsDb || null;
 		if (!result)
 			return null;
 		return {
@@ -183,7 +187,8 @@ export function getUserStats(uuid?: string): UserStats[] | UserStats | null {
 			createdAt: result.created_at,
 			wins: result.wins,
 			losses: result.losses,
-			totalGames: result.total_games
+			totalGames: result.total_games,
+			online: !!result.online
 		} as UserStats;
 	}
 
@@ -203,6 +208,18 @@ export function getUserStats(uuid?: string): UserStats[] | UserStats | null {
 		createdAt: dbUser.created_at,
 		wins: dbUser.wins,
 		losses: dbUser.losses,
-		totalGames: dbUser.total_games
+		totalGames: dbUser.total_games,
+		online: !!dbUser.online
 	})) as UserStats[];
+};
+
+export function updateLastSeen(uuid: string, date?: Date): Boolean {
+	const timestamp = date || new Date();
+	const dateSqliteFormat = timestamp.toISOString().slice(0, 19).replace('T', ' ');
+	const result = db.prepare(`
+		UPDATE Users
+		SET last_seen = ?
+		WHERE uuid = ?
+		`).run(dateSqliteFormat, uuid);
+	return result.changes === 1;
 };

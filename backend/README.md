@@ -48,7 +48,7 @@ Uses `better-sqlite3` to interact with the SQLite database. Migrations are handl
 | GET    | friends/pending/received | Get received pending friend requests |  Yes           |                              |
 | GET    | friends/pending/sent     | Get sent pending friend requests     |  Yes           |                              |
 | PATCH  | friends/`:uuid`/respond  | Respond to a friend request          |  Yes           | accept (boolean)             |
-| POST   | friends/`:userIdentifier`| Send a friend request (API accepts UUID, username or e-mail) |  Yes           |                              |
+| POST   | friends| Send a friend request (API accepts UUID, username or e-mail) |  Yes     | username                     |
 | DELETE | friends/`:uuid`          | Delete a friend                      |  Yes           |                              |
 
 ## Database

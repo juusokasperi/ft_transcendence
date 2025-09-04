@@ -7,6 +7,7 @@ export interface UserDb {
 	avatar: string | null;
 	ranking: number;
 	created_at: string;
+	last_seen: string;
 	google_id: string | null;
 }
 
@@ -20,6 +21,7 @@ export interface UserStatsDb {
 	wins: number;
 	losses: number;
 	total_games: number;
+	online: boolean;
 };
 
 export interface GameDb {
