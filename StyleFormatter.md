@@ -20,6 +20,6 @@ Everyone should have the **Prettier – Code formatter** extension installed.
 
   ```js
   // prettier-ignore-start
-  db.pragma("journal_mode = WAL"); // Some code
+  db.pragma('journal_mode = WAL'); // Some code
   // prettier-ignore-end
   ```
