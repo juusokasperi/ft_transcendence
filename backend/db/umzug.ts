@@ -4,9 +4,6 @@ import { fileURLToPath } from 'url';
 import db from './client.ts';
 import type { Database } from 'better-sqlite3';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
 const silentLogger = {
 	info() {},
 	warn() {},
@@ -17,7 +14,7 @@ const silentLogger = {
 export function createUmzug(database: Database = db, migrationFile?: string): Umzug<any> {
 	return new Umzug({
 		migrations: {
-			glob: path.join(__dirname, './migrations/*.ts'),
+			glob: path.join(process.cwd(), 'db/migrations/*.ts'),
 			resolve: ({ name, path: migrationPath }) => {
 				if (!migrationPath)
 					throw new Error(`Migration path is undefined for migration: ${name}`);
@@ -38,7 +35,7 @@ export function createUmzug(database: Database = db, migrationFile?: string): Um
 		storage: new JSONStorage({
 			path: migrationFile
 			? path.join(process.cwd(), migrationFile)
-			: path.join(__dirname, '../data/.umzug.json')
+			: path.join(process.cwd(), 'data/.umzug.json')
 		}),
 		logger: database === db ? console : silentLogger,
 	});

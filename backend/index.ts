@@ -16,7 +16,6 @@ const app = fastify({
 	logger: true
 });
 
-// replace origin: true with origin: ['frontend-address'] !!!!!!
 await app.register(cors, {
 	origin: (origin, cb) => {
 	// Allow direct FE and Nginx FE

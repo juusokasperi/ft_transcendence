@@ -10,6 +10,7 @@ import { authPreHandler, tokenUuidCheck } from '../hooks/auth.ts';
 import { sendDeleteEmail } from '../utils/nodemailer/index.ts';
 import { normalizeCredentials } from '../hooks/auth.ts';
 import { updateLastSeenHandler } from '../hooks/updateLastSeen.ts';
+import { UPLOAD_DIR } from '../utils/config.ts';
 
 /*
 	TO DO:
@@ -161,12 +162,7 @@ export async function userRoutes(app: FastifyInstance) {
 			if (!ACCEPTED_TYPES.includes(file.mimetype))
 				return res.status(400).send({ message: 'Invalid avatar file type.' });
 
-			const uploadDir = path.join(process.cwd(), 'uploads');
-			try {
-				await fsAsync.mkdir(uploadDir, { recursive: true });
-			} catch (err) {
-				return res.status(500).send({ message: 'Failure saving avatar' });;
-			}
+			const uploadDir = path.join(process.cwd(), UPLOAD_DIR);
 
 			const fileExtension = getExtensionFromMime(file.mimetype);
 			const fileName = `${uuid}_${Date.now()}_avatar${fileExtension}`;
@@ -182,7 +178,7 @@ export async function userRoutes(app: FastifyInstance) {
 			if (user.avatar)
 			{
 				try {
-					await fsAsync.unlink(user.avatar);
+					await fsAsync.unlink(path.join(uploadDir, user.avatar));
 				} catch (err) {
 					console.log('Error deleting old avatar picture');
 				}
