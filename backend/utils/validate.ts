@@ -33,8 +33,8 @@ export const schemas = {
 	signup: {
 		username: {
 			type: "string",
-			min: 1,
-			max: 39,
+			min: 3,
+			max: 16,
 			custom: usernameValidator
 		},
 		email: { type: "email" },
@@ -48,7 +48,7 @@ export const schemas = {
 	},
 
 	login: {
-		username: { type: "string", min: 1, max: 39 },
+		email: { type: "email" },
 		password: { type: "string", min: 12 },
 	},
 
@@ -64,8 +64,8 @@ export const schemas = {
 	changeUsername: {
 		newUsername: {
 			type: "string",
-			min: 1,
-			max: 39,
+			min: 3,
+			max: 16,
 			custom: usernameValidator
 		}
 	},
@@ -79,8 +79,8 @@ export const schemas = {
 	addFriend: {
 		username: {
 			type: "string",
-			min: 1,
-			max: 39,
+			min: 3,
+			max: 16,
 			custom: usernameValidator
 		}
 	}
