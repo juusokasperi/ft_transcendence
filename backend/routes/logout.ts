@@ -11,7 +11,6 @@ export async function logoutRoutes(app: FastifyInstance) {
 		try {
 			const uuid = req.user!.uuid;
 			const tenMinutesAgo = new Date(Date.now() - 10 * 60 * 1000);
-			console.log('Setting last_seen to:', tenMinutesAgo.toISOString());
 			const result = updateLastSeen(uuid, tenMinutesAgo);
 			if (!result)
 				res.status(500).send({ message: 'Failed to logout user' });
