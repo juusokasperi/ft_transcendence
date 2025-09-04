@@ -6,6 +6,8 @@ module.exports = {
   semi: true,
   trailingComma: "all",
   arrowParens: "always",
+  useTabs: false,
+  tabWidth: 2,
 
   overrides: [
     // --- Markdown ---

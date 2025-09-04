@@ -1,7 +1,7 @@
 import type { Database } from 'better-sqlite3';
 
 export async function up(db: Database) {
-	db.exec(`
+  db.exec(`
 	CREATE TABLE IF NOT EXISTS GamePlayers (
 	id INTEGER PRIMARY KEY AUTOINCREMENT,
 	game_id INTEGER NOT NULL,
@@ -13,5 +13,5 @@ export async function up(db: Database) {
 }
 
 export async function down(db: Database) {
-	db.exec(`DROP TABLE IF EXISTS GamePlayers;`);
+  db.exec(`DROP TABLE IF EXISTS GamePlayers;`);
 }

@@ -1,21 +1,17 @@
-import Navbar from "../components/Navbar";
-import Sidebar from "../components/Sidebar";
-import { Outlet } from "react-router-dom";
-import { useEffect } from "react";
-import { useAppContext } from "../context/AppContext";
-
+import Navbar from '../components/Navbar';
+import Sidebar from '../components/Sidebar';
+import { Outlet } from 'react-router-dom';
+import { useEffect } from 'react';
+import { useAppContext } from '../context/AppContext';
 
 const Layout: React.FC = () => {
+  const { user, navigate } = useAppContext();
 
-
-    const {user, navigate} = useAppContext();
-
-    useEffect(() => {
-        if(!user){
-        navigate('/')
-        }
-    },[user])
-
+  useEffect(() => {
+    if (!user) {
+      navigate('/');
+    }
+  }, [user]);
 
   return (
     <div className="flex flex-col h-screen">

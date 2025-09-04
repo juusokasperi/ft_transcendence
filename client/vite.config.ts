@@ -1,9 +1,8 @@
 /// <reference types="vitest" />
 
-import { defineConfig } from 'vite'
-import react from '@vitejs/plugin-react'
-import tailwindcss from '@tailwindcss/vite'
-
+import { defineConfig } from 'vite';
+import react from '@vitejs/plugin-react';
+import tailwindcss from '@tailwindcss/vite';
 
 // https://vite.dev/config/
 export default defineConfig({
@@ -13,16 +12,12 @@ export default defineConfig({
     strictPort: true,
     watch: { usePolling: true },
     proxy: {
-      '/api': { target: 'http://backend:3001', changeOrigin: true }
-    }
+      '/api': { target: 'http://backend:3001', changeOrigin: true },
+    },
   },
-  plugins: [
-    react(),
-    tailwindcss()
-  ],
+  plugins: [react(), tailwindcss()],
   test: {
-    globals: true,         // so you don’t need to import describe/it/expect in every test
-    environment: "jsdom",  // 👈 use jsdom so `document` exists
+    globals: true, // so you don’t need to import describe/it/expect in every test
+    environment: 'jsdom', // 👈 use jsdom so `document` exists
   },
-}
-);
+});

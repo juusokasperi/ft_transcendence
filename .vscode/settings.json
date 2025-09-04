@@ -1,6 +1,9 @@
 {
-  "editor.defaultFormatter": "esbenp.prettier-vscode",
-  "editor.formatOnSave": true,
-  "prettier.configPath": ".config/prettier/prettier.config.cjs",
-  "prettier.ignorePath": ".config/prettier/.prettierignore"
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "editor.formatOnSave": true,
+    "editor.insertSpaces": true,
+    "editor.tabSize": 2,
+    "editor.detectIndentation": false,
+    "prettier.configPath": ".config/prettier/prettier.config.cjs",
+    "prettier.ignorePath": ".config/prettier/.prettierignore",
 }

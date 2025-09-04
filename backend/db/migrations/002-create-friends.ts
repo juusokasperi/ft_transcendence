@@ -11,7 +11,7 @@ import type { Database } from 'better-sqlite3';
 	all friendships are unique.
 */
 export async function up(db: Database) {
-	db.exec(`
+  db.exec(`
 	CREATE TABLE IF NOT EXISTS Friends (
 	id INTEGER PRIMARY KEY AUTOINCREMENT,
 	friend_1_uuid TEXT NOT NULL,
@@ -23,7 +23,7 @@ export async function up(db: Database) {
 	CONSTRAINT no_self_friend CHECK (friend_1_uuid != friend_2_uuid)
 	);`);
 
-	db.exec(`
+  db.exec(`
 	CREATE UNIQUE INDEX IF NOT EXISTS unique_friendship
 	ON Friends (
 		CASE WHEN friend_1_uuid < friend_2_uuid
@@ -36,6 +36,6 @@ export async function up(db: Database) {
 }
 
 export async function down(db: Database) {
-	db.exec(`DROP INDEX IF EXISTS unique_friendship;`);
-	db.exec(`DROP TABLE IF EXISTS Friends;`);
+  db.exec(`DROP INDEX IF EXISTS unique_friendship;`);
+  db.exec(`DROP TABLE IF EXISTS Friends;`);
 }

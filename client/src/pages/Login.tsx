@@ -1,35 +1,35 @@
-import React, { useState } from "react";
-import AuthForm from "../components/AuthForm";
-import { useAppContext } from "../context/AppContext";
-import type { User } from "../types";
-import { toast } from "react-hot-toast";
-import type { AxiosError } from "axios";
-import { Link } from "react-router-dom";
+import React, { useState } from 'react';
+import AuthForm from '../components/AuthForm';
+import { useAppContext } from '../context/AppContext';
+import type { User } from '../types';
+import { toast } from 'react-hot-toast';
+import type { AxiosError } from 'axios';
+import { Link } from 'react-router-dom';
 
 const Login: React.FC = () => {
   const { axios, login, navigate } = useAppContext();
   const [loading, setLoading] = useState(false);
 
-  const handleLogin = async (data: { email: string; password: string}) => {
+  const handleLogin = async (data: { email: string; password: string }) => {
     setLoading(true);
     try {
       // POST to /api/login (no Authorization header expected)
-      const res = await axios.post("/api/login", {
+      const res = await axios.post('/api/login', {
         email: data.email,
         password: data.password,
       });
 
       const { token, user } = res.data as { token: string; user: User };
 
-      if (!token || !user) throw new Error("Invalid server response");
-      console.log("LOGGED IN!!");
+      if (!token || !user) throw new Error('Invalid server response');
+      console.log('LOGGED IN!!');
 
       login(user, token);
 
-      toast.success("Logged in");
-      navigate("/"); // redirect to home
+      toast.success('Logged in');
+      navigate('/'); // redirect to home
     } catch (err: any) {
-      const axiosErr = err as AxiosError<{message?:string}>;
+      const axiosErr = err as AxiosError<{ message?: string }>;
       const msg = axiosErr?.response?.data?.message;
       console.log(msg);
       toast.error(String(msg));
@@ -45,8 +45,9 @@ const Login: React.FC = () => {
         <AuthForm type="login" onSubmit={handleLogin} />
         {loading && <p className="mt-2 text-sm">Authenticating…</p>}
         <span className="text-gray-600 ">Don't have an account yet?</span>
-        <Link to="/signup"  className="text-blue-700 ml-2">Sign Up</Link>
-
+        <Link to="/signup" className="text-blue-700 ml-2">
+          Sign Up
+        </Link>
       </div>
     </div>
   );
