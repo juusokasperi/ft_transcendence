@@ -27,6 +27,9 @@ jobs:
       - name: Set up .env
         run: cp .env.example .env
 
+      - name: Run typecheck
+        run: npm run typecheck
+
       - name: Run dev server
         run: |
           nohup npm run dev > frontend.log 2>&1 &

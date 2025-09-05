@@ -26,6 +26,10 @@ jobs:
 
       - name: Set up .env
         run: cp .env.example .env
+
+      - name: Run typecheck
+        run: npm run typecheck
+
       # -------------------------------
       # 1️⃣ Run backend server for smoke/integration
       # -------------------------------
@@ -60,4 +64,4 @@ jobs:
       # -------------------------------
       - name: Stop backend server
         if: always()
-        run: kill ${{ env.SERVER_PID }}
+        run: kill $SERVER_PID
