@@ -1,0 +1,26 @@
+name: Syntax Check
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main, development ]
+  pull_request:
+    branches: [ main, development ]
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js 22.19.0 LTS
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22.19.0
+
+      - name: Install dependencies
+        run: npm i
+
+      - name: Run npm check
+        run: npm run check
+
