@@ -37,7 +37,7 @@ const Confirmation = () => {
   }, [confirmationToken, axios, navigate]);
 
   return (
-    <div className="flex justify-center items-center h-screen">
+    <div className="flex h-screen items-center justify-center">
       {status === 'validating' && <p>Validating your account...</p>}
       {status === 'success' && <p>Account confirmed! Redirecting...</p>}
       {status === 'error' && <p>Invalid or expired confirmation link.</p>}

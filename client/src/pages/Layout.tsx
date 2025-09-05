@@ -14,11 +14,11 @@ const Layout: React.FC = () => {
   }, [user]);
 
   return (
-    <div className="flex flex-col h-screen">
+    <div className="flex h-screen flex-col">
       <Navbar />
       <div className="flex h-full">
         <Sidebar />
-        <div className="flex-1 p-4 pt-10 md:px-10 h-full">
+        <div className="h-full flex-1 p-4 pt-10 md:px-10">
           <Outlet />
         </div>
       </div>

@@ -39,13 +39,13 @@ const Login: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100">
-      <div className="bg-white p-8 rounded shadow-md w-full max-w-md">
-        <h1 className="text-2xl font-bold mb-6 text-center">Login</h1>
+    <div className="flex min-h-screen items-center justify-center bg-gray-100">
+      <div className="w-full max-w-md rounded bg-white p-8 shadow-md">
+        <h1 className="mb-6 text-center text-2xl font-bold">Login</h1>
         <AuthForm type="login" onSubmit={handleLogin} />
         {loading && <p className="mt-2 text-sm">Authenticating…</p>}
-        <span className="text-gray-600 ">Don't have an account yet?</span>
-        <Link to="/signup" className="text-blue-700 ml-2">
+        <span className="text-gray-600">Don't have an account yet?</span>
+        <Link to="/signup" className="ml-2 text-blue-700">
           Sign Up
         </Link>
       </div>

@@ -152,76 +152,76 @@ const Profile: React.FC = () => {
   };
 
   return (
-    <div className="max-w-md mx-auto p-6 bg-white shadow rounded mt-10">
-      <h2 className="text-2xl font-bold mb-6">Profile</h2>
+    <div className="mx-auto mt-10 max-w-md rounded bg-white p-6 shadow">
+      <h2 className="mb-6 text-2xl font-bold">Profile</h2>
       <form className="space-y-4">
         {/* Profile Image */}
         <div>
-          <label className="block mb-2 ml-3 font-medium">Avatar</label>
+          <label className="mb-2 ml-3 block font-medium">Avatar</label>
 
           {imagePreview && (
             <img
               src={imagePreview}
               alt="Profile"
-              className="w-24 h-24 object-cover rounded-full mb-2"
+              className="mb-2 h-24 w-24 rounded-full object-cover"
             />
           )}
           <input
             type="file"
             accept="image/*"
             onChange={handleImageChange}
-            className="border p-2 rounded w-full"
+            className="w-full rounded border p-2"
           />
         </div>
 
         {/* Nickname */}
         <div>
-          <label className="block mb-2 font-medium">Change Username</label>
+          <label className="mb-2 block font-medium">Change Username</label>
           <input
             type="text"
             value={username}
             placeholder={user?.username}
             onChange={(e) => setUsername(e.target.value)}
-            className="border p-2 rounded w-full"
+            className="w-full rounded border p-2"
           />
         </div>
 
         {/* Password */}
         <div>
-          <label className="block mb-2 font-medium">Current Password</label>
+          <label className="mb-2 block font-medium">Current Password</label>
           <input
             type="password"
             value={newPassword.currentPassword}
             onChange={(e) => setNewPasswords({ ...newPassword, currentPassword: e.target.value })}
-            className="border p-2 rounded w-full"
+            className="w-full rounded border p-2"
           />
         </div>
         <div>
-          <label className="block mb-2 font-medium">New Password</label>
+          <label className="mb-2 block font-medium">New Password</label>
           <input
             type="password"
             value={newPassword.newPassword}
             onChange={(e) => setNewPasswords({ ...newPassword, newPassword: e.target.value })}
-            className="border p-2 rounded w-full"
+            className="w-full rounded border p-2"
           />
         </div>
         <div>
-          <label className="block mb-2 font-medium">Confirm New Password</label>
+          <label className="mb-2 block font-medium">Confirm New Password</label>
           <input
             type="password"
             value={newPassword.confirmPassword}
             onChange={(e) => setNewPasswords({ ...newPassword, confirmPassword: e.target.value })}
-            className="border p-2 rounded w-full"
+            className="w-full rounded border p-2"
           />
         </div>
 
         {/* Buttons */}
-        <div className="flex justify-between items-center">
+        <div className="flex items-center justify-between">
           <button
             type="submit"
             onClick={handleUpdate}
             disabled={loading}
-            className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 disabled:opacity-50"
+            className="rounded bg-blue-500 px-4 py-2 text-white hover:bg-blue-600 disabled:opacity-50"
           >
             {loading ? 'Updating...' : 'Update Profile'}
           </button>
@@ -229,7 +229,7 @@ const Profile: React.FC = () => {
           <button
             type="button"
             onClick={handleDelete}
-            className="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600"
+            className="rounded bg-red-500 px-4 py-2 text-white hover:bg-red-600"
           >
             Delete Account
           </button>

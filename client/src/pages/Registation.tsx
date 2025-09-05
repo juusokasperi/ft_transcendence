@@ -52,9 +52,9 @@ const Registration: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100">
-      <div className="bg-white p-8 rounded shadow-md w-full max-w-md">
-        <h1 className="text-2xl font-bold mb-6 text-center">Register</h1>
+    <div className="flex min-h-screen items-center justify-center bg-gray-100">
+      <div className="w-full max-w-md rounded bg-white p-8 shadow-md">
+        <h1 className="mb-6 text-center text-2xl font-bold">Register</h1>
         <AuthForm type="register" onSubmit={handleRegister} />
         {loading && <p className="mt-2 text-sm">Creating account…</p>}
       </div>

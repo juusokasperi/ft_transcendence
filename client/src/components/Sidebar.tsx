@@ -14,21 +14,21 @@ const sideBarLinks: SideBarLink[] = [
 
 const Sidebar: React.FC = () => {
   return (
-    <div className="md:w-64 w-12 border-r mt-12 h-full text-base border-gray-300 pt-3 flex flex-col transition-all duration-300">
+    <div className="mt-12 flex h-full w-12 flex-col border-r border-gray-300 pt-3 text-base transition-all duration-300 md:w-64">
       {sideBarLinks.map((item, index) => (
         <NavLink
           to={item.path}
           key={index}
           end
           className={({ isActive }) =>
-            `flex items-center py-3 px-4 md:px-8 gap-3 ${
+            `flex items-center gap-3 px-4 py-3 md:px-8 ${
               isActive
-                ? 'border-r-4 md:border-r-[6px] bg-blue-600/10 border-blue-600 text-blue-600'
-                : 'hover:bg-gray-100/90 border-white text-gray-700'
+                ? 'border-r-4 border-blue-600 bg-blue-600/10 text-blue-600 md:border-r-[6px]'
+                : 'border-white text-gray-700 hover:bg-gray-100/90'
             }`
           }
         >
-          <p className="md:block hidden text-center">{item.name}</p>
+          <p className="hidden text-center md:block">{item.name}</p>
         </NavLink>
       ))}
     </div>

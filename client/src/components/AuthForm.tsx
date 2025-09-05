@@ -48,7 +48,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ type, onSubmit }) => {
       {success && <p className="text-green-600">{success}</p>}
 
       <div>
-        <label htmlFor="email" className="block mb-1 font-medium">
+        <label htmlFor="email" className="mb-1 block font-medium">
           Email
         </label>
         <input
@@ -57,13 +57,13 @@ const AuthForm: React.FC<AuthFormProps> = ({ type, onSubmit }) => {
           placeholder="Email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          className="w-full border rounded px-3 py-2"
+          className="w-full rounded border px-3 py-2"
         />
       </div>
 
       {type === 'register' && (
         <div>
-          <label htmlFor="username" className="block mb-1 font-medium">
+          <label htmlFor="username" className="mb-1 block font-medium">
             Username
           </label>
           <input
@@ -72,13 +72,13 @@ const AuthForm: React.FC<AuthFormProps> = ({ type, onSubmit }) => {
             placeholder="Username"
             value={username}
             onChange={(e) => setUsername(e.target.value)}
-            className="w-full border rounded px-3 py-2"
+            className="w-full rounded border px-3 py-2"
           />
         </div>
       )}
 
       <div>
-        <label htmlFor="password" className="block mb-1 font-medium">
+        <label htmlFor="password" className="mb-1 block font-medium">
           Password
         </label>
         <input
@@ -87,13 +87,13 @@ const AuthForm: React.FC<AuthFormProps> = ({ type, onSubmit }) => {
           placeholder="Password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          className="w-full border rounded px-3 py-2"
+          className="w-full rounded border px-3 py-2"
         />
       </div>
 
       {type === 'register' && (
         <div>
-          <label htmlFor="confirmPassword" className="block mb-1 font-medium">
+          <label htmlFor="confirmPassword" className="mb-1 block font-medium">
             Confirm Password
           </label>
           <input
@@ -102,14 +102,14 @@ const AuthForm: React.FC<AuthFormProps> = ({ type, onSubmit }) => {
             placeholder="Confirm Password"
             value={confirmPassword}
             onChange={(e) => setConfirmPassword(e.target.value)}
-            className="w-full border rounded px-3 py-2"
+            className="w-full rounded border px-3 py-2"
           />
         </div>
       )}
 
       <button
         type="submit"
-        className="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700 mb-3"
+        className="mb-3 w-full rounded bg-blue-600 py-2 text-white hover:bg-blue-700"
       >
         {type === 'login' ? 'Login' : 'Register'}
       </button>
