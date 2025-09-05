@@ -1,7 +1,5 @@
-import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAppContext } from '../context/AppContext';
-import { div } from 'framer-motion/client';
 
 const Navbar = () => {
   const { user, logout } = useAppContext();

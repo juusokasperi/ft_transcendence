@@ -7,9 +7,6 @@ import Layout from './pages/Layout';
 import Profile from './pages/Profile';
 import { Toaster } from 'react-hot-toast';
 import Friends from './pages/Friends';
-import { useAppContext } from './context/AppContext';
-import { useEffect } from 'react';
-import { jwtDecode } from 'jwt-decode';
 import Confirmation from './pages/Confirmation';
 
 function App() {
