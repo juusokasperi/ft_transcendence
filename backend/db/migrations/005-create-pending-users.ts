@@ -1,7 +1,7 @@
 import type { Database } from 'better-sqlite3';
 
 export async function up(db: Database) {
-	db.exec(`
+  db.exec(`
 	CREATE TABLE IF NOT EXISTS PendingUsers (
 	id INTEGER PRIMARY KEY AUTOINCREMENT,
 	username TEXT NOT NULL UNIQUE,
@@ -12,9 +12,9 @@ export async function up(db: Database) {
 	created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 	);`);
 
-	db.exec(`CREATE INDEX idx_unconfirmed_users ON PendingUsers(expires_at)`);
+  db.exec(`CREATE INDEX idx_unconfirmed_users ON PendingUsers(expires_at)`);
 }
 
 export async function down(db: Database) {
-	db.exec(`DROP TABLE IF EXISTS PendingUsers;`);
+  db.exec(`DROP TABLE IF EXISTS PendingUsers;`);
 }

@@ -1,17 +1,11 @@
-import React, { useState } from "react";
-import { Link } from "react-router-dom";
-import { useAppContext } from '../context/AppContext' 
-import { div } from "framer-motion/client";
-
+import { Link } from 'react-router-dom';
+import { useAppContext } from '../context/AppContext';
 
 const Navbar = () => {
-
-
   const { user, logout } = useAppContext();
 
   return (
-    <nav className="text-white px-6 py-4 flex justify-between items-center bg-transparent absolute top-0 left-0 w-full z-50">
-
+    <nav className="absolute left-0 top-0 z-50 flex w-full items-center justify-between bg-transparent px-6 py-4 text-white">
       <div className="text-xl font-bold text-amber-500">
         <Link to="/">Poooong</Link>
       </div>
@@ -19,27 +13,20 @@ const Navbar = () => {
       <div className="space-x-4">
         {user ? (
           <div className="flex justify-between space-x-4">
-
-          <span className="text-amber-500 text-center">Welcome {user.username} :D</span>
-          <Link
-            to="/profile"
-            className="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded"
-          >
-            Profile
-          </Link>
-        <button
-          onClick={logout}
-          className="bg-yellow-600 hover:bg-yellow-700 px-4 py-2 rounded"
-        >
-          Logout
-        </button>
+            <span className="text-center text-amber-500">Welcome {user.username} :D</span>
+            <Link to="/profile" className="rounded bg-blue-600 px-4 py-2 hover:bg-blue-700">
+              Profile
+            </Link>
+            <button
+              onClick={logout}
+              className="rounded bg-yellow-600 px-4 py-2 hover:bg-yellow-700"
+            >
+              Logout
+            </button>
           </div>
         ) : (
           <>
-            <Link
-              to="/login"
-              className="bg-green-600 hover:bg-green-700 px-4 py-2 rounded"
-            >
+            <Link to="/login" className="rounded bg-green-600 px-4 py-2 hover:bg-green-700">
               Login
             </Link>
           </>

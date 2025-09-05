@@ -1,5 +1,5 @@
 export const confirmationEmailHtml = (confirmUrl: string, frontendUrl: string): string => {
-	return `<div
+  return `<div
 		style="font-family: sans-serif; max-width: 400px; margin: 2rem auto;
 		padding: 1rem; border-radius: 0.5rem;">
 		<h2>Confirm your email address to get started on playing BabylonPong</h2>
@@ -22,7 +22,7 @@ export const confirmationEmailHtml = (confirmUrl: string, frontendUrl: string): 
 };
 
 export const resetPasswordHtml = (resetUrl: string, frontendUrl: string): string => {
-	return `<div
+  return `<div
 		style="font-family: sans-serif; max-width: 400px; margin: 2rem auto;
 		padding: 1rem; border-radius: 0.5rem;">
 		<h2>Reset your password for BabylonPong</h2>
@@ -45,7 +45,7 @@ export const resetPasswordHtml = (resetUrl: string, frontendUrl: string): string
 };
 
 export const deleteUserHtml = (resetUrl: string, frontendUrl: string): string => {
-	return `<div
+  return `<div
 		style="font-family: sans-serif; max-width: 400px; margin: 2rem auto;
 		padding: 1rem; border-radius: 0.5rem;">
 		<h2>You have requested for your user's deletion from BabylonPong.</h2>

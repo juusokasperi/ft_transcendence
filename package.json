@@ -1,0 +1,25 @@
+{
+  "name": "ft_transcendence",
+  "version": "1.0.0",
+  "description": "---",
+  "main": "index.js",
+  "scripts": {
+    "format": "prettier . --check --config .config/prettier/prettier.config.cjs --ignore-path .config/prettier/.prettierignore",
+    "format:write": "prettier . --write --config .config/prettier/prettier.config.cjs --ignore-path .config/prettier/.prettierignore"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/juusokasperi/ft_transcendence.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/juusokasperi/ft_transcendence/issues"
+  },
+  "homepage": "https://github.com/juusokasperi/ft_transcendence#readme",
+  "devDependencies": {
+    "prettier": "^3.6.2",
+    "prettier-plugin-tailwindcss": "^0.6.14"
+  }
+}

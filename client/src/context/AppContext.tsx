@@ -1,12 +1,12 @@
 // src/context/AppContext.tsx
-import axios from "axios";
-import type { AxiosInstance } from "axios";
-import { createContext, useContext } from "react";
-import type { ReactNode } from "react";
-import { useNavigate } from "react-router-dom";
-import { useUser } from "../hooks/useUser";
-import { useAuth } from "../hooks/useAuth";
-import type { User } from "../types";
+import axios from 'axios';
+import type { AxiosInstance } from 'axios';
+import { createContext, useContext } from 'react';
+import type { ReactNode } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useUser } from '../hooks/useUser';
+import { useAuth } from '../hooks/useAuth';
+import type { User } from '../types';
 
 axios.defaults.baseURL = import.meta.env.VITE_BACKEND_URL;
 
@@ -27,7 +27,6 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const { user, setUser } = useUser();
   const { getToken, login: authLogin, logout: authLogout } = useAuth();
 
-  
   const login = (userData: User, token: string) => {
     authLogin(userData, token); // save in localStorage
     setUser(userData); // updates react state
@@ -36,7 +35,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const logout = () => {
     authLogout();
     setUser(null);
-    navigate("/");
+    navigate('/');
   };
 
   // Optional: Attaches Token automatically
@@ -57,6 +56,6 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
 export const useAppContext = (): AppContextType => {
   const ctx = useContext(AppContext);
-  if (!ctx) throw new Error("useAppContext must be used inside AppProvider");
+  if (!ctx) throw new Error('useAppContext must be used inside AppProvider');
   return ctx;
 };

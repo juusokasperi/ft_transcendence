@@ -12,7 +12,9 @@
     "migration:down": "npx tsx utils/rollback.ts",
     "test": "vitest",
     "db:reset": "rm -rf data/",
-    "seed:secret": "npx tsx utils/seedSecrets.ts"
+    "seed:secret": "npx tsx utils/seedSecrets.ts",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "typecheck:watch": "tsc -p tsconfig.json --noEmit --watch"
   },
   "devDependencies": {
     "@types/bcrypt": "^6.0.0",

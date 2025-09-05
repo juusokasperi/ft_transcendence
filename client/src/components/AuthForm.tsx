@@ -1,15 +1,20 @@
-import React, { useState } from "react";
+import React, { useState } from 'react';
 
 interface AuthFormProps {
-  type: "login" | "register";
-  onSubmit: (data: { username?: string;password: string; email: string; confirmPassword?: string }) => void;
+  type: 'login' | 'register';
+  onSubmit: (data: {
+    username?: string;
+    password: string;
+    email: string;
+    confirmPassword?: string;
+  }) => void;
 }
 
 const AuthForm: React.FC<AuthFormProps> = ({ type, onSubmit }) => {
-  const [username, setUsername] = useState("");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
+  const [username, setUsername] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [success, setSuccess] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -18,13 +23,13 @@ const AuthForm: React.FC<AuthFormProps> = ({ type, onSubmit }) => {
     setError(null);
     setSuccess(null);
 
-    if (!email || !password || (type === "register" && !confirmPassword && !username)) {
-      setError("All fields are required.");
+    if (!email || !password || (type === 'register' && !confirmPassword && !username)) {
+      setError('All fields are required.');
       return;
     }
 
-    if (type === "register" && password !== confirmPassword) {
-      setError("Passwords do not match.");
+    if (type === 'register' && password !== confirmPassword) {
+      setError('Passwords do not match.');
       return;
     }
 
@@ -33,7 +38,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ type, onSubmit }) => {
       username,
       password,
       email,
-      confirmPassword: type === "register" ? confirmPassword : undefined,
+      confirmPassword: type === 'register' ? confirmPassword : undefined,
     });
   };
 
@@ -43,62 +48,70 @@ const AuthForm: React.FC<AuthFormProps> = ({ type, onSubmit }) => {
       {success && <p className="text-green-600">{success}</p>}
 
       <div>
-        <label htmlFor="email" className="block mb-1 font-medium">Email</label>
+        <label htmlFor="email" className="mb-1 block font-medium">
+          Email
+        </label>
         <input
           id="email"
           type="text"
           placeholder="Email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          className="w-full border rounded px-3 py-2"
+          className="w-full rounded border px-3 py-2"
         />
       </div>
 
-      {type === "register" && (
+      {type === 'register' && (
         <div>
-          <label htmlFor="username"  className="block mb-1 font-medium">Username</label>
+          <label htmlFor="username" className="mb-1 block font-medium">
+            Username
+          </label>
           <input
             id="username"
             type="username"
             placeholder="Username"
             value={username}
             onChange={(e) => setUsername(e.target.value)}
-            className="w-full border rounded px-3 py-2"
+            className="w-full rounded border px-3 py-2"
           />
         </div>
-          )}
+      )}
 
       <div>
-        <label htmlFor="password" className="block mb-1 font-medium">Password</label>
+        <label htmlFor="password" className="mb-1 block font-medium">
+          Password
+        </label>
         <input
           id="password"
           type="password"
           placeholder="Password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          className="w-full border rounded px-3 py-2"
+          className="w-full rounded border px-3 py-2"
         />
       </div>
 
-      {type === "register" && (
+      {type === 'register' && (
         <div>
-          <label htmlFor="confirmPassword" className="block mb-1 font-medium">Confirm Password</label>
+          <label htmlFor="confirmPassword" className="mb-1 block font-medium">
+            Confirm Password
+          </label>
           <input
             id="confirmPassword"
             type="password"
             placeholder="Confirm Password"
             value={confirmPassword}
             onChange={(e) => setConfirmPassword(e.target.value)}
-            className="w-full border rounded px-3 py-2"
+            className="w-full rounded border px-3 py-2"
           />
         </div>
       )}
 
       <button
         type="submit"
-        className="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700 mb-3"
+        className="mb-3 w-full rounded bg-blue-600 py-2 text-white hover:bg-blue-700"
       >
-        {type === "login" ? "Login" : "Register"}
+        {type === 'login' ? 'Login' : 'Register'}
       </button>
     </form>
   );
