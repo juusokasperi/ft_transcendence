@@ -4,8 +4,8 @@
   "description": "---",
   "main": "index.js",
   "scripts": {
-    "format": "prettier . --check --config .config/prettier/prettier.config.cjs --ignore-path .config/prettier/.prettierignore",
-    "format:write": "prettier . --write --config .config/prettier/prettier.config.cjs --ignore-path .config/prettier/.prettierignore"
+    "check": "prettier . --check --config .config/prettier/prettier.config.cjs --ignore-path .config/prettier/.prettierignore",
+    "fix": "prettier . --write --config .config/prettier/prettier.config.cjs --ignore-path .config/prettier/.prettierignore"
   },
   "repository": {
     "type": "git",

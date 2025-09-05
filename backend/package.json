@@ -13,6 +13,7 @@
     "test": "vitest",
     "db:reset": "rm -rf data/",
     "seed:secret": "npx tsx utils/seedSecrets.ts",
+    "fix": "cd .. && npm run format:write",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "typecheck:watch": "tsc -p tsconfig.json --noEmit --watch"
   },
