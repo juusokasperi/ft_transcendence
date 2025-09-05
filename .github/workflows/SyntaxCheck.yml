@@ -3,12 +3,12 @@ name: Syntax Check
 on:
   workflow_dispatch:
   push:
-    branches: [ main, development, feat/formatter ]
+    branches: [ main, development ]
   pull_request:
     branches: [ main, development ]
 
 jobs:
-  backend:
+  syntax-check:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
