@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from "react";
-import type { ChangeEvent } from "react";
-import { useAppContext } from "../context/AppContext";
-import toast from "react-hot-toast";
-import type { AxiosError } from "axios";
+import React, { useState, useEffect } from 'react';
+import type { ChangeEvent } from 'react';
+import { useAppContext } from '../context/AppContext';
+import toast from 'react-hot-toast';
+import type { AxiosError } from 'axios';
 
 interface PasswordState {
   currentPassword: string;
@@ -14,14 +14,12 @@ const Profile: React.FC = () => {
   const { axios, user, setUser, getToken, logout } = useAppContext();
 
   const [image, setImage] = useState<File | null>(null);
-  const [imagePreview, setImagePreview] = useState<string>(
-    "src/assets/react.svg",
-  );
-  const [username, setUsername] = useState<string>("");
+  const [imagePreview, setImagePreview] = useState<string>('src/assets/react.svg');
+  const [username, setUsername] = useState<string>('');
   const [newPassword, setNewPasswords] = useState<PasswordState>({
-    currentPassword: "",
-    newPassword: "",
-    confirmPassword: "",
+    currentPassword: '',
+    newPassword: '',
+    confirmPassword: '',
   });
 
   const [loading, setLoading] = useState<boolean>(false);
@@ -29,7 +27,7 @@ const Profile: React.FC = () => {
   const getImage = async () => {
     try {
       const res = await axios.get(`/uploads/${user?.avatar}`, {
-        responseType: "blob",
+        responseType: 'blob',
       });
       setImagePreview(URL.createObjectURL(res.data));
     } catch (error) {}
@@ -54,7 +52,7 @@ const Profile: React.FC = () => {
       if (!username) return;
       const token = getToken();
       const res = await axios.patch(
-        "/api/users/me",
+        '/api/users/me',
         {
           newUsername: username,
         },
@@ -64,10 +62,8 @@ const Profile: React.FC = () => {
           },
         },
       );
-      setUser((prev) =>
-        prev ? { ...prev, username: res.data.username } : res.data,
-      );
-      toast.success("Account username changed");
+      setUser((prev) => (prev ? { ...prev, username: res.data.username } : res.data));
+      toast.success('Account username changed');
     } catch (err: any) {
       const axiosErr = err as AxiosError<{ error?: string }>;
       const message = axiosErr?.response?.data?.error;
@@ -77,15 +73,11 @@ const Profile: React.FC = () => {
 
   const handlePasswordChange = async () => {
     try {
-      if (
-        !newPassword.newPassword ||
-        !newPassword.currentPassword ||
-        !newPassword.confirmPassword
-      )
+      if (!newPassword.newPassword || !newPassword.currentPassword || !newPassword.confirmPassword)
         return;
       const token = getToken();
       await axios.patch(
-        "/api/users/me/password",
+        '/api/users/me/password',
         {
           newPassword: newPassword.newPassword,
           currentPassword: newPassword.currentPassword,
@@ -96,7 +88,7 @@ const Profile: React.FC = () => {
           },
         },
       );
-      toast.success("Account password changed");
+      toast.success('Account password changed');
     } catch (err: any) {
       const axiosErr = err as AxiosError<{ error?: string }>;
       const message = axiosErr?.response?.data?.error;
@@ -116,20 +108,18 @@ const Profile: React.FC = () => {
 
           // Create a FormData instance
           const formData = new FormData();
-          formData.append("avatar", image); // "avatar" is the field name expected by backend
+          formData.append('avatar', image); // "avatar" is the field name expected by backend
 
-          const res = await axios.patch("/api/users/me/avatar", formData, {
+          const res = await axios.patch('/api/users/me/avatar', formData, {
             headers: {
               Authorization: `Bearer ${token}`,
-              "Content-Type": "multipart/form-data", // Axios sets the correct boundary automatically
+              'Content-Type': 'multipart/form-data', // Axios sets the correct boundary automatically
             },
           });
 
-          setUser((prev) =>
-            prev ? { ...prev, avatar: res.data.avatar } : res.data,
-          );
+          setUser((prev) => (prev ? { ...prev, avatar: res.data.avatar } : res.data));
           getImage();
-          toast.success("Account avatar has been changed");
+          toast.success('Account avatar has been changed');
         } catch (err: any) {
           setLoading(false);
           const axiosErr = err as AxiosError<{ error?: string }>;
@@ -148,8 +138,7 @@ const Profile: React.FC = () => {
 
   // Delete account
   const handleDelete = async () => {
-    if (!window.confirm("Are you sure you want to delete your account?"))
-      return;
+    if (!window.confirm('Are you sure you want to delete your account?')) return;
     try {
       const token = getToken();
       await axios.delete(`/api/users/me`, {
@@ -157,11 +146,11 @@ const Profile: React.FC = () => {
           Authorization: `Bearer ${token}`,
         },
       });
-      toast.success("Account deleted");
+      toast.success('Account deleted');
       logout();
       // redirect or logout logic here
     } catch (err: any) {
-      toast.error(err.response?.data?.message || "Delete failed");
+      toast.error(err.response?.data?.message || 'Delete failed');
     }
   };
 
@@ -220,9 +209,7 @@ const Profile: React.FC = () => {
           <input
             type="password"
             value={newPassword.newPassword}
-            onChange={(e) =>
-              setNewPasswords({ ...newPassword, newPassword: e.target.value })
-            }
+            onChange={(e) => setNewPasswords({ ...newPassword, newPassword: e.target.value })}
             className="w-full rounded border p-2"
           />
         </div>
@@ -249,7 +236,7 @@ const Profile: React.FC = () => {
             disabled={loading}
             className="rounded bg-blue-500 px-4 py-2 text-white hover:bg-blue-600 disabled:opacity-50"
           >
-            {loading ? "Updating..." : "Update Profile"}
+            {loading ? 'Updating...' : 'Update Profile'}
           </button>
 
           <button
