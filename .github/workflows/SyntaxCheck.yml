@@ -3,7 +3,7 @@ name: Syntax Check
 on:
   workflow_dispatch:
   push:
-    branches: [ main, development ]
+    branches: [ main, development, feat/formatter ]
   pull_request:
     branches: [ main, development ]
 
