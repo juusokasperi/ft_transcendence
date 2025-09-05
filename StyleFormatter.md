@@ -7,13 +7,13 @@ Everyone should have the **Prettier – Code formatter** extension installed.
 - **Format check:**
 
   ```bash
-  npm run format
+  npm run check
   ```
 
 - **Write fixes:**
 
   ```bash
-  npm run format:write
+  npm run fix
   ```
 
 - **Ignore a block:**
