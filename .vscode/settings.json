@@ -6,4 +6,5 @@
     "editor.detectIndentation": false,
     "prettier.configPath": ".config/prettier/prettier.config.cjs",
     "prettier.ignorePath": ".config/prettier/.prettierignore",
+    "files.eol": "\n",
 }

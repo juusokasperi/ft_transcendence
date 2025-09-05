@@ -6,6 +6,7 @@ module.exports = {
   semi: true,
   trailingComma: "all",
   arrowParens: "always",
+  endOfLine: "lf",
   useTabs: false,
   tabWidth: 2,
 
@@ -44,4 +45,8 @@ module.exports = {
       },
     },
   ],
+  plugins: [
+    'prettier-plugin-tailwindcss',
+  ],
+  tailwindStylesheet: './client/src/index.css',
 };
