@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite --host 0.0.0.0 --strictPort --port 5173",
     "build": "vite build",
+    "fix": "cd .. && npm run fix",
     "typecheck": "tsc -b",
     "preview": "vite preview"
   },

@@ -7,7 +7,7 @@ const Friends: React.FC = () => {
   const [friendName, setFriendName] = useState('');
 
   const { axios, getToken } = useAppContext();
-
+  getToken; // to avoid unused variable warning
   const handleAddFriend = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!friendName.trim()) return;
@@ -15,6 +15,7 @@ const Friends: React.FC = () => {
     const res = await axios.post('/api/friends', {
       username: friendName,
     });
+    res.data; // to avoid unused variable warning
 
     // 🚀 Replace this with your backend request
     console.log('Sending friend request to:', friendName);
