@@ -36,7 +36,7 @@ const Profile: React.FC = () => {
   useEffect(() => {
     console.log(user?.avatar);
     getImage();
-  }, [user]);
+  }, [user?.avatar]);
 
   // Handle image selection
   const handleImageChange = async (e: ChangeEvent<HTMLInputElement>) => {
