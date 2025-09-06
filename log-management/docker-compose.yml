@@ -134,6 +134,7 @@ services:
     environment:
       - ELASTIC_USER=elastic
       - ELASTIC_PASSWORD=${ELASTIC_PASSWORD}
+      - KIBANA_URL=http://kibana:5601
     depends_on:
       - kibana
 
