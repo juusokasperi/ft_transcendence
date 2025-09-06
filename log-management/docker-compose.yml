@@ -128,6 +128,16 @@ services:
       retries: 120
 
 
+  kibana-post:
+    build:
+      context: ./kibana-post/
+    environment:
+      - ELASTIC_USER=elastic
+      - ELASTIC_PASSWORD=${ELASTIC_PASSWORD}
+    depends_on:
+      - kibana
+
+
   logstash:
     depends_on:
       elasticsearch:
@@ -140,7 +150,6 @@ services:
       context: ./logstash/
       args: 
         STACK_VERSION: ${STACK_VERSION:?STACK_VERSION must be set}
-    user: root
     volumes:
       - certs:/usr/share/logstash/certs
       - logstashdata01:/usr/share/logstash/data
