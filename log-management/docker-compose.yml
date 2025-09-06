@@ -33,16 +33,17 @@ services:
       - logstash
 
 
-  setup:
-    image: docker.elastic.co/elasticsearch/elasticsearch:${STACK_VERSION}
+  elastic_cert_setup:
+    build:
+      context: ./elastic_cert_setup/
+      args: 
+        STACK_VERSION: ${STACK_VERSION:?STACK_VERSION must be set}
     volumes:
       - certs:/usr/share/elasticsearch/config/certs
-      - ./setup/setup.sh:/usr/local/bin/setup.sh
     user: "0"
     environment:
       - ELASTIC_PASSWORD=${ELASTIC_PASSWORD}
       - KIBANA_PASSWORD=${KIBANA_PASSWORD}
-    command: ["/usr/local/bin/setup.sh"]
     healthcheck:
       test: ["CMD-SHELL", "[ -f config/certs/elasticsearch/elasticsearch.crt ]"]
       interval: 1s
@@ -52,7 +53,7 @@ services:
 
   elasticsearch:
     depends_on:
-      setup:
+      elastic_cert_setup:
         condition: service_healthy
     image: docker.elastic.co/elasticsearch/elasticsearch:${STACK_VERSION}
     labels:
