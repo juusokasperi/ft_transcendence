@@ -19,8 +19,8 @@ const SignupBodySchema = {
       type: 'string',
       description: 'Google auth token (optional)',
     },
-    additionalProperties: false,
   },
+  additionalProperties: false,
 };
 
 const LoginBodySchema = {
