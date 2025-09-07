@@ -37,7 +37,7 @@ const ResetPassBodySchema = {
   type: 'object',
   required: ['newPassword'],
   properties: {
-    password: PassSchema,
+    newPassword: PassSchema,
   },
   additionalProperties: false,
 };
