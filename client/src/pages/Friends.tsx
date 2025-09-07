@@ -107,7 +107,7 @@ const Friends: React.FC = () => {
   }, [activeTab]);
 
   return (
-    <div className="p-6">
+    <div className="mt-12 p-6">
       {/* Tabs */}
       <div className="mb-6 flex space-x-4 border-b border-gray-300">
         {['all', 'online', 'offline', 'pending', 'add'].map((tab) => (
