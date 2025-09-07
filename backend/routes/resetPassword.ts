@@ -59,7 +59,7 @@ export async function resetPasswordRoutes(app: FastifyInstance) {
         const passwordHash = await bcrypt.hash(newPassword, 10);
         const result = updatePassword(uuid, passwordHash);
         if (!result) return res.status(500).send({ message: 'Failed to update password.' });
-        return res.status(200).send({ message: 'Password succesfully updated.' });
+        return res.status(200).send({ success: 'Password succesfully updated.' });
       } catch (error) {
         res.status(500).send({ message: 'Failed to process password reset request.' });
       }
