@@ -119,7 +119,7 @@ export async function friendsRoutes(app: FastifyInstance) {
         const user2Uuid = userResult.uuid;
         const result = addFriend(user1Uuid, user2Uuid);
         if (!result) return res.status(400).send({ message: 'Already friends or request pending' });
-        res.status(201).send({ success: 'Friend request succesfully sent' });
+        res.status(201).send({ success: 'Friend request successfully sent' });
       } catch (error) {
         return res.status(500).send({ message: 'Failed to send friend request' });
       }
@@ -140,7 +140,7 @@ export async function friendsRoutes(app: FastifyInstance) {
         const result = deleteFriend(user1Uuid, user2Uuid);
         if (!result)
           return res.status(400).send({ message: 'No friendship found with supplied UUIDs.' });
-        res.status(204).send({ message: 'Friendship succesfully removed' });
+        res.status(204).send({ message: 'Friendship successfully removed' });
       } catch (error) {
         return res.status(500).send({ message: 'Failed to delete friendship' });
       }

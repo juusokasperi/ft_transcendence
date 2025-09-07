@@ -175,7 +175,7 @@ export async function userRoutes(app: FastifyInstance) {
         const newPasswordHash = await bcrypt.hash(newPassword, 10);
         const updateResult = updatePassword(uuid, newPasswordHash);
         if (!updateResult) return res.status(400).send({ message: 'Update failed' });
-        res.status(200).send({ success: 'Password succesfully updated' });
+        res.status(200).send({ success: 'Password successfully updated' });
       } catch (error) {
         res.status(500).send({ message: 'Failed to update user' });
       }
