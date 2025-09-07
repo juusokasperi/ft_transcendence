@@ -9,6 +9,9 @@ on:
 
 jobs:
   syntax-check:
+    permissions:
+      contents: read
+      pull-requests: write
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -23,4 +26,26 @@ jobs:
 
       - name: Run npm check
         run: npm run check
+
+      - name: Comment on PR if failed
+        if: ${{ failure() && github.event_name == 'pull_request' }}
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const pr = context.payload.pull_request?.number;
+            if (!pr) {
+              core.info('No PR number found; skipping comment.');
+              return;
+            }
+            const body = [
+              '**SyntaxCheck CI** failed.',
+              `Commit: \`${process.env.GITHUB_SHA.slice(0,7)}\``,
+              `Logs: ${process.env.GITHUB_SERVER_URL}/${process.env.GITHUB_REPOSITORY}/actions/runs/${process.env.GITHUB_RUN_ID}`
+            ].join('\n');
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: pr,
+              body
+            });
 
