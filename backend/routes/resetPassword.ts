@@ -9,12 +9,12 @@ import {
 import bcrypt from 'bcrypt';
 import crypto from 'crypto';
 import { sendResetPasswordEmail } from '../utils/nodemailer/index.ts';
-import { validationHook, normalizeCredentials } from '../hooks/auth.ts';
-import { validateChangePassword } from '../utils/validate.ts';
+import { normalizeCredentials } from '../hooks/auth.ts';
+import { resetPassSchema, resetPassConfirmSchema } from '../schemas/authSchemas.ts';
 
 export async function resetPasswordRoutes(app: FastifyInstance) {
   // Request a password reset email
-  app.post('/', async (req: FastifyRequest, res: FastifyReply) => {
+  app.post('/', { schema: resetPassSchema }, async (req: FastifyRequest, res: FastifyReply) => {
     try {
       const { email } = req.body as { email: string };
       if (!email) return res.status(400).send({ message: 'Email is required' });
@@ -40,7 +40,10 @@ export async function resetPasswordRoutes(app: FastifyInstance) {
 
   app.post(
     '/:resetToken',
-    { preValidation: [normalizeCredentials, validationHook(validateChangePassword)] },
+    {
+      schema: resetPassConfirmSchema,
+      preValidation: [normalizeCredentials],
+    },
     async (req: FastifyRequest, res: FastifyReply) => {
       try {
         const { resetToken } = req.params as { resetToken: string };
@@ -55,7 +58,7 @@ export async function resetPasswordRoutes(app: FastifyInstance) {
         const passwordHash = await bcrypt.hash(newPassword, 10);
         const result = updatePassword(uuid, passwordHash);
         if (!result) return res.status(500).send({ message: 'Failed to update password.' });
-        return res.status(200).send({ message: 'Password succesfully updated.' });
+        return res.status(200).send({ success: 'Password successfully updated.' });
       } catch (error) {
         res.status(500).send({ message: 'Failed to process password reset request.' });
       }
