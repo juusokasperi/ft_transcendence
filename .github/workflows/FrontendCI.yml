@@ -37,7 +37,7 @@ jobs:
         run: |
           nohup npm run dev > frontend.log 2>&1 &
           sleep 10
-          curl -f http://localhost:5173 || (cat frontend.log && exit 1)
+          curl -f http://localhost:5174 || (cat frontend.log && exit 1)
 
       - name: Comment on PR if failed
         if: ${{ failure() && github.event_name == 'pull_request' }}
