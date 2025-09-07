@@ -12,13 +12,17 @@ volumes:
   logstashdata01:
     driver: local
 
-
 networks:
-  default:
-    name: elastic
-    external: false
-
-
+  devnet:
+    driver: bridge
+    labels:
+      - project=transcendence
+# networks:
+#   default:
+#     name: elastic
+#     external: false
+#
+#
 services:
 
   log-generator:
@@ -29,6 +33,8 @@ services:
       driver: gelf
       options:
         gelf-address: udp://localhost:12201
+    networks:
+      - devnet
     depends_on:
       - logstash
 
@@ -49,6 +55,8 @@ services:
       interval: 1s
       timeout: 5s
       retries: 120
+    networks:
+      - devnet
 
 
   elasticsearch:
@@ -94,6 +102,8 @@ services:
       interval: 10s
       timeout: 10s
       retries: 120
+    networks:
+      - devnet
 
 
   kibana:
@@ -127,6 +137,8 @@ services:
       interval: 10s
       timeout: 10s
       retries: 120
+    networks:
+      - devnet
 
 
   kibana-post:
@@ -136,6 +148,8 @@ services:
       - ELASTIC_USER=elastic
       - ELASTIC_PASSWORD=${ELASTIC_PASSWORD}
       - KIBANA_URL=http://kibana:5601
+    networks:
+      - devnet
     depends_on:
       - kibana
 
@@ -161,5 +175,10 @@ services:
       - ELASTIC_PASSWORD=${ELASTIC_PASSWORD}
       - ELASTIC_HOSTS=https://elasticsearch:9200
     ports:
-      - "12201:12201/udp"   # GELF input
-      - "9600:9600"         # Logstash monitoring API
+      # Listens for GELF input here. The GELF driver can only send to host IPs,
+      # not into containers => this port needs to be exposed
+      - "12201:12201/udp"
+      # Logstash monitoring API
+      - "9600:9600"
+    networks:
+      - devnet
