@@ -8,35 +8,19 @@ volumes:
   logstash_data:
     driver: local
 
-
-networks:
-  devnet:
-    driver: bridge
-    labels:
-      - project=transcendence
-
-
+# NOTE: container_name is not used because it leads to random bugs when a 
+# previous docker compose run has failed to clean up properly
 services:
 
-  log-generator:
-    image: busybox
-    container_name: log-generator
-    command: sh -c 'i=0; while true; do echo "Test log message $$i at $(date)"; i=$((i+1)); sleep 2; done'
-    logging:
-      driver: gelf
-      options:
-        gelf-address: udp://localhost:12201
-    networks:
-      - devnet
-    depends_on:
-      - logstash
-
-
   elastic_cert_setup:
+    profiles:
+      - elk
     build:
       context: ./elastic_cert_setup/
       args: 
         STACK_VERSION: ${STACK_VERSION:?STACK_VERSION must be set}
+      labels:
+        - project=transcendence
     volumes:
       - elk_certs:/usr/share/elasticsearch/config/certs
     user: "0"
@@ -53,10 +37,17 @@ services:
 
 
   elasticsearch:
+    profiles:
+      - elk
+    build:
+      context: ./elasticsearch/
+      args: 
+        STACK_VERSION: ${STACK_VERSION:?STACK_VERSION must be set}
+      labels:
+        - project=transcendence
     depends_on:
       elastic_cert_setup:
         condition: service_healthy
-    image: docker.elastic.co/elasticsearch/elasticsearch:${STACK_VERSION}
     labels:
       co.elastic.logs/module: elasticsearch
     volumes:
@@ -65,8 +56,6 @@ services:
     ports:
       - ${ES_PORT}:9200
     environment:
-      #- node.name=elasticsearch
-      - cluster.name=${CLUSTER_NAME}
       - discovery.type=single-node
       - ELASTIC_PASSWORD=${ELASTIC_PASSWORD}
       - bootstrap.memory_lock=true
@@ -100,10 +89,17 @@ services:
 
 
   kibana:
+    profiles:
+      - elk
+    build:
+      context: ./kibana/
+      args: 
+        STACK_VERSION: ${STACK_VERSION:?STACK_VERSION must be set}
+      labels:
+        - project=transcendence
     depends_on:
       elasticsearch:
         condition: service_healthy
-    image: docker.elastic.co/kibana/kibana:${STACK_VERSION}
     labels:
       co.elastic.logs/module: kibana
     volumes:
@@ -135,7 +131,11 @@ services:
 
 
   kibana-post:
+    profiles:
+      - elk
     build:
+      labels:
+        - project=transcendence
       context: ./kibana-post/
     environment:
       - ELASTIC_USER=elastic
@@ -148,6 +148,14 @@ services:
 
 
   logstash:
+    profiles:
+      - elk
+    build:
+      context: ./logstash/
+      args: 
+        STACK_VERSION: ${STACK_VERSION:?STACK_VERSION must be set}
+      labels:
+        - project=transcendence
     depends_on:
       elasticsearch:
         condition: service_healthy
@@ -155,10 +163,6 @@ services:
         condition: service_healthy
     labels:
       co.elastic.logs/module: logstash
-    build:
-      context: ./logstash/
-      args: 
-        STACK_VERSION: ${STACK_VERSION:?STACK_VERSION must be set}
     volumes:
       - elk_certs:/usr/share/logstash/certs
       - logstash_data:/usr/share/logstash/data

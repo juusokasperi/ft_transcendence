@@ -7,7 +7,7 @@ services:
       labels:
         - project=transcendence
       network: host  # to allow npm to download dependencies without proxy issues
-    container_name: dev_frontend
+    # container_name: dev_frontend
     env_file: .env
     ports:
       - "${FRONTEND_PORT}:5173"   # direct access: http://localhost:5173
@@ -18,6 +18,10 @@ services:
       - /app/node_modules
     networks:
       - devnet
+    logging:
+      driver: gelf
+      options:
+        gelf-address: udp://localhost:12201
 
   backend:
     build:
@@ -26,7 +30,7 @@ services:
       labels:
         - project=transcendence
       network: host # to allow npm to download dependencies without proxy issues
-    container_name: dev_backend
+    # container_name: dev_backend
     env_file: .env
     ports:
       - "${BACKEND_PORT}:3001"  # direct access: http://localhost:3001
@@ -39,6 +43,10 @@ services:
       - ./backend/data/sqlite/uploads:/data/uploads # for user-uploaded files
     networks:
       - devnet
+    logging:
+      driver: gelf
+      options:
+        gelf-address: udp://localhost:12201
 
   nginx:
     build:
@@ -46,7 +54,7 @@ services:
       dockerfile: Dockerfile.dev
       labels:
         - project=transcendence
-    container_name: dev_nginx
+    # container_name: dev_nginx
     env_file: .env
     ports:
       - "${NGINX_PORT}:80"
@@ -57,9 +65,16 @@ services:
       - backend
     networks:
       - devnet
+    logging:
+      driver: gelf
+      options:
+        gelf-address: udp://localhost:12201
 
 networks:
   devnet:
     driver: bridge
     labels:
       - project=transcendence
+
+include:
+  - log-management/docker-compose.yml
