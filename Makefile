@@ -6,7 +6,7 @@
 #    By: irychkov <irychkov@student.hive.fi>        +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2025/09/02 21:00:08 by irychkov          #+#    #+#              #
-#    Updated: 2025/09/08 14:09:32 by lemercie         ###   ########.fr        #
+#    Updated: 2025/09/08 14:10:01 by lemercie         ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -32,7 +32,6 @@ elk-detached:
 	fi
 	docker compose -p $(NAME) -f docker-compose.yml \
 		--env-file .env \
-		--env-file log-management/.env \
 		--profile elk up --build -d
 		
 
@@ -45,15 +44,13 @@ detached:
 down:
 	docker compose -p $(NAME) -f docker-compose.yml \
 		--env-file .env \
-		--env-file log-management/.env \
 		--profile elk \
 		down --remove-orphans
 
 fclean:
 	docker compose -p $(NAME) -f docker-compose.yml \
-		-f log-management/docker-compose.yml \
 		--env-file .env \
-		--env-file log-management/.env \
+		--profile elk \
 		down --rmi local --volumes --remove-orphans
 
 	docker system prune -a -f --volumes --filter "label=project=$(NAME)"
