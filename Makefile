@@ -6,7 +6,7 @@
 #    By: irychkov <irychkov@student.hive.fi>        +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2025/09/02 21:00:08 by irychkov          #+#    #+#              #
-#    Updated: 2025/09/08 14:08:34 by lemercie         ###   ########.fr        #
+#    Updated: 2025/09/08 14:09:32 by lemercie         ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -30,7 +30,11 @@ elk-detached:
 	if [ ! -d "./backend/data/sqlite/uploads" ]; then \
 		mkdir -p ./backend/data/sqlite/uploads; \
 	fi
-	docker compose -p $(NAME) -f docker-compose.yml --env-file .env --profile elk up --build -d
+	docker compose -p $(NAME) -f docker-compose.yml \
+		--env-file .env \
+		--env-file log-management/.env \
+		--profile elk up --build -d
+		
 
 detached:
 	if [ ! -d "./backend/data/sqlite/uploads" ]; then \
@@ -40,9 +44,9 @@ detached:
 
 down:
 	docker compose -p $(NAME) -f docker-compose.yml \
-		-f log-management/docker-compose.yml \
 		--env-file .env \
 		--env-file log-management/.env \
+		--profile elk \
 		down --remove-orphans
 
 fclean:
