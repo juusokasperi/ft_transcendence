@@ -11,6 +11,8 @@ import {
   updatePassword,
   updateAvatar,
   getUserByUsername,
+  getUserSettings,
+  updateUserSettings,
 } from '../db/queries/users.ts';
 import {
   deleteUser,
@@ -18,9 +20,12 @@ import {
   removeTokenFromDelete,
   findUserToDeleteAndClear,
 } from '../db/queries/userDelete.ts';
-import { authPreHandler, tokenUuidCheck } from '../hooks/auth.ts';
+import { authPreHandler, tokenUuidCheck, validationHook } from '../hooks/auth.ts';
 import { sendDeleteEmail } from '../utils/nodemailer/index.ts';
 import { normalizeCredentials } from '../hooks/auth.ts';
+import { updateLastSeenHandler } from '../hooks/updateLastSeen.ts';
+import { UPLOAD_DIR } from '../utils/config.ts';
+import { validateUserSettings } from '../utils/validate.ts';
 
 /*
 	TO DO:
@@ -56,7 +61,7 @@ export async function userRoutes(app: FastifyInstance) {
   // Sends a email confirmation for user deletion
   app.delete(
     '/me',
-    { preHandler: [authPreHandler, tokenUuidCheck] },
+    { preHandler: [authPreHandler, tokenUuidCheck, updateLastSeenHandler] },
     async (req: FastifyRequest, res: FastifyReply) => {
       try {
         const uuid = req.user!.uuid;
@@ -101,7 +106,10 @@ export async function userRoutes(app: FastifyInstance) {
   // Add validation for username
   app.patch(
     '/me',
-    { preValidation: [normalizeCredentials], preHandler: [authPreHandler, tokenUuidCheck] },
+    {
+      preValidation: [normalizeCredentials],
+      preHandler: [authPreHandler, tokenUuidCheck, updateLastSeenHandler],
+    },
     async (req: FastifyRequest, res: FastifyReply) => {
       try {
         const { newUsername } = req.body as { newUsername: string };
@@ -127,7 +135,10 @@ export async function userRoutes(app: FastifyInstance) {
   // Update password, requires token and { newPassword, currentPassword } as request body
   app.patch(
     '/me/password',
-    { preValidation: [normalizeCredentials], preHandler: [authPreHandler, tokenUuidCheck] },
+    {
+      preValidation: [normalizeCredentials],
+      preHandler: [authPreHandler, tokenUuidCheck, updateLastSeenHandler],
+    },
     async (req: FastifyRequest, res: FastifyReply) => {
       try {
         const { newPassword, currentPassword } = req.body as {
@@ -154,7 +165,7 @@ export async function userRoutes(app: FastifyInstance) {
   // Change avatar picture, requires token and multipart form with { avatar } file
   app.patch(
     '/me/avatar',
-    { preHandler: [authPreHandler, tokenUuidCheck] },
+    { preHandler: [authPreHandler, tokenUuidCheck, updateLastSeenHandler] },
     async (req: FastifyRequest, res: FastifyReply) => {
       try {
         const uuid = req.user!.uuid;
@@ -171,12 +182,7 @@ export async function userRoutes(app: FastifyInstance) {
         if (!ACCEPTED_TYPES.includes(file.mimetype))
           return res.status(400).send({ message: 'Invalid avatar file type.' });
 
-        const uploadDir = path.join(process.cwd(), 'uploads');
-        try {
-          await fsAsync.mkdir(uploadDir, { recursive: true });
-        } catch (err) {
-          return res.status(500).send({ message: 'Failure saving avatar' });
-        }
+        const uploadDir = path.join(process.cwd(), UPLOAD_DIR);
 
         const fileExtension = getExtensionFromMime(file.mimetype);
         const fileName = `${uuid}_${Date.now()}_avatar${fileExtension}`;
@@ -192,7 +198,7 @@ export async function userRoutes(app: FastifyInstance) {
         // Delete old avatar (if exists)
         if (user.avatar) {
           try {
-            await fsAsync.unlink(user.avatar);
+            await fsAsync.unlink(path.join(uploadDir, user.avatar));
           } catch (err) {
             console.log('Error deleting old avatar picture');
           }
@@ -210,7 +216,7 @@ export async function userRoutes(app: FastifyInstance) {
   // Delete avatar picture, requires token
   app.delete(
     '/me/avatar',
-    { preHandler: [authPreHandler, tokenUuidCheck] },
+    { preHandler: [authPreHandler, tokenUuidCheck, updateLastSeenHandler] },
     async (req: FastifyRequest, res: FastifyReply) => {
       try {
         const uuid = req.user!.uuid;

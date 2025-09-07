@@ -10,12 +10,13 @@ import {
 import { getUser } from '../db/queries/users.ts';
 import { authPreHandler, tokenUuidCheck, validationHook } from '../hooks/auth.ts';
 import { validateFriendResponse, validateFriendAdd } from '../utils/validate.ts';
+import { updateLastSeenHandler } from '../hooks/updateLastSeen.ts';
 
 export async function friendsRoutes(app: FastifyInstance) {
   // Get all (accepted) friends of user
   app.get(
     '/',
-    { preHandler: [authPreHandler, tokenUuidCheck] },
+    { preHandler: [authPreHandler, tokenUuidCheck, updateLastSeenHandler] },
     async (req: FastifyRequest, res: FastifyReply) => {
       try {
         const uuid = req.user!.uuid;
@@ -31,7 +32,7 @@ export async function friendsRoutes(app: FastifyInstance) {
   // Get all received pending friend reqs of user
   app.get(
     '/pending/received',
-    { preHandler: [authPreHandler, tokenUuidCheck] },
+    { preHandler: [authPreHandler, tokenUuidCheck, updateLastSeenHandler] },
     async (req: FastifyRequest, res: FastifyReply) => {
       try {
         const uuid = req.user!.uuid;
@@ -47,7 +48,7 @@ export async function friendsRoutes(app: FastifyInstance) {
   // Get all sent pending friend reqs of user
   app.get(
     '/pending/sent',
-    { preHandler: [authPreHandler, tokenUuidCheck] },
+    { preHandler: [authPreHandler, tokenUuidCheck, updateLastSeenHandler] },
     async (req: FastifyRequest, res: FastifyReply) => {
       try {
         const uuid = req.user!.uuid;
@@ -65,7 +66,7 @@ export async function friendsRoutes(app: FastifyInstance) {
     '/respond/:senderUuid',
     {
       preValidation: [validationHook(validateFriendResponse)],
-      preHandler: [authPreHandler, tokenUuidCheck],
+      preHandler: [authPreHandler, tokenUuidCheck, updateLastSeenHandler],
     },
     async (req: FastifyRequest, res: FastifyReply) => {
       try {
@@ -86,7 +87,7 @@ export async function friendsRoutes(app: FastifyInstance) {
     '/',
     {
       preValidation: [validationHook(validateFriendAdd)],
-      preHandler: [authPreHandler, tokenUuidCheck],
+      preHandler: [authPreHandler, tokenUuidCheck, updateLastSeenHandler],
     },
     async (req: FastifyRequest, res: FastifyReply) => {
       try {
@@ -110,7 +111,7 @@ export async function friendsRoutes(app: FastifyInstance) {
   // Remove friend from friends list
   app.delete(
     '/:user2Uuid',
-    { preHandler: [authPreHandler, tokenUuidCheck] },
+    { preHandler: [authPreHandler, tokenUuidCheck, updateLastSeenHandler] },
     async (req: FastifyRequest, res: FastifyReply) => {
       try {
         const { user2Uuid } = req.params as { user2Uuid: string };

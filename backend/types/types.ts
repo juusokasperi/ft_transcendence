@@ -34,6 +34,7 @@ export interface UserStats {
   wins: number;
   losses: number;
   totalGames: number;
+  online: boolean;
 }
 
 export interface PublicUser {
@@ -53,4 +54,11 @@ export interface GameWithPlayers {
     team2: (PublicUser | null)[];
   };
   playedAt: string;
+}
+
+export interface UserSettings {
+  uuid: string;
+  paddleColor: string;
+  colorBlindMode: number;
+  photoSensitiveMode: number;
 }

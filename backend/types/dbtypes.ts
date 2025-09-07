@@ -7,6 +7,7 @@ export interface UserDb {
   avatar: string | null;
   ranking: number;
   created_at: string;
+  last_seen: string;
   google_id: string | null;
 }
 
@@ -20,6 +21,7 @@ export interface UserStatsDb {
   wins: number;
   losses: number;
   total_games: number;
+  online: boolean;
 }
 
 export interface GameDb {
@@ -53,4 +55,11 @@ export interface PendingUserDb {
   confirmation_token: string;
   expires_at: string;
   created_at: string;
+}
+
+export interface UserSettingsDb {
+  user_uuid: string;
+  paddle_color: string;
+  color_blind_mode: number;
+  photo_sensitive_mode: number;
 }

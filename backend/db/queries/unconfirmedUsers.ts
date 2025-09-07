@@ -55,11 +55,22 @@ export function removeFromPending(token: string): boolean {
   return result.changes > 0;
 }
 
+export function createSettings(uuid: string): Boolean {
+  const result = db
+    .prepare(
+      `INSERT INTO UserProfileSettings (user_uuid)
+		VALUES (?)`,
+    )
+    .run(uuid);
+  return result.changes === 1;
+}
+
 export function confirmUser(token: string, uuid: string, user: PendingUserDb): Boolean {
   const transaction = db.transaction(() => {
     if (!removeFromPending(token)) throw new Error();
-    const result = addUser(uuid, user.username, user.password_hash, user.email);
-    if (!result) throw new Error();
+    const addResult = addUser(uuid, user.username, user.password_hash, user.email);
+    const settingsResult = createSettings(uuid);
+    if (!addResult || !settingsResult) throw new Error();
     return true;
   });
   try {

@@ -27,12 +27,19 @@ const usernameValidator = (value: string) => {
   return validationErrors.length > 0 ? validationErrors : true;
 };
 
+const rgbValidator = (value: string) => {
+  const validationErrors: any = [];
+  const rgbFormat = /^#[0-9A-Fa-f]{6}$/;
+  if (!rgbFormat.test(value)) validationErrors.push({ type: 'invalidCharacters' });
+  return validationErrors.length > 0 ? validationErrors : true;
+};
+
 export const schemas = {
   signup: {
     username: {
       type: 'string',
-      min: 1,
-      max: 39,
+      min: 3,
+      max: 16,
       custom: usernameValidator,
     },
     email: { type: 'email' },
@@ -46,7 +53,7 @@ export const schemas = {
   },
 
   login: {
-    username: { type: 'string', min: 1, max: 39 },
+    email: { type: 'email' },
     password: { type: 'string', min: 12 },
   },
 
@@ -62,8 +69,8 @@ export const schemas = {
   changeUsername: {
     newUsername: {
       type: 'string',
-      min: 1,
-      max: 39,
+      min: 3,
+      max: 16,
       custom: usernameValidator,
     },
   },
@@ -77,9 +84,30 @@ export const schemas = {
   addFriend: {
     username: {
       type: 'string',
-      min: 1,
-      max: 39,
+      min: 3,
+      max: 16,
       custom: usernameValidator,
+    },
+  },
+
+  updateUserSettings: {
+    paddleColor: {
+      type: 'string',
+      length: 7,
+      optional: true,
+      custom: rgbValidator,
+    },
+    colorBlindMode: {
+      type: 'number',
+      min: 0,
+      max: 4,
+      optional: true,
+    },
+    photoSensitiveMode: {
+      type: 'number',
+      min: 0,
+      max: 2,
+      optional: true,
     },
   },
 };
@@ -91,3 +119,4 @@ export const validateChangePassword = v.compile(schemas.changePassword);
 export const validateChangeUsername = v.compile(schemas.changeUsername);
 export const validateFriendResponse = v.compile(schemas.respondToFriendRequest);
 export const validateFriendAdd = v.compile(schemas.addFriend);
+export const validateUserSettings = v.compile(schemas.updateUserSettings);

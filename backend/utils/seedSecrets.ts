@@ -1,21 +1,17 @@
 import crypto from 'crypto';
 import fs from 'fs';
 import path from 'path';
-import { fileURLToPath } from 'url';
 
 /*
 	Seeds a secret to backend .env and (TODO) to game server .env
 	Seeds a JWT secret to backend .env
 */
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
 const gameSecret = crypto.randomBytes(32).toString('hex');
 const jwtSecret = crypto.randomBytes(32).toString('hex');
 
-const backendEnvPath = path.join(__dirname, '../.env');
-//const gameServerEnvPath = path.join(__dirname, '../game-server/.env');
+const backendEnvPath = path.join(process.cwd(), '.env');
+//const gameServerEnvPath = path.join(process.cwd(), '../game-server/.env');
 
 const updateEnvFile = (filePath: string, key: string, value: string) => {
   let envContent = '';
