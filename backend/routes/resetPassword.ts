@@ -11,10 +11,11 @@ import crypto from 'crypto';
 import { sendResetPasswordEmail } from '../utils/nodemailer/index.ts';
 import { validationHook, normalizeCredentials } from '../hooks/auth.ts';
 import { validateChangePassword } from '../utils/validate.ts';
+import { resetPassSchema, resetPassConfirmSchema } from '../schemas/authSchemas.ts';
 
 export async function resetPasswordRoutes(app: FastifyInstance) {
   // Request a password reset email
-  app.post('/', async (req: FastifyRequest, res: FastifyReply) => {
+  app.post('/', { schema: resetPassSchema }, async (req: FastifyRequest, res: FastifyReply) => {
     try {
       const { email } = req.body as { email: string };
       if (!email) return res.status(400).send({ message: 'Email is required' });
@@ -40,7 +41,10 @@ export async function resetPasswordRoutes(app: FastifyInstance) {
 
   app.post(
     '/:resetToken',
-    { preValidation: [normalizeCredentials, validationHook(validateChangePassword)] },
+    {
+      schema: resetPassConfirmSchema,
+      preValidation: [normalizeCredentials, validationHook(validateChangePassword)],
+    },
     async (req: FastifyRequest, res: FastifyReply) => {
       try {
         const { resetToken } = req.params as { resetToken: string };

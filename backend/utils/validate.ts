@@ -28,6 +28,7 @@ const usernameValidator = (value: string) => {
 };
 
 const rgbValidator = (value: string) => {
+  if (value === undefined || value === null) return true;
   const validationErrors: any = [];
   const rgbFormat = /^#[0-9A-Fa-f]{6}$/;
   if (!rgbFormat.test(value)) validationErrors.push({ type: 'invalidCharacters' });
@@ -58,7 +59,6 @@ export const schemas = {
   },
 
   changePassword: {
-    currentPassword: { type: 'string', min: 12 },
     newPassword: {
       type: 'string',
       min: 12,
@@ -94,8 +94,8 @@ export const schemas = {
     paddleColor: {
       type: 'string',
       length: 7,
-      optional: true,
       custom: rgbValidator,
+      optional: true,
     },
     colorBlindMode: {
       type: 'number',

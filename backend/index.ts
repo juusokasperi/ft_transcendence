@@ -2,6 +2,8 @@ import fastify from 'fastify';
 import cors from '@fastify/cors';
 import fastifyMultipart from '@fastify/multipart';
 import fastifyStatic from '@fastify/static';
+import swagger from '@fastify/swagger';
+import swaggerUi from '@fastify/swagger-ui';
 import {
   UPLOAD_DIR,
   BACKEND_HOST,
@@ -20,6 +22,37 @@ import './types/types.ts';
 
 const app = fastify({
   logger: true,
+});
+
+await app.register(swagger, {
+  openapi: {
+    openapi: '3.0.0',
+    info: {
+      title: 'PONG APIs',
+      version: '1.0.0',
+    },
+    servers: [
+      {
+        url: `http://localhost:${BACKEND_PORT}`,
+        description: 'Dev backend server',
+      },
+    ],
+    tags: [
+      { name: 'User', description: 'User related endpoints' },
+      { name: 'Game', description: 'Game related endpoints' },
+      { name: 'Auth', description: 'Authentication related endpoints' },
+      { name: 'Friends', description: 'Friends related endpoints' },
+    ],
+    components: {
+      securitySchemes: {
+        bearerAuth: {
+          type: 'http',
+          scheme: 'bearer',
+          bearerFormat: 'JWT',
+        },
+      },
+    },
+  },
 });
 
 await app.register(cors, {
@@ -55,6 +88,12 @@ app.register(loginRoutes, { prefix: '/api/login' });
 app.register(logoutRoutes, { prefix: 'api/logout' });
 app.register(signupRoutes, { prefix: '/api/signup' });
 app.register(resetPasswordRoutes, { prefix: '/api/reset-password' });
+
+await app.register(swaggerUi, {
+  routePrefix: '/docs',
+});
+await app.ready();
+app.swagger();
 
 app.listen({ host: BACKEND_HOST, port: BACKEND_PORT }, function (err, address) {
   if (err) {

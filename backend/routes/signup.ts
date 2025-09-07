@@ -15,12 +15,16 @@ import { v4 as uuidv4 } from 'uuid';
 import { sendConfirmationEmail } from '../utils/nodemailer/index.ts';
 import { validationHook, normalizeCredentials } from '../hooks/auth.ts';
 import { validateSignup } from '../utils/validate.ts';
+import { signupSchema, signupConfirmSchema } from '../schemas/authSchemas.ts';
 
 export async function signupRoutes(app: FastifyInstance) {
   // Post a new user and logs them in
   app.post(
     '/',
-    { preValidation: [normalizeCredentials, validationHook(validateSignup)] },
+    {
+      schema: signupSchema,
+      preValidation: [normalizeCredentials, validationHook(validateSignup)],
+    },
     async (req: FastifyRequest, res: FastifyReply) => {
       try {
         deleteExpiredUsers();
@@ -57,30 +61,34 @@ export async function signupRoutes(app: FastifyInstance) {
     },
   );
 
-  app.post('/validate/:token', async (req: FastifyRequest, res: FastifyReply) => {
-    try {
-      deleteExpiredUsers();
-      const { token } = req.params as { token: string };
-      const user = getPendingUserByToken(token);
-      if (!user) return res.status(400).send({ message: 'Invalid or expired token.' });
+  app.post(
+    '/validate/:token',
+    { schema: signupConfirmSchema },
+    async (req: FastifyRequest, res: FastifyReply) => {
+      try {
+        deleteExpiredUsers();
+        const { token } = req.params as { token: string };
+        const user = getPendingUserByToken(token);
+        if (!user) return res.status(400).send({ message: 'Invalid or expired token.' });
 
-      const uuid = uuidv4();
-      const result = confirmUser(token, uuid, user);
-      if (!result) {
-        removeFromPending(token);
-        return res
-          .status(500)
-          .send({ message: 'Failed to add user to database, try signing up again.' });
+        const uuid = uuidv4();
+        const result = confirmUser(token, uuid, user);
+        if (!result) {
+          removeFromPending(token);
+          return res
+            .status(500)
+            .send({ message: 'Failed to add user to database, try signing up again.' });
+        }
+
+        const username = user.username;
+        const userForToken = { username, uuid };
+        const jwtoken = jwt.sign(userForToken, SECRET, { expiresIn: '4h' });
+
+        // Does the front need UUID anymore?
+        res.status(200).send({ token: jwtoken, user: { username, uuid } });
+      } catch (error) {
+        res.status(500).send({ message: 'Failed validating user e-mail.' });
       }
-
-      const username = user.username;
-      const userForToken = { username, uuid };
-      const jwtoken = jwt.sign(userForToken, SECRET, { expiresIn: '4h' });
-
-      // Does the front need UUID anymore?
-      res.status(200).send({ token: jwtoken, user: { username, uuid } });
-    } catch (error) {
-      res.status(500).send({ message: 'Failed validating user e-mail.' });
-    }
-  });
+    },
+  );
 }

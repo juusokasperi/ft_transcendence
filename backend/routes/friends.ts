@@ -11,12 +11,22 @@ import { getUser } from '../db/queries/users.ts';
 import { authPreHandler, tokenUuidCheck, validationHook } from '../hooks/auth.ts';
 import { validateFriendResponse, validateFriendAdd } from '../utils/validate.ts';
 import { updateLastSeenHandler } from '../hooks/updateLastSeen.ts';
+import {
+  friendsSchema,
+  pendingSchema,
+  respondFriendSchema,
+  sendFriendSchema,
+  deleteFriendSchema,
+} from '../schemas/friendSchemas.ts';
 
 export async function friendsRoutes(app: FastifyInstance) {
   // Get all (accepted) friends of user
   app.get(
     '/',
-    { preHandler: [authPreHandler, tokenUuidCheck, updateLastSeenHandler] },
+    {
+      schema: friendsSchema,
+      preHandler: [authPreHandler, tokenUuidCheck, updateLastSeenHandler],
+    },
     async (req: FastifyRequest, res: FastifyReply) => {
       try {
         const uuid = req.user!.uuid;
@@ -32,7 +42,10 @@ export async function friendsRoutes(app: FastifyInstance) {
   // Get all received pending friend reqs of user
   app.get(
     '/pending/received',
-    { preHandler: [authPreHandler, tokenUuidCheck, updateLastSeenHandler] },
+    {
+      schema: pendingSchema,
+      preHandler: [authPreHandler, tokenUuidCheck, updateLastSeenHandler],
+    },
     async (req: FastifyRequest, res: FastifyReply) => {
       try {
         const uuid = req.user!.uuid;
@@ -48,7 +61,10 @@ export async function friendsRoutes(app: FastifyInstance) {
   // Get all sent pending friend reqs of user
   app.get(
     '/pending/sent',
-    { preHandler: [authPreHandler, tokenUuidCheck, updateLastSeenHandler] },
+    {
+      schema: pendingSchema,
+      preHandler: [authPreHandler, tokenUuidCheck, updateLastSeenHandler],
+    },
     async (req: FastifyRequest, res: FastifyReply) => {
       try {
         const uuid = req.user!.uuid;
@@ -65,6 +81,7 @@ export async function friendsRoutes(app: FastifyInstance) {
   app.patch(
     '/respond/:senderUuid',
     {
+      schema: respondFriendSchema,
       preValidation: [validationHook(validateFriendResponse)],
       preHandler: [authPreHandler, tokenUuidCheck, updateLastSeenHandler],
     },
@@ -75,7 +92,7 @@ export async function friendsRoutes(app: FastifyInstance) {
         const { accept } = req.body as { accept: boolean };
         const result = respondToFriendReq(recipientUuid, senderUuid, accept);
         if (!result) return res.status(400).send({ message: 'No pending request found.' });
-        res.status(200).send();
+        res.status(200).send({ success: 'Successfully responded to friend request' });
       } catch (error) {
         return res.status(500).send({ message: 'Failed to respond to friend request' });
       }
@@ -86,6 +103,7 @@ export async function friendsRoutes(app: FastifyInstance) {
   app.post(
     '/',
     {
+      schema: sendFriendSchema,
       preValidation: [validationHook(validateFriendAdd)],
       preHandler: [authPreHandler, tokenUuidCheck, updateLastSeenHandler],
     },
@@ -101,7 +119,7 @@ export async function friendsRoutes(app: FastifyInstance) {
         const user2Uuid = userResult.uuid;
         const result = addFriend(user1Uuid, user2Uuid);
         if (!result) return res.status(400).send({ message: 'Already friends or request pending' });
-        res.status(201).send();
+        res.status(201).send({ success: 'Friend request succesfully sent' });
       } catch (error) {
         return res.status(500).send({ message: 'Failed to send friend request' });
       }
@@ -111,7 +129,10 @@ export async function friendsRoutes(app: FastifyInstance) {
   // Remove friend from friends list
   app.delete(
     '/:user2Uuid',
-    { preHandler: [authPreHandler, tokenUuidCheck, updateLastSeenHandler] },
+    {
+      schema: deleteFriendSchema,
+      preHandler: [authPreHandler, tokenUuidCheck, updateLastSeenHandler],
+    },
     async (req: FastifyRequest, res: FastifyReply) => {
       try {
         const { user2Uuid } = req.params as { user2Uuid: string };
@@ -119,7 +140,7 @@ export async function friendsRoutes(app: FastifyInstance) {
         const result = deleteFriend(user1Uuid, user2Uuid);
         if (!result)
           return res.status(400).send({ message: 'No friendship found with supplied UUIDs.' });
-        res.status(204).send();
+        res.status(204).send({ message: 'Friendship succesfully removed' });
       } catch (error) {
         return res.status(500).send({ message: 'Failed to delete friendship' });
       }
