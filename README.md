@@ -4,13 +4,13 @@
 
 ## 👥 Team & Responsibilities
 
-| Member    | Role                                                                                                |
-| --------- | --------------------------------------------------------------------------------------------------- |
-| Matias    | **Frontend** (React + Tailwind + TypeScript) – user flows: registration, login, deletion, dashboard |
-| Juso/Juri | **Backend (REST API + Database Models)** – user management, stats, friends system                   |
-| Juso/Juri | **WebSocket Backend** – real-time matchmaking & chat                                                |
-| Niklas    | **Game Logic Server** – server-side Pong engine, game physics, Babylon 3D rendering                 |
-| Leo       | **DevOps** – Docker, CI/CD, monitoring, deployment                                                  |
+| Member     | Role                                                                                                |
+| ---------- | --------------------------------------------------------------------------------------------------- |
+| Matias     | **Frontend** (React + Tailwind + TypeScript) – user flows: registration, login, deletion, dashboard |
+| Juuso/Juri | **Backend (REST API + Database Models)** – user management, stats, friends system                   |
+| Juuso/Juri | **WebSocket Backend** – real-time matchmaking & chat                                                |
+| Nicolas    | **Game Logic Server** – server-side Pong engine, game physics, Babylon 3D rendering                 |
+| Léon       | **DevOps** – Docker, CI/CD, monitoring, deployment                                                  |
 
 ---
 
@@ -159,7 +159,7 @@
 
 ## 🛠 Development Workflow
 
-### 1. Backend (Juso || Juri)
+### 1. Backend (Juuso || Juri)
 
 - Set up Fastify with SQLite (`better-sqlite3`, `umzug`)
 - Define database models (Users, Games, GamePlayers, Friends)
@@ -172,20 +172,20 @@
 - Connect frontend to REST API
 - Add WebSocket integration (chat + game updates)
 
-### 3. Game Logic (Niklas)
+### 3. Game Logic (Nicolas)
 
 - Implement server-side Pong engine
 - Handle game state & physics server-side
 - Send state updates to clients via WebSockets
 - Babylon.js 3D rendering for gameplay
 
-### 4. WebSockets (Juso || Juri)
+### 4. WebSockets (Juuso || Juri)
 
 - Build matchmaking system
 - Implement real-time chat
 - Sync with game server
 
-### 5. DevOps (Leo)
+### 5. DevOps (Léon)
 
 - Dockerize backend, frontend, database, game server
 - Add monitoring & log management
