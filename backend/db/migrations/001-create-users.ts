@@ -8,7 +8,7 @@ import type { Database } from 'better-sqlite3';
 	implemeting it, we can also add NOT NULL to password_hash.
 */
 export async function up(db: Database) {
-	db.exec(`
+  db.exec(`
 	CREATE TABLE IF NOT EXISTS Users (
 	uuid TEXT PRIMARY KEY NOT NULL UNIQUE,
 	username TEXT NOT NULL COLLATE NOCASE,
@@ -27,5 +27,5 @@ export async function up(db: Database) {
 }
 
 export async function down(db: Database) {
-	db.exec(`DROP TABLE IF EXISTS Users;`);
+  db.exec(`DROP TABLE IF EXISTS Users;`);
 }

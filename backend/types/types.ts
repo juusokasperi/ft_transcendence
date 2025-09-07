@@ -2,27 +2,27 @@ import 'fastify';
 
 declare module 'fastify' {
   interface FastifyRequest {
-    user?: JWTPayload
+    user?: JWTPayload;
   }
 }
 
 export interface JWTPayload {
-	uuid: string;
-	username: string;
-	iat?: number;
-	exp?: number;
+  uuid: string;
+  username: string;
+  iat?: number;
+  exp?: number;
 }
 
 export interface User {
-	uuid: string;
-	username: string;
-	email: string;
-	passwordHash: string | null;
-	tfa: boolean;
-	avatar: string | null;
-	ranking: number;
-	createdAt: string;
-	googleId: string | null;
+  uuid: string;
+  username: string;
+  email: string;
+  passwordHash: string | null;
+  tfa: boolean;
+  avatar: string | null;
+  ranking: number;
+  createdAt: string;
+  googleId: string | null;
 }
 
 export interface UserStats {
@@ -38,11 +38,11 @@ export interface UserStats {
 };
 
 export interface PublicUser {
-	uuid: string;
-	username: string;
-	avatar: string | null;
-	ranking: number;
-	createdAt: string;
+  uuid: string;
+  username: string;
+  avatar: string | null;
+  ranking: number;
+  createdAt: string;
 }
 
 export interface GameWithPlayers {

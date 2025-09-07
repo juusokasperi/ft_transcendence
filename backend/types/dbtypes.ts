@@ -25,28 +25,28 @@ export interface UserStatsDb {
 };
 
 export interface GameDb {
-	id: number;
-	team_1_score: number;
-	team_2_score: number;
-	created_at: string;
-};
+  id: number;
+  team_1_score: number;
+  team_2_score: number;
+  created_at: string;
+}
 
 export interface GamePlayerDb {
-	team_number: number;
-	uuid: string | null;
-	username: string | null;
-	avatar: string | null;
-	ranking: number | null;
-	created_at: string | null;
-};
+  team_number: number;
+  uuid: string | null;
+  username: string | null;
+  avatar: string | null;
+  ranking: number | null;
+  created_at: string | null;
+}
 
 export interface PublicUserDb {
-	uuid: string;
-	username: string;
-	avatar: string | null;
-	ranking: number;
-	created_at: string;
-};
+  uuid: string;
+  username: string;
+  avatar: string | null;
+  ranking: number;
+  created_at: string;
+}
 
 export interface PendingUserDb {
 	username: string;

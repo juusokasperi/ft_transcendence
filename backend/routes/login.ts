@@ -9,31 +9,38 @@ import { validateLogin } from '../utils/validate.ts';
 // TODO:
 // Extra checks and route for 2FA
 export async function loginRoutes(app: FastifyInstance) {
-	app.post('/',
-		{ preValidation: [normalizeCredentials, validationHook(validateLogin)], },
-		async (req: FastifyRequest, res: FastifyReply) => {
-		try {
-			const { email, password } = req.body as { email: string; password: string };
+  app.post(
+    '/',
+    { preValidation: [normalizeCredentials, validationHook(validateLogin)], },
+    async (req: FastifyRequest, res: FastifyReply) => {
+      try {
+        const { email, password } = req.body as { email: string; password:  string };
 
 			const userInDb = getUserByEmail(email);
-			if (!userInDb)
-				return (res.status(400).send({ message: 'Invalid credentials' }));
- 			const isValidPassword = await bcrypt.compare(password, userInDb.passwordHash || '');
-			if (!isValidPassword)
-				return (res.status(400).send({ message: 'Invalid credentials' }));
+			if (!userInDb) return (res.status(400).send({ message: 'Invalid credentials' }));
+			const isValidPassword = await bcrypt.compare(password, userInDb.passwordHash || '');
+			if (!isValidPassword) return (res.status(400).send({ message: 'Invalid credentials' }));
 
 			updateLastSeen(userInDb.uuid);
-			const userForToken = {
-				username: userInDb.username,
-				uuid: userInDb.uuid
-			};
+        const userForToken = {
+          username: userInDb.username,
+          uuid: userInDb.uuid,
+        };
 
-			const token = jwt.sign(userForToken, SECRET, { expiresIn: '4h' });
+        const token = jwt.sign(userForToken, SECRET, { expiresIn: '4h' });
 
-			// Does the front need UUID anymore?
-			res.status(200).send({ token, user: { username: userInDb.username, uuid: userInDb.uuid, avatar: userInDb.avatar } });
-		} catch (error) {
-			res.status(500).send({ message: 'Failed to fetch login info from database.' });
-		}
-	});
-};
+        // Does the front need UUID anymore?
+        res.status(200).send({
+          token,
+          user: {
+            username: userInDb.username,
+            uuid: userInDb.uuid,
+            avatar: userInDb.avatar,
+          },
+        });
+      } catch (error) {
+        res.status(500).send({ message: 'Failed to fetch login info from database.' });
+      }
+    },
+  );
+}
