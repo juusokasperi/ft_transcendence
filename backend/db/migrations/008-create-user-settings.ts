@@ -1,7 +1,7 @@
 import type { Database } from 'better-sqlite3';
 
 export async function up(db: Database) {
-	db.exec(`
+  db.exec(`
 	CREATE TABLE IF NOT EXISTS UserProfileSettings (
 	user_uuid TEXT PRIMARY KEY NOT NULL UNIQUE,
 	paddle_color TEXT NOT NULL DEFAULT '#ffffff' CHECK(paddle_color LIKE '#______'),
@@ -12,5 +12,5 @@ export async function up(db: Database) {
 }
 
 export async function down(db: Database) {
-	db.exec(`DROP TABLE IF EXISTS UserProfileSettings;`);
+  db.exec(`DROP TABLE IF EXISTS UserProfileSettings;`);
 }

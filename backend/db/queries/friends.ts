@@ -46,8 +46,8 @@ export function getFriends(user1Uuid: string): UserStats[] {
       createdAt: dbUser.created_at,
       wins: dbUser.wins,
       losses: dbUser.losses,
-      totalGames: dbUser.total_games,,
-			online: !!dbUser.online
+      totalGames: dbUser.total_games,
+      online: !!dbUser.online,
     }));
   } catch (error) {
     return [];

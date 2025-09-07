@@ -11,17 +11,17 @@ import { createSettings } from '../db/queries/unconfirmedUsers.ts';
 await runMigrations();
 
 const createUser = async (username: string, email: string, password: string) => {
-	const passwordHash = await bcrypt.hash(password, 10);
-	const uuid = uuidv4();
-	addUser(uuid, username, passwordHash, email);
-	createSettings(uuid);
-	return (uuid);
-}
+  const passwordHash = await bcrypt.hash(password, 10);
+  const uuid = uuidv4();
+  addUser(uuid, username, passwordHash, email);
+  createSettings(uuid);
+  return uuid;
+};
 
 // Create a few test users
-const uuidJoe = await createUser("Joe", "joe@test.com", "testPassword!1");
-const uuidBob = await createUser("Bob", "bob@test.com", "testPassword!1");
-const uuidWil = await createUser("Wil", "wil@test.com", "testPassword!1");
+const uuidJoe = await createUser('Joe', 'joe@test.com', 'testPassword!1');
+const uuidBob = await createUser('Bob', 'bob@test.com', 'testPassword!1');
+const uuidWil = await createUser('Wil', 'wil@test.com', 'testPassword!1');
 // Make Joe and Bob friends
 addFriend(uuidJoe, uuidBob);
 respondToFriendReq(uuidBob, uuidJoe, true);
@@ -36,7 +36,11 @@ addGame(11, 0, uuidBob, uuidJoe);
 addGame(10, 12, uuidWil, uuidBob);
 addGame(1, 11, uuidJoe, uuidWil);
 // Change UserProfileSettings for Joe and Bob
-updateUserSettings(uuidJoe, { paddle_color: '#FF0000', photo_sensitive_mode: 1, color_blind_mode: 1 });
+updateUserSettings(uuidJoe, {
+  paddle_color: '#FF0000',
+  photo_sensitive_mode: 1,
+  color_blind_mode: 1,
+});
 updateUserSettings(uuidBob, { paddle_color: '#BB00FF', color_blind_mode: 2 });
 
 // Move Joe's and Bob's last_seen to 10 minutes ago, so they appear offline

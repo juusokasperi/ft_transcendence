@@ -11,17 +11,17 @@ import { validateLogin } from '../utils/validate.ts';
 export async function loginRoutes(app: FastifyInstance) {
   app.post(
     '/',
-    { preValidation: [normalizeCredentials, validationHook(validateLogin)], },
+    { preValidation: [normalizeCredentials, validationHook(validateLogin)] },
     async (req: FastifyRequest, res: FastifyReply) => {
       try {
-        const { email, password } = req.body as { email: string; password:  string };
+        const { email, password } = req.body as { email: string; password: string };
 
-			const userInDb = getUserByEmail(email);
-			if (!userInDb) return (res.status(400).send({ message: 'Invalid credentials' }));
-			const isValidPassword = await bcrypt.compare(password, userInDb.passwordHash || '');
-			if (!isValidPassword) return (res.status(400).send({ message: 'Invalid credentials' }));
+        const userInDb = getUserByEmail(email);
+        if (!userInDb) return res.status(400).send({ message: 'Invalid credentials' });
+        const isValidPassword = await bcrypt.compare(password, userInDb.passwordHash || '');
+        if (!isValidPassword) return res.status(400).send({ message: 'Invalid credentials' });
 
-			updateLastSeen(userInDb.uuid);
+        updateLastSeen(userInDb.uuid);
         const userForToken = {
           username: userInDb.username,
           uuid: userInDb.uuid,

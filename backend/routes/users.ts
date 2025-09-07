@@ -108,7 +108,7 @@ export async function userRoutes(app: FastifyInstance) {
     '/me',
     {
       preValidation: [normalizeCredentials],
-		  preHandler: [authPreHandler, tokenUuidCheck, updateLastSeenHandler]
+      preHandler: [authPreHandler, tokenUuidCheck, updateLastSeenHandler],
     },
     async (req: FastifyRequest, res: FastifyReply) => {
       try {
@@ -137,7 +137,7 @@ export async function userRoutes(app: FastifyInstance) {
     '/me/password',
     {
       preValidation: [normalizeCredentials],
-		  preHandler: [authPreHandler, tokenUuidCheck, updateLastSeenHandler]
+      preHandler: [authPreHandler, tokenUuidCheck, updateLastSeenHandler],
     },
     async (req: FastifyRequest, res: FastifyReply) => {
       try {
@@ -182,7 +182,7 @@ export async function userRoutes(app: FastifyInstance) {
         if (!ACCEPTED_TYPES.includes(file.mimetype))
           return res.status(400).send({ message: 'Invalid avatar file type.' });
 
-			const uploadDir = path.join(process.cwd(), UPLOAD_DIR);
+        const uploadDir = path.join(process.cwd(), UPLOAD_DIR);
 
         const fileExtension = getExtensionFromMime(file.mimetype);
         const fileName = `${uuid}_${Date.now()}_avatar${fileExtension}`;

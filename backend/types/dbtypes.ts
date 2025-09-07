@@ -1,28 +1,28 @@
 export interface UserDb {
-	uuid: string;
-	username: string;
-	email: string;
-	password_hash: string | null;
-	tfa: boolean;
-	avatar: string | null;
-	ranking: number;
-	created_at: string;
-	last_seen: string;
-	google_id: string | null;
+  uuid: string;
+  username: string;
+  email: string;
+  password_hash: string | null;
+  tfa: boolean;
+  avatar: string | null;
+  ranking: number;
+  created_at: string;
+  last_seen: string;
+  google_id: string | null;
 }
 
 export interface UserStatsDb {
-	username: string;
-	uuid: string;
-	email: string | null;
-	avatar: string | null;
-	ranking: number;
-	created_at: string;
-	wins: number;
-	losses: number;
-	total_games: number;
-	online: boolean;
-};
+  username: string;
+  uuid: string;
+  email: string | null;
+  avatar: string | null;
+  ranking: number;
+  created_at: string;
+  wins: number;
+  losses: number;
+  total_games: number;
+  online: boolean;
+}
 
 export interface GameDb {
   id: number;
@@ -49,17 +49,17 @@ export interface PublicUserDb {
 }
 
 export interface PendingUserDb {
-	username: string;
-	email: string;
-	password_hash: string;
-	confirmation_token: string;
-	expires_at: string;
-	created_at: string;
-};
+  username: string;
+  email: string;
+  password_hash: string;
+  confirmation_token: string;
+  expires_at: string;
+  created_at: string;
+}
 
 export interface UserSettingsDb {
-	user_uuid: string;
-	paddle_color: string;
-	color_blind_mode: number;
-	photo_sensitive_mode: number;
+  user_uuid: string;
+  paddle_color: string;
+  color_blind_mode: number;
+  photo_sensitive_mode: number;
 }

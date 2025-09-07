@@ -191,15 +191,16 @@ export function getUserStats(uuid?: string): UserStats[] | UserStats | null {
 
   // If uuid, get single user stats
   if (uuid) {
-    const result = db
-      .prepare(
-        `
+    const result =
+      (db
+        .prepare(
+          `
 			${baseQuery}
 			WHERE u.uuid = ?
 			GROUP BY u.uuid
 			`,
-      )
-      .get(uuid) as UserStatsDb || null;
+        )
+        .get(uuid) as UserStatsDb) || null;
     if (!result) return null;
     return {
       username: result.username,
@@ -210,7 +211,7 @@ export function getUserStats(uuid?: string): UserStats[] | UserStats | null {
       wins: result.wins,
       losses: result.losses,
       totalGames: result.total_games,
-			online: !!result.online,
+      online: !!result.online,
     } as UserStats;
   }
 
@@ -234,53 +235,62 @@ export function getUserStats(uuid?: string): UserStats[] | UserStats | null {
     wins: dbUser.wins,
     losses: dbUser.losses,
     totalGames: dbUser.total_games,
-		online: !!dbUser.online,
+    online: !!dbUser.online,
   })) as UserStats[];
 }
 
 export function updateLastSeen(uuid: string, date?: Date): Boolean {
-	const timestamp = date || new Date();
-	const dateSqliteFormat = timestamp.toISOString().slice(0, 19).replace('T', ' ');
-	const result = db.prepare(`
+  const timestamp = date || new Date();
+  const dateSqliteFormat = timestamp.toISOString().slice(0, 19).replace('T', ' ');
+  const result = db
+    .prepare(
+      `
 		UPDATE Users
 		SET last_seen = ?
 		WHERE uuid = ?
-		`).run(dateSqliteFormat, uuid);
-	return result.changes === 1;
-};
+		`,
+    )
+    .run(dateSqliteFormat, uuid);
+  return result.changes === 1;
+}
 
 export function getUserSettings(uuid: string): UserSettings | null {
-	const result = db.prepare(`
+  const result = db
+    .prepare(
+      `
 		SELECT * FROM UserProfileSettings
-		WHERE user_uuid = ?`).get(uuid) as UserSettingsDb | null;
-	if (!result)
-		return null;
-	return {
-		uuid: result.user_uuid,
-		paddleColor: result.paddle_color,
-		colorBlindMode: result.color_blind_mode,
-		photoSensitiveMode: result.photo_sensitive_mode
-	};
-};
+		WHERE user_uuid = ?`,
+    )
+    .get(uuid) as UserSettingsDb | null;
+  if (!result) return null;
+  return {
+    uuid: result.user_uuid,
+    paddleColor: result.paddle_color,
+    colorBlindMode: result.color_blind_mode,
+    photoSensitiveMode: result.photo_sensitive_mode,
+  };
+}
 
-export function updateUserSettings(uuid: string, settings: Partial<Omit<UserSettingsDb, 'user_uuid'>>): boolean {
-	const fields: string[] = [];
-	const values: any[] = [];
-	for (const [key, value] of Object.entries(settings)) {
-		fields.push(`${key} = ?`);
-		values.push(value);
-	}
-	if (fields.length === 0)
-		return false;
-	values.push(uuid);
-	const sqlQuery = `
+export function updateUserSettings(
+  uuid: string,
+  settings: Partial<Omit<UserSettingsDb, 'user_uuid'>>,
+): boolean {
+  const fields: string[] = [];
+  const values: any[] = [];
+  for (const [key, value] of Object.entries(settings)) {
+    fields.push(`${key} = ?`);
+    values.push(value);
+  }
+  if (fields.length === 0) return false;
+  values.push(uuid);
+  const sqlQuery = `
 		UPDATE UserProfileSettings
 		SET ${fields.join(', ')}
 		WHERE user_uuid = ?`;
-	try {
-		const result = db.prepare(sqlQuery).run(...values);
-		return result.changes === 1;
-	} catch (error) {
-		return false;
-	}
-};
+  try {
+    const result = db.prepare(sqlQuery).run(...values);
+    return result.changes === 1;
+  } catch (error) {
+    return false;
+  }
+}

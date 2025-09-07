@@ -28,10 +28,10 @@ const usernameValidator = (value: string) => {
 };
 
 const rgbValidator = (value: string) => {
-	const validationErrors: any = [];
-	const rgbFormat = /^#[0-9A-Fa-f]{6}$/;
-	if (!rgbFormat.test(value)) validationErrors.push( { type: "invalidCharacters" });
-	return validationErrors.length > 0 ? validationErrors : true;
+  const validationErrors: any = [];
+  const rgbFormat = /^#[0-9A-Fa-f]{6}$/;
+  if (!rgbFormat.test(value)) validationErrors.push({ type: 'invalidCharacters' });
+  return validationErrors.length > 0 ? validationErrors : true;
 };
 
 export const schemas = {
@@ -52,10 +52,10 @@ export const schemas = {
     googleAuth: { type: 'string', optional: true },
   },
 
-	login: {
-		email: { type: 'email' },
-		password: { type: 'string', min: 12 },
-	},
+  login: {
+    email: { type: 'email' },
+    password: { type: 'string', min: 12 },
+  },
 
   changePassword: {
     currentPassword: { type: 'string', min: 12 },
@@ -81,35 +81,35 @@ export const schemas = {
     },
   },
 
-	addFriend: {
-		username: {
-			type: 'string',
-			min: 3,
-			max: 16,
-			custom: usernameValidator
-		}
-	},
+  addFriend: {
+    username: {
+      type: 'string',
+      min: 3,
+      max: 16,
+      custom: usernameValidator,
+    },
+  },
 
-	updateUserSettings: {
-		paddleColor: {
-			type: 'string',
-			length: 7,
-			optional: true,
-			custom: rgbValidator
-		},
-		colorBlindMode: {
-			type: 'number',
-			min: 0,
-			max: 4,
-			optional: true
-		},
-		photoSensitiveMode: {
-			type: 'number',
-			min: 0,
-			max: 2,
-			optional: true
-		}
-	}
+  updateUserSettings: {
+    paddleColor: {
+      type: 'string',
+      length: 7,
+      optional: true,
+      custom: rgbValidator,
+    },
+    colorBlindMode: {
+      type: 'number',
+      min: 0,
+      max: 4,
+      optional: true,
+    },
+    photoSensitiveMode: {
+      type: 'number',
+      min: 0,
+      max: 2,
+      optional: true,
+    },
+  },
 };
 
 export const validator = v;

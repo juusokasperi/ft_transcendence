@@ -26,16 +26,16 @@ export interface User {
 }
 
 export interface UserStats {
-	username: string;
-	uuid: string;
-	avatar: string | null;
-	ranking: number;
-	createdAt: string;
-	wins: number;
-	losses: number;
-	totalGames: number;
-	online: boolean;
-};
+  username: string;
+  uuid: string;
+  avatar: string | null;
+  ranking: number;
+  createdAt: string;
+  wins: number;
+  losses: number;
+  totalGames: number;
+  online: boolean;
+}
 
 export interface PublicUser {
   uuid: string;
@@ -46,19 +46,19 @@ export interface PublicUser {
 }
 
 export interface GameWithPlayers {
-	id: number;
-	team1Score: number;
-	team2Score: number;
-	players: {
-		team1: (PublicUser | null)[];
-		team2: (PublicUser | null)[];
-	};
-	playedAt: string;
-};
+  id: number;
+  team1Score: number;
+  team2Score: number;
+  players: {
+    team1: (PublicUser | null)[];
+    team2: (PublicUser | null)[];
+  };
+  playedAt: string;
+}
 
 export interface UserSettings {
-	uuid: string;
-	paddleColor: string;
-	colorBlindMode: number;
-	photoSensitiveMode: number;
-};
+  uuid: string;
+  paddleColor: string;
+  colorBlindMode: number;
+  photoSensitiveMode: number;
+}
