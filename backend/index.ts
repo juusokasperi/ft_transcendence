@@ -94,6 +94,7 @@ await app.register(swaggerUi, {
 });
 await app.ready();
 app.swagger();
+console.log(`\x1b[0;33mSwagger API documentation served at http://localhost:${BACKEND_PORT}/docs\x1b[0m`);
 
 app.listen({ host: BACKEND_HOST, port: BACKEND_PORT }, function (err, address) {
   if (err) {
