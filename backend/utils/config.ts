@@ -14,9 +14,8 @@ const REQUIRED = [
   'BACKEND_PORT',
   'UPLOAD_DIR',
 ] as const;
-for (const k of REQUIRED)
-  
-     if (!process.env[k]) throw new Error(`Missing env: ${k}`);
+for (const k of REQUIRED) {
+  if (!process.env[k]) throw new Error(`Missing env: ${k}`);
 }
 
 // Treat the backend working dir as project root
