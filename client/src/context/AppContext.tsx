@@ -32,7 +32,13 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     setUser(userData); // updates react state
   };
 
-  const logout = () => {
+  const logout = async () => {
+    axios.post('/api/logout', {}, {
+      headers: {
+        Authorization: `Bearer ${await getToken()}`,
+      },
+    })
+
     authLogout();
     setUser(null);
     navigate('/');
