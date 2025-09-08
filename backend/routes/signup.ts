@@ -84,7 +84,7 @@ export async function signupRoutes(app: FastifyInstance) {
         const jwtoken = jwt.sign(userForToken, SECRET, { expiresIn: '4h' });
 
         // Does the front need UUID anymore?
-        res.status(200).send({ token: jwtoken, user: { username, uuid } });
+        res.status(200).send({ token: jwtoken, user: { username } });
       } catch (error) {
         res.status(500).send({ message: 'Failed validating user e-mail.' });
       }

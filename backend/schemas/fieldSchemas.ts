@@ -53,3 +53,11 @@ export const UuidSchema = {
   format: 'uuid',
   description: 'User unique id',
 };
+
+export const AvatarSchema = {
+  anyOf: [
+    { type: 'string' },
+    { type: 'null' },
+  ],
+  description: 'User avatar filename',
+};
