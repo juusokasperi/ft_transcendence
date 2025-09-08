@@ -36,7 +36,7 @@ const Profile: React.FC = () => {
   useEffect(() => {
     console.log(user?.avatar);
     getImage();
-  }, [user]);
+  }, [user?.avatar]);
 
   // Handle image selection
   const handleImageChange = async (e: ChangeEvent<HTMLInputElement>) => {
@@ -155,7 +155,7 @@ const Profile: React.FC = () => {
   };
 
   return (
-    <div className="mx-auto mt-10 max-w-md rounded bg-white p-6 shadow">
+    <div className="mx-auto mt-12 max-w-md rounded bg-white p-6 shadow">
       <h2 className="mb-6 text-2xl font-bold">Profile</h2>
       <form className="space-y-4">
         {/* Profile Image */}
