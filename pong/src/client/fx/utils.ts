@@ -5,7 +5,10 @@ import type { AbstractMesh } from "@babylonjs/core/Meshes/abstractMesh";
 
 const HIDE_KEY = "_fxHideCount" as const;
 
-type FXMeta = Record<string, unknown> & { [K in typeof HIDE_KEY]?: number };
+interface FXMeta {
+  [key: string]: unknown;
+  [HIDE_KEY]?: number;
+}
 
 function getFXMeta(mesh: AbstractMesh): FXMeta {
   const raw = mesh.metadata;
@@ -14,8 +17,7 @@ function getFXMeta(mesh: AbstractMesh): FXMeta {
   }
   const fresh: FXMeta = {};
   // Babylon types `metadata` as `any`; assigning a typed bag is safe for us.
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-  mesh.metadata = fresh as unknown as Record<string, unknown>;
+  mesh.metadata = fresh as FXMeta;
   return fresh;
 }
 

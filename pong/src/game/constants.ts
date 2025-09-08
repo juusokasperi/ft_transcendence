@@ -1,4 +1,4 @@
-// src/game/systems/constants.ts
+// src/game/constants.ts
 export const MS_PER_S = 1000;
 
 /** Short pause after each rally. */

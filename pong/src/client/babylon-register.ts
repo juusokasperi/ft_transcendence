@@ -1,4 +1,6 @@
 // src/client/babylon-register.ts
+// This file imports Babylon.js components for registration and side effects.
+
 import "@babylonjs/core/Materials/standardMaterial";
 import "@babylonjs/core/Lights/Shadows/shadowGeneratorSceneComponent";
 import "@babylonjs/core/Rendering/boundingBoxRenderer";

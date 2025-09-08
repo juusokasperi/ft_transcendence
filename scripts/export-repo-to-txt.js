@@ -1,4 +1,8 @@
 #!/usr/bin/env node
+if (typeof process === "undefined" || !process.version) {
+  console.error("Error: Node.js is required to run this script.");
+  process.exit(1);
+}
 /**
  * Export the whole repo into one TXT file, ignoring any "node_modules" dirs.
  * - Streams to avoid huge memory
@@ -25,7 +29,9 @@ function toPosix(p) { return p.split(path.sep).join("/"); }
 
 async function isLikelyBinary(filePath) {
   const fd = await fsp.open(filePath, "r").catch(() => null);
-  if (!fd) return true;
+  if (fd === null) {
+    return true;
+  }
   try {
     const buf = Buffer.alloc(8192);
     const { bytesRead } = await fd.read(buf, 0, buf.length, 0);
