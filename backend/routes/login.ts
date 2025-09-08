@@ -36,7 +36,6 @@ export async function loginRoutes(app: FastifyInstance) {
           token,
           user: {
             username: userInDb.username,
-            uuid: userInDb.uuid,
             avatar: userInDb.avatar,
           },
         });
