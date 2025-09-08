@@ -14,7 +14,7 @@ const sideBarLinks: SideBarLink[] = [
 
 const Sidebar: React.FC = () => {
   return (
-    <div className="mt-12 flex h-full w-12 flex-col border-r border-gray-300 pt-3 text-base transition-all duration-300 md:w-64">
+    <div className="mt-20 flex h-full w-12 flex-col border-r border-gray-300 pt-3 text-base transition-all duration-300 md:w-64">
       {sideBarLinks.map((item, index) => (
         <NavLink
           to={item.path}

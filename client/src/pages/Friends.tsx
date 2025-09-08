@@ -1,33 +1,116 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAppContext } from '../context/AppContext';
+import toast from 'react-hot-toast';
+import { AxiosError } from 'axios';
+
+interface FriendRequest {
+  username: string;
+  uuid: string;
+}
 
 const Friends: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<'online' | 'offline' | 'pending' | 'add'>('online');
-
+  const [activeTab, setActiveTab] = useState<'all' | 'online' | 'offline' | 'pending' | 'add'>(
+    'online',
+  );
   const [friendName, setFriendName] = useState('');
 
+  const [pendingSent, setPendingSent] = useState<FriendRequest[]>([]);
+  const [pendingReceived, setPendingReceived] = useState<FriendRequest[]>([]);
+
+  const [friends, setFriends] = useState<string[]>([]);
+
   const { axios, getToken } = useAppContext();
-  getToken; // to avoid unused variable warning
+  getToken; // avoid unused variable warning
+
+  // Add friend
   const handleAddFriend = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!friendName.trim()) return;
 
-    const res = await axios.post('/api/friends', {
-      username: friendName,
-    });
-    res.data; // to avoid unused variable warning
-
-    // 🚀 Replace this with your backend request
-    console.log('Sending friend request to:', friendName);
-
-    setFriendName(''); // reset input after submit
+    try {
+      await axios.post('/api/friends', { username: friendName });
+      toast.success(`Friend request sent to ${friendName}`);
+      setFriendName('');
+      fetchSentPendingFriends(); // refresh sent pending list
+    } catch (err) {
+      const axiosErr = err as AxiosError<{ message?: string }>;
+      toast.error(String(axiosErr?.response?.data?.message));
+    }
   };
 
+  const fetchAllFriends = async () => {
+    try {
+      const res = await axios.get<{ username: string }[]>('/api/friends/');
+      setFriends(res.data.map((f) => f.username));
+    } catch (err) {
+      const axiosErr = err as AxiosError<{ message?: string }>;
+      toast.error(String(axiosErr?.response?.data?.message));
+    }
+  };
+
+  // Fetch sent pending friend requests
+  const fetchSentPendingFriends = async () => {
+    try {
+      const res = await axios.get<FriendRequest[]>('/api/friends/pending/sent');
+      setPendingSent(res.data);
+    } catch (err) {
+      const axiosErr = err as AxiosError<{ message?: string }>;
+      toast.error(String(axiosErr?.response?.data?.message));
+    }
+  };
+
+  // Fetch received pending friend requests
+  const fetchReceivedPendingFriends = async () => {
+    try {
+      const res = await axios.get<FriendRequest[]>('/api/friends/pending/received');
+      setPendingReceived(res.data);
+    } catch (err) {
+      const axiosErr = err as AxiosError<{ message?: string }>;
+      toast.error(String(axiosErr?.response?.data?.message));
+    }
+  };
+
+  // Accept a received friend request
+  const handleAcceptFriend = async (senderUuid: string) => {
+    try {
+      await axios.patch(`/api/friends/respond/${senderUuid}`, { accept: true });
+      toast.success('Friend request accepted!');
+      fetchSentPendingFriends();
+      fetchReceivedPendingFriends();
+    } catch (err) {
+      const axiosErr = err as AxiosError<{ message?: string }>;
+      toast.error(String(axiosErr?.response?.data?.message));
+    }
+  };
+
+  // Reject a received friend request
+  const handleRejectFriend = async (senderUuid: string) => {
+    try {
+      await axios.patch(`/api/friends/respond/${senderUuid}`, { accept: false });
+      toast.success('Friend request rejected!');
+      fetchReceivedPendingFriends();
+    } catch (err) {
+      const axiosErr = err as AxiosError<{ message?: string }>;
+      toast.error(String(axiosErr?.response?.data?.message));
+    }
+  };
+
+  // Fetch pending requests when switching to pending tab
+  useEffect(() => {
+    if (activeTab === 'pending') {
+      fetchSentPendingFriends();
+      fetchReceivedPendingFriends();
+    }
+    if (activeTab === 'all') {
+      fetchAllFriends();
+    }
+  }, [activeTab]);
+
   return (
-    <div className="p-6">
+    <div className="mt-12 p-6">
       {/* Tabs */}
       <div className="mb-6 flex space-x-4 border-b border-gray-300">
-        {['online', 'offline', 'pending', 'add'].map((tab) => (
+        {['all', 'online', 'offline', 'pending', 'add'].map((tab) => (
           <button
             key={tab}
             onClick={() => setActiveTab(tab as any)}
@@ -44,24 +127,75 @@ const Friends: React.FC = () => {
 
       {/* Content */}
       <div>
-        {activeTab === 'online' && (
-          <div className="text-green-600">
-            <h2 className="mb-4 text-xl font-bold">Online Friends</h2>
-            <ul className="list-disc space-y-2 pl-5"></ul>
+        {activeTab === 'all' && (
+          <div className="text-purple-600">
+            <h2 className="mb-4 text-xl font-bold">All Friends</h2>
+            <ul className="list-disc space-y-2 pl-5">
+              {friends.length > 0 ? friends.map((f) => <li>{f}</li>) : <li>You have no friends</li>}
+            </ul>
           </div>
         )}
+
+        {activeTab === 'online' && (
+          <div className="text-gray-600">
+            <h2 className="mb-4 text-xl font-bold">Online Friends</h2>
+            <ul className="list-disc space-y-2 pl-5">
+              {/* TODO: Fetch and render offline friends */}
+            </ul>
+          </div>
+        )}
+
         {activeTab === 'offline' && (
           <div className="text-gray-600">
             <h2 className="mb-4 text-xl font-bold">Offline Friends</h2>
-            <ul className="list-disc space-y-2 pl-5"></ul>
+            <ul className="list-disc space-y-2 pl-5">
+              {/* TODO: Fetch and render offline friends */}
+            </ul>
           </div>
         )}
+
         {activeTab === 'pending' && (
           <div className="text-yellow-600">
             <h2 className="mb-4 text-xl font-bold">Pending Requests</h2>
-            <ul className="list-disc space-y-2 pl-5"></ul>
+
+            <h3 className="mb-2 font-semibold">Sent</h3>
+            <ul className="mb-4 list-disc pl-5">
+              {pendingSent.length > 0 ? (
+                pendingSent.map((f) => <li key={f.uuid}>{f.username}</li>)
+              ) : (
+                <li>No sent requests</li>
+              )}
+            </ul>
+
+            <h3 className="mb-2 font-semibold">Received</h3>
+            <ul className="list-disc pl-5">
+              {pendingReceived.length > 0 ? (
+                pendingReceived.map((f) => (
+                  <li key={f.uuid} className="flex items-center justify-between">
+                    <span>{f.username}</span>
+                    <div className="flex space-x-2">
+                      <button
+                        onClick={() => handleAcceptFriend(f.uuid)}
+                        className="rounded bg-green-500 px-2 py-1 text-sm text-white hover:bg-green-600"
+                      >
+                        Accept
+                      </button>
+                      <button
+                        onClick={() => handleRejectFriend(f.uuid)}
+                        className="rounded bg-red-500 px-2 py-1 text-sm text-white hover:bg-red-600"
+                      >
+                        Reject
+                      </button>
+                    </div>
+                  </li>
+                ))
+              ) : (
+                <li>No received requests</li>
+              )}
+            </ul>
           </div>
         )}
+
         {activeTab === 'add' && (
           <div>
             <h2 className="mb-4 text-xl font-bold">Add a Friend</h2>
