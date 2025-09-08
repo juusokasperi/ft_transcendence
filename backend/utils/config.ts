@@ -1,7 +1,7 @@
 import dotenv from 'dotenv';
 import { resolve, isAbsolute, dirname } from 'node:path';
 import { mkdir } from 'node:fs/promises';
-import type { SwaggerOptions } from "@fastify/swagger";
+import type { SwaggerOptions } from '@fastify/swagger';
 
 dotenv.config();
 
@@ -71,4 +71,4 @@ export const swaggerConfig: SwaggerOptions = {
       },
     },
   },
-}
+};

@@ -27,7 +27,7 @@ export const PassSchema = {
     { pattern: '[a-z]' },
     { pattern: '[A-Z]' },
     { pattern: '[0-9]' },
-    { pattern: '[!@#$%^&*()\-_=+[\\]{};:|,<.>/?]+$' }
+    { pattern: '[!@#$%^&*()\-_=+[\\]{};:|,<.>/?]+$' },
   ],
   description:
     'Password: Must contain uppercase, lowercase, digit and special character (!@#$%^&()-_=+[]{};:|,<.>/?',

@@ -1,13 +1,21 @@
 import type { FastifyError, FastifyReply, FastifyRequest } from 'fastify';
 
-export const prettierErrorMessages = (error: FastifyError, request: FastifyRequest, res: FastifyReply) => {
+export const prettierErrorMessages = (
+  error: FastifyError,
+  request: FastifyRequest,
+  res: FastifyReply,
+) => {
   if (error.validation) {
     const friendlyErrors = error.validation.map((err: any) => {
       const field = err.instancePath.replace('/body/', '').replace('/', '');
 
       if (field === 'username') {
         if (err.keyword === 'pattern') {
-          return { field, message: 'Username can only contain letters, numbers, and hyphens (no consecutive hyphens or starting with hyphen)' };
+          return {
+            field,
+            message:
+              'Username can only contain letters, numbers, and hyphens (no consecutive hyphens or starting with hyphen)',
+          };
         }
       }
 
@@ -45,10 +53,10 @@ export const prettierErrorMessages = (error: FastifyError, request: FastifyReque
 
     res.status(400).send({
       message: 'Validation failed',
-      details: friendlyErrors
+      details: friendlyErrors,
     });
     return;
   }
 
   res.send(error);
-}
+};

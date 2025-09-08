@@ -4,11 +4,7 @@ import {
   UsersSchema,
   PublicUsersSchema,
 } from './responseSchemas.ts';
-import {
-  UsernameSchema,
-  UuidSchema,
-  EmailSchema,
-} from './fieldSchemas.ts';
+import { UsernameSchema, UuidSchema, EmailSchema } from './fieldSchemas.ts';
 
 export const friendsSchema = {
   tags: ['Friends'],

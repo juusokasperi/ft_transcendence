@@ -10,7 +10,7 @@ import {
   BACKEND_PORT,
   FRONTEND_URL,
   NGINX_PORT,
-  swaggerConfig
+  swaggerConfig,
 } from './utils/config.ts';
 import { userRoutes } from './routes/users.ts';
 import { loginRoutes } from './routes/login.ts';

@@ -3,7 +3,7 @@ import {
   ValidationErrorResponseSchema,
   SuccessResponseSchema,
   UsersSchema,
-  SettingsSchema
+  SettingsSchema,
 } from './responseSchemas.ts';
 
 import {
@@ -12,9 +12,8 @@ import {
   PassSchema,
   PaddleColorSchema,
   ColorBlindSchema,
-  PhotoSensitiveSchema
+  PhotoSensitiveSchema,
 } from './fieldSchemas.ts';
-
 
 export const getAllUsersSchema = {
   tags: ['User'],

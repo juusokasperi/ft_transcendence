@@ -3,7 +3,7 @@ import {
   UuidSchema,
   PaddleColorSchema,
   ColorBlindSchema,
-  PhotoSensitiveSchema
+  PhotoSensitiveSchema,
 } from './fieldSchemas.ts';
 
 export const SuccessResponseSchema = {
