@@ -5,56 +5,22 @@ Uses `better-sqlite3` to interact with the SQLite database. Migrations are handl
 ## Usage
 
 1. Install packages `npm install`
-2. Run `npm run seed:secret`
-3. Add `FRONTEND_URL` to `.env.` (see `.env.example`)
-4. Start server: `npm run dev`
+2. Run `npm run seed:secret` (creates a secret token for .env)
+3. Run `npm run db:seed` for creating some test data in the database.
+4. See `.env.example` for what else is needed
+5. Start server: `npm run dev`
    - On startup, server will run migrations automatically.
-5. To rollback a migration, `npm run migration:down`
-6. To clear data from database, run `npm run db:reset`
-7. To run tests, `npm run test`
+6. To rollback a migration, `npm run migration:down`
+7. To clear data from database, run `npm run db:reset`
+8. To run tests, `npm run test`
 
 ## Routes
 
 - To do at least;
   - Game routes.
   - Two factor auth routes.
-  - Username, password and email validation (with `zod`).
 
-### Auth
-
-| Method | Address (/api/)              | Function                      | Token required | Request body              | Returns token | Etc                        |
-| ------ | ---------------------------- | ----------------------------- | -------------- | ------------------------- | ------------- | -------------------------- |
-| POST   | signup                       | Signup as a new user          | No             | username, password, email | No            | Sends a confirmation email |
-| POST   | signup/validate/`:token`     | Confirm user signup           | No             |                           | Yes           | Uses the token from email  |
-| POST   | login                        | Login as an user              | No             | email, password           | Yes           |                            |
-| POST   | reset-password               | Reset user password (pt. 1/2) | No             | email                     | No            | Sends a confirmation email |
-| POST   | reset-password/`:resetToken` | Reset user password (pt. 2/2) | No             | newPassword               | No            |                            |
-
-### Users
-
-| Method | Address (/api/)                  | Function                     | Token required | Request body                                             | Etc                        |
-| ------ | -------------------------------- | ---------------------------- | -------------- | -------------------------------------------------------- | -------------------------- |
-| PATCH  | users                            | Get all users                | No             |                                                          |                            |
-| GET    | users/`:uuid`                    | Get single user              | No             |                                                          |                            |
-| PATCH  | users/me                         | Change username              | Yes            | newUsername                                              |                            |
-| PATCH  | users/me/password                | Change password              | Yes            | currentPassword, oldPassword                             |                            |
-| PATCH  | users/me/avatar                  | Change avatar                | Yes            | avatar (multipart form)                                  |                            |
-| DELETE | users/me/avatar                  | Delete avatar                | Yes            |                                                          |                            |
-| DELETE | users/me                         | Delete user (pt. 1/2)        | Yes            |                                                          | Sends a confirmation email |
-| DELETE | users/me/confirm-delete/`:token` | Delete user (pt. 2/2)        | Yes            |                                                          | Uses the token from email  |
-| GET    | users/me/settings                | Get user profile settings    | Yes            |                                                          |
-| PATCH  | users/me/settings                | Update user profile settings | Yes            | optional paddleColor, colorBlindMode, photoSensitiveMode |                            |
-
-### Friends
-
-| Method | Address (/api/)          | Function                                                     | Token required | Request body     |
-| ------ | ------------------------ | ------------------------------------------------------------ | -------------- | ---------------- |
-| GET    | friends                  | Get friends                                                  | Yes            |                  |
-| GET    | friends/pending/received | Get received pending friend requests                         | Yes            |                  |
-| GET    | friends/pending/sent     | Get sent pending friend requests                             | Yes            |                  |
-| PATCH  | friends/`:uuid`/respond  | Respond to a friend request                                  | Yes            | accept (boolean) |
-| POST   | friends/`                | Send a friend request (API accepts UUID, username or e-mail) | Yes            | username         |
-| DELETE | friends/`:uuid`          | Delete a friend                                              | Yes            |                  |
+- Swagger generates documentation when server is running, at `http://localhost:{backend_port}/docs`
 
 ## Database
 
@@ -74,6 +40,7 @@ Uses `better-sqlite3` to interact with the SQLite database. Migrations are handl
 | avatar        | TEXT |         | Yes      |               |
 | ranking       | INT  |         | No       | Default 1000  |
 | created_at    | DATE |         | No       |               |
+| last_seen     | DATE |         | No       |               |
 | google_id     | TEXT |         | Yes      |               |
 
 - Constraints:
@@ -157,9 +124,5 @@ Users that have requested account deletion.
 | paddle_color         | TEXT |         | No                | RGB value, default '#ffffff' |
 | color_blind_mode     | INT  |         | No                | Value between 0-4            |
 | photo_sensitive_mode | INT  | No      | Value between 0-2 |
-
-### User validation
-
-To-Do: E-mail address, username, password validation
 
 Other stuff on the to-do agenda; - Handle JWT tokens as httpOnly cookies instead of current JSON to localStorage handling. - Under consideration: Split the backend into microservices - f.ex. - PROXY SERVER -> Routes traffic to ROUTES server or CHAT server
