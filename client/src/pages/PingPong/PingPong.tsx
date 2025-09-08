@@ -4,9 +4,9 @@ import { useNavigate } from 'react-router-dom';
 const PingPong: React.FC = () => {
   const navigate = useNavigate();
 
-  const handleLocalPlay = () => navigate('/pingpong/local');
-  const handleOnlinePlay = () => navigate('/pingpong/online');
-  const handleTournaments = () => navigate('/pingpong/tournaments');
+  const handleLocalPlay = () => navigate('/ping-pong/local');
+  const handleOnlinePlay = () => navigate('/ping-pong/online');
+  const handleTournaments = () => navigate('/ping-pong/tournaments');
 
   return (
     <div className="relative h-screen w-full overflow-hidden">
