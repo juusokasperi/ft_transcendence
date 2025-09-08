@@ -127,17 +127,6 @@ export const updateAvatarSchema = {
   summary: 'Update avatar picture',
   security: [{ bearerAuth: [] }],
   consumes: ['multipart/form-data'],
-  body: {
-    type: 'object',
-    properties: {
-      avatar: {
-        type: 'string',
-        format: 'binary',
-        description: 'Avatar image file (max 1MB)',
-      },
-    },
-    required: ['avatar'],
-  },
   response: {
     200: UsersSchema,
     400: ValidationErrorResponseSchema,
