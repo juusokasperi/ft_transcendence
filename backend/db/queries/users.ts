@@ -68,6 +68,22 @@ export function getUserByEmail(email: string): User | undefined {
   };
 }
 
+export function getUserByGoogleId(googleId: string): User | undefined {
+  const user = db.prepare('SELECT * FROM Users WHERE google_id = ?').get(googleId) as UserDb | null;
+  if (!user) return undefined;
+  return {
+    uuid: user.uuid,
+    username: user.username,
+    email: user.email,
+    passwordHash: user.password_hash,
+    tfa: user.tfa,
+    avatar: user.avatar,
+    ranking: user.ranking,
+    createdAt: user.created_at,
+    googleId: user.google_id,
+  };
+}
+
 export function getUser(identifier: string): User | undefined {
   const user = db
     .prepare(
