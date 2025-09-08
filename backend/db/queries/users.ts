@@ -127,6 +127,42 @@ export function addUser(
   }
 }
 
+// check it later
+function ensureUniqueUsername(preferred: string): string {
+  const base =
+    (preferred || 'user')
+      .toLowerCase()
+      .replace(/[^a-z0-9_]+/g, '_')
+      .replace(/^_+|_+$/g, '')
+      .slice(0, 24) || 'user';
+  let candidate = base;
+  let n = 0;
+  while (db.prepare('SELECT 1 FROM Users WHERE username = ?').get(candidate)) {
+    n += 1;
+    candidate = `${base}_${n}`;
+  }
+  return candidate;
+}
+
+export function createUserFromGoogle(profile: {
+  googleId: string;
+  email?: string;
+  name?: string;
+  picture?: string;
+}): User | undefined {
+  try {
+    const uuid = crypto.randomUUID();
+    const username = ensureUniqueUsername(profile.name ?? profile.email?.split('@')[0] ?? 'user');
+    db.prepare(
+      `INSERT INTO Users (uuid, username, email, avatar, google_id)
+       VALUES (?, ?, ?, ?, ?)`,
+    ).run(uuid, username, profile.email ?? null, profile.picture ?? null, profile.googleId);
+    return getUser(uuid);
+  } catch {
+    return undefined;
+  }
+}
+
 // Update or delete avatar (if no avatarPath; then delete)
 export function updateAvatar(uuid: string, avatarPath?: string): boolean {
   try {
