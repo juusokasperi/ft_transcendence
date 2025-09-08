@@ -3,15 +3,18 @@ import { getUserByEmail, updateLastSeen } from '../db/queries/users.ts';
 import bcrypt from 'bcrypt';
 import { SECRET } from '../utils/config.ts';
 import jwt from 'jsonwebtoken';
-import { normalizeCredentials, validationHook } from '../hooks/auth.ts';
-import { validateLogin } from '../utils/validate.ts';
+import { normalizeCredentials } from '../hooks/auth.ts';
+import { loginSchema } from '../schemas/authSchemas.ts';
 
 // TODO:
 // Extra checks and route for 2FA
 export async function loginRoutes(app: FastifyInstance) {
   app.post(
     '/',
-    { preValidation: [normalizeCredentials, validationHook(validateLogin)] },
+    {
+      schema: loginSchema,
+      preValidation: [normalizeCredentials],
+    },
     async (req: FastifyRequest, res: FastifyReply) => {
       try {
         const { email, password } = req.body as { email: string; password: string };
@@ -28,7 +31,6 @@ export async function loginRoutes(app: FastifyInstance) {
         };
 
         const token = jwt.sign(userForToken, SECRET, { expiresIn: '4h' });
-
         // Does the front need UUID anymore?
         res.status(200).send({
           token,
