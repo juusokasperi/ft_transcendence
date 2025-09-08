@@ -6,7 +6,7 @@
 #    By: irychkov <irychkov@student.hive.fi>        +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2025/09/02 21:00:08 by irychkov          #+#    #+#              #
-#    Updated: 2025/09/08 14:10:26 by lemercie         ###   ########.fr        #
+#    Updated: 2025/09/08 14:10:55 by lemercie         ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -87,6 +87,7 @@ help:
 	@echo "  make bash-[service]       # Open bash shell in service"
 	@echo "  make restart-[service]    # Restart single service"
 	@echo "  make restart              # Restart all services"
+	@echo "  make restart-elk          # Restart all services, including ELK"
 	@echo "  make stop                 # Stop all services without removing them"
 	@echo ""
 	@echo "Available services: $(SERVICES)"
@@ -128,12 +129,14 @@ bash-%:
 
 # ==[Stop containers without removing them]========================================
 stop:
-	docker compose -p $(NAME) -f docker-compose.yml stop
-
+	docker compose -p $(NAME) -f docker-compose.yml --profile elk stop
+		
 # ==[Restart containers]==========================================================
 restart:
 	docker compose -p $(NAME) -f docker-compose.yml restart
 
+restart-elk:
+	docker compose -p $(NAME) -f docker-compose.yml --profile elk restart
 # ==[Restart one service]=========================================================
 restart-%:
 	@if echo "$(SERVICES)" | grep -qw "$*"; then \
