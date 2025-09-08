@@ -1,4 +1,4 @@
-// src/game/rules/types.ts
+// src/shared/domain/rules.ts
 import type { TableEnd } from "@shared/domain/ids";
 
 export type GameRules = {

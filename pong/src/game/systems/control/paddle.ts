@@ -1,7 +1,7 @@
 // src/game/systems/control/paddle.ts
-import type { GameState } from '@game/model/state';
-import type { InputIntent } from '@shared/protocol/input';
-import { clampZ } from '@game/systems/utils';
+import type { GameState } from "@game/model/state";
+import type { InputIntent } from "@shared/protocol/input";
+import { clampZ } from "@game/systems/utils";
 
 /** Deterministic, pure step. Units: meters/second, seconds. */
 export function stepPaddles(s: GameState, inpt: InputIntent, dt: number): GameState {

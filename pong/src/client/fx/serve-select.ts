@@ -1,6 +1,6 @@
 // src/client/fx/serve-select.ts
 import { MeshBuilder } from "@babylonjs/core/Meshes/meshBuilder";
-import { StandardMaterial } from "@babylonjs/core/Materials/standardMaterial"; // ← correct casing
+import { StandardMaterial } from "@babylonjs/core/Materials/standardMaterial";
 import { Constants } from "@babylonjs/core/Engines/constants";
 import type { Color3 } from "@babylonjs/core/Maths/math";
 import type { AbstractMesh } from "@babylonjs/core/Meshes/abstractMesh";

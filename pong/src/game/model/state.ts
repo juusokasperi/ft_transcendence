@@ -1,4 +1,4 @@
-// src/game/state.ts
+// src/game/model/state.ts
 import { PAUSE_BETWEEN_POINTS_MS } from "@game/constants";
 import type { TableEnd } from "@shared/domain/ids";
 

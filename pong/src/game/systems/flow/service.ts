@@ -1,4 +1,4 @@
-// src/game/ball/service.ts
+// src/game/systems/flow/service.ts
 import type { GameState } from "@game/model/state";
 import type { TableEnd } from "@shared/domain/ids";
 

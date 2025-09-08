@@ -1,4 +1,4 @@
-// src/babylon.sidefx.ts
+// src/client/babylon-register.ts
 import "@babylonjs/core/Materials/standardMaterial";
 import "@babylonjs/core/Lights/Shadows/shadowGeneratorSceneComponent";
 import "@babylonjs/core/Rendering/boundingBoxRenderer";

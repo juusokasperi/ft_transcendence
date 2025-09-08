@@ -1,4 +1,4 @@
-// src/client/input/core/block.ts
+// src/client/input/block.ts
 let blockedUntil = 0;
 
 export function blockInputFor(ms: number): void {

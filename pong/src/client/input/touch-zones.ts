@@ -1,4 +1,4 @@
-// src/client/input/touchZones.ts
+// src/client/input/touch-zones.ts
 type TouchSide = "left" | "right";
 
 type ActiveTouch = {

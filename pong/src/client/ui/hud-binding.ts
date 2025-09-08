@@ -1,4 +1,4 @@
-// src/client/ui/hudBinding.ts
+// src/client/ui/hud-binding.ts
 import type { GameState } from "@game/model/state";
 import type { DomScoreboardAPI } from "@client/ui/scoreboard";
 import type { TableEnd } from "@shared/domain/ids";
