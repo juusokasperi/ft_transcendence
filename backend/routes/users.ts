@@ -203,7 +203,6 @@ export async function userRoutes(app: FastifyInstance) {
         if (!ACCEPTED_TYPES.includes(file.mimetype))
           return res.status(400).send({ message: 'Invalid avatar file type.' });
 
-
         const fileExtension = getExtensionFromMime(file.mimetype);
         const fileName = `${uuid}_${Date.now()}_avatar${fileExtension}`;
         const filePath = path.join(UPLOAD_DIR, fileName);
