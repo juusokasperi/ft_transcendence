@@ -9,13 +9,12 @@ volumes:
     driver: local
 
 services:
-
   elastic_cert_setup:
     profiles:
       - elk
     build:
       context: ./elastic_cert_setup/
-      args: 
+      args:
         STACK_VERSION: ${STACK_VERSION:?STACK_VERSION must be set}
       labels:
         - project=transcendence
@@ -33,13 +32,12 @@ services:
     networks:
       - devnet
 
-
   elasticsearch:
     profiles:
       - elk
     build:
       context: ./elasticsearch/
-      args: 
+      args:
         STACK_VERSION: ${STACK_VERSION:?STACK_VERSION must be set}
       labels:
         - project=transcendence
@@ -85,13 +83,12 @@ services:
     networks:
       - devnet
 
-
   kibana:
     profiles:
       - elk
     build:
       context: ./kibana/
-      args: 
+      args:
         STACK_VERSION: ${STACK_VERSION:?STACK_VERSION must be set}
       labels:
         - project=transcendence
@@ -127,7 +124,6 @@ services:
     networks:
       - devnet
 
-
   kibana-post:
     profiles:
       - elk
@@ -144,13 +140,12 @@ services:
     depends_on:
       - kibana
 
-
   logstash:
     profiles:
       - elk
     build:
       context: ./logstash/
-      args: 
+      args:
         STACK_VERSION: ${STACK_VERSION:?STACK_VERSION must be set}
       labels:
         - project=transcendence
