@@ -1,4 +1,4 @@
-version: '3'
+version: "3"
 
 vars:
   NAME: transcendence
@@ -37,13 +37,13 @@ tasks:
   down:
     desc: Stop and remove containers
     cmds:
-      - docker compose -p {{.NAME}} -f docker-compose.yml --env-file .env down
+      - docker compose -p {{.NAME}} -f docker-compose.yml --env-file .env --profile elk down --remove-orphans
 
   fclean:
     desc: Remove containers, volumes, and uploads
     cmds:
-      - docker compose -p {{.NAME}} -f docker-compose.yml --env-file .env down --volumes --remove-orphans
-      - rm -rf ./backend/data/sqlite/uploads
+      - docker compose -p {{.NAME}} -f docker-compose.yml --env-file .env --profile elk down --rmi local --volumes --remove-orphans
+      - rm -rf ./backend/data
 
   re:
     desc: Rebuild project (fclean + all)
@@ -58,43 +58,43 @@ tasks:
 
   logs:*:
     vars:
-      SERVICE: '{.MATCH}'
-    desc: "Show logs for a service (usage: task logs -- SERVICE=service_name)"
+      SERVICE: "{{index .MATCH 0}}"
+    desc: "Show logs for a service (usage: task logs:service_name)"
     cmds:
       - docker compose -p {{.NAME}} -f docker-compose.yml logs {{.SERVICE | default ""}}
 
-  sh:
+  sh:*:
     vars:
-      SERVICE: '{.MATCH}'
-    desc: "Open sh shell in a service (usage: task sh -- SERVICE=service_name)"
+      SERVICE: "{{index .MATCH 0}}"
+    desc: "Open sh shell in a service (usage: task sh:service_name)"
     cmds:
       - docker compose -p {{.NAME}} -f docker-compose.yml exec -it {{.SERVICE}} sh
 
-  bash:
+  bash:*:
     vars:
-      SERVICE: '{.MATCH}'
-    desc: "Open bash shell in a service (usage: task bash -- SERVICE=service_name)"
+      SERVICE: "{{index .MATCH 0}}"
+    desc: "Open bash shell in a service (usage: task bash:service_name)"
     cmds:
       - docker compose -p {{.NAME}} -f docker-compose.yml exec -it {{.SERVICE}} bash
 
   stop:
-    vars:
-      SERVICE: '{.MATCH}'
-    desc: Stop containers without removing them
+    desc: Stop all containers without removing them
     cmds:
-      - docker compose -p {{.NAME}} -f docker-compose.yml stop
+      - docker compose -p {{.NAME}} -f docker-compose.yml --profile elk stop
 
   restart:
-    vars:
-      SERVICE: '{.MATCH}'
     desc: Restart all containers
     cmds:
       - docker compose -p {{.NAME}} -f docker-compose.yml restart
 
-  restart-service:
+  restart-elk:
+    desc: Restart all containers with ELK
+    cmds:
+      - docker compose -p {{.NAME}} -f docker-compose.yml --profile elk restart
+
+  restart-service:*:
     vars:
-      SERVICE: '{.MATCH}'
+      SERVICE: "{{index .MATCH 0}}"
     desc: "Restart a single service (usage: task restart-service -- SERVICE=service_name)"
     cmds:
       - docker compose -p {{.NAME}} -f docker-compose.yml restart {{.SERVICE}}
-
