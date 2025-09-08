@@ -6,7 +6,7 @@
 #    By: irychkov <irychkov@student.hive.fi>        +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2025/09/02 21:00:08 by irychkov          #+#    #+#              #
-#    Updated: 2025/09/08 14:10:01 by lemercie         ###   ########.fr        #
+#    Updated: 2025/09/08 14:10:26 by lemercie         ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -18,13 +18,18 @@ all:
 	if [ ! -d "./backend/data/sqlite/uploads" ]; then \
 		mkdir -p ./backend/data/sqlite/uploads; \
 	fi
-	docker compose -p $(NAME) -f docker-compose.yml --env-file .env up --build
+	docker compose -p $(NAME) -f docker-compose.yml \
+		--env-file .env \
+		up --build
 	
 elk:
 	if [ ! -d "./backend/data/sqlite/uploads" ]; then \
 		mkdir -p ./backend/data/sqlite/uploads; \
 	fi
-	docker compose -p $(NAME) -f docker-compose.yml --env-file .env --profile elk up --build
+	docker compose -p $(NAME) -f docker-compose.yml \
+		--env-file .env \
+		--profile elk \
+		up --build
 
 elk-detached:
 	if [ ! -d "./backend/data/sqlite/uploads" ]; then \
@@ -39,7 +44,9 @@ detached:
 	if [ ! -d "./backend/data/sqlite/uploads" ]; then \
 		mkdir -p ./backend/data/sqlite/uploads; \
 	fi
-	docker compose -p $(NAME) -f docker-compose.yml --env-file .env up --build -d
+	docker compose -p $(NAME) -f docker-compose.yml \
+		--env-file .env \
+		up --build -d
 
 down:
 	docker compose -p $(NAME) -f docker-compose.yml \
@@ -69,6 +76,7 @@ help:
 	@echo "  make detached             # Build & start all services in detached mode"
 	@echo "  make all                  # Build & start all services"
 	@echo "  make elk                  # Build & start all services plus log management"
+	@echo "  make elk-detached         # Build & start all services plus log management in detached mode"
 	@echo "  make down                 # Stop all services and remove containers"
 	@echo "  make fclean               # Stop and remove all services, volumes, images"
 	@echo "  make re                   # fclean + all"

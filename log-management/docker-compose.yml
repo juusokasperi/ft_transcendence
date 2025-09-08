@@ -8,8 +8,6 @@ volumes:
   logstash_data:
     driver: local
 
-# NOTE: container_name is not used because it leads to random bugs when a 
-# previous docker compose run has failed to clean up properly
 services:
 
   elastic_cert_setup:
