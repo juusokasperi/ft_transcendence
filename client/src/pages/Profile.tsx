@@ -3,6 +3,7 @@ import type { ChangeEvent } from 'react';
 import { useAppContext } from '../context/AppContext';
 import toast from 'react-hot-toast';
 import type { AxiosError } from 'axios';
+import Cookies from 'js-cookie';
 
 interface PasswordState {
   currentPassword: string;
@@ -21,6 +22,24 @@ function resolveAvatarUrl(avatar: string | undefined | null, axiosBase?: string)
   return `${base}/uploads/${filename}`;
 }
 
+export function useUser() {
+  const [user, setUser] = useState<User | null>(null);
+
+  useEffect(() => {
+    // Try to hydrate user from cookie if not set
+    if (!user) {
+      const cookieUser = Cookies.get('user');
+      if (cookieUser) {
+        try {
+          setUser(JSON.parse(cookieUser));
+        } catch {}
+      }
+    }
+  }, []);
+
+  return { user, setUser };
+}
+
 const Profile: React.FC = () => {
   const { axios, user, setUser, getToken, logout } = useAppContext();
 
@@ -36,7 +55,10 @@ const Profile: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(false);
 
   useEffect(() => {
+    console.log('Profile user =', user);
+    console.log('Profile user.avatar =', user?.avatar);
     const url = resolveAvatarUrl(user?.avatar, axios.defaults.baseURL);
+    console.log('Profile resolved avatar URL =', url);
     setImagePreview(url);
   }, [user?.avatar, axios.defaults.baseURL]);
 
@@ -52,7 +74,7 @@ const Profile: React.FC = () => {
   const handleUsernameChange = async () => {
     try {
       if (!username) return;
-      const token = getToken();
+      const token = await getToken();
       const res = await axios.patch(
         '/api/users/me',
         {
@@ -77,7 +99,7 @@ const Profile: React.FC = () => {
     try {
       if (!newPassword.newPassword || !newPassword.currentPassword || !newPassword.confirmPassword)
         return;
-      const token = getToken();
+      const token = await getToken();
       await axios.patch(
         '/api/users/me/password',
         {
@@ -135,7 +157,7 @@ const Profile: React.FC = () => {
   const handleDelete = async () => {
     if (!window.confirm('Are you sure you want to delete your account?')) return;
     try {
-      const token = getToken();
+      const token = await getToken();
       await axios.delete(`/api/users/me`, {
         headers: {
           Authorization: `Bearer ${token}`,
