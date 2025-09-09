@@ -7,8 +7,14 @@ interface FriendRequest {
   username: string;
   uuid: string;
 }
+type Friend = {
+  username: string;
+  avatar: string;
+  online: boolean;
+};
 
 const Friends: React.FC = () => {
+  const baseURL = import.meta.env.VITE_BACKEND_URL;
   const [activeTab, setActiveTab] = useState<'all' | 'online' | 'offline' | 'pending' | 'add'>(
     'online',
   );
@@ -17,7 +23,9 @@ const Friends: React.FC = () => {
   const [pendingSent, setPendingSent] = useState<FriendRequest[]>([]);
   const [pendingReceived, setPendingReceived] = useState<FriendRequest[]>([]);
 
-  const [friends, setFriends] = useState<string[]>([]);
+  const [friends, setFriends] = useState<Friend[]>([]);
+  const [onlineFriends, setOnlineFriends] = useState<Friend[]>([]);
+  const [offlineFriends, setOfflineFriends] = useState<Friend[]>([]);
 
   const { axios, getToken } = useAppContext();
   getToken; // avoid unused variable warning
@@ -40,8 +48,18 @@ const Friends: React.FC = () => {
 
   const fetchAllFriends = async () => {
     try {
-      const res = await axios.get<{ username: string }[]>('/api/friends/');
-      setFriends(res.data.map((f) => f.username));
+      const res = await axios.get<Friend[]>('/api/friends/');
+
+      const friendsWithAvatar = res.data.map((f) => ({
+        ...f,
+        avatar: f.avatar ? `${baseURL}/uploads/${f.avatar}` : '/src/assets/react.svg',
+      }));
+
+      friendsWithAvatar.map((f) => console.log(f.avatar));
+      setFriends(friendsWithAvatar);
+
+      setOnlineFriends(friendsWithAvatar.filter((f) => f.online));
+      setOfflineFriends(friendsWithAvatar.filter((f) => !f.online));
     } catch (err) {
       const axiosErr = err as AxiosError<{ message?: string }>;
       toast.error(String(axiosErr?.response?.data?.message));
@@ -101,7 +119,7 @@ const Friends: React.FC = () => {
       fetchSentPendingFriends();
       fetchReceivedPendingFriends();
     }
-    if (activeTab === 'all') {
+    if (activeTab === 'all' || activeTab === 'online' || activeTab === 'offline') {
       fetchAllFriends();
     }
   }, [activeTab]);
@@ -131,16 +149,34 @@ const Friends: React.FC = () => {
           <div className="text-purple-600">
             <h2 className="mb-4 text-xl font-bold">All Friends</h2>
             <ul className="list-disc space-y-2 pl-5">
-              {friends.length > 0 ? friends.map((f) => <li>{f}</li>) : <li>You have no friends</li>}
+              {friends.length > 0 ? (
+                friends.map((f) => (
+                  <li key={f.username} className="flex items-center space-x-2">
+                    <img src={f.avatar} alt={f.username} className="h-10 w-10 rounded-full" />
+                    <span>{f.username}</span>
+                  </li>
+                ))
+              ) : (
+                <li>You have no friends</li>
+              )}
             </ul>
           </div>
         )}
 
         {activeTab === 'online' && (
-          <div className="text-gray-600">
+          <div className="text-green-600">
             <h2 className="mb-4 text-xl font-bold">Online Friends</h2>
             <ul className="list-disc space-y-2 pl-5">
-              {/* TODO: Fetch and render offline friends */}
+              {onlineFriends.length > 0 ? (
+                onlineFriends.map((f) => (
+                  <li key={f.username} className="flex items-center space-x-2">
+                    <img src={f.avatar} alt={f.username} className="h-10 w-10 rounded-full" />
+                    <span>{f.username}</span>
+                  </li>
+                ))
+              ) : (
+                <li>You have no online friends</li>
+              )}
             </ul>
           </div>
         )}
@@ -149,7 +185,16 @@ const Friends: React.FC = () => {
           <div className="text-gray-600">
             <h2 className="mb-4 text-xl font-bold">Offline Friends</h2>
             <ul className="list-disc space-y-2 pl-5">
-              {/* TODO: Fetch and render offline friends */}
+              {offlineFriends.length > 0 ? (
+                offlineFriends.map((f) => (
+                  <li key={f.username} className="flex items-center space-x-2">
+                    <img src={f.avatar} alt={f.username} className="h-10 w-10 rounded-full" />
+                    <span>{f.username}</span>
+                  </li>
+                ))
+              ) : (
+                <li>You have no offline friends</li>
+              )}
             </ul>
           </div>
         )}

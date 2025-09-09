@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import AuthForm from '../components/AuthForm';
 import { useAppContext } from '../context/AppContext';
 import type { User } from '../types';
@@ -7,8 +7,14 @@ import type { AxiosError } from 'axios';
 import { Link } from 'react-router-dom';
 
 const Login: React.FC = () => {
-  const { axios, login, navigate } = useAppContext();
+  const { axios, login, navigate, user } = useAppContext();
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (user) {
+      navigate('/');
+    }
+  }, [user]);
 
   const handleLogin = async (data: { email: string; password: string }) => {
     setLoading(true);
