@@ -10,11 +10,22 @@ interface PasswordState {
   confirmPassword: string;
 }
 
+const PLACEHOLDER = 'src/assets/react.svg'; // put any existing asset/public file
+
+// Turn whatever is in user.avatar into a usable URL for <img src>
+function resolveAvatarUrl(avatar: string | undefined | null, axiosBase?: string): string {
+  if (!avatar) return PLACEHOLDER;
+  if (/^https?:\/\//i.test(avatar)) return avatar; // external (e.g. Google)
+  const base = (axiosBase || '').replace(/\/+$/, ''); // strip trailing /
+  const filename = avatar.replace(/^\/?uploads\//, ''); // avoid double /uploads
+  return `${base}/uploads/${filename}`;
+}
+
 const Profile: React.FC = () => {
   const { axios, user, setUser, getToken, logout } = useAppContext();
 
   const [image, setImage] = useState<File | null>(null);
-  const [imagePreview, setImagePreview] = useState<string>('src/assets/react.svg');
+  const [imagePreview, setImagePreview] = useState<string>(PLACEHOLDER);
   const [username, setUsername] = useState<string>('');
   const [newPassword, setNewPasswords] = useState<PasswordState>({
     currentPassword: '',
@@ -24,19 +35,10 @@ const Profile: React.FC = () => {
 
   const [loading, setLoading] = useState<boolean>(false);
 
-  const getImage = async () => {
-    try {
-      const res = await axios.get(`/uploads/${user?.avatar}`, {
-        responseType: 'blob',
-      });
-      setImagePreview(URL.createObjectURL(res.data));
-    } catch (error) {}
-  };
-
   useEffect(() => {
-    console.log(user?.avatar);
-    getImage();
-  }, [user?.avatar]);
+    const url = resolveAvatarUrl(user?.avatar, axios.defaults.baseURL);
+    setImagePreview(url);
+  }, [user?.avatar, axios.defaults.baseURL]);
 
   // Handle image selection
   const handleImageChange = async (e: ChangeEvent<HTMLInputElement>) => {
@@ -97,42 +99,35 @@ const Profile: React.FC = () => {
   };
 
   const handleUpdate = async (e: React.FormEvent) => {
+    e.preventDefault();
     try {
-      e.preventDefault(); // ✨ prevent form submission
       setLoading(true);
+
       await handleUsernameChange();
       await handlePasswordChange();
+
       if (image) {
-        try {
-          const token = await getToken();
+        const token = await getToken();
+        const formData = new FormData();
+        formData.append('avatar', image);
 
-          // Create a FormData instance
-          const formData = new FormData();
-          formData.append('avatar', image); // "avatar" is the field name expected by backend
+        const res = await axios.patch('/api/users/me/avatar', formData, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'multipart/form-data',
+          },
+        });
 
-          const res = await axios.patch('/api/users/me/avatar', formData, {
-            headers: {
-              Authorization: `Bearer ${token}`,
-              'Content-Type': 'multipart/form-data', // Axios sets the correct boundary automatically
-            },
-          });
-
-          setUser((prev) => (prev ? { ...prev, avatar: res.data.avatar } : res.data));
-          getImage();
-          toast.success('Account avatar has been changed');
-        } catch (err: any) {
-          setLoading(false);
-          const axiosErr = err as AxiosError<{ error?: string }>;
-          const message = axiosErr?.response?.data?.error;
-          toast.error(String(message));
-        }
+        // backend returns res.data.avatar (filename or url); update user & preview
+        setUser((prev) => (prev ? { ...prev, avatar: res.data.avatar } : res.data));
+        setImagePreview(resolveAvatarUrl(res.data.avatar, axios.defaults.baseURL));
+        toast.success('Account avatar has been changed');
       }
-      setLoading(false);
     } catch (err: any) {
-      setLoading(false);
       const axiosErr = err as AxiosError<{ error?: string }>;
-      const message = axiosErr?.response?.data?.error;
-      toast.error(String(message));
+      toast.error(String(axiosErr?.response?.data?.error || 'Update failed'));
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -167,6 +162,9 @@ const Profile: React.FC = () => {
               src={imagePreview}
               alt="Profile"
               className="mb-2 h-24 w-24 rounded-full object-cover"
+              onError={(e) => {
+              (e.currentTarget as HTMLImageElement).src = PLACEHOLDER;
+            }}
             />
           )}
           <input
