@@ -33,15 +33,20 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   };
 
   const logout = async () => {
-    axios.post(
-      '/api/logout',
-      {},
-      {
-        headers: {
-          Authorization: `Bearer ${await getToken()}`,
+    try {
+      await axios.post(
+        '/api/logout',
+        {},
+        {
+          headers: {
+            Authorization: `Bearer ${await getToken()}`,
+          },
         },
-      },
-    );
+      );
+    } catch (error) {
+      // Optionally log the error for debugging
+      console.error('Logout API call failed:', error);
+    }
 
     authLogout();
     setUser(null);
