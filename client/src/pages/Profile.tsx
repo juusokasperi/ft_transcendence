@@ -3,8 +3,6 @@ import type { ChangeEvent } from 'react';
 import { useAppContext } from '../context/AppContext';
 import toast from 'react-hot-toast';
 import type { AxiosError } from 'axios';
-import Cookies from 'js-cookie';
-import type { User } from '../types';
 
 interface PasswordState {
   currentPassword: string;
@@ -21,24 +19,6 @@ function resolveAvatarUrl(avatar: string | undefined | null, axiosBase?: string)
   const base = (axiosBase || '').replace(/\/+$/, ''); // strip trailing /
   const filename = avatar.replace(/^\/?uploads\//, ''); // avoid double /uploads
   return `${base}/uploads/${filename}`;
-}
-
-export function useUser() {
-  const [user, setUser] = useState<User | null>(null);
-
-  useEffect(() => {
-    // Try to hydrate user from cookie if not set
-    if (!user) {
-      const cookieUser = Cookies.get('user');
-      if (cookieUser) {
-        try {
-          setUser(JSON.parse(cookieUser));
-        } catch {}
-      }
-    }
-  }, []);
-
-  return { user, setUser };
 }
 
 const Profile: React.FC = () => {
@@ -73,7 +53,7 @@ const Profile: React.FC = () => {
   const handleUsernameChange = async () => {
     try {
       if (!username) return;
-      const token = await getToken();
+      const token = getToken();
       const res = await axios.patch(
         '/api/users/me',
         {
@@ -85,7 +65,25 @@ const Profile: React.FC = () => {
           },
         },
       );
-      setUser((prev) => (prev ? { ...prev, username: res.data.username } : res.data));
+      setUser((prev) =>
+        prev
+          ? {
+              ...prev,
+              username: res.data.username,
+              uuid: res.data.uuid,
+              avatar: res.data.avatar ?? prev.avatar,
+            }
+          : {
+              username: res.data.username,
+              uuid: res.data.uuid,
+              avatar: res.data.avatar ?? null,
+              id: res.data.id ?? 0,
+              email: res.data.email ?? '',
+              wins: res.data.wins ?? 0,
+              losses: res.data.losses ?? 0,
+              createdAt: res.data.createdAt ?? '',
+            },
+      );
       toast.success('Account username changed');
     } catch (err: any) {
       const axiosErr = err as AxiosError<{ error?: string }>;
@@ -98,7 +96,7 @@ const Profile: React.FC = () => {
     try {
       if (!newPassword.newPassword || !newPassword.currentPassword || !newPassword.confirmPassword)
         return;
-      const token = await getToken();
+      const token = getToken();
       await axios.patch(
         '/api/users/me/password',
         {
@@ -128,7 +126,7 @@ const Profile: React.FC = () => {
       await handlePasswordChange();
 
       if (image) {
-        const token = await getToken();
+        const token = getToken();
         const formData = new FormData();
         formData.append('avatar', image);
 
@@ -140,7 +138,23 @@ const Profile: React.FC = () => {
         });
 
         // backend returns res.data.avatar (filename or url); update user & preview
-        setUser((prev) => (prev ? { ...prev, avatar: res.data.avatar } : res.data));
+        setUser((prev) =>
+          prev
+            ? {
+                ...prev,
+                avatar: res.data.avatar ?? prev.avatar,
+              }
+            : {
+                username: res.data.username,
+                uuid: res.data.uuid,
+                avatar: res.data.avatar ?? null,
+                id: res.data.id ?? 0,
+                email: res.data.email ?? '',
+                wins: res.data.wins ?? 0,
+                losses: res.data.losses ?? 0,
+                createdAt: res.data.createdAt ?? '',
+              },
+        );
         setImagePreview(resolveAvatarUrl(res.data.avatar, axios.defaults.baseURL));
         toast.success('Account avatar has been changed');
       }
@@ -156,7 +170,7 @@ const Profile: React.FC = () => {
   const handleDelete = async () => {
     if (!window.confirm('Are you sure you want to delete your account?')) return;
     try {
-      const token = await getToken();
+      const token = getToken();
       await axios.delete(`/api/users/me`, {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -180,6 +194,7 @@ const Profile: React.FC = () => {
 
           {imagePreview && (
             <img
+              key={imagePreview}
               src={imagePreview}
               alt="Profile"
               className="mb-2 h-24 w-24 rounded-full object-cover"

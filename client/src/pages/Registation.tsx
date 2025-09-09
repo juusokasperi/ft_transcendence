@@ -35,7 +35,7 @@ const Registration: React.FC = () => {
       const { token, user } = res.data as { token?: string; user?: User };
 
       if (token && user) {
-        login(user, token);
+        login(token);
         toast.success('Account created and logged in');
         navigate('/');
         return;
