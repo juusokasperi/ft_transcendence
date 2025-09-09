@@ -15,10 +15,16 @@ export const useUser = () => {
     }
   }, []);
 
-  const setUser = useCallback((u: User | null) => {
-    setUserState(u);
-    if (u) localStorage.setItem('user', JSON.stringify(u));
-    else localStorage.removeItem('user');
+  const setUser = useCallback<React.Dispatch<React.SetStateAction<User | null>>>((update) => {
+    setUserState((prev) => {
+      const next =
+        typeof update === 'function' ? (update as (p: User | null) => User | null)(prev) : update;
+
+      if (next) localStorage.setItem('user', JSON.stringify(next));
+      else localStorage.removeItem('user');
+
+      return next;
+    });
   }, []);
 
   return { user, setUser };

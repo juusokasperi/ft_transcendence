@@ -31,7 +31,16 @@ export const AppProvider: React.FC<React.PropsWithChildren> = ({ children }) => 
       axios
         .get('/api/users/me')
         .then(({ data }) =>
-          setUser({ username: data.username, uuid: data.uuid, avatar: data.avatar ?? null }),
+          setUser({
+            username: data.username,
+            uuid: data.uuid,
+            avatar: data.avatar ?? null,
+            id: data.id ?? 0,
+            email: data.email ?? '',
+            wins: data.wins ?? 0,
+            losses: data.losses ?? 0,
+            createdAt: data.createdAt ?? '',
+          }),
         )
         .catch(() => {});
     }
@@ -41,7 +50,16 @@ export const AppProvider: React.FC<React.PropsWithChildren> = ({ children }) => 
   const login = async (token: string) => {
     authLogin(token);
     const { data } = await axios.get('/api/users/me');
-    setUser({ username: data.username, uuid: data.uuid, avatar: data.avatar ?? null });
+    setUser({
+      username: data.username,
+      uuid: data.uuid,
+      avatar: data.avatar ?? null,
+      id: data.id ?? 0,
+      email: data.email ?? '',
+      wins: data.wins ?? 0,
+      losses: data.losses ?? 0,
+      createdAt: data.createdAt ?? '',
+    });
   };
 
   const logout = () => {
