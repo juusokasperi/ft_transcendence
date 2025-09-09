@@ -1,4 +1,5 @@
 import type { FastifyInstance } from 'fastify';
+import type { FastifyRequest } from 'fastify';
 import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
 import db from '../db/client.ts';
@@ -18,9 +19,17 @@ const GOOGLE_USERINFO = 'https://openidconnect.googleapis.com/v1/userinfo';
 const SESSION_COOKIE = 'session';
 const STATE_COOKIE = 'oauth_state';
 
-const baseUrl = process.env.BASE_URL!;
 const redirectPath = process.env.GOOGLE_OAUTH_REDIRECT_PATH || '/api/auth/google/callback';
-const redirectUri = new URL(redirectPath, baseUrl).toString();
+
+function buildRedirectUri(req: FastifyRequest) {
+  const envBase = process.env.BASE_URL;
+  if (envBase && /^https?:\/\//i.test(envBase)) {
+    return new URL(redirectPath, envBase).toString();
+  }
+  const host  = (req.headers['x-forwarded-host'] as string) || (req.headers.host as string);
+  const proto = (req.headers['x-forwarded-proto'] as string) || req.protocol || 'http';
+  return `${proto}://${host}${redirectPath.startsWith('/') ? '' : '/'}${redirectPath}`;
+}
 
 function randomState() {
   return crypto.randomBytes(24).toString('base64url');
@@ -46,6 +55,7 @@ export default async function googleSign(app: FastifyInstance) {
       maxAge: 10 * 60, // 10 минут
     });
 
+    const redirectUri = buildRedirectUri(req);
     const url = new URL(GOOGLE_AUTH);
     url.searchParams.set('client_id', process.env.GOOGLE_CLIENT_ID!);
     url.searchParams.set('redirect_uri', redirectUri);
@@ -70,6 +80,7 @@ export default async function googleSign(app: FastifyInstance) {
     }
 
     // Обмен кода на токены
+    const redirectUri = buildRedirectUri(req);
     const body = new URLSearchParams({
       code,
       client_id: process.env.GOOGLE_CLIENT_ID!,
