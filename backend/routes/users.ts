@@ -28,6 +28,7 @@ import { UPLOAD_DIR } from '../utils/config.ts';
 import {
   getAllUsersSchema,
   getUserSchema,
+  getMeSchema,
   userDeleteSchema,
   userDeleteConfirmSchema,
   updateUsernameSchema,
@@ -68,6 +69,31 @@ export async function userRoutes(app: FastifyInstance) {
       res.status(500).send({ message: 'Failed to fetch user' });
     }
   });
+
+  // Current user (for hydration)
+app.get(
+  '/me',
+  {
+    schema: getMeSchema,
+    preHandler: [authPreHandler, tokenUuidCheck, updateLastSeenHandler], // token -> req.user
+  },
+  async (req: FastifyRequest, res: FastifyReply) => {
+    try {
+      const uuid = req.user!.uuid;              // set by authPreHandler
+      const u = getUserByUuid(uuid);
+      if (!u) return res.status(404).send({ message: 'User not found' });
+
+      // return only what the FE needs to render header/profile
+      return res.status(200).send({
+        username: u.username,
+        uuid: u.uuid,
+        avatar: u.avatar ?? null,               // external URL or filename or null
+      });
+    } catch (err) {
+      return res.status(500).send({ message: 'Failed to fetch current user' });
+    }
+  },
+);
 
   // Sends a email confirmation for user deletion
   app.delete(

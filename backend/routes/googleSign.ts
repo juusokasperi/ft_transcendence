@@ -184,22 +184,6 @@ export default async function googleSign(app: FastifyInstance) {
       maxAge: 60 * 60 * 4, // 4h
     });
 
-    reply.setCookie(
-      'user',
-      JSON.stringify({
-        username: user.username,
-        uuid: user.uuid,
-        avatar: user.avatar ?? null,
-      }),
-      {
-        httpOnly: false, // JS must read it
-        sameSite: 'Strict',
-        secure: process.env.NODE_ENV === 'production',
-        path: '/',
-        maxAge: 60 * 60 * 24 * 7, // keep like FE (7d)
-      },
-    );
-
     // Done — return to SPA
     return reply.redirect('/');
   });
