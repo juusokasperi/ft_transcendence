@@ -146,7 +146,7 @@ export default async function googleSign(app: FastifyInstance) {
         // if not linked yet.
         const existingByEmail = getUserByEmail(profile.email);
         if (existingByEmail && !existingByEmail.googleId) {
-          if (linkGoogleToUser(existingByEmail.uuid, profile.sub)) {
+          if (linkGoogleToUser(existingByEmail.uuid, profile.sub, profile.picture)) {
             user = getUser(existingByEmail.uuid);
           }
         }

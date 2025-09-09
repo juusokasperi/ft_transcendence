@@ -201,17 +201,26 @@ export function updateGoogleUser(profile: {
 }
 
 // Link Google account to existing user (no overwrite if already linked)
-export function linkGoogleToUser(uuid: string, googleId: string): boolean {
+export function linkGoogleToUser(
+  uuid: string,
+  googleId: string,
+  picture?: string
+): boolean {
   try {
-    const res = db
-      .prepare(
-        `
+    const res = db.prepare(`
       UPDATE Users
-      SET google_id = ?
+      SET
+        google_id = ?,
+        -- backfill ONLY avatar if it's empty
+        avatar = CASE
+          WHEN (avatar IS NULL OR avatar = '')
+            THEN COALESCE(?, avatar)
+          ELSE avatar
+        END,
+        last_seen = CURRENT_TIMESTAMP
       WHERE uuid = ? AND google_id IS NULL
-    `,
-      )
-      .run(googleId, uuid);
+    `).run(googleId, picture ?? null, uuid);
+
     return res.changes === 1;
   } catch {
     return false;
