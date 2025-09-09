@@ -14,7 +14,7 @@ const Registration: React.FC = () => {
     if (user) {
       navigate('/');
     }
-  }, [user]);
+  }, [user, navigate]);
 
   const handleRegister = async (data: {
     username?: string;
