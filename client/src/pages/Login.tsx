@@ -14,7 +14,7 @@ const Login: React.FC = () => {
     if (user) {
       navigate('/');
     }
-  }, [user]);
+  }, [user, navigate]);
 
   const handleLogin = async (data: { email: string; password: string }) => {
     setLoading(true);
