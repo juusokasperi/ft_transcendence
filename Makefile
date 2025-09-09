@@ -6,31 +6,60 @@
 #    By: irychkov <irychkov@student.hive.fi>        +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2025/09/02 21:00:08 by irychkov          #+#    #+#              #
-#    Updated: 2025/09/07 16:46:41 by irychkov         ###   ########.fr        #
+#    Updated: 2025/09/08 14:10:55 by lemercie         ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
 NAME=transcendence
 
-SERVICES=backend frontend nginx
+SERVICES=backend frontend nginx elastic_cert_setup elasticsearch kibana kibana-post logstash
 
 all:
 	if [ ! -d "./backend/data/sqlite/uploads" ]; then \
 		mkdir -p ./backend/data/sqlite/uploads; \
 	fi
-	docker compose -p $(NAME) -f docker-compose.yml --env-file .env up --build
+	docker compose -p $(NAME) -f docker-compose.yml \
+		--env-file .env \
+		up --build
 	
+elk:
+	if [ ! -d "./backend/data/sqlite/uploads" ]; then \
+		mkdir -p ./backend/data/sqlite/uploads; \
+	fi
+	docker compose -p $(NAME) -f docker-compose.yml \
+		--env-file .env \
+		--profile elk \
+		up --build
+
+elk-detached:
+	if [ ! -d "./backend/data/sqlite/uploads" ]; then \
+		mkdir -p ./backend/data/sqlite/uploads; \
+	fi
+	docker compose -p $(NAME) -f docker-compose.yml \
+		--env-file .env \
+		--profile elk up --build -d
+		
+
 detached:
 	if [ ! -d "./backend/data/sqlite/uploads" ]; then \
 		mkdir -p ./backend/data/sqlite/uploads; \
 	fi
-	docker compose -p $(NAME) -f docker-compose.yml --env-file .env up --build -d
+	docker compose -p $(NAME) -f docker-compose.yml \
+		--env-file .env \
+		up --build -d
 
 down:
-	docker compose -p $(NAME) -f docker-compose.yml down --remove-orphans
+	docker compose -p $(NAME) -f docker-compose.yml \
+		--env-file .env \
+		--profile elk \
+		down --remove-orphans
 
 fclean:
-	docker compose -p $(NAME) -f docker-compose.yml --env-file .env down --rmi local --volumes --remove-orphans
+	docker compose -p $(NAME) -f docker-compose.yml \
+		--env-file .env \
+		--profile elk \
+		down --rmi local --volumes --remove-orphans
+
 	docker system prune -a -f --volumes --filter "label=project=$(NAME)"
 	@if [ -d "./backend/data" ]; then \
 		rm -rf ./backend/data; \
@@ -46,6 +75,8 @@ help:
 	@echo "  make                      # Build & start all services"
 	@echo "  make detached             # Build & start all services in detached mode"
 	@echo "  make all                  # Build & start all services"
+	@echo "  make elk                  # Build & start all services plus log management"
+	@echo "  make elk-detached         # Build & start all services plus log management in detached mode"
 	@echo "  make down                 # Stop all services and remove containers"
 	@echo "  make fclean               # Stop and remove all services, volumes, images"
 	@echo "  make re                   # fclean + all"
@@ -56,6 +87,7 @@ help:
 	@echo "  make bash-[service]       # Open bash shell in service"
 	@echo "  make restart-[service]    # Restart single service"
 	@echo "  make restart              # Restart all services"
+	@echo "  make restart-elk          # Restart all services, including ELK"
 	@echo "  make stop                 # Stop all services without removing them"
 	@echo ""
 	@echo "Available services: $(SERVICES)"
@@ -67,7 +99,7 @@ help:
 # ==[LOGS]========================================================================
 logs-%:
 	@if echo "$(SERVICES)" | grep -qw "$*"; then \
-		docker logs -f dev_$*; \
+		docker compose -p $(NAME) logs -f $*; \
 	else \
 		echo "Usage: make logs-[service]"; \
 		echo "Available services: $(SERVICES)"; \
@@ -80,7 +112,7 @@ ps:
 # ==[Access to containers SHELL]==================================================
 sh-%:
 	@if echo "$(SERVICES)" | grep -qw "$*"; then \
-		docker exec -it dev_$* sh; \
+		docker compose -p $(NAME) exec -it $* sh; \
 	else \
 		echo "Usage: make sh-[service]"; \
 		echo "Available services: $(SERVICES)"; \
@@ -89,7 +121,7 @@ sh-%:
 # ==[Access to containers BASH]===================================================
 bash-%:
 	@if echo "$(SERVICES)" | grep -qw "$*"; then \
-		docker exec -it dev_$* bash || docker exec -it dev_$* sh; \
+		docker compose -p $(NAME) exec -it $* bash || docker compose -p $(NAME) exec -it $* sh; \
 	else \
 		echo "Usage: make bash-[service]"; \
 		echo "Available services: $(SERVICES)"; \
@@ -97,12 +129,14 @@ bash-%:
 
 # ==[Stop containers without removing them]========================================
 stop:
-	docker compose -p $(NAME) -f docker-compose.yml stop
-
+	docker compose -p $(NAME) -f docker-compose.yml --profile elk stop
+		
 # ==[Restart containers]==========================================================
 restart:
 	docker compose -p $(NAME) -f docker-compose.yml restart
 
+restart-elk:
+	docker compose -p $(NAME) -f docker-compose.yml --profile elk restart
 # ==[Restart one service]=========================================================
 restart-%:
 	@if echo "$(SERVICES)" | grep -qw "$*"; then \
@@ -117,4 +151,4 @@ restart-%:
 	@echo "Unknown command: $@"
 	@$(MAKE) help
 
-.PHONY: all detached down fclean re ps logs-% sh-% bash-% stop restart restart-%
+.PHONY: all elk elk-detached detached down fclean re ps logs-% sh-% bash-% stop restart restart-%
