@@ -56,8 +56,6 @@ const Profile: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(false);
 
   useEffect(() => {
-    console.log('Profile user =', user);
-    console.log('Profile user.avatar =', user?.avatar);
     const url = resolveAvatarUrl(user?.avatar, axios.defaults.baseURL);
     console.log('Profile resolved avatar URL =', url);
     setImagePreview(url);
