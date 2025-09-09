@@ -55,7 +55,7 @@ const Friends: React.FC = () => {
         avatar: f.avatar ? `${baseURL}/uploads/${f.avatar}` : '/src/assets/react.svg',
       }));
 
-      friendsWithAvatar.map((f) => console.log(f.avatar));
+      // Removed debug logging of avatar URLs
       setFriends(friendsWithAvatar);
 
       setOnlineFriends(friendsWithAvatar.filter((f) => f.online));
