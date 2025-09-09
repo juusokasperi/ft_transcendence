@@ -1,6 +1,7 @@
 import db from '../client.ts';
 import type { User, UserStats, UserSettings } from '../../types/types.ts';
 import type { UserDb, UserStatsDb, UserSettingsDb } from '../../types/dbtypes.ts';
+import crypto from 'crypto';
 
 export function getUserByUuid(uuid: string): User | undefined {
   const user = db.prepare('SELECT * FROM Users where uuid = ?').get(uuid) as UserDb | null;
