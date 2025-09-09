@@ -3,7 +3,13 @@ import {
   ErrorResponseSchema,
   ValidationErrorResponseSchema,
 } from './responseSchemas.ts';
-import { PassSchema, UsernameSchema, EmailSchema, UuidSchema, AvatarSchema } from './fieldSchemas.ts';
+import {
+  PassSchema,
+  UsernameSchema,
+  EmailSchema,
+  UuidSchema,
+  AvatarSchema,
+} from './fieldSchemas.ts';
 
 const SignupBodySchema = {
   type: 'object',
@@ -90,7 +96,7 @@ export const loginSchema = {
           type: 'object',
           properties: {
             username: UsernameSchema,
-            avatar: AvatarSchema
+            avatar: AvatarSchema,
           },
         },
       },
