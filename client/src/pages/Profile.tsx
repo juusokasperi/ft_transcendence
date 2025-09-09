@@ -4,6 +4,7 @@ import { useAppContext } from '../context/AppContext';
 import toast from 'react-hot-toast';
 import type { AxiosError } from 'axios';
 import Cookies from 'js-cookie';
+import type { User } from '../types';
 
 interface PasswordState {
   currentPassword: string;
@@ -185,8 +186,8 @@ const Profile: React.FC = () => {
               alt="Profile"
               className="mb-2 h-24 w-24 rounded-full object-cover"
               onError={(e) => {
-              (e.currentTarget as HTMLImageElement).src = PLACEHOLDER;
-            }}
+                (e.currentTarget as HTMLImageElement).src = PLACEHOLDER;
+              }}
             />
           )}
           <input

@@ -28,7 +28,7 @@ function buildRedirectUri(req: FastifyRequest) {
   if (envBase && /^https?:\/\//i.test(envBase)) {
     return new URL(redirectPath, envBase).toString();
   }
-  const host  = (req.headers['x-forwarded-host'] as string) || (req.headers.host as string);
+  const host = (req.headers['x-forwarded-host'] as string) || (req.headers.host as string);
   const proto = (req.headers['x-forwarded-proto'] as string) || req.protocol || 'http';
   return `${proto}://${host}${redirectPath.startsWith('/') ? '' : '/'}${redirectPath}`;
 }
@@ -163,8 +163,7 @@ export default async function googleSign(app: FastifyInstance) {
           message: 'Email already in use. Please sign in locally, then link Google in settings.',
         });
       }
-    }
-    else {
+    } else {
       // user already exists and logged in via Google
       updateGoogleUser({
         googleId: profile.sub,
@@ -175,31 +174,33 @@ export default async function googleSign(app: FastifyInstance) {
     }
 
     // 3) Выдаём JWT в HttpOnly cookie
-    const appToken = jwt.sign(
-      { username: user.username, uuid: user.uuid },
-      SECRET,
-      { expiresIn: '4h' }
-    );
+    const appToken = jwt.sign({ username: user.username, uuid: user.uuid }, SECRET, {
+      expiresIn: '4h',
+    });
     // Set JS-readable cookies so your SPA behaves the same as normal login:
     reply.setCookie('token', appToken, {
-      httpOnly: false,                 // JS must read it (js-cookie)
-      sameSite: 'Strict',              // matches FE
+      httpOnly: false, // JS must read it (js-cookie)
+      sameSite: 'Strict', // matches FE
       secure: process.env.NODE_ENV === 'production',
       path: '/',
-      maxAge: 60 * 60 * 4,             // 4h
+      maxAge: 60 * 60 * 4, // 4h
     });
 
-    reply.setCookie('user', JSON.stringify({
-      username: user.username,
-      uuid: user.uuid,
-      avatar: user.avatar ?? null,
-    }), {
-      httpOnly: false,                 // JS must read it
-      sameSite: 'Strict',
-      secure: process.env.NODE_ENV === 'production',
-      path: '/',
-      maxAge: 60 * 60 * 24 * 7,        // keep like FE (7d)
-    });
+    reply.setCookie(
+      'user',
+      JSON.stringify({
+        username: user.username,
+        uuid: user.uuid,
+        avatar: user.avatar ?? null,
+      }),
+      {
+        httpOnly: false, // JS must read it
+        sameSite: 'Strict',
+        secure: process.env.NODE_ENV === 'production',
+        path: '/',
+        maxAge: 60 * 60 * 24 * 7, // keep like FE (7d)
+      },
+    );
 
     // Готово — возвращаемся на SPA
     return reply.redirect('/');

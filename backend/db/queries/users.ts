@@ -166,16 +166,18 @@ export function createUserFromGoogle(profile: {
 // Update existing Google user on each login (soft-sync)
 export function updateGoogleUser(profile: {
   googleId: string;
-  email?: string;     // Google OIDC email (usually verified)
-  name?: string;      // Google 'name'
-  picture?: string;   // Google 'picture' (URL)
+  email?: string; // Google OIDC email (usually verified)
+  name?: string; // Google 'name'
+  picture?: string; // Google 'picture' (URL)
 }): boolean {
   try {
     // Soft policy:
     // - username: only fill if empty/NULL
     // - avatar:   only fill if empty/NULL
     // - email:    only fill if empty/NULL (to avoid UNIQUE collisions / overriding user change)
-    const res = db.prepare(`
+    const res = db
+      .prepare(
+        `
       UPDATE Users
       SET
         username  = CASE WHEN (username IS NULL OR username = '')
@@ -189,12 +191,9 @@ export function updateGoogleUser(profile: {
                          ELSE email    END,
         last_seen = CURRENT_TIMESTAMP
       WHERE google_id = ?
-    `).run(
-      profile.name ?? null,
-      profile.picture ?? null,
-      profile.email ?? null,
-      profile.googleId
-    );
+    `,
+      )
+      .run(profile.name ?? null, profile.picture ?? null, profile.email ?? null, profile.googleId);
     return res.changes === 1;
   } catch {
     return false;
@@ -204,11 +203,15 @@ export function updateGoogleUser(profile: {
 // Link Google account to existing user (no overwrite if already linked)
 export function linkGoogleToUser(uuid: string, googleId: string): boolean {
   try {
-    const res = db.prepare(`
+    const res = db
+      .prepare(
+        `
       UPDATE Users
       SET google_id = ?
       WHERE uuid = ? AND google_id IS NULL
-    `).run(googleId, uuid);
+    `,
+      )
+      .run(googleId, uuid);
     return res.changes === 1;
   } catch {
     return false;
