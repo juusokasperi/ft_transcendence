@@ -3,6 +3,7 @@ import type { FastifyRequest } from 'fastify';
 import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
 import db from '../db/client.ts';
+import { SECRET } from '../utils/config.ts';
 import {
   getUserByGoogleId,
   createUserFromGoogle,
@@ -33,13 +34,6 @@ function buildRedirectUri(req: FastifyRequest) {
 
 function randomState() {
   return crypto.randomBytes(24).toString('base64url');
-}
-
-function issueAppJWT(uuid: string) {
-  return jwt.sign({ uuid }, process.env.SECRET!, {
-    algorithm: 'HS256',
-    expiresIn: '7d',
-  });
 }
 
 export default async function googleSign(app: FastifyInstance) {
@@ -176,13 +170,30 @@ export default async function googleSign(app: FastifyInstance) {
     }
 
     // 3) Выдаём JWT в HttpOnly cookie
-    const token = issueAppJWT(user.uuid);
-    reply.setCookie(SESSION_COOKIE, token, {
-      httpOnly: true,
-      sameSite: 'lax',
+    const appToken = jwt.sign(
+      { username: user.username, uuid: user.uuid },
+      SECRET,
+      { expiresIn: '4h' }
+    );
+    // Set JS-readable cookies so your SPA behaves the same as normal login:
+    reply.setCookie('token', appToken, {
+      httpOnly: false,                 // JS must read it (js-cookie)
+      sameSite: 'Strict',              // matches FE
       secure: process.env.NODE_ENV === 'production',
       path: '/',
-      maxAge: 60 * 60 * 24 * 7, // 7 дней
+      maxAge: 60 * 60 * 4,             // 4h
+    });
+
+    reply.setCookie('user', JSON.stringify({
+      username: user.username,
+      uuid: user.uuid,
+      avatar: user.avatar ?? null,
+    }), {
+      httpOnly: false,                 // JS must read it
+      sameSite: 'Strict',
+      secure: process.env.NODE_ENV === 'production',
+      path: '/',
+      maxAge: 60 * 60 * 24 * 7,        // keep like FE (7d)
     });
 
     // Готово — возвращаемся на SPA
