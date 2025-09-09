@@ -9,7 +9,8 @@ import {
   createUserFromGoogle,
   getUserByEmail,
   getUser,
-  updateLastSeen,
+  updateGoogleUser,
+  linkGoogleToUser,
 } from '../db/queries/users.ts';
 
 // Google OAuth2 endpoints
@@ -37,7 +38,7 @@ function randomState() {
 }
 
 export default async function googleSign(app: FastifyInstance) {
-  // 1) Старт Google OAuth
+  // 1) Entry point — redirect to Google
   app.get('/api/auth/google', async (req, reply) => {
     const state = randomState();
 
@@ -58,7 +59,7 @@ export default async function googleSign(app: FastifyInstance) {
     url.searchParams.set('state', state);
     url.searchParams.set('access_type', 'offline');
     url.searchParams.set('include_granted_scopes', 'true');
-    url.searchParams.set('prompt', 'consent'); // чтобы стабильно получать refresh_token (на будущее)
+    url.searchParams.set('prompt', 'consent');
 
     return reply.redirect(url.toString());
   });
@@ -73,7 +74,7 @@ export default async function googleSign(app: FastifyInstance) {
       return reply.status(400).send({ error: 'invalid_state' });
     }
 
-    // Обмен кода на токены
+    // Token exchange
     const redirectUri = buildRedirectUri(req);
     const body = new URLSearchParams({
       code,
@@ -103,7 +104,7 @@ export default async function googleSign(app: FastifyInstance) {
       token_type?: string;
     };
 
-    // Профиль (OIDC userinfo)
+    // OIDC userinfo
     const profileRes = await fetch(GOOGLE_USERINFO, {
       headers: { Authorization: `Bearer ${tokens.access_token}` },
     });
@@ -128,13 +129,13 @@ export default async function googleSign(app: FastifyInstance) {
       return reply.status(400).send({ error: 'no_sub' });
     }
 
-    // Upsert пользователя
+    // Upsert user by googleId
     let user = getUserByGoogleId(profile.sub);
 
-    // 2.1 Если нет — пытаемся создать
+    // If not found, try to create
     if (!user) {
-      // ⚠️ У тебя UNIQUE(email). Если уже есть локальный пользователь с такой почтой,
-      // вставка упадёт. Обработаем линковку:
+      // Our email is unique, so if it's taken, creation will fail. In that case,
+      // we will try to link googleId to existing user with that email (if not linked yet).
       let created = createUserFromGoogle({
         googleId: profile.sub,
         email: profile.email,
@@ -147,12 +148,9 @@ export default async function googleSign(app: FastifyInstance) {
         // если ещё не привязан.
         const existingByEmail = getUserByEmail(profile.email);
         if (existingByEmail && !existingByEmail.googleId) {
-          db.prepare(`UPDATE Users SET google_id = ? WHERE uuid = ? AND google_id IS NULL`).run(
-            profile.sub,
-            existingByEmail.uuid,
-          );
-
-          user = getUser(existingByEmail.uuid);
+          if (linkGoogleToUser(existingByEmail.uuid, profile.sub)) {
+            user = getUser(existingByEmail.uuid);
+          }
         }
       } else {
         user = created;
@@ -166,12 +164,14 @@ export default async function googleSign(app: FastifyInstance) {
         });
       }
     }
-
-    // 2.2 Обновим last_seen (по желанию)
-    try {
-      updateLastSeen(user.uuid, new Date());
-    } catch {
-      // не критично
+    else {
+      // user already exists and logged in via Google
+      updateGoogleUser({
+        googleId: profile.sub,
+        email: profile.email,
+        name: profile.name,
+        picture: profile.picture,
+      });
     }
 
     // 3) Выдаём JWT в HttpOnly cookie
