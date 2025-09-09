@@ -47,7 +47,7 @@ export default async function googleSign(app: FastifyInstance) {
       sameSite: 'lax',
       secure: process.env.NODE_ENV === 'production',
       path: '/',
-      maxAge: 10 * 60, // 10 минут
+      maxAge: 10 * 60, // 10 minutes
     });
 
     const redirectUri = buildRedirectUri(req);
@@ -64,7 +64,7 @@ export default async function googleSign(app: FastifyInstance) {
     return reply.redirect(url.toString());
   });
 
-  // 2) Callback от Google
+  // 2) Callback from Google
   app.get('/api/auth/google/callback', async (req, reply) => {
     const { code, state } = (req.query as { code?: string; state?: string }) || {};
     const stateCookie = req.cookies[STATE_COOKIE];
@@ -144,8 +144,8 @@ export default async function googleSign(app: FastifyInstance) {
       });
 
       if (!created && profile.email) {
-        // Вероятно, email занят. Найдём пользователя по email и привяжем google_id,
-        // если ещё не привязан.
+        // Probably, email is taken. Find user by email and link google_id,
+        // if not linked yet.
         const existingByEmail = getUserByEmail(profile.email);
         if (existingByEmail && !existingByEmail.googleId) {
           if (linkGoogleToUser(existingByEmail.uuid, profile.sub)) {
@@ -157,7 +157,7 @@ export default async function googleSign(app: FastifyInstance) {
       }
 
       if (!user) {
-        // Если сюда дошли — значит email занят, и привязать не удалось
+        // If we got here — email is taken, and linking failed
         return reply.status(409).send({
           error: 'email_taken',
           message: 'Email already in use. Please sign in locally, then link Google in settings.',
@@ -173,7 +173,7 @@ export default async function googleSign(app: FastifyInstance) {
       });
     }
 
-    // 3) Выдаём JWT в HttpOnly cookie
+    // 3) Issue JWT in HttpOnly cookie
     const appToken = jwt.sign({ username: user.username, uuid: user.uuid }, SECRET, {
       expiresIn: '4h',
     });
@@ -202,7 +202,7 @@ export default async function googleSign(app: FastifyInstance) {
       },
     );
 
-    // Готово — возвращаемся на SPA
+    // Done — return to SPA
     return reply.redirect('/');
   });
 }
