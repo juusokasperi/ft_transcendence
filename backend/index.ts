@@ -26,6 +26,7 @@ import './types/types.ts';
 
 const app = fastify({
   logger: true,
+  // trustProxy: true,
   ajv: {
     customOptions: { allErrors: true, removeAdditional: true },
   },
@@ -67,7 +68,7 @@ await runMigrations();
 app.register(userRoutes, { prefix: '/api/users' });
 app.register(friendsRoutes, { prefix: '/api/friends' });
 app.register(loginRoutes, { prefix: '/api/login' });
-app.register(logoutRoutes, { prefix: 'api/logout' });
+app.register(logoutRoutes, { prefix: '/api/logout' });
 app.register(signupRoutes, { prefix: '/api/signup' });
 app.register(resetPasswordRoutes, { prefix: '/api/reset-password' });
 
