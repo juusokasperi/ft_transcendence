@@ -31,12 +31,10 @@ export async function loginRoutes(app: FastifyInstance) {
         };
 
         const token = jwt.sign(userForToken, SECRET, { expiresIn: '4h' });
-        // Does the front need UUID anymore?
         res.status(200).send({
           token,
           user: {
             username: userInDb.username,
-            uuid: userInDb.uuid,
             avatar: userInDb.avatar,
           },
         });
