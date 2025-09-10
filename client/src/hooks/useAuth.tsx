@@ -1,20 +1,23 @@
 import Cookies from 'js-cookie';
-import type { User } from '../types';
+import axios from 'axios';
 
 export const useAuth = () => {
-  const getToken = async (): Promise<string | null> => {
-    return Cookies.get('token') || null;
+  const getToken = () => Cookies.get('token') || null;
+
+  const setAuth = (t: string | null) => {
+    if (t) axios.defaults.headers.common.Authorization = `Bearer ${t}`;
+    else delete axios.defaults.headers.common.Authorization;
   };
 
-  const login = (userData: User, token: string) => {
-    Cookies.set('user', JSON.stringify(userData), { expires: 7, sameSite: 'Strict' });
+  const initAuth = () => setAuth(getToken());
+  const login = (token: string) => {
     Cookies.set('token', token, { expires: 7, sameSite: 'Strict' });
+    setAuth(token);
   };
-
   const logout = () => {
-    Cookies.remove('user');
     Cookies.remove('token');
+    setAuth(null);
   };
 
-  return { getToken, login, logout };
+  return { getToken, initAuth, login, logout };
 };

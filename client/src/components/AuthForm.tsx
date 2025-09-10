@@ -142,6 +142,13 @@ const AuthForm: React.FC<AuthFormProps> = ({ type, onSubmit }) => {
       >
         {type === 'login' ? 'Login' : 'Register'}
       </button>
+      <button
+        type="button"
+        onClick={() => (window.location.href = '/api/auth/google')}
+        className="w-full rounded bg-red-600 py-2 text-white hover:bg-red-700"
+      >
+        Sign in with Google
+      </button>
     </form>
   );
 };

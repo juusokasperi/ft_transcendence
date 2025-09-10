@@ -4,6 +4,8 @@ import fastifyMultipart from '@fastify/multipart';
 import fastifyStatic from '@fastify/static';
 import swagger from '@fastify/swagger';
 import swaggerUi from '@fastify/swagger-ui';
+import cookie from '@fastify/cookie';
+import googleSign from './routes/googleSign.ts';
 import {
   UPLOAD_DIR,
   BACKEND_HOST,
@@ -24,6 +26,7 @@ import './types/types.ts';
 
 const app = fastify({
   logger: true,
+  // trustProxy: true,
   ajv: {
     customOptions: { allErrors: true, removeAdditional: true },
   },
@@ -32,6 +35,8 @@ const app = fastify({
 app.setErrorHandler(prettierErrorMessages);
 
 await app.register(swagger, swaggerConfig);
+await app.register(cookie);
+await app.register(googleSign);
 
 await app.register(cors, {
   origin: (origin, cb) => {
@@ -63,7 +68,7 @@ await runMigrations();
 app.register(userRoutes, { prefix: '/api/users' });
 app.register(friendsRoutes, { prefix: '/api/friends' });
 app.register(loginRoutes, { prefix: '/api/login' });
-app.register(logoutRoutes, { prefix: 'api/logout' });
+app.register(logoutRoutes, { prefix: '/api/logout' });
 app.register(signupRoutes, { prefix: '/api/signup' });
 app.register(resetPasswordRoutes, { prefix: '/api/reset-password' });
 

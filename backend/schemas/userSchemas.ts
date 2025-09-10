@@ -45,6 +45,25 @@ export const getUserSchema = {
   },
 };
 
+export const getMeSchema = {
+  tags: ['User'],
+  summary: 'Get the currently authenticated user',
+  security: [{ bearerAuth: [] }],
+  response: {
+    200: {
+      type: 'object',
+      properties: {
+        username: UsernameSchema,
+        uuid: UuidSchema,
+        avatar: { anyOf: [{ type: 'string' }, { type: 'null' }] },
+      },
+    },
+    401: ErrorResponseSchema,
+    404: ErrorResponseSchema,
+    500: ErrorResponseSchema,
+  },
+};
+
 export const userDeleteSchema = {
   tags: ['User'],
   summary: "Mark user for deletion and send a confirmation link to user's email",
