@@ -1,0 +1,4 @@
+===== DEVCONTAINER.TXT =====
+Snapshot root (./): /home/toonsa/myProjects/ft_transcendence/scripts/output/pkg-mgmt-snapshot
+Exported: 2025-09-10T06:01:01.276Z
+Files: 0

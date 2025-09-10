@@ -18,284 +18,344 @@
 ├── README.md
 ├── StyleFormatter.md
 ├── all_repo.txt
-├── backend
-│   ├── .env
-│   ├── .env.example
-│   ├── .gitignore
-│   ├── Dockerfile.dev
-│   ├── README.md
-│   ├── data
-│   │   ├── .umzug.json
-│   │   └── sqlite
-│   │       ├── db.sqlite
-│   │       ├── db.sqlite-shm
-│   │       ├── db.sqlite-wal
-│   │       └── uploads
-│   ├── db
-│   │   ├── client.ts
-│   │   ├── migrations
-│   │   │   ├── 001-create-users.ts
-│   │   │   ├── 002-create-friends.ts
-│   │   │   ├── 003-create-games.ts
-│   │   │   ├── 004-create-gameplayers.ts
-│   │   │   ├── 005-create-pending-users.ts
-│   │   │   ├── 006-create-password-resets.ts
-│   │   │   ├── 007-create-users-delete.ts
-│   │   │   └── 008-create-user-settings.ts
-│   │   ├── migrations.ts
-│   │   ├── queries
-│   │   │   ├── friends.ts
-│   │   │   ├── games.ts
-│   │   │   ├── passwordResets.ts
-│   │   │   ├── unconfirmedUsers.ts
-│   │   │   ├── userDelete.ts
-│   │   │   └── users.ts
-│   │   └── umzug.ts
-│   ├── hooks
-│   │   ├── auth.ts
-│   │   └── updateLastSeen.ts
-│   ├── index.ts
-│   ├── package-lock.json
-│   ├── package.json
-│   ├── rest
-│   │   ├── 00_get_users.rest
-│   │   ├── 01_get_user.rest
-│   │   ├── 02_confirm_user.rest
-│   │   ├── 02_post_user.rest
-│   │   ├── 03_login_user.rest
-│   │   ├── 03_logout_user.rest
-│   │   ├── 04_change_avatar.rest
-│   │   ├── 05_delete_avatar.rest
-│   │   ├── 06_change_password.rest
-│   │   ├── 07_change_username.rest
-│   │   ├── 08_delete_user.rest
-│   │   ├── 09_delete_user_confirm.rest
-│   │   ├── 09_send_friend_req.rest
-│   │   ├── 10_get_received_pending_friends.rest
-│   │   ├── 11_get_sent_pending_friends.rest
-│   │   ├── 12_accept_friend_req.rest
-│   │   ├── 13_get_accepted_friends.rest
-│   │   └── 14_get_user_settings.rest
-│   ├── routes
-│   │   ├── friends.ts
-│   │   ├── login.ts
-│   │   ├── logout.ts
-│   │   ├── resetPassword.ts
-│   │   ├── signup.ts
-│   │   └── users.ts
-│   ├── tests
-│   │   ├── friends.test.ts
-│   │   ├── games.test.ts
-│   │   ├── setup.ts
-│   │   ├── testImg.png
-│   │   └── users.test.ts
-│   ├── tsconfig.json
-│   ├── types
-│   │   ├── dbtypes.ts
-│   │   └── types.ts
-│   ├── utils
-│   │   ├── config.ts
-│   │   ├── nodemailer
-│   │   │   ├── emailHtml.ts
-│   │   │   └── index.ts
-│   │   ├── rollback.ts
-│   │   ├── seedSecrets.ts
-│   │   ├── seedTestData.ts
-│   │   └── validate.ts
-│   └── vitest.config.ts
-├── client
-│   ├── .env
-│   ├── .env.example
-│   ├── .gitignore
-│   ├── .tsconfigs
-│   │   ├── tsconfig.app.json
-│   │   └── tsconfig.node.json
-│   ├── .vite
-│   │   └── deps
-│   │       ├── _metadata.json
-│   │       └── package.json
-│   ├── Dockerfile.dev
-│   ├── README.md
-│   ├── index.html
-│   ├── package-lock.json
-│   ├── package.json
-│   ├── public
-│   │   └── vite.svg
-│   ├── src
-│   │   ├── App.tsx
-│   │   ├── assets
-│   │   │   ├── background.png
-│   │   │   └── react.svg
-│   │   ├── components
-│   │   │   ├── AuthForm.tsx
-│   │   │   ├── Navbar.tsx
-│   │   │   └── Sidebar.tsx
-│   │   ├── context
-│   │   │   └── AppContext.tsx
+├── apps
+│   ├── api
+│   │   ├── .env
+│   │   ├── .env.example
+│   │   ├── .gitignore
+│   │   ├── Dockerfile.dev
+│   │   ├── README.md
+│   │   ├── data
+│   │   │   ├── .umzug.json
+│   │   │   └── sqlite
+│   │   │       ├── db.sqlite
+│   │   │       ├── db.sqlite-shm
+│   │   │       ├── db.sqlite-wal
+│   │   │       └── uploads
+│   │   ├── db
+│   │   │   ├── client.ts
+│   │   │   ├── migrations
+│   │   │   │   ├── 001-create-users.ts
+│   │   │   │   ├── 002-create-friends.ts
+│   │   │   │   ├── 003-create-games.ts
+│   │   │   │   ├── 004-create-gameplayers.ts
+│   │   │   │   ├── 005-create-pending-users.ts
+│   │   │   │   ├── 006-create-password-resets.ts
+│   │   │   │   ├── 007-create-users-delete.ts
+│   │   │   │   └── 008-create-user-settings.ts
+│   │   │   ├── migrations.ts
+│   │   │   ├── queries
+│   │   │   │   ├── friends.ts
+│   │   │   │   ├── games.ts
+│   │   │   │   ├── passwordResets.ts
+│   │   │   │   ├── unconfirmedUsers.ts
+│   │   │   │   ├── userDelete.ts
+│   │   │   │   └── users.ts
+│   │   │   └── umzug.ts
 │   │   ├── hooks
-│   │   │   ├── useAuth.tsx
-│   │   │   └── useUser.tsx
-│   │   ├── index.css
-│   │   ├── main.tsx
-│   │   ├── pages
-│   │   │   ├── Confirmation.tsx
-│   │   │   ├── Friends.tsx
-│   │   │   ├── Home.tsx
-│   │   │   ├── Layout.tsx
-│   │   │   ├── Login.tsx
-│   │   │   ├── Profile.tsx
-│   │   │   ├── Registation.tsx
-│   │   │   └── __tests__
-│   │   │       └── Registration.test.tsx
-│   │   ├── types.tsx
-│   │   └── vite-env.d.ts
-│   ├── tsconfig.json
-│   └── vite.config.ts
+│   │   │   ├── auth.ts
+│   │   │   └── updateLastSeen.ts
+│   │   ├── index.ts
+│   │   ├── package.json
+│   │   ├── rest
+│   │   │   ├── 00_get_users.rest
+│   │   │   ├── 01_get_user.rest
+│   │   │   ├── 02_confirm_user.rest
+│   │   │   ├── 02_post_user.rest
+│   │   │   ├── 03_login_user.rest
+│   │   │   ├── 03_logout_user.rest
+│   │   │   ├── 04_change_avatar.rest
+│   │   │   ├── 05_delete_avatar.rest
+│   │   │   ├── 06_change_password.rest
+│   │   │   ├── 07_change_username.rest
+│   │   │   ├── 08_delete_user.rest
+│   │   │   ├── 09_delete_user_confirm.rest
+│   │   │   ├── 09_send_friend_req.rest
+│   │   │   ├── 10_get_received_pending_friends.rest
+│   │   │   ├── 11_get_sent_pending_friends.rest
+│   │   │   ├── 12_accept_friend_req.rest
+│   │   │   ├── 13_get_accepted_friends.rest
+│   │   │   ├── 14_get_user_settings.rest
+│   │   │   └── 14_update_user_settings.rest
+│   │   ├── routes
+│   │   │   ├── friends.ts
+│   │   │   ├── googleSign.ts
+│   │   │   ├── login.ts
+│   │   │   ├── logout.ts
+│   │   │   ├── resetPassword.ts
+│   │   │   ├── signup.ts
+│   │   │   └── users.ts
+│   │   ├── schemas
+│   │   │   ├── authSchemas.ts
+│   │   │   ├── fieldSchemas.ts
+│   │   │   ├── friendSchemas.ts
+│   │   │   ├── responseSchemas.ts
+│   │   │   └── userSchemas.ts
+│   │   ├── tests
+│   │   │   ├── friends.test.ts
+│   │   │   ├── games.test.ts
+│   │   │   ├── setup.ts
+│   │   │   ├── testImg.png
+│   │   │   └── users.test.ts
+│   │   ├── tsconfig.json
+│   │   ├── types
+│   │   │   ├── dbtypes.ts
+│   │   │   └── types.ts
+│   │   ├── utils
+│   │   │   ├── config.ts
+│   │   │   ├── errorHandler.ts
+│   │   │   ├── nodemailer
+│   │   │   │   ├── emailHtml.ts
+│   │   │   │   └── index.ts
+│   │   │   ├── rollback.ts
+│   │   │   ├── seedSecrets.ts
+│   │   │   └── seedTestData.ts
+│   │   └── vitest.config.ts
+│   ├── web
+│   │   ├── .env
+│   │   ├── .env.example
+│   │   ├── .gitignore
+│   │   ├── .tsconfigs
+│   │   │   ├── tsconfig.app.json
+│   │   │   └── tsconfig.node.json
+│   │   ├── Dockerfile.dev
+│   │   ├── README.md
+│   │   ├── index.html
+│   │   ├── package.json
+│   │   ├── public
+│   │   │   └── vite.svg
+│   │   ├── src
+│   │   │   ├── App.tsx
+│   │   │   ├── assets
+│   │   │   │   ├── arcade.png
+│   │   │   │   ├── background.png
+│   │   │   │   ├── game.gif
+│   │   │   │   ├── gif.mp4
+│   │   │   │   ├── logo.png
+│   │   │   │   ├── react.svg
+│   │   │   │   ├── snake.jpeg
+│   │   │   │   └── tetrist.jpg
+│   │   │   ├── components
+│   │   │   │   ├── AuthForm.tsx
+│   │   │   │   ├── Navbar.tsx
+│   │   │   │   └── Sidebar.tsx
+│   │   │   ├── context
+│   │   │   │   └── AppContext.tsx
+│   │   │   ├── game
+│   │   │   │   ├── host
+│   │   │   │   │   └── dom-embed.ts
+│   │   │   │   ├── index.ts
+│   │   │   │   └── modes
+│   │   │   │       ├── local.ts
+│   │   │   │       ├── online.ts
+│   │   │   │       └── tournament.ts
+│   │   │   ├── hooks
+│   │   │   │   ├── useAuth.tsx
+│   │   │   │   └── useUser.tsx
+│   │   │   ├── index.css
+│   │   │   ├── main.tsx
+│   │   │   ├── pages
+│   │   │   │   ├── Confirmation.tsx
+│   │   │   │   ├── Friends.tsx
+│   │   │   │   ├── Home.tsx
+│   │   │   │   ├── Layout.tsx
+│   │   │   │   ├── Login.tsx
+│   │   │   │   ├── PingPong
+│   │   │   │   │   ├── LocalGame.tsx
+│   │   │   │   │   ├── OnlineGame.tsx
+│   │   │   │   │   ├── PingPong.tsx
+│   │   │   │   │   └── Tournament.tsx
+│   │   │   │   ├── Profile.tsx
+│   │   │   │   ├── Registation.tsx
+│   │   │   │   └── __tests__
+│   │   │   │       └── Registration.test.tsx
+│   │   │   ├── types.tsx
+│   │   │   └── vite-env.d.ts
+│   │   ├── tsconfig.json
+│   │   └── vite.config.ts
+│   └── worker
 ├── docker-compose.yml
-├── nginx
-│   ├── Dockerfile.dev
-│   └── default.conf
+├── docs
+│   ├── TODO.md
+│   ├── UserDataFromDB.md
+│   ├── UserDataFromGame.md
+│   ├── UserTunableRules.md
+│   ├── UserTunableSettings.md
+│   └── ft_transcendence.subject.pdf
+├── infra
+│   └── nginx
+│       ├── Dockerfile.dev
+│       └── default.conf
+├── log-management
+│   ├── .env.example
+│   ├── README.md
+│   ├── docker-compose.yml
+│   ├── elastic_cert_setup
+│   │   ├── Dockerfile
+│   │   └── setup.sh
+│   ├── elasticsearch
+│   │   └── Dockerfile
+│   ├── kibana
+│   │   └── Dockerfile
+│   ├── kibana-post
+│   │   ├── Dockerfile
+│   │   ├── import.sh
+│   │   └── logstash.ndjson
+│   └── logstash
+│       ├── Dockerfile
+│       └── logstash.conf
 ├── package-lock.json
 ├── package.json
-├── pong
-│   ├── .dependency-cruiser.mjs
-│   ├── .gitignore
-│   ├── .prettier.json
-│   ├── .prettierignore
-│   ├── README.md
-│   ├── TechStack.md
-│   ├── docs
-│   │   ├── TODO.md
-│   │   ├── UserDataFromDB.md
-│   │   ├── UserDataFromGame.md
-│   │   ├── UserTunableRules.md
-│   │   ├── UserTunableSettings.md
-│   │   └── ft_transcendence.subject.pdf
-│   ├── eslint.config.js
-│   ├── index.html
-│   ├── package.json
-│   ├── pnpm-lock.yaml
-│   ├── src
-│   │   ├── app
-│   │   │   ├── adapters
-│   │   │   │   ├── bounds.ts
-│   │   │   │   ├── events-to-fx.ts
-│   │   │   │   ├── hud-map.ts
-│   │   │   │   ├── seat-router.ts
-│   │   │   │   └── serve-cue.ts
-│   │   │   ├── host
-│   │   │   │   └── dom-embed.ts
-│   │   │   ├── index.ts
-│   │   │   ├── modes
-│   │   │   │   ├── local.ts
-│   │   │   │   ├── online.ts
-│   │   │   │   └── tournament.ts
-│   │   │   ├── seed.ts
-│   │   │   └── teardown.ts
-│   │   ├── client
-│   │   │   ├── babylon-register.ts
-│   │   │   ├── engine
-│   │   │   │   ├── engine.ts
-│   │   │   │   ├── lifecycle.ts
-│   │   │   │   └── render-loop.ts
-│   │   │   ├── fx
-│   │   │   │   ├── burst.ts
-│   │   │   │   ├── camera-shake.ts
-│   │   │   │   ├── colors.ts
-│   │   │   │   ├── config.ts
-│   │   │   │   ├── context.ts
-│   │   │   │   ├── force-field.ts
-│   │   │   │   ├── manager.ts
-│   │   │   │   ├── pool.ts
-│   │   │   │   ├── serve-select.ts
-│   │   │   │   └── utils.ts
-│   │   │   ├── input
-│   │   │   │   ├── aggregate.ts
-│   │   │   │   ├── block.ts
-│   │   │   │   ├── keyboard.ts
-│   │   │   │   └── touch-zones.ts
-│   │   │   ├── scene
-│   │   │   │   ├── background.ts
-│   │   │   │   ├── camera
-│   │   │   │   │   └── camera.ts
-│   │   │   │   ├── color.ts
-│   │   │   │   ├── light
-│   │   │   │   │   ├── light.ts
-│   │   │   │   │   └── shadows.ts
-│   │   │   │   ├── materials
-│   │   │   │   │   ├── glass.ts
-│   │   │   │   │   └── neon-glass.ts
-│   │   │   │   ├── mesh
-│   │   │   │   │   ├── ball.ts
-│   │   │   │   │   ├── net.ts
-│   │   │   │   │   ├── paddle.ts
-│   │   │   │   │   └── table.ts
-│   │   │   │   └── scene.ts
-│   │   │   ├── ui
-│   │   │   │   ├── hud-binding.ts
-│   │   │   │   ├── scoreboard.ts
-│   │   │   │   └── tailwind.css
-│   │   │   ├── utils
-│   │   │   │   └── platform.ts
-│   │   │   └── visuals
-│   │   │       ├── animate-paddle.ts
-│   │   │       └── bounce
-│   │   │           ├── aim-paddle.ts
-│   │   │           ├── bounces.ts
-│   │   │           └── math.ts
-│   │   ├── game
-│   │   │   ├── constants.ts
-│   │   │   ├── index.ts
-│   │   │   ├── lifecycle
-│   │   │   │   └── boot.ts
-│   │   │   ├── match
-│   │   │   │   └── controller.ts
-│   │   │   ├── model
-│   │   │   │   └── state.ts
-│   │   │   ├── rules
-│   │   │   │   └── presets.ts
-│   │   │   └── systems
-│   │   │       ├── control
-│   │   │       │   └── paddle.ts
-│   │   │       ├── flow
-│   │   │       │   ├── pause.ts
-│   │   │       │   ├── phases.ts
-│   │   │       │   ├── scoring.ts
-│   │   │       │   ├── service.ts
-│   │   │       │   └── win.ts
-│   │   │       ├── physics
-│   │   │       │   └── collisions.ts
-│   │   │       └── utils.ts
-│   │   ├── main.ts
-│   │   ├── server
-│   │   │   └── runtime
-│   │   │       └── headless-smoke.ts
-│   │   ├── shared
-│   │   │   ├── domain
-│   │   │   │   ├── ids.ts
-│   │   │   │   ├── rules.ts
-│   │   │   │   └── timing.ts
-│   │   │   ├── index.ts
-│   │   │   ├── protocol
-│   │   │   │   ├── events.ts
-│   │   │   │   ├── input.ts
-│   │   │   │   └── state.ts
-│   │   │   └── utils
-│   │   │       ├── disposable.ts
-│   │   │       ├── logger.ts
-│   │   │       ├── math.ts
-│   │   │       ├── raf-ticker.ts
-│   │   │       └── random.ts
-│   │   └── types
-│   │       ├── babylon.dynamicTexture.d.ts
-│   │       └── vite-env.d.ts
-│   ├── tsconfig.json
-│   ├── typedoc.json
-│   └── vite.config.ts
+├── packages
+│   ├── game-logic
+│   │   ├── constants.ts
+│   │   ├── index.ts
+│   │   ├── lifecycle
+│   │   │   ├── boot.ts
+│   │   │   └── headless-smoke.ts
+│   │   ├── match
+│   │   │   └── controller.ts
+│   │   ├── model
+│   │   │   └── state.ts
+│   │   ├── rules
+│   │   │   └── presets.ts
+│   │   └── systems
+│   │       ├── control
+│   │       │   └── paddle.ts
+│   │       ├── flow
+│   │       │   ├── pause.ts
+│   │       │   ├── phases.ts
+│   │       │   ├── scoring.ts
+│   │       │   ├── service.ts
+│   │       │   └── win.ts
+│   │       ├── physics
+│   │       │   └── collisions.ts
+│   │       └── utils.ts
+│   ├── protocol
+│   │   ├── events.ts
+│   │   ├── input.ts
+│   │   └── state.ts
+│   ├── render-babylon
+│   │   ├── .dependency-cruiser.mjs
+│   │   ├── .gitignore
+│   │   ├── .prettier.json
+│   │   ├── .prettierignore
+│   │   ├── README.md
+│   │   ├── TechStack.md
+│   │   ├── demo
+│   │   │   ├── index.html
+│   │   │   └── src
+│   │   │       ├── main.ts
+│   │   │       └── vite-env.d.ts
+│   │   ├── eslint.config.js
+│   │   ├── package.json
+│   │   ├── src
+│   │   │   ├── app
+│   │   │   │   ├── adapters
+│   │   │   │   │   ├── bounds.ts
+│   │   │   │   │   ├── events-to-fx.ts
+│   │   │   │   │   ├── hud-map.ts
+│   │   │   │   │   ├── seat-router.ts
+│   │   │   │   │   └── serve-cue.ts
+│   │   │   │   ├── host
+│   │   │   │   └── modes
+│   │   │   ├── client
+│   │   │   │   ├── babylon-register.ts
+│   │   │   │   ├── engine
+│   │   │   │   │   ├── engine.ts
+│   │   │   │   │   ├── lifecycle.ts
+│   │   │   │   │   ├── raf-ticker.ts
+│   │   │   │   │   ├── render-loop.ts
+│   │   │   │   │   └── teardown.ts
+│   │   │   │   ├── fx
+│   │   │   │   │   ├── burst.ts
+│   │   │   │   │   ├── camera-shake.ts
+│   │   │   │   │   ├── colors.ts
+│   │   │   │   │   ├── config.ts
+│   │   │   │   │   ├── context.ts
+│   │   │   │   │   ├── force-field.ts
+│   │   │   │   │   ├── manager.ts
+│   │   │   │   │   ├── pool.ts
+│   │   │   │   │   ├── serve-select.ts
+│   │   │   │   │   └── utils.ts
+│   │   │   │   ├── input
+│   │   │   │   │   ├── aggregate.ts
+│   │   │   │   │   ├── block.ts
+│   │   │   │   │   ├── keyboard.ts
+│   │   │   │   │   └── touch-zones.ts
+│   │   │   │   ├── scene
+│   │   │   │   │   ├── background.ts
+│   │   │   │   │   ├── camera
+│   │   │   │   │   │   └── camera.ts
+│   │   │   │   │   ├── color.ts
+│   │   │   │   │   ├── light
+│   │   │   │   │   │   ├── light.ts
+│   │   │   │   │   │   └── shadows.ts
+│   │   │   │   │   ├── materials
+│   │   │   │   │   │   ├── glass.ts
+│   │   │   │   │   │   └── neon-glass.ts
+│   │   │   │   │   ├── mesh
+│   │   │   │   │   │   ├── ball.ts
+│   │   │   │   │   │   ├── net.ts
+│   │   │   │   │   │   ├── paddle.ts
+│   │   │   │   │   │   └── table.ts
+│   │   │   │   │   └── scene.ts
+│   │   │   │   ├── ui
+│   │   │   │   │   ├── hud-binding.ts
+│   │   │   │   │   ├── scoreboard.ts
+│   │   │   │   │   └── tailwind.css
+│   │   │   │   ├── utils
+│   │   │   │   │   └── platform.ts
+│   │   │   │   └── visuals
+│   │   │   │       ├── animate-paddle.ts
+│   │   │   │       └── bounce
+│   │   │   │           ├── aim-paddle.ts
+│   │   │   │           ├── bounces.ts
+│   │   │   │           └── math.ts
+│   │   │   ├── server
+│   │   │   │   └── runtime
+│   │   │   └── types
+│   │   │       └── babylon.dynamicTexture.d.ts
+│   │   ├── tsconfig.json
+│   │   ├── typedoc.json
+│   │   └── vite.config.ts
+│   └── shared
+│       ├── domain
+│       │   ├── ids.ts
+│       │   ├── rules.ts
+│       │   └── timing.ts
+│       ├── index.ts
+│       └── utils
+│           ├── disposable.ts
+│           ├── logger.ts
+│           ├── math.ts
+│           ├── random.ts
+│           └── seed.ts
 └── scripts
     ├── export-pm-config.js
     ├── export-tree.sh
+    ├── exports-folders-to-txt.js
     └── output
-        └── project-tree.txt
+        ├── .gitkeep
+        ├── apps__api.txt
+        ├── apps__web.txt
+        ├── devcontainer.txt
+        ├── docker.txt
+        ├── dotconfig.txt
+        ├── env-samples.txt
+        ├── husky.txt
+        ├── infra.txt
+        ├── log-management.txt
+        ├── makefiles.txt
+        ├── miscellaneous.txt
+        ├── nginx.txt
+        ├── package-management.txt
+        ├── packages__game-logic.txt
+        ├── packages__protocol.txt
+        ├── packages__render-babylon.txt
+        ├── packages__shared.txt
+        ├── project-tree.txt
+        ├── vscode.txt
+        └── workflows.txt
 
-71 directories, 228 files
+86 directories, 273 files

@@ -1,7 +1,0 @@
-PATCH http://localhost:3001/api/friends/respond/714c8f08-278b-4088-b000-7c088df4c4b6
-Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6InRlc3RVc2VyMyIsInV1aWQiOiJlMzgyYjgwNy04Mzc4LTQ0Y2ItYWY2ZS0yZTNiNzgyOTIzYTciLCJpYXQiOjE3NTU3MTcyMDgsImV4cCI6MTc1NTcyMDgwOH0.Xjwcy7XoG4NC1fmyp5zjp6ROUCdrdLflHZeGXPnQVpQ
-Content-Type: application/json
-
-{
-	"accept": true
-}

@@ -1,0 +1,322 @@
+# Snapshot of log-management
+# Generated: 2025-09-10T06:01:23.427Z
+# Total files: 12
+
+===== BEGIN log-management/.env.example =====
+# Password for the 'elastic' superuser (at least 6 characters)
+# This user is for logging in to Kibana and cannot be renamed
+ELASTIC_PASSWORD=changeme
+
+# Password for the 'kibana_system' user (at least 6 characters)
+# This user is NOT for logging in
+KIBANA_PASSWORD=changeme
+
+# All parts of the stack should pull the same version 
+STACK_VERSION=9.1.3
+
+# Set to 'basic' or 'trial' to automatically start the 30-day trial
+LICENSE=basic
+#LICENSE=trial
+
+# Port to expose Elasticsearch HTTP API to the host
+ES_PORT=9200
+
+# Port to expose Kibana to the host, this is the web portal
+KIBANA_PORT=5601
+
+# Increase or decrease based on the available host memory (in bytes)
+ES_MEM_LIMIT=1073741824
+KB_MEM_LIMIT=1073741824
+LS_MEM_LIMIT=1073741824
+
+# Key needs to be stored to preserve reports across restarts.
+# Alphanumeric, min 32 chars
+ENCRYPTION_KEY=Jn7FYWRWLAVyiMK4hBYsaxbxAstwZKPF
+
+
+===== END log-management/.env.example =====
+
+
+===== BEGIN log-management/docker-compose.yml =====
+volumes:
+  elk_certs:
+    driver: local
+  elasticsearch_data:
+    driver: local
+  kibana_data:
+    driver: local
+  logstash_data:
+    driver: local
+
+services:
+  elastic_cert_setup:
+    profiles:
+      - elk
+    build:
+      context: ./elastic_cert_setup/
+      args:
+        STACK_VERSION: ${STACK_VERSION:?STACK_VERSION must be set}
+      labels:
+        - project=transcendence
+    volumes:
+      - elk_certs:/usr/share/elasticsearch/config/certs
+    user: "0"
+    environment:
+      - ELASTIC_PASSWORD=${ELASTIC_PASSWORD}
+      - KIBANA_PASSWORD=${KIBANA_PASSWORD}
+    healthcheck:
+      test: ["CMD-SHELL", "[ -f config/certs/elasticsearch/elasticsearch.crt ]"]
+      interval: 1s
+      timeout: 5s
+      retries: 120
+    networks:
+      - devnet
+
+  elasticsearch:
+    profiles:
+      - elk
+    build:
+      context: ./elasticsearch/
+      args:
+        STACK_VERSION: ${STACK_VERSION:?STACK_VERSION must be set}
+      labels:
+        - project=transcendence
+    depends_on:
+      elastic_cert_setup:
+        condition: service_healthy
+    labels:
+      co.elastic.logs/module: elasticsearch
+    volumes:
+      - elk_certs:/usr/share/elasticsearch/config/certs
+      - elasticsearch_data:/usr/share/elasticsearch/data
+    ports:
+      - ${ES_PORT}:9200
+    environment:
+      - discovery.type=single-node
+      - ELASTIC_PASSWORD=${ELASTIC_PASSWORD}
+      - bootstrap.memory_lock=true
+      - xpack.security.enabled=true
+      - xpack.security.http.ssl.enabled=true
+      - xpack.security.http.ssl.key=certs/elasticsearch/elasticsearch.key
+      - xpack.security.http.ssl.certificate=certs/elasticsearch/elasticsearch.crt
+      - xpack.security.http.ssl.certificate_authorities=certs/ca/ca.crt
+      - xpack.security.transport.ssl.enabled=true
+      - xpack.security.transport.ssl.key=certs/elasticsearch/elasticsearch.key
+      - xpack.security.transport.ssl.certificate=certs/elasticsearch/elasticsearch.crt
+      - xpack.security.transport.ssl.certificate_authorities=certs/ca/ca.crt
+      - xpack.security.transport.ssl.verification_mode=certificate
+      - xpack.license.self_generated.type=${LICENSE}
+    mem_limit: ${ES_MEM_LIMIT}
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "curl -s --cacert config/certs/ca/ca.crt https://localhost:9200 | grep -q 'missing authentication credentials'",
+        ]
+      interval: 10s
+      timeout: 10s
+      retries: 120
+    networks:
+      - devnet
+
+  kibana:
+    profiles:
+      - elk
+    build:
+      context: ./kibana/
+      args:
+        STACK_VERSION: ${STACK_VERSION:?STACK_VERSION must be set}
+      labels:
+        - project=transcendence
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+    labels:
+      co.elastic.logs/module: kibana
+    volumes:
+      - elk_certs:/usr/share/kibana/config/certs
+      - kibana_data:/usr/share/kibana/data
+    ports:
+      - ${KIBANA_PORT}:5601
+    environment:
+      - SERVERNAME=kibana
+      - ELASTICSEARCH_HOSTS=https://elasticsearch:9200
+      - ELASTICSEARCH_USERNAME=kibana_system
+      - ELASTICSEARCH_PASSWORD=${KIBANA_PASSWORD}
+      - ELASTICSEARCH_SSL_CERTIFICATEAUTHORITIES=config/certs/ca/ca.crt
+      - XPACK_SECURITY_ENCRYPTIONKEY=${ENCRYPTION_KEY}
+      - XPACK_ENCRYPTEDSAVEDOBJECTS_ENCRYPTIONKEY=${ENCRYPTION_KEY}
+      - XPACK_REPORTING_ENCRYPTIONKEY=${ENCRYPTION_KEY}
+    mem_limit: ${KB_MEM_LIMIT}
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "curl -s -I http://localhost:5601 | grep -q 'HTTP/1.1 302 Found'",
+        ]
+      interval: 10s
+      timeout: 10s
+      retries: 120
+    networks:
+      - devnet
+
+  kibana-post:
+    profiles:
+      - elk
+    build:
+      labels:
+        - project=transcendence
+      context: ./kibana-post/
+    environment:
+      - ELASTIC_USER=elastic
+      - ELASTIC_PASSWORD=${ELASTIC_PASSWORD}
+      - KIBANA_URL=http://kibana:5601
+    networks:
+      - devnet
+    depends_on:
+      - kibana
+
+  logstash:
+    profiles:
+      - elk
+    build:
+      context: ./logstash/
+      args:
+        STACK_VERSION: ${STACK_VERSION:?STACK_VERSION must be set}
+      labels:
+        - project=transcendence
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+      kibana:
+        condition: service_healthy
+    labels:
+      co.elastic.logs/module: logstash
+    volumes:
+      - elk_certs:/usr/share/logstash/certs
+      - logstash_data:/usr/share/logstash/data
+    environment:
+      - xpack.monitoring.enabled=false
+      - ELASTIC_USER=elastic
+      - ELASTIC_PASSWORD=${ELASTIC_PASSWORD}
+      - ELASTIC_HOSTS=https://elasticsearch:9200
+    mem_limit: ${KB_MEM_LIMIT}
+    ports:
+      # Listens for GELF input here. The GELF driver can only send to host IPs,
+      # not into containers => this port needs to be exposed
+      - "12201:12201/udp"
+      # Logstash monitoring API
+      - "9600:9600"
+    networks:
+      - devnet
+
+===== END log-management/docker-compose.yml =====
+
+
+===== BEGIN log-management/elastic_cert_setup/Dockerfile =====
+# default value should make the build fail if this variable not set
+ARG STACK_VERSION=UNSET_VERSION
+FROM docker.elastic.co/elasticsearch/elasticsearch:${STACK_VERSION}
+COPY setup.sh /usr/local/bin/setup.sh
+CMD ["/usr/local/bin/setup.sh"]
+
+===== END log-management/elastic_cert_setup/Dockerfile =====
+
+
+===== BEGIN log-management/elastic_cert_setup/setup.sh (SKIPPED: non-text) =====
+
+
+===== BEGIN log-management/elasticsearch/Dockerfile =====
+ARG STACK_VERSION=UNSET_VERSION
+FROM docker.elastic.co/elasticsearch/elasticsearch:${STACK_VERSION}
+
+===== END log-management/elasticsearch/Dockerfile =====
+
+
+===== BEGIN log-management/kibana-post/Dockerfile =====
+FROM curlimages/curl:8.7.1
+
+COPY logstash.ndjson /data/logstash.ndjson
+COPY import.sh /init/import.sh
+
+ENTRYPOINT ["/init/import.sh"]
+
+===== END log-management/kibana-post/Dockerfile =====
+
+
+===== BEGIN log-management/kibana-post/import.sh (SKIPPED: non-text) =====
+
+
+===== BEGIN log-management/kibana-post/logstash.ndjson (SKIPPED: non-text) =====
+
+
+===== BEGIN log-management/kibana/Dockerfile =====
+ARG STACK_VERSION=UNSET_VERSION
+FROM docker.elastic.co/kibana/kibana:${STACK_VERSION}
+
+===== END log-management/kibana/Dockerfile =====
+
+
+===== BEGIN log-management/logstash/Dockerfile =====
+# default value should make the build fail if this variable not set
+ARG STACK_VERSION=UNSET_VERSION
+FROM docker.elastic.co/logstash/logstash:${STACK_VERSION}
+COPY ./logstash.conf /usr/share/logstash/pipeline/
+
+===== END log-management/logstash/Dockerfile =====
+
+
+===== BEGIN log-management/logstash/logstash.conf =====
+input {
+  gelf {
+    port => 12201
+  }
+}
+
+filter {
+}
+
+output {
+ elasticsearch {
+   index => "logstash-%{+YYYY.MM.dd}"
+   hosts=> "${ELASTIC_HOSTS}"
+   user=> "${ELASTIC_USER}"
+   password=> "${ELASTIC_PASSWORD}"
+   ssl_certificate_authorities=> ["/usr/share/logstash/certs/ca/ca.crt"]
+ }
+}
+
+===== END log-management/logstash/logstash.conf =====
+
+
+===== BEGIN log-management/README.md =====
+# Log management
+
+Uses the ELK stack from Elastic. Logs are passed from docker -> GELF driver -> logstash -> elasticsearch. Kibana is the frontend.
+
+## Usage
+
+1. Run `cp .env.example .env`
+2. Run `make elk-detached` to start the normal dev stack and the ELK stack (the stack is kinda heavy so you can still do `make detached` and just run the normal dev environment without ELK).
+3. Open the browser at `localhost:8080` to generate some logs
+4. Open the browser at `localhost:5601`
+5. Log in as `elastic` with password `changeme`
+6. Click on the hamburger menu, then on `Discover` to see your logs.
+
+If you play around and end up creating some nice dashboard, it can probably be exported as JSON and then imported during build time. Let me know.
+
+## TODO
+
+- Route everything through nginx, so no extra ports need to be exposed.
+- Start ELK stack first, so we dont miss logs from startup.
+- Persist data on bind mounts?
+- Create less privileged user?
+- Create nice premade dashboard.
+- Github Actions
+
+===== END log-management/README.md =====
+

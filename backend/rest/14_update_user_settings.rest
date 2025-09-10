@@ -1,9 +1,0 @@
-PATCH http://localhost:3001/api/users/me/settings
-Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6IkpvZSIsInV1aWQiOiI2N2RlN2E1ZS0xOTZjLTRlOWYtOGQ2MC00ODFiY2Q3ODAwNzciLCJpYXQiOjE3NTcyNTg3ODgsImV4cCI6MTc1NzI3MzE4OH0.vraVxf7mef_Ap2YraQbJALbrsaQodPAgdTMUWqEru9I
-Content-Type: application/json
-
-{
-	"paddleColor": "#555555",
-	"colorBlindMode": 5,
-	"photoSensitiveMode": 0
-}

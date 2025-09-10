@@ -1,0 +1,91 @@
+===== ENV-SAMPLES.TXT =====
+Snapshot root (./): /home/toonsa/myProjects/ft_transcendence/scripts/output/pkg-mgmt-snapshot
+Exported: 2025-09-10T06:01:01.281Z
+Files: 4
+================================================================================
+FILE: ./.env.example (601 bytes)
+================================================================================
+
+# Ports
+FRONTEND_PORT=5173
+BACKEND_PORT=3001
+NGINX_PORT=8080
+
+# Frontend (Vite exposes only VITE_* to the client)
+VITE_BACKEND_URL=http://localhost:3001
+
+# Backend
+BACKEND_HOST=0.0.0.0
+DATABASE_PATH=/data/db.sqlite
+SECRET=yourSecretForJWTToken
+FRONTEND_URL=http://localhost:5173
+UPLOAD_DIR=/data/sqlite/uploads
+
+# Dev watchers in containers
+CHOKIDAR_USEPOLLING=true
+WATCHPACK_POLLING=true
+
+# OAuth (example for Google)
+#BASE_URL=http://localhost
+NODE_ENV=development
+GOOGLE_OAUTH_REDIRECT_PATH=/api/auth/google/callback
+GOOGLE_CLIENT_ID=xxx.apps.googleusercontent.com
+GOOGLE_CLIENT_SECRET=your_secret
+
+================================================================================
+FILE: ./apps/api/.env.example (378 bytes)
+================================================================================
+
+SECRET=yourSecretForJWTToken
+FRONTEND_URL=localhost:5173
+DATABASE_PATH=./data/sqlite/db.sqlite
+BACKEND_PORT=3001
+BACKEND_HOST=0.0.0.0
+UPLOAD_DIR=./data/sqlite/uploads
+
+# OAuth (example for Google)
+#BASE_URL=http://localhost
+NODE_ENV=development
+GOOGLE_OAUTH_REDIRECT_PATH=/api/auth/google/callback
+GOOGLE_CLIENT_ID=xxx.apps.googleusercontent.com
+GOOGLE_CLIENT_SECRET=your_secret
+================================================================================
+FILE: ./apps/web/.env.example (38 bytes)
+================================================================================
+
+VITE_BACKEND_URL=http://localhost:3001
+================================================================================
+FILE: ./log-management/.env.example (876 bytes)
+================================================================================
+
+# Password for the 'elastic' superuser (at least 6 characters)
+# This user is for logging in to Kibana and cannot be renamed
+ELASTIC_PASSWORD=changeme
+
+# Password for the 'kibana_system' user (at least 6 characters)
+# This user is NOT for logging in
+KIBANA_PASSWORD=changeme
+
+# All parts of the stack should pull the same version 
+STACK_VERSION=9.1.3
+
+# Set to 'basic' or 'trial' to automatically start the 30-day trial
+LICENSE=basic
+#LICENSE=trial
+
+# Port to expose Elasticsearch HTTP API to the host
+ES_PORT=9200
+
+# Port to expose Kibana to the host, this is the web portal
+KIBANA_PORT=5601
+
+# Increase or decrease based on the available host memory (in bytes)
+ES_MEM_LIMIT=1073741824
+KB_MEM_LIMIT=1073741824
+LS_MEM_LIMIT=1073741824
+
+# Key needs to be stored to preserve reports across restarts.
+# Alphanumeric, min 32 chars
+ENCRYPTION_KEY=Jn7FYWRWLAVyiMK4hBYsaxbxAstwZKPF
+
+

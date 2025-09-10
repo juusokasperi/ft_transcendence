@@ -1,0 +1,10 @@
+PATCH http://localhost:3001/api/users/me/avatar
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6InRlc3RVc2VyIiwidXVpZCI6IjcxNGM4ZjA4LTI3OGItNDA4OC1iMDAwLTdjMDg4ZGY0YzRiNiIsImlhdCI6MTc1NTcxMjI0MiwiZXhwIjoxNzU1NzE1ODQyfQ.GCNYRUAleJLfy4x_y6Tl_7kdZAiiVK2BiLDEsme-up0
+Content-Type: multipart/form-data; boundary=----WebKitFormBoundary7MA4YWxkTrZu0gW
+
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="avatar"; filename="profile.png"
+Content-Type: image/png
+
+< ../tests/testImg.png
+------WebKitFormBoundary7MA4YWxkTrZu0gW--

@@ -2,11 +2,34 @@
   "name": "ft_transcendence",
   "version": "1.0.0",
   "description": "---",
+  "private": true,
   "main": "index.js",
+  "packageManager": "npm@10",
+  "engines": { "node": ">=20.10" },
+
+  "workspaces": [
+    "apps/*",
+    "packages/*",
+    "tools/*"
+  ],
+
   "scripts": {
     "check": "prettier . --check --config .config/prettier/prettier.config.cjs --ignore-path .config/prettier/.prettierignore",
-    "fix": "prettier . --write --config .config/prettier/prettier.config.cjs --ignore-path .config/prettier/.prettierignore"
+    "fix":   "prettier . --write --config .config/prettier/prettier.config.cjs --ignore-path .config/prettier/.prettierignore",
+
+    "build":      "npm run -ws --if-present build",
+    "typecheck":  "npm run -ws --if-present typecheck",
+    "lint":       "npm run -ws --if-present lint",
+    "test":       "npm run -ws --if-present test",
+    "format":     "npm run fix",
+    "clean":      "git clean -Xfd",
+
+    "dev":        "npm run -w apps/web dev",
+    "dev:web":    "npm run -w apps/web dev",
+    "dev:api":    "npm run -w apps/api dev",
+    "migrate":    "npm run -w apps/api migrate"
   },
+
   "repository": {
     "type": "git",
     "url": "git+https://github.com/juusokasperi/ft_transcendence.git"
@@ -18,6 +41,7 @@
     "url": "https://github.com/juusokasperi/ft_transcendence/issues"
   },
   "homepage": "https://github.com/juusokasperi/ft_transcendence#readme",
+
   "devDependencies": {
     "prettier": "^3.6.2",
     "prettier-plugin-tailwindcss": "^0.6.14"

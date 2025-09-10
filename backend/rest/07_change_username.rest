@@ -1,7 +1,0 @@
-PATCH http://localhost:3001/api/users/me
-Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6InRlc3RVc2VyMiIsInV1aWQiOiI5ZGE4NjBjMy03ZDI2LTRhZjUtYmNjOS0wMDJkODU0MWQyZDgiLCJpYXQiOjE3NTU2ODU4MzksImV4cCI6MTc1NTY4OTQzOX0.ie-Dn_LLYsRQhNzFxVhHRuqO7EbTac4LuCcF9B82xnA
-Content-Type: application/json
-
-{
-	"newUsername": "testUser2"
-}
