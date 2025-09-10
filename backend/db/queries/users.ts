@@ -1,6 +1,7 @@
 import db from '../client.ts';
 import type { User, UserStats, UserSettings } from '../../types/types.ts';
 import type { UserDb, UserStatsDb, UserSettingsDb } from '../../types/dbtypes.ts';
+import crypto from 'crypto';
 
 export function getUserByUuid(uuid: string): User | undefined {
   const user = db.prepare('SELECT * FROM Users where uuid = ?').get(uuid) as UserDb | null;
@@ -68,6 +69,22 @@ export function getUserByEmail(email: string): User | undefined {
   };
 }
 
+export function getUserByGoogleId(googleId: string): User | undefined {
+  const user = db.prepare('SELECT * FROM Users WHERE google_id = ?').get(googleId) as UserDb | null;
+  if (!user) return undefined;
+  return {
+    uuid: user.uuid,
+    username: user.username,
+    email: user.email,
+    passwordHash: user.password_hash,
+    tfa: user.tfa,
+    avatar: user.avatar,
+    ranking: user.ranking,
+    createdAt: user.created_at,
+    googleId: user.google_id,
+  };
+}
+
 export function getUser(identifier: string): User | undefined {
   const user = db
     .prepare(
@@ -107,6 +124,106 @@ export function addUser(
       .run(uuid, username, passwordHash, email, avatar ? avatar : null);
     return result.changes === 1;
   } catch (error) {
+    return false;
+  }
+}
+
+// check it later
+function ensureUniqueUsername(preferred: string): string {
+  const base =
+    (preferred || 'user')
+      .toLowerCase()
+      .replace(/[^a-z0-9_]+/g, '_')
+      .replace(/^_+|_+$/g, '')
+      .slice(0, 24) || 'user';
+  let candidate = base;
+  let n = 0;
+  while (db.prepare('SELECT 1 FROM Users WHERE username = ?').get(candidate)) {
+    n += 1;
+    candidate = `${base}_${n}`;
+  }
+  return candidate;
+}
+
+export function createUserFromGoogle(profile: {
+  googleId: string;
+  email?: string;
+  name?: string;
+  picture?: string;
+}): User | undefined {
+  try {
+    const uuid = crypto.randomUUID();
+    const username = ensureUniqueUsername(profile.name ?? profile.email?.split('@')[0] ?? 'user');
+    db.prepare(
+      `INSERT INTO Users (uuid, username, email, avatar, google_id)
+       VALUES (?, ?, ?, ?, ?)`,
+    ).run(uuid, username, profile.email ?? null, profile.picture ?? null, profile.googleId);
+    return getUser(uuid);
+  } catch {
+    return undefined;
+  }
+}
+
+// Update existing Google user on each login (soft-sync)
+export function updateGoogleUser(profile: {
+  googleId: string;
+  email?: string; // Google OIDC email (usually verified)
+  name?: string; // Google 'name'
+  picture?: string; // Google 'picture' (URL)
+}): boolean {
+  try {
+    // Soft policy:
+    // - username: only fill if empty/NULL
+    // - avatar:   only fill if empty/NULL
+    // - email:    only fill if empty/NULL (to avoid UNIQUE collisions / overriding user change)
+    const res = db
+      .prepare(
+        `
+      UPDATE Users
+      SET
+        username  = CASE WHEN (username IS NULL OR username = '')
+                         THEN COALESCE(?, username)
+                         ELSE username END,
+        avatar    = CASE WHEN (avatar   IS NULL OR avatar   = '')
+                         THEN COALESCE(?, avatar)
+                         ELSE avatar   END,
+        email     = CASE WHEN (email    IS NULL OR email    = '')
+                         THEN COALESCE(?, email)
+                         ELSE email    END,
+        last_seen = CURRENT_TIMESTAMP
+      WHERE google_id = ?
+    `,
+      )
+      .run(profile.name ?? null, profile.picture ?? null, profile.email ?? null, profile.googleId);
+    return res.changes === 1;
+  } catch {
+    return false;
+  }
+}
+
+// Link Google account to existing user (no overwrite if already linked)
+export function linkGoogleToUser(uuid: string, googleId: string, picture?: string): boolean {
+  try {
+    const res = db
+      .prepare(
+        `
+      UPDATE Users
+      SET
+        google_id = ?,
+        -- backfill ONLY avatar if it's empty
+        avatar = CASE
+          WHEN (avatar IS NULL OR avatar = '')
+            THEN COALESCE(?, avatar)
+          ELSE avatar
+        END,
+        last_seen = CURRENT_TIMESTAMP
+      WHERE uuid = ? AND google_id IS NULL
+    `,
+      )
+      .run(googleId, picture ?? null, uuid);
+
+    return res.changes === 1;
+  } catch {
     return false;
   }
 }

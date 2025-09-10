@@ -2,23 +2,18 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { describe, it, expect, vi } from 'vitest';
 import Registration from '../Registation';
 import type { User } from '../../types';
-import { AppContext } from '../../context/AppContext';
 
 // Helper: create a wrapper with fake context values
 function renderWithContext(ui: React.ReactNode, { axiosMock, loginMock, navigateMock }: any) {
-  return render(
-    <AppContext.Provider
-      value={
-        {
-          axios: axiosMock,
-          login: loginMock,
-          navigate: navigateMock,
-        } as any
-      }
-    >
-      {ui}
-    </AppContext.Provider>,
-  );
+  // If Registration uses useAppContext, we need to mock its implementation
+  vi.mock('../../context/AppContext', () => ({
+    useAppContext: () => ({
+      axios: axiosMock,
+      login: loginMock,
+      navigate: navigateMock,
+    }),
+  }));
+  return render(ui);
 }
 
 describe('Registration page', () => {

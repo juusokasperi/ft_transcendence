@@ -5,39 +5,27 @@ export const useUser = () => {
   const [user, setUserState] = useState<User | null>(null);
 
   useEffect(() => {
-    const stored = localStorage.getItem('user');
-    if (stored) {
+    const s = localStorage.getItem('user');
+    if (s) {
       try {
-        setUserState(JSON.parse(stored) as User);
+        setUserState(JSON.parse(s));
       } catch {
         localStorage.removeItem('user');
       }
     }
   }, []);
 
-  const setUser: React.Dispatch<React.SetStateAction<User | null>> = useCallback((value) => {
-    // Handle function updater
-    if (typeof value === 'function') {
-      setUserState((prev) => {
-        const newUser = (value as (prev: User | null) => User | null)(prev);
-        if (newUser) {
-          localStorage.setItem('user', JSON.stringify(newUser));
-        } else {
-          localStorage.removeItem('user');
-        }
-        return newUser;
-      });
-    } else {
-      // Handle direct object
-      setUserState(value);
-      if (value) {
-        localStorage.setItem('user', JSON.stringify(value));
-      } else {
-        localStorage.removeItem('user');
-      }
-    }
+  const setUser = useCallback<React.Dispatch<React.SetStateAction<User | null>>>((update) => {
+    setUserState((prev) => {
+      const next =
+        typeof update === 'function' ? (update as (p: User | null) => User | null)(prev) : update;
+
+      if (next) localStorage.setItem('user', JSON.stringify(next));
+      else localStorage.removeItem('user');
+
+      return next;
+    });
   }, []);
 
   return { user, setUser };
 };
-// src/hooks/useUser.ts

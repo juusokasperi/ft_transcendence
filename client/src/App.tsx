@@ -8,6 +8,8 @@ import Profile from './pages/Profile';
 import { Toaster } from 'react-hot-toast';
 import Friends from './pages/Friends';
 import Confirmation from './pages/Confirmation';
+import PingPong from './pages/PingPong/PingPong';
+import LocalGame from './pages/PingPong/LocalGame';
 
 function App() {
   return (
@@ -19,6 +21,8 @@ function App() {
         <Route path={'/'} element={<Home />} />
         <Route path={'/signup'} element={<Registration />} />
         <Route path={'/login'} element={<Login />} />
+        <Route path={'/ping-pong'} element={<PingPong />} />
+        <Route path={'/ping-pong/local'} element={<LocalGame />} />
         <Route path={'/confirm/:confirmationToken'} element={<Confirmation />} />
         <Route path={'/profile'} element={<Layout />}>
           <Route index element={<Profile />} />

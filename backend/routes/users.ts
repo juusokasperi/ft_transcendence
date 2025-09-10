@@ -20,12 +20,24 @@ import {
   removeTokenFromDelete,
   findUserToDeleteAndClear,
 } from '../db/queries/userDelete.ts';
-import { authPreHandler, tokenUuidCheck, validationHook } from '../hooks/auth.ts';
+import { authPreHandler, tokenUuidCheck } from '../hooks/auth.ts';
 import { sendDeleteEmail } from '../utils/nodemailer/index.ts';
 import { normalizeCredentials } from '../hooks/auth.ts';
 import { updateLastSeenHandler } from '../hooks/updateLastSeen.ts';
 import { UPLOAD_DIR } from '../utils/config.ts';
-import { validateUserSettings } from '../utils/validate.ts';
+import {
+  getAllUsersSchema,
+  getUserSchema,
+  getMeSchema,
+  userDeleteSchema,
+  userDeleteConfirmSchema,
+  updateUsernameSchema,
+  updatePassSchema,
+  updateAvatarSchema,
+  deleteAvatarSchema,
+  getSettingsSchema,
+  updateSettingsSchema,
+} from '../schemas/userSchemas.ts';
 
 /*
 	TO DO:
@@ -37,7 +49,7 @@ import { validateUserSettings } from '../utils/validate.ts';
 
 export async function userRoutes(app: FastifyInstance) {
   // Get all users
-  app.get('/', async (req: FastifyRequest, res: FastifyReply) => {
+  app.get('/', { schema: getAllUsersSchema }, async (req: FastifyRequest, res: FastifyReply) => {
     try {
       const users = getUserStats();
       res.status(200).send(users);
@@ -47,7 +59,7 @@ export async function userRoutes(app: FastifyInstance) {
   });
 
   // Get a single user
-  app.get('/:uuid', async (req: FastifyRequest, res: FastifyReply) => {
+  app.get('/:uuid', { schema: getUserSchema }, async (req: FastifyRequest, res: FastifyReply) => {
     try {
       const { uuid } = req.params as { uuid: string };
       const user = getUserStats(uuid);
@@ -58,10 +70,38 @@ export async function userRoutes(app: FastifyInstance) {
     }
   });
 
+  // Current user (for hydration)
+  app.get(
+    '/me',
+    {
+      schema: getMeSchema,
+      preHandler: [authPreHandler, tokenUuidCheck, updateLastSeenHandler], // token -> req.user
+    },
+    async (req: FastifyRequest, res: FastifyReply) => {
+      try {
+        const uuid = req.user!.uuid; // set by authPreHandler
+        const u = getUserByUuid(uuid);
+        if (!u) return res.status(404).send({ message: 'User not found' });
+
+        // return only what the FE needs to render header/profile
+        return res.status(200).send({
+          username: u.username,
+          uuid: u.uuid,
+          avatar: u.avatar ?? null, // external URL or filename or null
+        });
+      } catch (err) {
+        return res.status(500).send({ message: 'Failed to fetch current user' });
+      }
+    },
+  );
+
   // Sends a email confirmation for user deletion
   app.delete(
     '/me',
-    { preHandler: [authPreHandler, tokenUuidCheck, updateLastSeenHandler] },
+    {
+      schema: userDeleteSchema,
+      preHandler: [authPreHandler, tokenUuidCheck, updateLastSeenHandler],
+    },
     async (req: FastifyRequest, res: FastifyReply) => {
       try {
         const uuid = req.user!.uuid;
@@ -85,7 +125,10 @@ export async function userRoutes(app: FastifyInstance) {
   // Delete user with a valid delete token
   app.post(
     '/me/confirm-delete/:token',
-    { preHandler: [authPreHandler, tokenUuidCheck] },
+    {
+      schema: userDeleteConfirmSchema,
+      preHandler: [authPreHandler, tokenUuidCheck],
+    },
     async (req: FastifyRequest, res: FastifyReply) => {
       try {
         const { token } = req.params as { token: string };
@@ -103,11 +146,11 @@ export async function userRoutes(app: FastifyInstance) {
   );
 
   // Update username, requires token and { newUsername } as request body
-  // Add validation for username
   app.patch(
     '/me',
     {
       preValidation: [normalizeCredentials],
+      schema: updateUsernameSchema,
       preHandler: [authPreHandler, tokenUuidCheck, updateLastSeenHandler],
     },
     async (req: FastifyRequest, res: FastifyReply) => {
@@ -137,6 +180,7 @@ export async function userRoutes(app: FastifyInstance) {
     '/me/password',
     {
       preValidation: [normalizeCredentials],
+      schema: updatePassSchema,
       preHandler: [authPreHandler, tokenUuidCheck, updateLastSeenHandler],
     },
     async (req: FastifyRequest, res: FastifyReply) => {
@@ -155,7 +199,7 @@ export async function userRoutes(app: FastifyInstance) {
         const newPasswordHash = await bcrypt.hash(newPassword, 10);
         const updateResult = updatePassword(uuid, newPasswordHash);
         if (!updateResult) return res.status(400).send({ message: 'Update failed' });
-        res.status(200).send();
+        res.status(200).send({ success: 'Password successfully updated' });
       } catch (error) {
         res.status(500).send({ message: 'Failed to update user' });
       }
@@ -165,7 +209,10 @@ export async function userRoutes(app: FastifyInstance) {
   // Change avatar picture, requires token and multipart form with { avatar } file
   app.patch(
     '/me/avatar',
-    { preHandler: [authPreHandler, tokenUuidCheck, updateLastSeenHandler] },
+    {
+      schema: updateAvatarSchema,
+      preHandler: [authPreHandler, tokenUuidCheck, updateLastSeenHandler],
+    },
     async (req: FastifyRequest, res: FastifyReply) => {
       try {
         const uuid = req.user!.uuid;
@@ -182,11 +229,9 @@ export async function userRoutes(app: FastifyInstance) {
         if (!ACCEPTED_TYPES.includes(file.mimetype))
           return res.status(400).send({ message: 'Invalid avatar file type.' });
 
-        const uploadDir = path.join(process.cwd(), UPLOAD_DIR);
-
         const fileExtension = getExtensionFromMime(file.mimetype);
         const fileName = `${uuid}_${Date.now()}_avatar${fileExtension}`;
-        const filePath = path.join(uploadDir, fileName);
+        const filePath = path.join(UPLOAD_DIR, fileName);
         const writeStream = fs.createWriteStream(filePath);
         await new Promise((resolve, reject) => {
           file.file
@@ -198,7 +243,7 @@ export async function userRoutes(app: FastifyInstance) {
         // Delete old avatar (if exists)
         if (user.avatar) {
           try {
-            await fsAsync.unlink(path.join(uploadDir, user.avatar));
+            await fsAsync.unlink(path.join(UPLOAD_DIR, user.avatar));
           } catch (err) {
             console.log('Error deleting old avatar picture');
           }
@@ -216,7 +261,10 @@ export async function userRoutes(app: FastifyInstance) {
   // Delete avatar picture, requires token
   app.delete(
     '/me/avatar',
-    { preHandler: [authPreHandler, tokenUuidCheck, updateLastSeenHandler] },
+    {
+      schema: deleteAvatarSchema,
+      preHandler: [authPreHandler, tokenUuidCheck, updateLastSeenHandler],
+    },
     async (req: FastifyRequest, res: FastifyReply) => {
       try {
         const uuid = req.user!.uuid;
@@ -237,6 +285,53 @@ export async function userRoutes(app: FastifyInstance) {
         res.status(200).send(user);
       } catch (error) {
         res.status(500).send({ message: 'Failed to delete avatar' });
+      }
+    },
+  );
+
+  app.get(
+    '/me/settings',
+    {
+      schema: getSettingsSchema,
+      preHandler: [authPreHandler, tokenUuidCheck, updateLastSeenHandler],
+    },
+    async (req: FastifyRequest, res: FastifyReply) => {
+      try {
+        const uuid = req.user!.uuid;
+        const settings = getUserSettings(uuid);
+        if (!settings) return res.status(404).send({ message: 'Failed to fetch user settings' });
+        res.status(200).send(settings);
+      } catch (err) {
+        res.status(500).send({ message: 'Failed to fetch user profile settings' });
+      }
+    },
+  );
+
+  app.patch(
+    '/me/settings',
+    {
+      schema: updateSettingsSchema,
+      preHandler: [authPreHandler, tokenUuidCheck, updateLastSeenHandler],
+    },
+    async (req: FastifyRequest, res: FastifyReply) => {
+      try {
+        const uuid = req.user!.uuid;
+        const { paddleColor, colorBlindMode, photoSensitiveMode } = req.body as {
+          paddleColor?: string;
+          colorBlindMode?: number;
+          photoSensitiveMode?: number;
+        };
+        const updateFields: Record<string, unknown> = {};
+        if (paddleColor !== undefined) updateFields.paddle_color = paddleColor;
+        if (colorBlindMode !== undefined) updateFields.color_blind_mode = colorBlindMode;
+        if (photoSensitiveMode !== undefined)
+          updateFields.photo_sensitive_mode = photoSensitiveMode;
+        const success = updateUserSettings(uuid, updateFields);
+        if (!success) return res.status(400).send({ message: 'Failed to update settings.' });
+        const settings = getUserSettings(uuid);
+        res.status(200).send(settings);
+      } catch (err) {
+        res.status(500).send({ message: 'Failed to update user profile settings.' });
       }
     },
   );

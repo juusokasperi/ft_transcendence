@@ -44,11 +44,3 @@ export function normalizeCredentials(req: FastifyRequest, res: FastifyReply, don
   normalize('email');
   done();
 }
-
-// Validates request body
-export function validationHook(validator) {
-  return async function (req: FastifyRequest, res: FastifyReply) {
-    const check = validator(req.body);
-    if (check !== true) return res.status(400).send({ errors: check });
-  };
-}

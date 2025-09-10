@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import AuthForm from '../components/AuthForm';
 import { useAppContext } from '../context/AppContext';
 import type { User } from '../types';
@@ -7,8 +7,14 @@ import type { AxiosError } from 'axios';
 import type { AxiosResponse } from 'axios';
 
 const Registration: React.FC = () => {
-  const { axios, login, navigate } = useAppContext();
+  const { axios, login, navigate, user } = useAppContext();
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (user) {
+      navigate('/');
+    }
+  }, [user, navigate]);
 
   const handleRegister = async (data: {
     username?: string;
@@ -29,7 +35,7 @@ const Registration: React.FC = () => {
       const { token, user } = res.data as { token?: string; user?: User };
 
       if (token && user) {
-        login(user, token);
+        login(token);
         toast.success('Account created and logged in');
         navigate('/');
         return;

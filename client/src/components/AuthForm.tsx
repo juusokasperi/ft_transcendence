@@ -18,6 +18,11 @@ const AuthForm: React.FC<AuthFormProps> = ({ type, onSubmit }) => {
   const [success, setSuccess] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
+  const usernameRegex = /^(?!-)([a-zA-Z0-9-]+)(?<!-)$/;
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  const passwordRegex =
+    /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()\-=+[\]{};:|,<.>/?`]).{12,}$/;
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
@@ -28,9 +33,33 @@ const AuthForm: React.FC<AuthFormProps> = ({ type, onSubmit }) => {
       return;
     }
 
-    if (type === 'register' && password !== confirmPassword) {
-      setError('Passwords do not match.');
+    if (!emailRegex.test(email)) {
+      setError('Please enter a valid email address.');
       return;
+    }
+
+    if (type === 'register') {
+      // username validation
+      if (!usernameRegex.test(username)) {
+        setError(
+          'Username may only contain letters, numbers, and dashes, and cannot start or end with a dash.',
+        );
+        return;
+      }
+
+      // password match
+      if (password !== confirmPassword) {
+        setError('Passwords do not match.');
+        return;
+      }
+
+      // password validation
+      if (!passwordRegex.test(password)) {
+        setError(
+          'Password must be at least 12 characters and include uppercase, lowercase, a digit, and a special character.',
+        );
+        return;
+      }
     }
 
     // call container's onSubmit (container will call API / set context)
@@ -112,6 +141,13 @@ const AuthForm: React.FC<AuthFormProps> = ({ type, onSubmit }) => {
         className="mb-3 w-full rounded bg-blue-600 py-2 text-white hover:bg-blue-700"
       >
         {type === 'login' ? 'Login' : 'Register'}
+      </button>
+      <button
+        type="button"
+        onClick={() => (window.location.href = '/api/auth/google')}
+        className="w-full rounded bg-red-600 py-2 text-white hover:bg-red-700"
+      >
+        Sign in with Google
       </button>
     </form>
   );

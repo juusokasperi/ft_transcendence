@@ -1,38 +1,38 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import AuthForm from '../components/AuthForm';
 import { useAppContext } from '../context/AppContext';
-import type { User } from '../types';
 import { toast } from 'react-hot-toast';
 import type { AxiosError } from 'axios';
 import { Link } from 'react-router-dom';
 
 const Login: React.FC = () => {
-  const { axios, login, navigate } = useAppContext();
+  const { axios, login, navigate, user } = useAppContext();
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (user) navigate('/');
+  }, [user, navigate]);
 
   const handleLogin = async (data: { email: string; password: string }) => {
     setLoading(true);
     try {
-      // POST to /api/login (no Authorization header expected)
+      // get token from backend
       const res = await axios.post('/api/login', {
         email: data.email,
         password: data.password,
       });
 
-      const { token, user } = res.data as { token: string; user: User };
+      const { token } = res.data as { token: string };
+      if (!token) throw new Error('Invalid server response');
 
-      if (!token || !user) throw new Error('Invalid server response');
-      console.log('LOGGED IN!!');
-
-      login(user, token);
+      // unified login: save token, then AppContext will fetch /api/users/me
+      await login(token);
 
       toast.success('Logged in');
-      navigate('/'); // redirect to home
+      // navigate('/') is optional; your useEffect will redirect once user is set
     } catch (err: any) {
       const axiosErr = err as AxiosError<{ message?: string }>;
-      const msg = axiosErr?.response?.data?.message;
-      console.log(msg);
-      toast.error(String(msg));
+      toast.error(String(axiosErr?.response?.data?.message || 'Login failed'));
     } finally {
       setLoading(false);
     }

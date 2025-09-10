@@ -1,7 +1,7 @@
 import dotenv from 'dotenv';
 import { resolve, isAbsolute, dirname } from 'node:path';
 import { mkdir } from 'node:fs/promises';
-import { fileURLToPath } from 'node:url';
+import type { SwaggerOptions } from '@fastify/swagger';
 
 dotenv.config();
 
@@ -40,3 +40,35 @@ export const BACKEND_HOST = process.env.BACKEND_HOST as string;
 export const SECRET = process.env.SECRET as string;
 export const FRONTEND_URL = process.env.FRONTEND_URL as string;
 export const NGINX_PORT = process.env.NGINX_PORT as string;
+
+// Export Swagger config
+export const swaggerConfig: SwaggerOptions = {
+  openapi: {
+    openapi: '3.0.0',
+    info: {
+      title: 'PONG APIs',
+      version: '1.0.0',
+    },
+    servers: [
+      {
+        url: `http://localhost:${BACKEND_PORT}`,
+        description: 'Dev backend server',
+      },
+    ],
+    tags: [
+      { name: 'User', description: 'User related endpoints' },
+      { name: 'Game', description: 'Game related endpoints' },
+      { name: 'Auth', description: 'Authentication related endpoints' },
+      { name: 'Friends', description: 'Friends related endpoints' },
+    ],
+    components: {
+      securitySchemes: {
+        bearerAuth: {
+          type: 'http',
+          scheme: 'bearer',
+          bearerFormat: 'JWT',
+        },
+      },
+    },
+  },
+};
