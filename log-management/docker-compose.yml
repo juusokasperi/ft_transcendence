@@ -173,3 +173,12 @@ services:
       - "9600:9600"
     networks:
       - devnet
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          'curl -f http://localhost:9600/_node/ | grep ''"status":"green"''',
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 50
