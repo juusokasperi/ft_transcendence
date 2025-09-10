@@ -6,43 +6,59 @@ vars:
 
 tasks:
   default:
-    desc: Default task (runs all)
+    desc: Default task runs dev build
     cmds:
-      - task: all
+      - task: dev
 
-  all:
-    desc: Run docker compose with build
+  dev:
+    desc: Basic dev build
+    deps: [dev:dirs]
     cmds:
-      - mkdir -p ./backend/data/sqlite/uploads
-      - docker compose -p {{.NAME}} -f docker-compose.yml --env-file .env up --build
-
-  elk:
-    desc: Run docker compose with ELK profile
-    cmds:
-      - mkdir -p ./backend/data/sqlite/uploads
-      - docker compose -p {{.NAME}} -f docker-compose.yml --env-file .env --profile elk up --build
-
-  elk-detached:
-    desc: Run docker compose with ELK profile in detached mode
-    cmds:
-      - mkdir -p ./backend/data/sqlite/uploads
-      - docker compose -p {{.NAME}} -f docker-compose.yml --env-file .env --profile elk up --build -d
+      - >
+        docker compose -p {{.NAME}} 
+        -f docker-compose.yml --env-file .env up --build
 
   detached:
-    desc: Run docker compose in detached mode
+    desc: Dev build in detached mode
+    deps: [dev:dirs]
     cmds:
-      - mkdir -p ./backend/data/sqlite/uploads
-      - docker compose -p {{.NAME}} -f docker-compose.yml --env-file .env up --build -d
+      - >
+        docker compose -p {{.NAME}} 
+        -f docker-compose.yml --env-file .env up --build -d
+
+  elk:
+    desc: Dev build with ELK
+    deps: [dev:dirs]
+    cmds:
+      - >
+        docker compose -p {{.NAME}} 
+        -f docker-compose.yml --env-file .env --profile elk up --build
+
+  elk-detached:
+    desc: Dev build with ELK in detached mode
+    deps: [dev:dirs]
+    cmds:
+      - >
+        docker compose -p {{.NAME}} 
+        -f docker-compose.yml --env-file .env --profile elk up --build -d
 
   down:
     desc: Stop and remove containers
     cmds:
-      - docker compose -p {{.NAME}} -f docker-compose.yml --env-file .env --profile elk down --remove-orphans
+      - >
+        docker compose -p {{.NAME}} 
+        -f docker-compose.yml 
+        --env-file .env --profile elk down --remove-orphans
 
   fclean:
     desc: Remove containers, volumes, and uploads
     cmds:
-      - docker compose -p {{.NAME}} -f docker-compose.yml --env-file .env --profile elk down --rmi local --volumes --remove-orphans
+      - >
+        docker compose -p {{.NAME}} 
+        -f docker-compose.yml 
+        --env-file .env 
+        --profile elk down --rmi local --volumes --remove-orphans
+      - docker system prune -a -f --volumes --filter "label=project=$(NAME)"
       - rm -rf ./backend/data
 
   re:
@@ -61,21 +77,27 @@ tasks:
       SERVICE: "{{index .MATCH 0}}"
     desc: "Show logs for a service (usage: task logs:service_name)"
     cmds:
-      - docker compose -p {{.NAME}} -f docker-compose.yml logs {{.SERVICE | default ""}}
+      - >
+        docker compose -p {{.NAME}} 
+        -f docker-compose.yml logs {{.SERVICE | default ""}}
 
   sh:*:
     vars:
       SERVICE: "{{index .MATCH 0}}"
     desc: "Open sh shell in a service (usage: task sh:service_name)"
     cmds:
-      - docker compose -p {{.NAME}} -f docker-compose.yml exec -it {{.SERVICE}} sh
+      - >
+        docker compose -p {{.NAME}} 
+        -f docker-compose.yml exec -it {{.SERVICE}} sh
 
   bash:*:
     vars:
       SERVICE: "{{index .MATCH 0}}"
     desc: "Open bash shell in a service (usage: task bash:service_name)"
     cmds:
-      - docker compose -p {{.NAME}} -f docker-compose.yml exec -it {{.SERVICE}} bash
+      - >
+        docker compose -p {{.NAME}} 
+        -f docker-compose.yml exec -it {{.SERVICE}} bash
 
   stop:
     desc: Stop all containers without removing them
@@ -95,6 +117,12 @@ tasks:
   restart-service:*:
     vars:
       SERVICE: "{{index .MATCH 0}}"
-    desc: "Restart a single service (usage: task restart-service -- SERVICE=service_name)"
+    desc: "Restart a single service (usage: task restart-service:service_name)"
     cmds:
       - docker compose -p {{.NAME}} -f docker-compose.yml restart {{.SERVICE}}
+
+  # Helper targets
+  dev:dirs:
+    desc: Ensure needed directories exist
+    cmds:
+      - mkdir -p ./backend/data/sqlite/uploads
