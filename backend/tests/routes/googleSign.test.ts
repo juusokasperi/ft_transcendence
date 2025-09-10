@@ -1,7 +1,28 @@
 import { describe, it, expect, beforeAll, afterAll, vi } from 'vitest';
-import { buildApp } from '../../index';
-import * as users from '../../db/queries/users';
+import fastify from 'fastify';
+import cookie from '@fastify/cookie';
 
+// ---- Mocks MUST go before importing the route ----
+vi.mock('../../utils/config.ts', () => ({
+  SECRET: 'testsecret',
+  DATABASE_PATH: ':memory:',
+}));
+
+// Fully mock the users query module so we never touch the real DB
+const usersMock = vi.hoisted(() => ({
+  getUserByGoogleId: vi.fn(),
+  createUserFromGoogle: vi.fn(),
+  getUserByEmail: vi.fn(),
+  linkGoogleToUser: vi.fn(),
+  updateGoogleUser: vi.fn(),
+  getUser: vi.fn(),
+}));
+vi.mock('../../db/queries/users.ts', () => usersMock);
+
+// Now import the route under test (it will see the mocks)
+import googleSign from '../../routes/googleSign';
+
+// --- helpers ---
 function parseSetCookie(headers: string[] | string | undefined, name: string) {
   const arr = Array.isArray(headers) ? headers : headers ? [headers] : [];
   const line = arr.find((h) => h.startsWith(`${name}=`));
@@ -9,10 +30,16 @@ function parseSetCookie(headers: string[] | string | undefined, name: string) {
   return line.split(';')[0].split('=')[1];
 }
 
+function buildApp() {
+  const app = fastify({ logger: false });
+  app.register(cookie);
+  app.register(googleSign);
+  return app;
+}
+
 describe('Google OAuth flow', () => {
   const app = buildApp();
 
-  // Mocks for DB
   const user = {
     uuid: 'u-123',
     username: 'john',
@@ -22,23 +49,31 @@ describe('Google OAuth flow', () => {
   };
 
   beforeAll(async () => {
-    // Mock DB layer
-    vi.spyOn(users, 'getUserByGoogleId').mockImplementation((sub: string) => {
-      return sub === 'sub-123' ? ({ ...user }) as any : null;
-    });
-    vi.spyOn(users, 'createUserFromGoogle').mockImplementation((p: any) => {
-      // simulate creating user on first-time google login
-      return { ...user, username: p.name, email: p.email, avatar: p.picture } as any;
-    });
-    vi.spyOn(users, 'getUserByEmail').mockReturnValue(null as any);
-    vi.spyOn(users, 'linkGoogleToUser').mockReturnValue(true as any);
-    vi.spyOn(users, 'updateGoogleUser').mockReturnValue(true as any);
+    // Env the route expects
+    process.env.GOOGLE_CLIENT_ID = 'client';
+    process.env.GOOGLE_CLIENT_SECRET = 'secret';
 
-    // Mock Google endpoints via fetch
-    vi.spyOn(global, 'fetch').mockImplementation(async (url, init) => {
+    // Mock DB behavior
+    usersMock.getUserByGoogleId.mockImplementation((sub: string) =>
+      sub === 'sub-123' ? { ...user } : null,
+    );
+    usersMock.createUserFromGoogle.mockImplementation((p: any) => ({
+      ...user,
+      username: p.name,
+      email: p.email,
+      avatar: p.picture,
+    }));
+    usersMock.getUserByEmail.mockReturnValue(null);
+    usersMock.linkGoogleToUser.mockReturnValue(true);
+    usersMock.updateGoogleUser.mockReturnValue(true);
+    usersMock.getUser.mockImplementation((uuid: string) =>
+      uuid === user.uuid ? { ...user } : null,
+    );
+
+    // Mock Google token + userinfo endpoints
+    vi.spyOn(global, 'fetch').mockImplementation(async (url) => {
       const u = typeof url === 'string' ? url : url.toString();
 
-      // token exchange
       if (u.startsWith('https://oauth2.googleapis.com/token')) {
         return new Response(
           JSON.stringify({

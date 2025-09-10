@@ -88,13 +88,3 @@ app.listen({ host: BACKEND_HOST, port: BACKEND_PORT }, function (err, address) {
     process.exit(1);
   }
 });
-
-// Exporting for testing purposes
-export function buildApp() {
-  const app = fastify({ logger: false });
-  app.register(cookie);
-  app.register(googleSign);
-  app.register(loginRoutes, { prefix: '/api/login' });
-  app.register(userRoutes,   { prefix: '/api/users' });
-  return app;
-}

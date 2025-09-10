@@ -6,7 +6,7 @@ import cookie from '@fastify/cookie';
 // 1) Mock config BEFORE importing app code (safe: no external refs)
 vi.mock('../../utils/config.ts', () => ({
   SECRET: 'testsecret',
-  DATABASE_PATH: 'test.db',
+  DATABASE_PATH: ':memory:',
 }));
 
 // 2) Make updateLastSeen a no-op (preHandler requires it)
@@ -17,7 +17,7 @@ vi.mock('../../hooks/updateLastSeen.ts', () => ({
 // 3) Mock the DB queries INSIDE the factory (no top-level refs!)
 vi.mock('../../db/queries/users.ts', () => {
   return {
-    getUserByUuid: vi.fn(),          // we will grab these later from the imported module
+    getUserByUuid: vi.fn(), // we will grab these later from the imported module
     getUserStats: vi.fn(),
     updateUsername: vi.fn(),
     updatePassword: vi.fn(),
