@@ -1,6 +1,6 @@
 # docker snapshot
 # Root: .
-# Generated: 2025-09-11T07:29:23.249Z
+# Generated: 2025-09-11T08:01:20.517Z
 # Total files: 4
 
 ===== BEGIN docker-compose.yml =====
@@ -8,7 +8,7 @@
 services:
   frontend:
     build:
-      context: ./client
+      context: ./apps/frontend
       dockerfile: Dockerfile.dev
       labels:
         - project=transcendence
@@ -19,7 +19,7 @@ services:
     expose:
       - "5173" # for nginx upstream
     volumes:
-      - ./client:/app
+      - ./apps/frontend:/app
       - /app/node_modules
     networks:
       - devnet
@@ -30,7 +30,7 @@ services:
 
   backend:
     build:
-      context: ./backend
+      context: ./apps/backend
       dockerfile: Dockerfile.dev
       labels:
         - project=transcendence
@@ -41,10 +41,10 @@ services:
     expose:
       - "3001" # for nginx upstream
     volumes:
-      - ./backend:/app
+      - ./apps/backend:/app
       - /app/node_modules
-      - ./backend/data/sqlite:/data # DATABASE_PATH points into /data
-      - ./backend/data/sqlite/uploads:/data/uploads # for user-uploaded files
+      - ./apps/backend/data/sqlite:/data # DATABASE_PATH points into /data
+      - ./apps/backend/data/sqlite/uploads:/data/uploads # for user-uploaded files
     networks:
       - devnet
     logging:
@@ -83,7 +83,7 @@ include:
   - log-management/docker-compose.yml
 ===== END docker-compose.yml =====
 
-===== BEGIN apps/api/Dockerfile.dev =====
+===== BEGIN apps/backend/Dockerfile.dev =====
 FROM node:lts-alpine3.22
 
 WORKDIR /app
@@ -99,9 +99,9 @@ EXPOSE 3001
 
 CMD ["npm", "run", "dev"]
 # or "npm start" for production
-===== END apps/api/Dockerfile.dev =====
+===== END apps/backend/Dockerfile.dev =====
 
-===== BEGIN apps/web/Dockerfile.dev =====
+===== BEGIN apps/frontend/Dockerfile.dev =====
 FROM node:lts-alpine3.22
 
 WORKDIR /app
@@ -116,8 +116,8 @@ RUN npm install --include=dev
 EXPOSE 5173
 
 CMD ["npm", "run", "dev"]
-===== END apps/web/Dockerfile.dev =====
+===== END apps/frontend/Dockerfile.dev =====
 
-===== BEGIN infra/nginx/Dockerfile.dev =====
+===== BEGIN nginx/Dockerfile.dev =====
 FROM nginx:1.29.1-alpine
-===== END infra/nginx/Dockerfile.dev =====
+===== END nginx/Dockerfile.dev =====

@@ -1,9 +1,9 @@
 # package.json snapshot
 # Root: .
-# Generated: 2025-09-11T07:29:22.931Z
+# Generated: 2025-09-11T08:01:20.200Z
 # Total files: 6
 
-===== BEGIN apps/api/package.json =====
+===== BEGIN apps/backend/package.json =====
 {
   "name": "@app/api",
   "version": "1.0.0",
@@ -53,9 +53,9 @@
     "@types/uuid": "^10.0.0"
   }
 }
-===== END apps/api/package.json =====
+===== END apps/backend/package.json =====
 
-===== BEGIN apps/web/package.json =====
+===== BEGIN apps/frontend/package.json =====
 {
   "name": "@app/web",
   "private": true,
@@ -96,7 +96,7 @@
     "node": ">=20.19.0"
   }
 }
-===== END apps/web/package.json =====
+===== END apps/frontend/package.json =====
 
 ===== BEGIN package.json =====
 {

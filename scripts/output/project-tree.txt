@@ -15,7 +15,7 @@
 ├── Makefile
 ├── README.md
 ├── apps
-│   ├── api
+│   ├── backend
 │   │   ├── .env
 │   │   ├── .env.example
 │   │   ├── .gitignore
@@ -107,7 +107,7 @@
 │   │   │   ├── seedSecrets.ts
 │   │   │   └── seedTestData.ts
 │   │   └── vitest.config.ts
-│   ├── web
+│   ├── frontend
 │   │   ├── .env
 │   │   ├── .env.example
 │   │   ├── .gitignore
@@ -183,11 +183,8 @@
 │       ├── UserTunableRules.md
 │       └── UserTunableSettings.md
 ├── eslint.config.js
-├── infra
-│   └── nginx
-│       ├── Dockerfile.dev
-│       └── default.conf
 ├── log-management
+│   ├── .env
 │   ├── .env.example
 │   ├── README.md
 │   ├── docker-compose.yml
@@ -205,6 +202,9 @@
 │   └── logstash
 │       ├── Dockerfile
 │       └── logstash.conf
+├── nginx
+│   ├── Dockerfile.dev
+│   └── default.conf
 ├── package-lock.json
 ├── package.json
 ├── packages
@@ -339,16 +339,20 @@
 │   ├── export-all.sh
 │   ├── export-dockerfiles.mjs
 │   ├── export-folders-to-txt.mjs
+│   ├── export-makefile.mjs
 │   ├── export-packages-json.mjs
 │   ├── export-tree.sh
 │   ├── export-tsconfigs-json.mjs
 │   └── output
 │       ├── .gitkeep
 │       ├── apps__api.txt
+│       ├── apps__backend.txt
+│       ├── apps__frontend.txt
 │       ├── apps__web.txt
 │       ├── dockerfiles-and-compose.txt
 │       ├── infra__nginx.txt
 │       ├── log-management.txt
+│       ├── nginx.txt
 │       ├── packages-json.txt
 │       ├── packages__pong__game-logic.txt
 │       ├── packages__pong__render-babylon.txt
@@ -359,4 +363,4 @@
 ├── tsconfig.build.json
 └── typedoc.json
 
-85 directories, 275 files
+84 directories, 280 files

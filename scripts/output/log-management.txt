@@ -1,5 +1,40 @@
 # log-management
 
+===== BEGIN log-management/.env =====
+# Password for the 'elastic' superuser (at least 6 characters)
+# This user is for logging in to Kibana and cannot be renamed
+ELASTIC_PASSWORD=changeme
+
+# Password for the 'kibana_system' user (at least 6 characters)
+# This user is NOT for logging in
+KIBANA_PASSWORD=changeme
+
+# All parts of the stack should pull the same version 
+STACK_VERSION=9.1.3
+
+# Set to 'basic' or 'trial' to automatically start the 30-day trial
+LICENSE=basic
+#LICENSE=trial
+
+# Port to expose Elasticsearch HTTP API to the host
+ES_PORT=9200
+
+# Port to expose Kibana to the host, this is the web portal
+KIBANA_PORT=5601
+
+# Increase or decrease based on the available host memory (in bytes)
+ES_MEM_LIMIT=1073741824
+KB_MEM_LIMIT=1073741824
+LS_MEM_LIMIT=1073741824
+
+# Key needs to be stored to preserve reports across restarts.
+# Alphanumeric, min 32 chars
+ENCRYPTION_KEY=Jn7FYWRWLAVyiMK4hBYsaxbxAstwZKPF
+
+
+===== END log-management/.env =====
+
+
 ===== BEGIN log-management/.env.example (SKIPPED: non-text) =====
 
 

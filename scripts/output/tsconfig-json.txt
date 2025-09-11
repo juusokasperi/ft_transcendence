@@ -1,9 +1,9 @@
 # tsconfig snapshot
 # Root: .
-# Generated: 2025-09-11T07:29:22.800Z
+# Generated: 2025-09-11T08:01:20.072Z
 # Total files: 9
 
-===== BEGIN apps/api/tsconfig.json =====
+===== BEGIN apps/backend/tsconfig.json =====
 {
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
@@ -17,9 +17,9 @@
   },
   "include": ["index.ts", "db/**/*", "utils/**/*", "**/*.d.ts"]
 }
-===== END apps/api/tsconfig.json =====
+===== END apps/backend/tsconfig.json =====
 
-===== BEGIN apps/web/.tsconfigs/tsconfig.app.json =====
+===== BEGIN apps/frontend/.tsconfigs/tsconfig.app.json =====
 {
   "compilerOptions": {
     "tsBuildInfoFile": "../node_modules/.tmp/tsconfig.app.tsbuildinfo",
@@ -55,9 +55,9 @@
   "include": ["../src"],
   "exclude": ["../dist", "../node_modules"]
 }
-===== END apps/web/.tsconfigs/tsconfig.app.json =====
+===== END apps/frontend/.tsconfigs/tsconfig.app.json =====
 
-===== BEGIN apps/web/.tsconfigs/tsconfig.node.json =====
+===== BEGIN apps/frontend/.tsconfigs/tsconfig.node.json =====
 {
   "compilerOptions": {
     "tsBuildInfoFile": "../node_modules/.tmp/tsconfig.node.tsbuildinfo",
@@ -84,9 +84,9 @@
   },
   "include": ["../vite.config.ts"]
 }
-===== END apps/web/.tsconfigs/tsconfig.node.json =====
+===== END apps/frontend/.tsconfigs/tsconfig.node.json =====
 
-===== BEGIN apps/web/tsconfig.json =====
+===== BEGIN apps/frontend/tsconfig.json =====
 {
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
@@ -98,7 +98,7 @@
   },
   "include": ["src", "types", "vite-env.d.ts", "vite.config.ts"]
 }
-===== END apps/web/tsconfig.json =====
+===== END apps/frontend/tsconfig.json =====
 
 ===== BEGIN packages/pong/game-logic/tsconfig.json =====
 {

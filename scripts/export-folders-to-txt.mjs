@@ -13,9 +13,9 @@ const OUTPUT_DIR = path.join(ROOT, 'scripts', 'output');
 
 // Default targets (override with --dirs)
 const DEFAULT_DIRS = [
-  "apps/api",
-  "apps/web",
-  "infra/nginx",
+  "apps/backend",
+  "apps/frontend",
+  "nginx",
   "log-management",
   "packages/pong/game-logic",
   "packages/pong/render-babylon",

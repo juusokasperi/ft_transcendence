@@ -3859,7 +3859,7 @@ import '@babylonjs/core/Rendering/depthRendererSceneComponent';
 import '@babylonjs/core/Animations/animatable';
 
 export async function bootstrapPong(canvas: HTMLCanvasElement) {
-  const { createPongApp } = await import('../../../../../../../apps/web/src/game/index.ts');
+  const { createPongApp } = await import('../../../../../../../apps/frontend/src/game/index.ts');
   const app = await createPongApp({ mode: 'local', canvas });
   app.start();
   return app;

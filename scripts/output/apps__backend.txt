@@ -1,0 +1,4339 @@
+# apps/backend
+
+===== BEGIN apps/backend/.env =====
+SECRET=yourSecretForJWTToken
+FRONTEND_URL=localhost:5173
+DATABASE_PATH=./data/sqlite/db.sqlite
+BACKEND_PORT=3001
+BACKEND_HOST=0.0.0.0
+UPLOAD_DIR=./data/sqlite/uploads
+===== END apps/backend/.env =====
+
+
+===== BEGIN apps/backend/.env.example (SKIPPED: non-text) =====
+
+
+===== BEGIN apps/backend/.gitignore (SKIPPED: non-text) =====
+
+
+===== BEGIN apps/backend/data/.umzug.json =====
+[
+  "001-create-users.ts",
+  "002-create-friends.ts",
+  "003-create-games.ts",
+  "004-create-gameplayers.ts",
+  "005-create-pending-users.ts",
+  "006-create-password-resets.ts",
+  "007-create-users-delete.ts"
+]
+===== END apps/backend/data/.umzug.json =====
+
+
+===== BEGIN apps/backend/data/sqlite/db.sqlite (SKIPPED: non-text) =====
+
+
+===== BEGIN apps/backend/data/sqlite/db.sqlite-shm (SKIPPED: non-text) =====
+
+
+===== BEGIN apps/backend/data/sqlite/db.sqlite-wal (SKIPPED: non-text) =====
+
+
+===== BEGIN apps/backend/db/client.ts =====
+import Database from 'better-sqlite3';
+import type { Database as DatabaseType } from 'better-sqlite3';
+import { DATABASE_PATH } from '../utils/config.ts';
+
+const db: DatabaseType = new Database(DATABASE_PATH);
+
+db.pragma('journal_mode = WAL'); // Write-Ahead Logging Mode, allows reads while writes happen
+db.pragma('synchronous = NORMAL'); // Doesn't wait for OS confirm about writes
+db.pragma('cache_size = 512000'); // Uses 512MB cache for memory instead of default 2MB
+db.pragma('temp_store = memory'); // Temporary tables/sorts happen in RAM instead of disk.
+
+export default db;
+
+===== END apps/backend/db/client.ts =====
+
+
+===== BEGIN apps/backend/db/migrations.ts =====
+import umzug from './umzug.ts';
+
+export const runMigrations = async () => {
+  const migrations = await umzug.up();
+  console.log('Migrations up to date', {
+    files: migrations.map((mig) => mig.name),
+  });
+};
+
+export const rollbackMigration = async () => {
+  const migrations = await umzug.down();
+  if (migrations.length == 0) {
+    console.log('No migrations to roll back to.');
+  } else {
+    migrations.forEach((migration) => {
+      console.log('Rolled back migration', migration.name);
+    });
+  }
+};
+
+===== END apps/backend/db/migrations.ts =====
+
+
+===== BEGIN apps/backend/db/migrations/001-create-users.ts =====
+import type { Database } from 'better-sqlite3';
+
+/*
+	Instead of TEXT we could use VARCHAR(length), but SQLite treats
+	VARCHAR's as TEXT anyway and just ignores the max length
+
+	google_id is needed only for Google Sign-In. If we end up not
+	implemeting it, we can also add NOT NULL to password_hash.
+*/
+export async function up(db: Database) {
+  db.exec(`
+	CREATE TABLE IF NOT EXISTS Users (
+	uuid TEXT PRIMARY KEY NOT NULL UNIQUE,
+	username TEXT NOT NULL COLLATE NOCASE,
+	email TEXT NOT NULL COLLATE NOCASE,
+	password_hash TEXT,
+	tfa	BOOLEAN NOT NULL DEFAULT FALSE,
+	avatar TEXT,
+	ranking INTEGER NOT NULL DEFAULT 1000,
+	created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+	last_seen DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+	google_id TEXT UNIQUE,
+	UNIQUE(username),
+	UNIQUE(email),
+	CHECK (password_hash IS NOT NULL OR google_id IS NOT NULL)
+	);`);
+}
+
+export async function down(db: Database) {
+  db.exec(`DROP TABLE IF EXISTS Users;`);
+}
+
+===== END apps/backend/db/migrations/001-create-users.ts =====
+
+
+===== BEGIN apps/backend/db/migrations/002-create-friends.ts =====
+import type { Database } from 'better-sqlite3';
+
+/*
+	If either of the friends is deleted from the Users -table,
+	the Friend row will be deleted from this table (ON DELETE CASCADE)
+
+	friend_1_uuid is the sender of friend request
+	friend_2_uuid is the receiver (needs to accept)
+
+	Constraints make sure user cannot befriend themselves and that
+	all friendships are unique.
+*/
+export async function up(db: Database) {
+  db.exec(`
+	CREATE TABLE IF NOT EXISTS Friends (
+	id INTEGER PRIMARY KEY AUTOINCREMENT,
+	friend_1_uuid TEXT NOT NULL,
+	friend_2_uuid TEXT NOT NULL,
+	created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+	accepted BOOLEAN NOT NULL DEFAULT FALSE,
+	FOREIGN KEY (friend_1_uuid) REFERENCES Users(uuid) ON DELETE CASCADE,
+	FOREIGN KEY (friend_2_uuid) REFERENCES Users(uuid) ON DELETE CASCADE,
+	CONSTRAINT no_self_friend CHECK (friend_1_uuid != friend_2_uuid)
+	);`);
+
+  db.exec(`
+	CREATE UNIQUE INDEX IF NOT EXISTS unique_friendship
+	ON Friends (
+		CASE WHEN friend_1_uuid < friend_2_uuid
+			THEN friend_1_uuid
+			ELSE friend_2_uuid END,
+		CASE WHEN friend_1_uuid < friend_2_uuid
+			THEN friend_2_uuid
+			ELSE friend_1_uuid END
+	);`);
+}
+
+export async function down(db: Database) {
+  db.exec(`DROP INDEX IF EXISTS unique_friendship;`);
+  db.exec(`DROP TABLE IF EXISTS Friends;`);
+}
+
+===== END apps/backend/db/migrations/002-create-friends.ts =====
+
+
+===== BEGIN apps/backend/db/migrations/003-create-games.ts =====
+import type { Database } from 'better-sqlite3';
+
+export async function up(db: Database) {
+  db.exec(`
+	CREATE TABLE IF NOT EXISTS Games (
+	id INTEGER PRIMARY KEY AUTOINCREMENT,
+	team_1_score INTEGER NOT NULL,
+	team_2_score INTEGER NOT NULL,
+	created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+	);`);
+}
+
+export async function down(db: Database) {
+  db.exec(`DROP TABLE IF EXISTS Games;`);
+}
+
+===== END apps/backend/db/migrations/003-create-games.ts =====
+
+
+===== BEGIN apps/backend/db/migrations/004-create-gameplayers.ts =====
+import type { Database } from 'better-sqlite3';
+
+export async function up(db: Database) {
+  db.exec(`
+	CREATE TABLE IF NOT EXISTS GamePlayers (
+	id INTEGER PRIMARY KEY AUTOINCREMENT,
+	game_id INTEGER NOT NULL,
+	user_uuid TEXT,
+	team_number INTEGER NOT NULL CHECK(team_number IN (1, 2)),
+	FOREIGN KEY (game_id) REFERENCES Games(id) ON DELETE CASCADE,
+	FOREIGN KEY (user_uuid) REFERENCES Users(uuid) ON DELETE SET NULL
+	);`);
+}
+
+export async function down(db: Database) {
+  db.exec(`DROP TABLE IF EXISTS GamePlayers;`);
+}
+
+===== END apps/backend/db/migrations/004-create-gameplayers.ts =====
+
+
+===== BEGIN apps/backend/db/migrations/005-create-pending-users.ts =====
+import type { Database } from 'better-sqlite3';
+
+export async function up(db: Database) {
+  db.exec(`
+	CREATE TABLE IF NOT EXISTS PendingUsers (
+	id INTEGER PRIMARY KEY AUTOINCREMENT,
+	username TEXT NOT NULL UNIQUE,
+	email TEXT NOT NULL UNIQUE,
+	password_hash TEXT NOT NULL,
+	confirmation_token TEXT NOT NULL UNIQUE,
+	expires_at DATETIME NOT NULL,
+	created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+	);`);
+
+  db.exec(`CREATE INDEX idx_unconfirmed_users ON PendingUsers(expires_at)`);
+}
+
+export async function down(db: Database) {
+  db.exec(`DROP TABLE IF EXISTS PendingUsers;`);
+}
+
+===== END apps/backend/db/migrations/005-create-pending-users.ts =====
+
+
+===== BEGIN apps/backend/db/migrations/006-create-password-resets.ts =====
+import type { Database } from 'better-sqlite3';
+
+export async function up(db: Database) {
+  db.exec(`
+	CREATE TABLE IF NOT EXISTS PasswordResets (
+	id INTEGER PRIMARY KEY AUTOINCREMENT,
+	user_uuid TEXT NOT NULL UNIQUE,
+	reset_token TEXT NOT NULL UNIQUE,
+	expires_at DATETIME NOT NULL,
+	created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+	FOREIGN KEY (user_uuid) REFERENCES Users(uuid) ON DELETE CASCADE
+	);`);
+
+  db.exec(`CREATE INDEX idx_password_resets ON PasswordResets(reset_token)`);
+}
+
+export async function down(db: Database) {
+  db.exec(`DROP TABLE IF EXISTS PasswordResets;`);
+}
+
+===== END apps/backend/db/migrations/006-create-password-resets.ts =====
+
+
+===== BEGIN apps/backend/db/migrations/007-create-users-delete.ts =====
+import type { Database } from 'better-sqlite3';
+
+export async function up(db: Database) {
+  db.exec(`
+	CREATE TABLE IF NOT EXISTS UsersForDelete (
+	id INTEGER PRIMARY KEY AUTOINCREMENT,
+	user_uuid TEXT NOT NULL UNIQUE,
+	confirmation_token TEXT NOT NULL UNIQUE,
+	expires_at DATETIME NOT NULL,
+	created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+	FOREIGN KEY (user_uuid) REFERENCES Users(uuid) ON DELETE CASCADE
+	);`);
+
+  db.exec(`CREATE INDEX idx_delete_tokens ON UsersForDelete(confirmation_token)`);
+}
+
+export async function down(db: Database) {
+  db.exec(`DROP TABLE IF EXISTS UsersForDelete;`);
+}
+
+===== END apps/backend/db/migrations/007-create-users-delete.ts =====
+
+
+===== BEGIN apps/backend/db/migrations/008-create-user-settings.ts =====
+import type { Database } from 'better-sqlite3';
+
+export async function up(db: Database) {
+  db.exec(`
+	CREATE TABLE IF NOT EXISTS UserProfileSettings (
+	user_uuid TEXT PRIMARY KEY NOT NULL UNIQUE,
+	paddle_color TEXT NOT NULL DEFAULT '#ffffff' CHECK(paddle_color LIKE '#______'),
+	color_blind_mode INTEGER NOT NULL DEFAULT 0 CHECK(color_blind_mode IN (0, 1, 2, 3, 4)),
+	photo_sensitive_mode INTEGER NOT NULL DEFAULT 0 CHECK(photo_sensitive_mode IN (0, 1, 2)),
+	FOREIGN KEY (user_uuid) REFERENCES Users(uuid) ON DELETE CASCADE
+	);`);
+}
+
+export async function down(db: Database) {
+  db.exec(`DROP TABLE IF EXISTS UserProfileSettings;`);
+}
+
+===== END apps/backend/db/migrations/008-create-user-settings.ts =====
+
+
+===== BEGIN apps/backend/db/queries/friends.ts =====
+import db from '../client.ts';
+import type { PublicUser, UserStats } from '../../types/types.ts';
+import type { PublicUserDb, UserStatsDb } from '../../types/dbtypes.ts';
+
+export function getFriends(user1Uuid: string): UserStats[] {
+  try {
+    const results = db
+      .prepare(
+        `
+		SELECT
+			u.username, u.uuid, u.email, u.avatar, u.ranking, u.created_at,
+			COUNT(g.id) as total_games,
+			COUNT(CASE
+				WHEN (gp.team_number = 1 AND g.team_1_score > g.team_2_score)
+				  OR (gp.team_number = 2 AND g.team_2_score > g.team_1_score)
+				THEN 1 END) as wins,
+			COUNT(CASE
+				WHEN (gp.team_number = 1 AND g.team_1_score < g.team_2_score)
+				  OR (gp.team_number = 2 AND g.team_2_score < g.team_1_score)
+				THEN 1 END) as losses,
+			CASE
+				WHEN u.last_seen >= datetime('now', '-5 minutes') THEN 1
+				ELSE 0
+			END as online
+			FROM Friends f
+			JOIN Users u on u.uuid = (
+				CASE
+					WHEN f.friend_1_uuid = ?
+						THEN f.friend_2_uuid
+					ELSE f.friend_1_uuid
+				END)
+			LEFT JOIN GamePlayers gp on u.uuid = gp.user_uuid
+			LEFT JOIN Games g on gp.game_id = g.id
+			WHERE (f.friend_1_uuid = ? OR f.friend_2_uuid = ?) AND f.accepted = true
+			GROUP BY u.uuid
+		`,
+      )
+      .all(user1Uuid, user1Uuid, user1Uuid) as UserStatsDb[];
+    if (!results || results.length === 0) return [];
+    return results.map((dbUser) => ({
+      username: dbUser.username,
+      uuid: dbUser.uuid,
+      email: dbUser.email,
+      avatar: dbUser.avatar,
+      ranking: dbUser.ranking,
+      createdAt: dbUser.created_at,
+      wins: dbUser.wins,
+      losses: dbUser.losses,
+      totalGames: dbUser.total_games,
+      online: !!dbUser.online,
+    }));
+  } catch (error) {
+    return [];
+  }
+}
+
+// Pending requests sent to me (I can accept / decline)
+export function getPendingFriendRequestsReceived(user1Uuid: string): PublicUser[] {
+  try {
+    const results = db
+      .prepare(
+        `
+		SELECT
+			u.username, u.uuid, u.avatar, u.ranking
+			FROM Friends f
+			JOIN Users u on u.uuid = f.friend_1_uuid
+			WHERE f.friend_2_uuid = ? AND f.accepted = false
+		`,
+      )
+      .all(user1Uuid) as PublicUserDb[];
+    if (!results || results.length === 0) return [];
+    return results.map((userInDb) => ({
+      username: userInDb.username,
+      uuid: userInDb.uuid,
+      avatar: userInDb.avatar,
+      ranking: userInDb.ranking,
+      createdAt: userInDb.created_at,
+    }));
+  } catch (error) {
+    return [];
+  }
+}
+
+// Pending requests sent by me (waiting for response)
+export function getPendingFriendRequestsSent(user1Uuid: string): PublicUser[] {
+  try {
+    const results = db
+      .prepare(
+        `
+		SELECT
+			u.username, u.uuid, u.avatar, u.ranking
+			FROM Friends f
+			JOIN Users u on u.uuid = f.friend_2_uuid
+			WHERE f.friend_1_uuid = ? AND f.accepted = false
+		`,
+      )
+      .all(user1Uuid) as PublicUserDb[];
+    if (!results || results.length === 0) return [];
+    return results.map((userInDb) => ({
+      username: userInDb.username,
+      uuid: userInDb.uuid,
+      avatar: userInDb.avatar,
+      ranking: userInDb.ranking,
+      createdAt: userInDb.created_at,
+    }));
+  } catch (error) {
+    return [];
+  }
+}
+
+export function respondToFriendReq(recipient: string, sender: string, accept: boolean): boolean {
+  try {
+    let result;
+    if (accept === true) {
+      result = db
+        .prepare(
+          `
+				UPDATE Friends
+				SET accepted = true
+				WHERE	friend_1_uuid = ? AND friend_2_uuid = ? AND accepted = false
+				`,
+        )
+        .run(sender, recipient);
+    } else {
+      result = db
+        .prepare(
+          `
+				DELETE FROM Friends
+				WHERE	friend_1_uuid = ? AND friend_2_uuid = ? AND accepted = false
+				`,
+        )
+        .run(sender, recipient);
+    }
+    return result.changes === 1;
+  } catch (error) {
+    return false;
+  }
+}
+
+export function addFriend(user1Uuid: string, user2Uuid: string): boolean {
+  try {
+    const result = db
+      .prepare(
+        `
+			INSERT INTO Friends (friend_1_uuid, friend_2_uuid)
+			VALUES (?, ?)
+			`,
+      )
+      .run(user1Uuid, user2Uuid);
+    return result.changes === 1;
+  } catch (error) {
+    return false;
+  }
+}
+
+export function deleteFriend(user1Uuid: string, user2Uuid: string): boolean {
+  try {
+    const result = db
+      .prepare(
+        `
+			DELETE FROM Friends
+			WHERE	(friend_1_uuid = ? AND friend_2_uuid = ?)
+				OR	(friend_1_uuid = ? AND friend_2_uuid = ?)
+			`,
+      )
+      .run(user1Uuid, user2Uuid, user2Uuid, user1Uuid);
+    return result.changes === 1;
+  } catch (error) {
+    return false;
+  }
+}
+
+===== END apps/backend/db/queries/friends.ts =====
+
+
+===== BEGIN apps/backend/db/queries/games.ts =====
+import db from '../client.ts';
+import type { GameWithPlayers, PublicUser } from '../../types/types.ts';
+import type { GameDb, GamePlayerDb } from '../../types/dbtypes.ts';
+
+function addGameHelper(team1Score: number, team2Score: number): number | null {
+  try {
+    const result = db
+      .prepare(
+        `
+			INSERT INTO Games (team_1_score, team_2_score)
+			VALUES (?, ?)
+			`,
+      )
+      .run(team1Score, team2Score);
+    return result.lastInsertRowid as number;
+  } catch (error) {
+    return null;
+  }
+}
+
+function addGamePlayerHelper(gameId: number, uuid: string, team: number): number | null {
+  try {
+    const result = db
+      .prepare(
+        `
+			INSERT INTO GamePlayers (game_id, user_uuid, team_number)
+			VALUES (?, ?, ?)
+			`,
+      )
+      .run(gameId, uuid, team);
+    return result.lastInsertRowid as number;
+  } catch (error) {
+    return null;
+  }
+}
+
+export function addGame(
+  team1Score: number,
+  team2Score: number,
+  team1Player: string,
+  team2Player: string,
+): number | null;
+export function addGame(
+  team1Score: number,
+  team2Score: number,
+  team1Players: string[],
+  team2Players: string[],
+): number | null;
+export function addGame(
+  team1Score: number,
+  team2Score: number,
+  team1: string | string[],
+  team2: string | string[],
+): number | null {
+  const transaction = db.transaction(() => {
+    const gameId = addGameHelper(team1Score, team2Score);
+    if (!gameId) throw new Error('Failed to create game');
+
+    const team1Players = Array.isArray(team1) ? team1 : [team1];
+    const team2Players = Array.isArray(team2) ? team2 : [team2];
+
+    for (const playerId of team1Players) {
+      const result = addGamePlayerHelper(gameId, playerId, 1);
+      if (!result) throw new Error(`Failed to add team 1 player: ${playerId}`);
+    }
+    for (const playerId of team2Players) {
+      const result = addGamePlayerHelper(gameId, playerId, 2);
+      if (!result) throw new Error(`Failed to add team 2 player: ${playerId}`);
+    }
+
+    return gameId;
+  });
+
+  try {
+    return transaction();
+  } catch (error) {
+    return null;
+  }
+}
+
+export function getGameWithPlayers(gameId: number): GameWithPlayers | null {
+  try {
+    const game = db.prepare(`SELECT * FROM Games where id = ?`).get(gameId) as GameDb | null;
+    if (!game) return null;
+    const players = db
+      .prepare(
+        `
+			SELECT
+				gp.team_number,
+				u.uuid,
+				u.username,
+				u.avatar,
+				u.ranking,
+				u.created_at
+			FROM GamePlayers gp
+			LEFT JOIN Users u on gp.user_uuid = u.uuid
+			WHERE gp.game_id = ?
+			ORDER BY gp.team_number, gp.id
+			`,
+      )
+      .all(gameId) as GamePlayerDb[];
+
+    const team1Players = players
+      .filter((player) => player.team_number === 1)
+      .map((player) =>
+        player.uuid
+          ? {
+              uuid: player.uuid,
+              username: player.username,
+              avatar: player.avatar,
+              ranking: player.ranking,
+              createdAt: player.created_at,
+            }
+          : null,
+      ) as (PublicUser | null)[];
+    const team2Players = players
+      .filter((player) => player.team_number === 2)
+      .map((player) =>
+        player.uuid
+          ? {
+              uuid: player.uuid,
+              username: player.username,
+              avatar: player.avatar,
+              ranking: player.ranking,
+              createdAt: player.created_at,
+            }
+          : null,
+      ) as (PublicUser | null)[];
+
+    return {
+      id: game.id,
+      team1Score: game.team_1_score,
+      team2Score: game.team_2_score,
+      players: {
+        team1: team1Players,
+        team2: team2Players,
+      },
+      playedAt: game.created_at,
+    };
+  } catch (error) {
+    return null;
+  }
+}
+
+===== END apps/backend/db/queries/games.ts =====
+
+
+===== BEGIN apps/backend/db/queries/passwordResets.ts =====
+import db from '../client.ts';
+
+export function clearResetTokensForId(uuid: string): void {
+  db.prepare(`DELETE FROM PasswordResets WHERE user_uuid = ?`).run(uuid);
+}
+
+export function createResetToken(uuid: string, resetToken: string): Boolean {
+  const result = db
+    .prepare(
+      `
+		INSERT INTO PasswordResets (user_uuid, reset_token, expires_at)
+		VALUES (?, ?, datetime('now', '+30 minutes'))
+		`,
+    )
+    .run(uuid, resetToken);
+
+  return result.changes === 1;
+}
+
+export function clearExpiredTokens(): void {
+  db.prepare(`DELETE FROM PasswordResets WHERE expires_at < datetime('now')`).run();
+}
+
+export function findAndClearResetToken(resetToken: string): string | undefined {
+  const transaction = db.transaction(() => {
+    const findResult = db
+      .prepare(
+        `
+			SELECT user_uuid FROM PasswordResets
+			WHERE reset_token = ? AND expires_at > datetime('now')
+		`,
+      )
+      .get(resetToken) as { user_uuid: string } | undefined;
+    if (!findResult || !findResult.user_uuid) throw new Error('Token not found or expired');
+    const deleteResult = db
+      .prepare(`DELETE FROM PasswordResets WHERE reset_token = ?`)
+      .run(resetToken);
+    if (deleteResult.changes === 0) throw new Error('Failed to delete token');
+    return findResult.user_uuid;
+  });
+
+  try {
+    return transaction();
+  } catch {
+    return undefined;
+  }
+}
+
+===== END apps/backend/db/queries/passwordResets.ts =====
+
+
+===== BEGIN apps/backend/db/queries/unconfirmedUsers.ts =====
+import db from '../client.ts';
+import type { PendingUserDb } from '../../types/dbtypes.ts';
+import { addUser } from './users.ts';
+
+export function checkUserExists(username: string, email: string): boolean {
+  const result = db
+    .prepare(
+      `
+		SELECT 'confirmed' as source, username, email FROM Users
+		WHERE username = ? or email = ?
+		UNION
+		SELECT 'pending' as source, username, email FROM PendingUsers
+		WHERE username = ? or email = ?
+		`,
+    )
+    .get(username, email, username, email);
+  return result ? true : false;
+}
+
+export function getPendingUserByToken(token: string): PendingUserDb | undefined {
+  const user = db
+    .prepare(
+      `
+		SELECT username, email, password_hash, confirmation_token, expires_at, created_at
+		FROM PendingUsers WHERE confirmation_token = ?
+		`,
+    )
+    .get(token) as PendingUserDb | undefined;
+  return user;
+}
+
+export function addUserToPending(
+  username: string,
+  email: string,
+  passwordHash: string,
+  confirmationToken: string,
+): boolean {
+  const result = db
+    .prepare(
+      `
+		INSERT INTO PendingUsers (username, email, password_hash, confirmation_token, expires_at)
+		VALUES (?, ?, ?, ?, datetime('now', '+24 hours'))
+		`,
+    )
+    .run(username, email, passwordHash, confirmationToken);
+  return result.changes === 1;
+}
+
+export function deleteExpiredUsers(): void {
+  db.prepare(`DELETE FROM PendingUsers WHERE expires_at < datetime('now')`).run();
+}
+
+export function removeFromPending(token: string): boolean {
+  const result = db.prepare(`DELETE FROM PendingUsers WHERE confirmation_token = ?`).run(token);
+  return result.changes > 0;
+}
+
+export function createSettings(uuid: string): Boolean {
+  const result = db
+    .prepare(
+      `INSERT INTO UserProfileSettings (user_uuid)
+		VALUES (?)`,
+    )
+    .run(uuid);
+  return result.changes === 1;
+}
+
+export function confirmUser(token: string, uuid: string, user: PendingUserDb): Boolean {
+  const transaction = db.transaction(() => {
+    if (!removeFromPending(token)) throw new Error();
+    const addResult = addUser(uuid, user.username, user.password_hash, user.email);
+    const settingsResult = createSettings(uuid);
+    if (!addResult || !settingsResult) throw new Error();
+    return true;
+  });
+  try {
+    return transaction();
+  } catch (error) {
+    return false;
+  }
+}
+
+===== END apps/backend/db/queries/unconfirmedUsers.ts =====
+
+
+===== BEGIN apps/backend/db/queries/userDelete.ts =====
+import db from '../client.ts';
+
+export function deleteUser(uuid: string): Boolean {
+  const result = db.prepare('DELETE FROM Users WHERE uuid = ?').run(uuid);
+  return result.changes === 1;
+}
+
+export function markUserForDelete(uuid: string, confirmationToken: string): Boolean {
+  db.prepare(`DELETE From UsersForDelete WHERE user_uuid = ?`).run(uuid);
+  const result = db
+    .prepare(
+      `
+		INSERT INTO UsersForDelete (user_uuid, confirmation_token, expires_at)
+		VALUES (?, ?, datetime('now', '+24 hours'))
+		`,
+    )
+    .run(uuid, confirmationToken);
+  if (!result) return false;
+  return true;
+}
+
+export function removeTokenFromDelete(confirmationToken: string): void {
+  db.prepare(`DELETE From UsersForDelete WHERE confirmation_token = ?`).run(confirmationToken);
+}
+
+export function findUserToDeleteAndClear(confirmationToken: string): string | undefined {
+  const transaction = db.transaction(() => {
+    const findResult = db
+      .prepare(
+        `
+			SELECT user_uuid FROM UsersForDelete
+			WHERE confirmation_token = ? AND expires_at > datetime('now')
+		`,
+      )
+      .get(confirmationToken) as { user_uuid: string } | undefined;
+    if (!findResult || !findResult.user_uuid) throw new Error('Token not found or expired');
+    const deleteResult = db
+      .prepare(`DELETE FROM UsersForDelete WHERE confirmation_token = ?`)
+      .run(confirmationToken);
+    if (deleteResult.changes === 0) throw new Error('Failed to delete token');
+    return findResult.user_uuid;
+  });
+
+  try {
+    return transaction();
+  } catch {
+    return undefined;
+  }
+}
+
+===== END apps/backend/db/queries/userDelete.ts =====
+
+
+===== BEGIN apps/backend/db/queries/users.ts =====
+import db from '../client.ts';
+import type { User, UserStats, UserSettings } from '../../types/types.ts';
+import type { UserDb, UserStatsDb, UserSettingsDb } from '../../types/dbtypes.ts';
+import crypto from 'crypto';
+
+export function getUserByUuid(uuid: string): User | undefined {
+  const user = db.prepare('SELECT * FROM Users where uuid = ?').get(uuid) as UserDb | null;
+  if (!user) return undefined;
+  return {
+    uuid: user.uuid,
+    username: user.username,
+    email: user.email,
+    passwordHash: user.password_hash,
+    tfa: user.tfa,
+    avatar: user.avatar,
+    ranking: user.ranking,
+    createdAt: user.created_at,
+    googleId: user.google_id,
+  };
+}
+
+export function getUserByUsernameOrEmail(username: string, email: string): User | undefined {
+  const user = db
+    .prepare('SELECT * FROM Users where username = ? OR email = ?')
+    .get(username, email) as UserDb | null;
+  if (!user) return undefined;
+  return {
+    uuid: user.uuid,
+    username: user.username,
+    email: user.email,
+    passwordHash: user.password_hash,
+    tfa: user.tfa,
+    avatar: user.avatar,
+    ranking: user.ranking,
+    createdAt: user.created_at,
+    googleId: user.google_id,
+  };
+}
+
+export function getUserByUsername(username: string): User | undefined {
+  const user = db.prepare('SELECT * FROM Users where username = ?').get(username) as UserDb | null;
+  if (!user) return undefined;
+  return {
+    uuid: user.uuid,
+    username: user.username,
+    email: user.email,
+    passwordHash: user.password_hash,
+    tfa: user.tfa,
+    avatar: user.avatar,
+    ranking: user.ranking,
+    createdAt: user.created_at,
+    googleId: user.google_id,
+  };
+}
+
+export function getUserByEmail(email: string): User | undefined {
+  const user = db.prepare('SELECT * FROM Users WHERE email = ?').get(email) as UserDb | null;
+  if (!user) return undefined;
+  return {
+    uuid: user.uuid,
+    username: user.username,
+    email: user.email,
+    passwordHash: user.password_hash,
+    tfa: user.tfa,
+    avatar: user.avatar,
+    ranking: user.ranking,
+    createdAt: user.created_at,
+    googleId: user.google_id,
+  };
+}
+
+export function getUserByGoogleId(googleId: string): User | undefined {
+  const user = db.prepare('SELECT * FROM Users WHERE google_id = ?').get(googleId) as UserDb | null;
+  if (!user) return undefined;
+  return {
+    uuid: user.uuid,
+    username: user.username,
+    email: user.email,
+    passwordHash: user.password_hash,
+    tfa: user.tfa,
+    avatar: user.avatar,
+    ranking: user.ranking,
+    createdAt: user.created_at,
+    googleId: user.google_id,
+  };
+}
+
+export function getUser(identifier: string): User | undefined {
+  const user = db
+    .prepare(
+      `SELECT * FROM Users WHERE uuid = ? OR username = ? OR email = ?
+		`,
+    )
+    .get(identifier, identifier, identifier) as UserDb | null;
+  if (!user) return undefined;
+  return {
+    uuid: user.uuid,
+    username: user.username,
+    email: user.email,
+    passwordHash: user.password_hash,
+    tfa: user.tfa,
+    avatar: user.avatar,
+    ranking: user.ranking,
+    createdAt: user.created_at,
+    googleId: user.google_id,
+  };
+}
+
+export function addUser(
+  uuid: string,
+  username: string,
+  passwordHash: string,
+  email: string,
+  avatar?: string,
+): boolean {
+  try {
+    const result = db
+      .prepare(
+        `
+					INSERT INTO Users (uuid, username, password_hash, email, avatar)
+					VALUES (?, ?, ?, ?, ?)
+					`,
+      )
+      .run(uuid, username, passwordHash, email, avatar ? avatar : null);
+    return result.changes === 1;
+  } catch (error) {
+    return false;
+  }
+}
+
+// check it later
+function ensureUniqueUsername(preferred: string): string {
+  const base =
+    (preferred || 'user')
+      .toLowerCase()
+      .replace(/[^a-z0-9_]+/g, '_')
+      .replace(/^_+|_+$/g, '')
+      .slice(0, 24) || 'user';
+  let candidate = base;
+  let n = 0;
+  while (db.prepare('SELECT 1 FROM Users WHERE username = ?').get(candidate)) {
+    n += 1;
+    candidate = `${base}_${n}`;
+  }
+  return candidate;
+}
+
+export function createUserFromGoogle(profile: {
+  googleId: string;
+  email?: string;
+  name?: string;
+  picture?: string;
+}): User | undefined {
+  try {
+    const uuid = crypto.randomUUID();
+    const username = ensureUniqueUsername(profile.name ?? profile.email?.split('@')[0] ?? 'user');
+    db.prepare(
+      `INSERT INTO Users (uuid, username, email, avatar, google_id)
+       VALUES (?, ?, ?, ?, ?)`,
+    ).run(uuid, username, profile.email ?? null, profile.picture ?? null, profile.googleId);
+    return getUser(uuid);
+  } catch {
+    return undefined;
+  }
+}
+
+// Update existing Google user on each login (soft-sync)
+export function updateGoogleUser(profile: {
+  googleId: string;
+  email?: string; // Google OIDC email (usually verified)
+  name?: string; // Google 'name'
+  picture?: string; // Google 'picture' (URL)
+}): boolean {
+  try {
+    // Soft policy:
+    // - username: only fill if empty/NULL
+    // - avatar:   only fill if empty/NULL
+    // - email:    only fill if empty/NULL (to avoid UNIQUE collisions / overriding user change)
+    const res = db
+      .prepare(
+        `
+      UPDATE Users
+      SET
+        username  = CASE WHEN (username IS NULL OR username = '')
+                         THEN COALESCE(?, username)
+                         ELSE username END,
+        avatar    = CASE WHEN (avatar   IS NULL OR avatar   = '')
+                         THEN COALESCE(?, avatar)
+                         ELSE avatar   END,
+        email     = CASE WHEN (email    IS NULL OR email    = '')
+                         THEN COALESCE(?, email)
+                         ELSE email    END,
+        last_seen = CURRENT_TIMESTAMP
+      WHERE google_id = ?
+    `,
+      )
+      .run(profile.name ?? null, profile.picture ?? null, profile.email ?? null, profile.googleId);
+    return res.changes === 1;
+  } catch {
+    return false;
+  }
+}
+
+// Link Google account to existing user (no overwrite if already linked)
+export function linkGoogleToUser(uuid: string, googleId: string, picture?: string): boolean {
+  try {
+    const res = db
+      .prepare(
+        `
+      UPDATE Users
+      SET
+        google_id = ?,
+        -- backfill ONLY avatar if it's empty
+        avatar = CASE
+          WHEN (avatar IS NULL OR avatar = '')
+            THEN COALESCE(?, avatar)
+          ELSE avatar
+        END,
+        last_seen = CURRENT_TIMESTAMP
+      WHERE uuid = ? AND google_id IS NULL
+    `,
+      )
+      .run(googleId, picture ?? null, uuid);
+
+    return res.changes === 1;
+  } catch {
+    return false;
+  }
+}
+
+// Update or delete avatar (if no avatarPath; then delete)
+export function updateAvatar(uuid: string, avatarPath?: string): boolean {
+  try {
+    let avatar;
+    if (!avatarPath) avatar = null;
+    else avatar = avatarPath;
+    const result = db
+      .prepare(
+        `
+			UPDATE Users
+			SET avatar = ?
+			WHERE uuid = ?`,
+      )
+      .run(avatar, uuid);
+    return result.changes === 1;
+  } catch (error) {
+    return false;
+  }
+}
+
+// Change password
+export function updatePassword(uuid: string, passwordHash: string): boolean {
+  try {
+    const result = db
+      .prepare(
+        `
+			UPDATE Users
+			SET password_hash = ?
+			WHERE uuid = ?`,
+      )
+      .run(passwordHash, uuid);
+    return result.changes === 1;
+  } catch (error) {
+    return false;
+  }
+}
+
+export function updateUsername(uuid: string, username: string): boolean {
+  try {
+    const result = db
+      .prepare(
+        `
+			UPDATE Users
+			SET username = ?
+			WHERE uuid = ?
+			`,
+      )
+      .run(username, uuid);
+    return result.changes === 1;
+  } catch (error) {
+    return false;
+  }
+}
+
+export function getUserStats(): UserStats[];
+export function getUserStats(uuid: string): UserStats | null;
+export function getUserStats(uuid?: string): UserStats[] | UserStats | null {
+  const baseQuery = `
+		SELECT
+			u.username, u.uuid, u.email, u.avatar, u.ranking, u.created_at, u.last_seen,
+			COUNT(g.id) as total_games,
+			COUNT(CASE
+				WHEN (gp.team_number = 1 AND g.team_1_score > g.team_2_score)
+				  OR (gp.team_number = 2 AND g.team_2_score > g.team_1_score)
+				THEN 1 END) as wins,
+			COUNT(CASE
+				WHEN (gp.team_number = 1 AND g.team_1_score < g.team_2_score)
+				  OR (gp.team_number = 2 AND g.team_2_score < g.team_1_score)
+				THEN 1 END) as losses,
+			CASE
+				WHEN u.last_seen >= datetime('now', '-5 minutes') THEN 1
+				ELSE 0
+			END as online
+			FROM Users u
+			LEFT JOIN GamePlayers gp on u.uuid = gp.user_uuid
+			LEFT JOIN Games g on gp.game_id = g.id
+	`;
+
+  // If uuid, get single user stats
+  if (uuid) {
+    const result =
+      (db
+        .prepare(
+          `
+			${baseQuery}
+			WHERE u.uuid = ?
+			GROUP BY u.uuid
+			`,
+        )
+        .get(uuid) as UserStatsDb) || null;
+    if (!result) return null;
+    return {
+      username: result.username,
+      uuid: result.uuid,
+      avatar: result.avatar,
+      ranking: result.ranking,
+      createdAt: result.created_at,
+      wins: result.wins,
+      losses: result.losses,
+      totalGames: result.total_games,
+      online: !!result.online,
+    } as UserStats;
+  }
+
+  // Otherwise, get all user stats
+  const results = db
+    .prepare(
+      `
+			${baseQuery}
+			GROUP BY u.uuid
+			ORDER BY u.ranking DESC
+		`,
+    )
+    .all() as UserStatsDb[];
+  if (!results || results.length === 0) return [];
+  return results.map((dbUser) => ({
+    username: dbUser.username,
+    uuid: dbUser.uuid,
+    avatar: dbUser.avatar,
+    ranking: dbUser.ranking,
+    createdAt: dbUser.created_at,
+    wins: dbUser.wins,
+    losses: dbUser.losses,
+    totalGames: dbUser.total_games,
+    online: !!dbUser.online,
+  })) as UserStats[];
+}
+
+export function updateLastSeen(uuid: string, date?: Date): Boolean {
+  const timestamp = date || new Date();
+  const dateSqliteFormat = timestamp.toISOString().slice(0, 19).replace('T', ' ');
+  const result = db
+    .prepare(
+      `
+		UPDATE Users
+		SET last_seen = ?
+		WHERE uuid = ?
+		`,
+    )
+    .run(dateSqliteFormat, uuid);
+  return result.changes === 1;
+}
+
+export function getUserSettings(uuid: string): UserSettings | null {
+  const result = db
+    .prepare(
+      `
+		SELECT * FROM UserProfileSettings
+		WHERE user_uuid = ?`,
+    )
+    .get(uuid) as UserSettingsDb | null;
+  if (!result) return null;
+  return {
+    uuid: result.user_uuid,
+    paddleColor: result.paddle_color,
+    colorBlindMode: result.color_blind_mode,
+    photoSensitiveMode: result.photo_sensitive_mode,
+  };
+}
+
+export function updateUserSettings(
+  uuid: string,
+  settings: Partial<Omit<UserSettingsDb, 'user_uuid'>>,
+): boolean {
+  const fields: string[] = [];
+  const values: any[] = [];
+  for (const [key, value] of Object.entries(settings)) {
+    fields.push(`${key} = ?`);
+    values.push(value);
+  }
+  if (fields.length === 0) return false;
+  values.push(uuid);
+  const sqlQuery = `
+		UPDATE UserProfileSettings
+		SET ${fields.join(', ')}
+		WHERE user_uuid = ?`;
+  try {
+    const result = db.prepare(sqlQuery).run(...values);
+    return result.changes === 1;
+  } catch (error) {
+    return false;
+  }
+}
+
+===== END apps/backend/db/queries/users.ts =====
+
+
+===== BEGIN apps/backend/db/umzug.ts =====
+import { Umzug, JSONStorage } from 'umzug';
+import path from 'path';
+import db from './client.ts';
+import type { Database } from 'better-sqlite3';
+
+const silentLogger = {
+  info() {},
+  warn() {},
+  error() {},
+  debug() {},
+};
+
+export function createUmzug(database: Database = db, migrationFile?: string): Umzug<any> {
+  return new Umzug({
+    migrations: {
+      glob: path.join(process.cwd(), 'db/migrations/*.ts'),
+      resolve: ({ name, path: migrationPath }) => {
+        if (!migrationPath) throw new Error(`Migration path is undefined for migration: ${name}`);
+        return {
+          name,
+          up: async () => {
+            const migration = await import(migrationPath);
+            return migration.up(database);
+          },
+          down: async () => {
+            const migration = await import(migrationPath);
+            return migration.down(database);
+          },
+        };
+      },
+    },
+    context: database,
+    storage: new JSONStorage({
+      path: migrationFile
+        ? path.join(process.cwd(), migrationFile)
+        : path.join(process.cwd(), 'data/.umzug.json'),
+    }),
+    logger: database === db ? console : silentLogger,
+  });
+}
+
+const umzug = createUmzug();
+
+export default umzug;
+
+===== END apps/backend/db/umzug.ts =====
+
+
+===== BEGIN apps/backend/Dockerfile.dev (SKIPPED: non-text) =====
+
+
+===== BEGIN apps/backend/hooks/auth.ts =====
+import jwt from 'jsonwebtoken';
+import type { FastifyReply, FastifyRequest } from 'fastify';
+import { SECRET } from '../utils/config.ts';
+
+// Checks that the request came with an authorization (for protected routes)
+// and that the token is valid.
+export function authPreHandler(req: FastifyRequest, res: FastifyReply, done: Function) {
+  const authHeader = req.headers.authorization;
+  if (!authHeader || !authHeader.toLowerCase().startsWith('bearer '))
+    return res.status(401).send({ message: 'Missing or invalid token' });
+  const token = authHeader.replace('Bearer ', '');
+  try {
+    const payload = jwt.verify(token, SECRET);
+    req.user = payload;
+    done();
+  } catch {
+    return res.status(401).send({ message: 'Invalid token' });
+  }
+}
+
+export function tokenUuidCheck(req: FastifyRequest, res: FastifyReply, done: Function) {
+  const uuid = req.user?.uuid;
+  if (!uuid) return res.status(403).send({ message: 'No UUID in token' });
+  done();
+}
+
+// Normalizes credentials if present in request
+export function normalizeCredentials(req: FastifyRequest, res: FastifyReply, done: Function) {
+  if (typeof req.body !== 'object' || req.body === null) done();
+
+  const body = req.body as Record<string, unknown>;
+  const normalize = (key: string) => {
+    const val = body[key];
+    if (typeof val === 'string') {
+      const normalizedVal = val.normalize('NFKC');
+      body[key] = normalizedVal.length > 0 ? normalizedVal : undefined;
+    }
+  };
+  normalize('username');
+  normalize('newUsername');
+  normalize('password');
+  normalize('newPassword');
+  normalize('currentPassword');
+  normalize('email');
+  done();
+}
+
+===== END apps/backend/hooks/auth.ts =====
+
+
+===== BEGIN apps/backend/hooks/updateLastSeen.ts =====
+import type { FastifyReply, FastifyRequest } from 'fastify';
+import { updateLastSeen } from '../db/queries/users.ts';
+
+export function updateLastSeenHandler(req: FastifyRequest, res: FastifyReply, done: Function) {
+  try {
+    if (req.user?.uuid) updateLastSeen(req.user.uuid);
+  } catch (error) {
+    console.error('Failed to update last_seen:', error);
+  }
+  done();
+}
+
+===== END apps/backend/hooks/updateLastSeen.ts =====
+
+
+===== BEGIN apps/backend/index.ts =====
+import fastify from 'fastify';
+import cors from '@fastify/cors';
+import fastifyMultipart from '@fastify/multipart';
+import fastifyStatic from '@fastify/static';
+import swagger from '@fastify/swagger';
+import swaggerUi from '@fastify/swagger-ui';
+import cookie from '@fastify/cookie';
+import googleSign from './routes/googleSign.ts';
+import {
+  UPLOAD_DIR,
+  BACKEND_HOST,
+  BACKEND_PORT,
+  FRONTEND_URL,
+  NGINX_PORT,
+  swaggerConfig,
+} from './utils/config.ts';
+import { userRoutes } from './routes/users.ts';
+import { loginRoutes } from './routes/login.ts';
+import { logoutRoutes } from './routes/logout.ts';
+import { signupRoutes } from './routes/signup.ts';
+import { friendsRoutes } from './routes/friends.ts';
+import { resetPasswordRoutes } from './routes/resetPassword.ts';
+import { runMigrations } from './db/migrations.ts';
+import { prettierErrorMessages } from './utils/errorHandler.ts';
+import './types/types.ts';
+
+const app = fastify({
+  logger: true,
+  // trustProxy: true,
+  ajv: {
+    customOptions: { allErrors: true, removeAdditional: true },
+  },
+});
+
+app.setErrorHandler(prettierErrorMessages);
+
+await app.register(swagger, swaggerConfig);
+await app.register(cookie);
+await app.register(googleSign);
+
+await app.register(cors, {
+  origin: (origin, cb) => {
+    // Allow direct FE and Nginx FE
+    const allowed = [FRONTEND_URL, 'http://localhost:' + NGINX_PORT];
+    if (!origin || allowed.includes(origin)) return cb(null, true);
+    return cb(null, false);
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
+});
+
+app.register(fastifyMultipart, {
+  limits: {
+    fileSize: 1024 * 1024,
+    files: 1,
+  },
+}); // For avatar uploads
+
+app.register(fastifyStatic, {
+  root: UPLOAD_DIR,
+  prefix: '/uploads/',
+}); // Serving the avatar images to frontend via http://<backend-url>/uploads/<filename>
+
+app.get('/health', async () => ({ status: 'ok' }));
+
+await runMigrations();
+
+app.register(userRoutes, { prefix: '/api/users' });
+app.register(friendsRoutes, { prefix: '/api/friends' });
+app.register(loginRoutes, { prefix: '/api/login' });
+app.register(logoutRoutes, { prefix: '/api/logout' });
+app.register(signupRoutes, { prefix: '/api/signup' });
+app.register(resetPasswordRoutes, { prefix: '/api/reset-password' });
+
+await app.register(swaggerUi, {
+  routePrefix: '/docs',
+});
+await app.ready();
+app.swagger();
+
+console.log(
+  `\x1b[0;33mSwagger API documentation served at http://localhost:${BACKEND_PORT}/docs\x1b[0m`,
+);
+
+app.listen({ host: BACKEND_HOST, port: BACKEND_PORT }, function (err, address) {
+  if (err) {
+    app.log.error(err);
+    process.exit(1);
+  }
+});
+
+===== END apps/backend/index.ts =====
+
+
+===== BEGIN apps/backend/package.json =====
+{
+  "name": "@app/api",
+  "version": "1.0.0",
+  "description": "",
+  "license": "ISC",
+  "author": "",
+  "type": "module",
+  "private": true,
+  "engines": {
+    "node": ">=20.19.0"
+  },
+  "main": "index.js",
+  "scripts": {
+    "ts-node": "ts-node",
+    "dev": "tsx watch index.ts",
+    "migration:down": "tsx utils/rollback.ts",
+    "test": "vitest",
+    "db:reset": "rm -rf data/",
+    "seed:secret": "tsx utils/seedSecrets.ts",
+    "db:seed": "tsx utils/seedTestData.ts",
+    "fix": "npm run -w ft_transcendence fix",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "typecheck:watch": "tsc -p tsconfig.json --noEmit --watch",
+    "migrate": "tsx utils/migrate.ts"
+  },
+  "dependencies": {
+    "@fastify/cookie": "^11.0.2",
+    "@fastify/cors": "^11.1.0",
+    "@fastify/multipart": "^9.0.3",
+    "@fastify/static": "^8.2.0",
+    "@fastify/swagger": "^9.5.1",
+    "@fastify/swagger-ui": "^5.2.3",
+    "bcrypt": "^6.0.0",
+    "better-sqlite3": "^12.2.0",
+    "dotenv": "^17.2.1",
+    "fastify": "^5.5.0",
+    "jsonwebtoken": "^9.0.2",
+    "nodemailer": "^7.0.5",
+    "umzug": "^3.8.2",
+    "uuid": "^13.0.0"
+  },
+  "devDependencies": {
+    "@types/bcrypt": "^6.0.0",
+    "@types/better-sqlite3": "^7.6.13",
+    "@types/nodemailer": "^7.0.1",
+    "@types/umzug": "^2.3.9",
+    "@types/uuid": "^10.0.0"
+  }
+}
+
+===== END apps/backend/package.json =====
+
+
+===== BEGIN apps/backend/README.md =====
+# Backend w/ database
+
+Uses `better-sqlite3` to interact with the SQLite database. Migrations are handled with `Umzug`.
+
+## Usage
+
+1. Install packages `npm install`
+2. Run `npm run seed:secret` (creates a secret token for .env)
+3. Run `npm run db:seed` for creating some test data in the database.
+4. See `.env.example` for what else is needed
+5. Start server: `npm run dev`
+   - On startup, server will run migrations automatically.
+6. To rollback a migration, `npm run migration:down`
+7. To clear data from database, run `npm run db:reset`
+8. To run tests, `npm run test`
+
+## Routes
+
+- To do at least;
+  - Game routes.
+  - Two factor auth routes.
+
+- Swagger generates documentation when server is running, at `http://localhost:{backend_port}/docs`
+
+## Database
+
+### Tables
+
+---
+
+### Users
+
+| Field         | Type | Key     | Nullable | Etc           |
+| ------------- | ---- | ------- | -------- | ------------- |
+| uuid          | TEXT | Primary | No       | Unique        |
+| username      | TEXT |         | No       | Unique        |
+| email         | TEXT |         | No       | Unique        |
+| password_hash | TEXT |         | Yes      |               |
+| tfa           | BOOL |         | No       | Default false |
+| avatar        | TEXT |         | Yes      |               |
+| ranking       | INT  |         | No       | Default 1000  |
+| created_at    | DATE |         | No       |               |
+| last_seen     | DATE |         | No       |               |
+| google_id     | TEXT |         | Yes      |               |
+
+- Constraints:
+  - Either one of password_hash or google_id must not be NULL.
+
+### Friends
+
+| Field         | Type | Key     | Nullable | Etc                             |
+| ------------- | ---- | ------- | -------- | ------------------------------- |
+| id            | INT  | Primary | No       | Autoincrement                   |
+| friend_1_uuid | TEXT | Foreign | No       | On user delete, delete this row |
+| friend_2_uuid | TEXT | Foreign | No       | On user delete, delete this row |
+| created_at    | DATE |         | No       |                                 |
+| accepted      | BOOL |         | No       | Default false                   |
+
+- Constraints:
+  - Cannot befriend oneself - friend_1_uuid != friend_2_uuid
+- Unique_friendship index makes sure that an entry where the user uuids are (A,B) is treated the same as (B,A), so a friendship cannot be in the table twice.
+
+### Games
+
+| Field        | Type | Key     | Nullable | Etc                             |
+| ------------ | ---- | ------- | -------- | ------------------------------- |
+| id           | INT  | Primary | No       | Autoincrement                   |
+| team_1_score | INT  |         | No       | On user delete, delete this row |
+| team_2_score | INT  |         | No       | On user delete, delete this row |
+| created_at   | DATE |         | No       |                                 |
+
+### GamePlayers
+
+| Field       | Type | Key     | Nullable | Etc                             |
+| ----------- | ---- | ------- | -------- | ------------------------------- |
+| id          | INT  | Primary | No       | Autoincrement                   |
+| game_id     | INT  | Foreign | No       | On game delete, delete this row |
+| user_uuid   | TEXT | Foreign | No       | On user delete, set NULL        |
+| team_number | DATE |         | No       | Must be 1 or 2                  |
+
+### PendingUsers
+
+Users that have signed up, but have not yet confirmed their account by e-mail.
+
+| Field              | Type | Key     | Nullable | Etc            |
+| ------------------ | ---- | ------- | -------- | -------------- |
+| id                 | INT  | Primary | No       | Autoincrement  |
+| username           | TEXT |         | No       | Unique         |
+| email              | TEXT |         | No       | Unique         |
+| password_hash      | TEXT |         | No       |                |
+| confirmation_token | TEXT |         | No       | Unique         |
+| expires_at         | DATE |         | No       | Now + 24 hours |
+| created_at         | DATE |         | No       |                |
+
+### PasswordResets
+
+Users that have requested password change.
+
+| Field       | Type | Key     | Nullable | Etc                       |
+| ----------- | ---- | ------- | -------- | ------------------------- |
+| id          | INT  | Primary | No       | Autoincrement             |
+| user_uuid   | TEXT | Foreign | No       | Unique, on delete cascade |
+| reset_token | TEXT |         | No       | Unique                    |
+| expires_at  | DATE |         | No       | Now + 30 minutes          |
+| created_at  | DATE |         | No       |                           |
+
+### UsersForDelete
+
+Users that have requested account deletion.
+
+| Field              | Type | Key     | Nullable | Etc                       |
+| ------------------ | ---- | ------- | -------- | ------------------------- |
+| id                 | INT  | Primary | No       | Autoincrement             |
+| user_uuid          | TEXT | Foreign | No       | Unique, on delete cascade |
+| confirmation_token | TEXT |         | No       | Unique                    |
+| expires_at         | DATE |         | No       | Now + 24 hours            |
+| created_at         | DATE |         | No       |                           |
+
+### UserProfileSettings
+
+| Field                | Type | Key     | Nullable          | Etc                          |
+| -------------------- | ---- | ------- | ----------------- | ---------------------------- |
+| user_uuid            | TEXT | Primary | No                | Unique                       |
+| paddle_color         | TEXT |         | No                | RGB value, default '#ffffff' |
+| color_blind_mode     | INT  |         | No                | Value between 0-4            |
+| photo_sensitive_mode | INT  | No      | Value between 0-2 |
+
+Other stuff on the to-do agenda; - Handle JWT tokens as httpOnly cookies instead of current JSON to localStorage handling. - Under consideration: Split the backend into microservices - f.ex. - PROXY SERVER -> Routes traffic to ROUTES server or CHAT server
+
+===== END apps/backend/README.md =====
+
+
+===== BEGIN apps/backend/rest/00_get_users.rest (SKIPPED: non-text) =====
+
+
+===== BEGIN apps/backend/rest/01_get_user.rest (SKIPPED: non-text) =====
+
+
+===== BEGIN apps/backend/rest/02_confirm_user.rest (SKIPPED: non-text) =====
+
+
+===== BEGIN apps/backend/rest/02_post_user.rest (SKIPPED: non-text) =====
+
+
+===== BEGIN apps/backend/rest/03_login_user.rest (SKIPPED: non-text) =====
+
+
+===== BEGIN apps/backend/rest/03_logout_user.rest (SKIPPED: non-text) =====
+
+
+===== BEGIN apps/backend/rest/04_change_avatar.rest (SKIPPED: non-text) =====
+
+
+===== BEGIN apps/backend/rest/05_delete_avatar.rest (SKIPPED: non-text) =====
+
+
+===== BEGIN apps/backend/rest/06_change_password.rest (SKIPPED: non-text) =====
+
+
+===== BEGIN apps/backend/rest/07_change_username.rest (SKIPPED: non-text) =====
+
+
+===== BEGIN apps/backend/rest/08_delete_user.rest (SKIPPED: non-text) =====
+
+
+===== BEGIN apps/backend/rest/09_delete_user_confirm.rest (SKIPPED: non-text) =====
+
+
+===== BEGIN apps/backend/rest/09_send_friend_req.rest (SKIPPED: non-text) =====
+
+
+===== BEGIN apps/backend/rest/10_get_received_pending_friends.rest (SKIPPED: non-text) =====
+
+
+===== BEGIN apps/backend/rest/11_get_sent_pending_friends.rest (SKIPPED: non-text) =====
+
+
+===== BEGIN apps/backend/rest/12_accept_friend_req.rest (SKIPPED: non-text) =====
+
+
+===== BEGIN apps/backend/rest/13_get_accepted_friends.rest (SKIPPED: non-text) =====
+
+
+===== BEGIN apps/backend/rest/14_get_user_settings.rest (SKIPPED: non-text) =====
+
+
+===== BEGIN apps/backend/rest/14_update_user_settings.rest (SKIPPED: non-text) =====
+
+
+===== BEGIN apps/backend/routes/friends.ts =====
+import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
+import {
+  deleteFriend,
+  addFriend,
+  respondToFriendReq,
+  getFriends,
+  getPendingFriendRequestsSent,
+  getPendingFriendRequestsReceived,
+} from '../db/queries/friends.ts';
+import { getUser } from '../db/queries/users.ts';
+import { authPreHandler, tokenUuidCheck } from '../hooks/auth.ts';
+import { updateLastSeenHandler } from '../hooks/updateLastSeen.ts';
+import {
+  friendsSchema,
+  pendingSchema,
+  respondFriendSchema,
+  sendFriendSchema,
+  deleteFriendSchema,
+} from '../schemas/friendSchemas.ts';
+
+export async function friendsRoutes(app: FastifyInstance) {
+  // Get all (accepted) friends of user
+  app.get(
+    '/',
+    {
+      schema: friendsSchema,
+      preHandler: [authPreHandler, tokenUuidCheck, updateLastSeenHandler],
+    },
+    async (req: FastifyRequest, res: FastifyReply) => {
+      try {
+        const uuid = req.user!.uuid;
+        const results = getFriends(uuid);
+        if (!results) return res.status(500).send({ message: 'Failed to get friends' });
+        return res.status(200).send(results);
+      } catch (error) {
+        return res.status(500).send({ message: 'Failed to get friends' });
+      }
+    },
+  );
+
+  // Get all received pending friend reqs of user
+  app.get(
+    '/pending/received',
+    {
+      schema: pendingSchema,
+      preHandler: [authPreHandler, tokenUuidCheck, updateLastSeenHandler],
+    },
+    async (req: FastifyRequest, res: FastifyReply) => {
+      try {
+        const uuid = req.user!.uuid;
+        const results = getPendingFriendRequestsReceived(uuid);
+        if (!results) return res.status(500).send({ message: 'Failed to get pending friends' });
+        return res.status(200).send(results);
+      } catch (error) {
+        return res.status(500).send({ message: 'Failed to get pending friends' });
+      }
+    },
+  );
+
+  // Get all sent pending friend reqs of user
+  app.get(
+    '/pending/sent',
+    {
+      schema: pendingSchema,
+      preHandler: [authPreHandler, tokenUuidCheck, updateLastSeenHandler],
+    },
+    async (req: FastifyRequest, res: FastifyReply) => {
+      try {
+        const uuid = req.user!.uuid;
+        const results = getPendingFriendRequestsSent(uuid);
+        if (!results) return res.status(500).send({ message: 'Failed to get pending friends' });
+        return res.status(200).send(results);
+      } catch (error) {
+        return res.status(500).send({ message: 'Failed to get pending friends' });
+      }
+    },
+  );
+
+  // Accept or decline a friend request
+  app.patch(
+    '/respond/:senderUuid',
+    {
+      schema: respondFriendSchema,
+      preHandler: [authPreHandler, tokenUuidCheck, updateLastSeenHandler],
+    },
+    async (req: FastifyRequest, res: FastifyReply) => {
+      try {
+        const recipientUuid = req.user!.uuid;
+        const { senderUuid } = req.params as { senderUuid: string };
+        const { accept } = req.body as { accept: boolean };
+        const result = respondToFriendReq(recipientUuid, senderUuid, accept);
+        if (!result) return res.status(400).send({ message: 'No pending request found.' });
+        res.status(200).send({ success: 'Successfully responded to friend request' });
+      } catch (error) {
+        return res.status(500).send({ message: 'Failed to respond to friend request' });
+      }
+    },
+  );
+
+  // Send a friend request
+  app.post(
+    '/',
+    {
+      schema: sendFriendSchema,
+      preHandler: [authPreHandler, tokenUuidCheck, updateLastSeenHandler],
+    },
+    async (req: FastifyRequest, res: FastifyReply) => {
+      try {
+        const user1Uuid = req.user!.uuid;
+        const user2Identifier = (req.body as { username: string }).username;
+
+        const userResult = getUser(user2Identifier);
+        if (!userResult)
+          return res.status(400).send({ message: 'Target of friend request not existing.' });
+
+        const user2Uuid = userResult.uuid;
+        const result = addFriend(user1Uuid, user2Uuid);
+        if (!result) return res.status(400).send({ message: 'Already friends or request pending' });
+        res.status(201).send({ success: 'Friend request successfully sent' });
+      } catch (error) {
+        return res.status(500).send({ message: 'Failed to send friend request' });
+      }
+    },
+  );
+
+  // Remove friend from friends list
+  app.delete(
+    '/:user2Uuid',
+    {
+      schema: deleteFriendSchema,
+      preHandler: [authPreHandler, tokenUuidCheck, updateLastSeenHandler],
+    },
+    async (req: FastifyRequest, res: FastifyReply) => {
+      try {
+        const { user2Uuid } = req.params as { user2Uuid: string };
+        const user1Uuid = req.user!.uuid;
+        const result = deleteFriend(user1Uuid, user2Uuid);
+        if (!result)
+          return res.status(400).send({ message: 'No friendship found with supplied UUIDs.' });
+        res.status(204).send({ success: 'Friendship successfully removed' });
+      } catch (error) {
+        return res.status(500).send({ message: 'Failed to delete friendship' });
+      }
+    },
+  );
+}
+
+===== END apps/backend/routes/friends.ts =====
+
+
+===== BEGIN apps/backend/routes/googleSign.ts =====
+import type { FastifyInstance } from 'fastify';
+import type { FastifyRequest } from 'fastify';
+import jwt from 'jsonwebtoken';
+import crypto from 'crypto';
+import db from '../db/client.ts';
+import { SECRET } from '../utils/config.ts';
+import {
+  getUserByGoogleId,
+  createUserFromGoogle,
+  getUserByEmail,
+  getUser,
+  updateGoogleUser,
+  linkGoogleToUser,
+} from '../db/queries/users.ts';
+
+// Google OAuth2 endpoints
+const GOOGLE_AUTH = 'https://accounts.google.com/o/oauth2/v2/auth';
+const GOOGLE_TOKEN = 'https://oauth2.googleapis.com/token';
+const GOOGLE_USERINFO = 'https://openidconnect.googleapis.com/v1/userinfo';
+
+const SESSION_COOKIE = 'session';
+const STATE_COOKIE = 'oauth_state';
+
+const redirectPath = process.env.GOOGLE_OAUTH_REDIRECT_PATH || '/api/auth/google/callback';
+
+function buildRedirectUri(req: FastifyRequest) {
+  const envBase = process.env.BASE_URL;
+  if (envBase && /^https?:\/\//i.test(envBase)) {
+    return new URL(redirectPath, envBase).toString();
+  }
+  const host = (req.headers['x-forwarded-host'] as string) || (req.headers.host as string);
+  const proto = (req.headers['x-forwarded-proto'] as string) || req.protocol || 'http';
+  return `${proto}://${host}${redirectPath.startsWith('/') ? '' : '/'}${redirectPath}`;
+}
+
+function randomState() {
+  return crypto.randomBytes(24).toString('base64url');
+}
+
+export default async function googleSign(app: FastifyInstance) {
+  // 1) Entry point — redirect to Google
+  app.get('/api/auth/google', async (req, reply) => {
+    const state = randomState();
+
+    reply.setCookie(STATE_COOKIE, state, {
+      httpOnly: true,
+      sameSite: 'lax',
+      secure: process.env.NODE_ENV === 'production',
+      path: '/',
+      maxAge: 10 * 60, // 10 minutes
+    });
+
+    const redirectUri = buildRedirectUri(req);
+    const url = new URL(GOOGLE_AUTH);
+    url.searchParams.set('client_id', process.env.GOOGLE_CLIENT_ID!);
+    url.searchParams.set('redirect_uri', redirectUri);
+    url.searchParams.set('response_type', 'code');
+    url.searchParams.set('scope', 'openid email profile');
+    url.searchParams.set('state', state);
+    url.searchParams.set('access_type', 'offline');
+    url.searchParams.set('include_granted_scopes', 'true');
+    url.searchParams.set('prompt', 'consent');
+
+    return reply.redirect(url.toString());
+  });
+
+  // 2) Callback from Google
+  app.get('/api/auth/google/callback', async (req, reply) => {
+    const { code, state } = (req.query as { code?: string; state?: string }) || {};
+    const stateCookie = req.cookies[STATE_COOKIE];
+    reply.clearCookie(STATE_COOKIE, { path: '/' });
+
+    if (!code || !state || state !== stateCookie) {
+      return reply.status(400).send({ error: 'invalid_state' });
+    }
+
+    // Token exchange
+    const redirectUri = buildRedirectUri(req);
+    const body = new URLSearchParams({
+      code,
+      client_id: process.env.GOOGLE_CLIENT_ID!,
+      client_secret: process.env.GOOGLE_CLIENT_SECRET!,
+      redirect_uri: redirectUri,
+      grant_type: 'authorization_code',
+    });
+
+    const tokenRes = await fetch(GOOGLE_TOKEN, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body,
+    });
+
+    if (!tokenRes.ok) {
+      const text = await tokenRes.text();
+      return reply.status(502).send({ error: 'token_exchange_failed', detail: text });
+    }
+
+    const tokens = (await tokenRes.json()) as {
+      access_token: string;
+      id_token: string;
+      expires_in: number;
+      refresh_token?: string;
+      scope?: string;
+      token_type?: string;
+    };
+
+    // OIDC userinfo
+    const profileRes = await fetch(GOOGLE_USERINFO, {
+      headers: { Authorization: `Bearer ${tokens.access_token}` },
+    });
+    if (!profileRes.ok) {
+      return reply.status(502).send({ error: 'userinfo_failed' });
+    }
+
+    const profile = (await profileRes.json()) as {
+      sub: string;
+      email?: string;
+      name?: string;
+      picture?: string;
+      email_verified?: boolean;
+    };
+    console.log('=================================');
+    console.log('Google profile:', profile);
+    console.log('=================================');
+
+    if (!profile.sub) {
+      return reply.status(400).send({ error: 'no_sub' });
+    }
+
+    // Upsert user by googleId
+    let user = getUserByGoogleId(profile.sub);
+
+    // If not found, try to create
+    if (!user) {
+      // Our email is unique, so if it's taken, creation will fail. In that case,
+      // we will try to link googleId to existing user with that email (if not linked yet).
+      let created = createUserFromGoogle({
+        googleId: profile.sub,
+        email: profile.email,
+        name: profile.name,
+        picture: profile.picture,
+      });
+
+      if (!created && profile.email) {
+        // Probably, email is taken. Find user by email and link google_id,
+        // if not linked yet.
+        const existingByEmail = getUserByEmail(profile.email);
+        if (existingByEmail && !existingByEmail.googleId) {
+          if (linkGoogleToUser(existingByEmail.uuid, profile.sub, profile.picture)) {
+            user = getUser(existingByEmail.uuid);
+          }
+        }
+      } else {
+        user = created;
+      }
+
+      if (!user) {
+        // If we got here — email is taken, and linking failed
+        return reply.status(409).send({
+          error: 'email_taken',
+          message: 'Email already in use. Please sign in locally, then link Google in settings.',
+        });
+      }
+    } else {
+      // user already exists and logged in via Google
+      updateGoogleUser({
+        googleId: profile.sub,
+        email: profile.email,
+        name: profile.name,
+        picture: profile.picture,
+      });
+    }
+
+    // 3) Issue JWT in HttpOnly cookie
+    const appToken = jwt.sign({ username: user.username, uuid: user.uuid }, SECRET, {
+      expiresIn: '4h',
+    });
+    // Set JS-readable cookies so your SPA behaves the same as normal login:
+    reply.setCookie('token', appToken, {
+      httpOnly: false, // JS must read it (js-cookie)
+      sameSite: 'Strict', // matches FE
+      secure: process.env.NODE_ENV === 'production',
+      path: '/',
+      maxAge: 60 * 60 * 4, // 4h
+    });
+
+    // Done — return to SPA
+    return reply.redirect('/');
+  });
+}
+
+===== END apps/backend/routes/googleSign.ts =====
+
+
+===== BEGIN apps/backend/routes/login.ts =====
+import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
+import { getUserByEmail, updateLastSeen } from '../db/queries/users.ts';
+import bcrypt from 'bcrypt';
+import { SECRET } from '../utils/config.ts';
+import jwt from 'jsonwebtoken';
+import { normalizeCredentials } from '../hooks/auth.ts';
+import { loginSchema } from '../schemas/authSchemas.ts';
+
+// TODO:
+// Extra checks and route for 2FA
+export async function loginRoutes(app: FastifyInstance) {
+  app.post(
+    '/',
+    {
+      schema: loginSchema,
+      preValidation: [normalizeCredentials],
+    },
+    async (req: FastifyRequest, res: FastifyReply) => {
+      try {
+        const { email, password } = req.body as { email: string; password: string };
+
+        const userInDb = getUserByEmail(email);
+        if (!userInDb) return res.status(400).send({ message: 'Invalid credentials' });
+        const isValidPassword = await bcrypt.compare(password, userInDb.passwordHash || '');
+        if (!isValidPassword) return res.status(400).send({ message: 'Invalid credentials' });
+
+        updateLastSeen(userInDb.uuid);
+        const userForToken = {
+          username: userInDb.username,
+          uuid: userInDb.uuid,
+        };
+
+        const token = jwt.sign(userForToken, SECRET, { expiresIn: '4h' });
+        // Does the front need UUID anymore?
+        res.status(200).send({
+          token,
+          user: {
+            username: userInDb.username,
+            uuid: userInDb.uuid,
+            avatar: userInDb.avatar || null,
+          },
+        });
+      } catch (error) {
+        res.status(500).send({ message: 'Failed to fetch login info from database.' });
+      }
+    },
+  );
+}
+
+===== END apps/backend/routes/login.ts =====
+
+
+===== BEGIN apps/backend/routes/logout.ts =====
+import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
+import { updateLastSeen } from '../db/queries/users.ts';
+import { authPreHandler, tokenUuidCheck } from '../hooks/auth.ts';
+import { logoutSchema } from '../schemas/authSchemas.ts';
+
+// Sets user's last_seen status back 10 minutes, making them
+// appear offline.
+export async function logoutRoutes(app: FastifyInstance) {
+  app.post(
+    '/',
+    {
+      schema: logoutSchema,
+      preHandler: [authPreHandler, tokenUuidCheck],
+    },
+    async (req: FastifyRequest, res: FastifyReply) => {
+      try {
+        const uuid = req.user!.uuid;
+        const tenMinutesAgo = new Date(Date.now() - 10 * 60 * 1000);
+        const result = updateLastSeen(uuid, tenMinutesAgo);
+        if (!result) res.status(500).send({ message: 'Failed to logout user' });
+        res.status(200).send({ success: 'Successfully logged out.' });
+      } catch (error) {
+        res.status(500).send({ message: 'Failed to logout user' });
+      }
+    },
+  );
+}
+
+===== END apps/backend/routes/logout.ts =====
+
+
+===== BEGIN apps/backend/routes/resetPassword.ts =====
+import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
+import { getUserByEmail, updatePassword } from '../db/queries/users.ts';
+import {
+  clearResetTokensForId,
+  createResetToken,
+  clearExpiredTokens,
+  findAndClearResetToken,
+} from '../db/queries/passwordResets.ts';
+import bcrypt from 'bcrypt';
+import crypto from 'crypto';
+import { sendResetPasswordEmail } from '../utils/nodemailer/index.ts';
+import { normalizeCredentials } from '../hooks/auth.ts';
+import { resetPassSchema, resetPassConfirmSchema } from '../schemas/authSchemas.ts';
+
+export async function resetPasswordRoutes(app: FastifyInstance) {
+  // Request a password reset email
+  app.post('/', { schema: resetPassSchema }, async (req: FastifyRequest, res: FastifyReply) => {
+    try {
+      const { email } = req.body as { email: string };
+      if (!email) return res.status(400).send({ message: 'Email is required' });
+      const user = getUserByEmail(email);
+
+      if (user) {
+        const resetToken = crypto.randomBytes(32).toString('hex');
+        clearResetTokensForId(user.uuid);
+        const resetResult = createResetToken(user.uuid, resetToken);
+        if (resetResult) {
+          const emailSent = await sendResetPasswordEmail(email, resetToken);
+          if (!emailSent) clearResetTokensForId(user.uuid);
+        } else clearResetTokensForId(user.uuid);
+      }
+
+      // Send status 200 no matter what, so malicious user cannot try to find out
+      // existing emails in database
+      res.status(200).send({ success: 'Password reset link sent to email if exists.' });
+    } catch (error) {
+      res.status(500).send({ message: 'Failed to process password reset request.' });
+    }
+  });
+
+  app.post(
+    '/:resetToken',
+    {
+      schema: resetPassConfirmSchema,
+      preValidation: [normalizeCredentials],
+    },
+    async (req: FastifyRequest, res: FastifyReply) => {
+      try {
+        const { resetToken } = req.params as { resetToken: string };
+        const { newPassword } = req.body as { newPassword: string };
+        if (!newPassword) return res.status(400).send({ message: 'New password is required.' });
+
+        // REMOVE THIS and add a interval based cleanup?
+        clearExpiredTokens();
+
+        const uuid = findAndClearResetToken(resetToken);
+        if (!uuid) return res.status(400).send({ message: 'Invalid or expired token.' });
+        const passwordHash = await bcrypt.hash(newPassword, 10);
+        const result = updatePassword(uuid, passwordHash);
+        if (!result) return res.status(500).send({ message: 'Failed to update password.' });
+        return res.status(200).send({ success: 'Password successfully updated.' });
+      } catch (error) {
+        res.status(500).send({ message: 'Failed to process password reset request.' });
+      }
+    },
+  );
+}
+
+===== END apps/backend/routes/resetPassword.ts =====
+
+
+===== BEGIN apps/backend/routes/signup.ts =====
+import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
+import {
+  checkUserExists,
+  addUserToPending,
+  getPendingUserByToken,
+  deleteExpiredUsers,
+  removeFromPending,
+  confirmUser,
+} from '../db/queries/unconfirmedUsers.ts';
+import bcrypt from 'bcrypt';
+import crypto from 'crypto';
+import { SECRET } from '../utils/config.ts';
+import jwt from 'jsonwebtoken';
+import { v4 as uuidv4 } from 'uuid';
+import { sendConfirmationEmail } from '../utils/nodemailer/index.ts';
+import { normalizeCredentials } from '../hooks/auth.ts';
+import { signupSchema, signupConfirmSchema } from '../schemas/authSchemas.ts';
+
+export async function signupRoutes(app: FastifyInstance) {
+  // Post a new user and logs them in
+  app.post(
+    '/',
+    {
+      schema: signupSchema,
+      preValidation: [normalizeCredentials],
+    },
+    async (req: FastifyRequest, res: FastifyReply) => {
+      try {
+        deleteExpiredUsers();
+        const { username, password, email, googleAuth } = req.body as {
+          username: string;
+          password: string | undefined;
+          email: string;
+          googleAuth: string | undefined;
+        };
+        if (checkUserExists(username, email))
+          return res.status(400).send({ message: 'Username or email already taken' });
+        if (googleAuth) {
+          // do google auth stuff,
+          // user gets inserted straight to users without first to pending
+          // probably needs to call a different function than addUser?
+          // like addUserGoogle( that takes in google auth number instead of pass)
+        }
+        if (!password) return res.status(400).send({ message: 'Missing password field' });
+
+        const passwordHash = await bcrypt.hash(password, 10);
+        const confirmationToken = crypto.randomBytes(32).toString('hex');
+        const result = addUserToPending(username, email, passwordHash, confirmationToken);
+        if (!result) return res.status(500).send({ message: 'Failed to create user' });
+        const emailSent = await sendConfirmationEmail(email, confirmationToken);
+        if (!emailSent) {
+          removeFromPending(confirmationToken);
+          return res.status(500).send({ message: 'Failed to send confirmation email.' });
+        }
+
+        res.status(200).send({ success: 'Confirmation link sent to email.' });
+      } catch (error) {
+        res.status(500).send({ message: 'Failed adding user to database.' });
+      }
+    },
+  );
+
+  app.post(
+    '/validate/:token',
+    { schema: signupConfirmSchema },
+    async (req: FastifyRequest, res: FastifyReply) => {
+      try {
+        deleteExpiredUsers();
+        const { token } = req.params as { token: string };
+        const user = getPendingUserByToken(token);
+        if (!user) return res.status(400).send({ message: 'Invalid or expired token.' });
+
+        const uuid = uuidv4();
+        const result = confirmUser(token, uuid, user);
+        if (!result) {
+          removeFromPending(token);
+          return res
+            .status(500)
+            .send({ message: 'Failed to add user to database, try signing up again.' });
+        }
+
+        const username = user.username;
+        const userForToken = { username, uuid };
+        const jwtoken = jwt.sign(userForToken, SECRET, { expiresIn: '4h' });
+
+        // Does the front need UUID anymore?
+        res.status(200).send({ token: jwtoken, user: { username } });
+      } catch (error) {
+        res.status(500).send({ message: 'Failed validating user e-mail.' });
+      }
+    },
+  );
+}
+
+===== END apps/backend/routes/signup.ts =====
+
+
+===== BEGIN apps/backend/routes/users.ts =====
+import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
+import fs from 'fs';
+import fsAsync from 'fs/promises';
+import path from 'path';
+import bcrypt from 'bcrypt';
+import crypto from 'crypto';
+import {
+  getUserStats,
+  getUserByUuid,
+  updateUsername,
+  updatePassword,
+  updateAvatar,
+  getUserByUsername,
+  getUserSettings,
+  updateUserSettings,
+} from '../db/queries/users.ts';
+import {
+  deleteUser,
+  markUserForDelete,
+  removeTokenFromDelete,
+  findUserToDeleteAndClear,
+} from '../db/queries/userDelete.ts';
+import { authPreHandler, tokenUuidCheck } from '../hooks/auth.ts';
+import { sendDeleteEmail } from '../utils/nodemailer/index.ts';
+import { normalizeCredentials } from '../hooks/auth.ts';
+import { updateLastSeenHandler } from '../hooks/updateLastSeen.ts';
+import { UPLOAD_DIR } from '../utils/config.ts';
+import {
+  getAllUsersSchema,
+  getUserSchema,
+  getMeSchema,
+  userDeleteSchema,
+  userDeleteConfirmSchema,
+  updateUsernameSchema,
+  updatePassSchema,
+  updateAvatarSchema,
+  deleteAvatarSchema,
+  getSettingsSchema,
+  updateSettingsSchema,
+} from '../schemas/userSchemas.ts';
+
+/*
+	TO DO:
+
+	// Add routes for 2 Factor Auth? Which will also require some additional
+	// fields to User table in database. At least one for the secret, maybe one for backup codes?
+
+*/
+
+export async function userRoutes(app: FastifyInstance) {
+  // Get all users
+  app.get('/', { schema: getAllUsersSchema }, async (req: FastifyRequest, res: FastifyReply) => {
+    try {
+      const users = getUserStats();
+      res.status(200).send(users);
+    } catch (error) {
+      res.status(500).send({ message: 'Failed to fetch users' });
+    }
+  });
+
+  // Get a single user
+  app.get('/:uuid', { schema: getUserSchema }, async (req: FastifyRequest, res: FastifyReply) => {
+    try {
+      const { uuid } = req.params as { uuid: string };
+      const user = getUserStats(uuid);
+      if (!user) return res.status(404).send({ message: 'User not found' });
+      res.status(200).send(user);
+    } catch (error) {
+      res.status(500).send({ message: 'Failed to fetch user' });
+    }
+  });
+
+  // Current user (for hydration)
+  app.get(
+    '/me',
+    {
+      schema: getMeSchema,
+      preHandler: [authPreHandler, tokenUuidCheck, updateLastSeenHandler], // token -> req.user
+    },
+    async (req: FastifyRequest, res: FastifyReply) => {
+      try {
+        const uuid = req.user!.uuid; // set by authPreHandler
+        const u = getUserByUuid(uuid);
+        if (!u) return res.status(404).send({ message: 'User not found' });
+
+        // return only what the FE needs to render header/profile
+        return res.status(200).send({
+          username: u.username,
+          uuid: u.uuid,
+          avatar: u.avatar ?? null, // external URL or filename or null
+        });
+      } catch (err) {
+        return res.status(500).send({ message: 'Failed to fetch current user' });
+      }
+    },
+  );
+
+  // Sends a email confirmation for user deletion
+  app.delete(
+    '/me',
+    {
+      schema: userDeleteSchema,
+      preHandler: [authPreHandler, tokenUuidCheck, updateLastSeenHandler],
+    },
+    async (req: FastifyRequest, res: FastifyReply) => {
+      try {
+        const uuid = req.user!.uuid;
+        const user = getUserByUuid(uuid);
+        if (!user) return res.status(404).send({ message: 'User not found' });
+        const confirmationToken = crypto.randomBytes(32).toString('hex');
+        const result = markUserForDelete(user.uuid, confirmationToken);
+        if (!result) return res.status(500).send({ message: 'Failed to mark user for deletion.' });
+        const emailSent = await sendDeleteEmail(user.email, confirmationToken);
+        if (!emailSent) {
+          removeTokenFromDelete(confirmationToken);
+          return res.status(500).send({ message: 'Failed to send confirmation email.' });
+        }
+        res.status(200).send({ success: 'Confirmation link sent to email.' });
+      } catch (error) {
+        res.status(500).send({ message: 'Failed to process user delete request' });
+      }
+    },
+  );
+
+  // Delete user with a valid delete token
+  app.post(
+    '/me/confirm-delete/:token',
+    {
+      schema: userDeleteConfirmSchema,
+      preHandler: [authPreHandler, tokenUuidCheck],
+    },
+    async (req: FastifyRequest, res: FastifyReply) => {
+      try {
+        const { token } = req.params as { token: string };
+        const uuid = req.user!.uuid;
+        const uuidForDelete = findUserToDeleteAndClear(token);
+        if (!uuidForDelete || uuidForDelete !== uuid)
+          return res.status(400).send({ message: 'Invalid or expired token.' });
+        const deleteResult = deleteUser(uuidForDelete);
+        if (!deleteResult) return res.status(500).send({ message: 'Failed to delete user' });
+        res.status(204).send();
+      } catch (error) {
+        res.status(500).send({ message: 'Failed to delete user' });
+      }
+    },
+  );
+
+  // Update username, requires token and { newUsername } as request body
+  app.patch(
+    '/me',
+    {
+      preValidation: [normalizeCredentials],
+      schema: updateUsernameSchema,
+      preHandler: [authPreHandler, tokenUuidCheck, updateLastSeenHandler],
+    },
+    async (req: FastifyRequest, res: FastifyReply) => {
+      try {
+        const { newUsername } = req.body as { newUsername: string };
+        const uuid = req.user!.uuid;
+
+        const user = getUserStats(uuid);
+        if (!user) return res.status(404).send({ message: 'User not found' });
+
+        const newUser = getUserByUsername(newUsername);
+        if (newUser && newUser.uuid !== uuid)
+          return res.status(400).send({ message: 'Username already in use' });
+
+        const updateResult = updateUsername(uuid, newUsername);
+        if (!updateResult) return res.status(400).send({ message: 'Update failed' });
+        user.username = newUsername;
+        res.status(200).send(user);
+      } catch (error) {
+        res.status(500).send({ message: 'Failed to update user' });
+      }
+    },
+  );
+
+  // Update password, requires token and { newPassword, currentPassword } as request body
+  app.patch(
+    '/me/password',
+    {
+      preValidation: [normalizeCredentials],
+      schema: updatePassSchema,
+      preHandler: [authPreHandler, tokenUuidCheck, updateLastSeenHandler],
+    },
+    async (req: FastifyRequest, res: FastifyReply) => {
+      try {
+        const { newPassword, currentPassword } = req.body as {
+          newPassword: string;
+          currentPassword: string;
+        };
+        const uuid = req.user!.uuid;
+        const user = getUserByUuid(uuid);
+        if (!user) return res.status(404).send({ message: 'User not found' });
+
+        const isValidPassword = await bcrypt.compare(currentPassword, user.passwordHash || '');
+        if (!isValidPassword) return res.status(400).send({ message: 'Invalid password' });
+
+        const newPasswordHash = await bcrypt.hash(newPassword, 10);
+        const updateResult = updatePassword(uuid, newPasswordHash);
+        if (!updateResult) return res.status(400).send({ message: 'Update failed' });
+        res.status(200).send({ success: 'Password successfully updated' });
+      } catch (error) {
+        res.status(500).send({ message: 'Failed to update user' });
+      }
+    },
+  );
+
+  // Change avatar picture, requires token and multipart form with { avatar } file
+  app.patch(
+    '/me/avatar',
+    {
+      schema: updateAvatarSchema,
+      preHandler: [authPreHandler, tokenUuidCheck, updateLastSeenHandler],
+    },
+    async (req: FastifyRequest, res: FastifyReply) => {
+      try {
+        const uuid = req.user!.uuid;
+
+        const user = getUserStats(uuid);
+        if (!user) return res.status(404).send({ message: 'User not found' });
+
+        const file = await req.file();
+        if (!file) return res.status(400).send({ message: 'No file in request' });
+        if (file.fieldname !== 'avatar')
+          return res.status(400).send({ message: 'Invalid fieldname' });
+
+        const ACCEPTED_TYPES = ['image/png', 'image/jpeg', 'image/jpg'];
+        if (!ACCEPTED_TYPES.includes(file.mimetype))
+          return res.status(400).send({ message: 'Invalid avatar file type.' });
+
+        const fileExtension = getExtensionFromMime(file.mimetype);
+        const fileName = `${uuid}_${Date.now()}_avatar${fileExtension}`;
+        const filePath = path.join(UPLOAD_DIR, fileName);
+        const writeStream = fs.createWriteStream(filePath);
+        await new Promise((resolve, reject) => {
+          file.file
+            .pipe(writeStream)
+            .on('finish', () => resolve(undefined))
+            .on('error', reject);
+        });
+
+        // Delete old avatar (if exists)
+        if (user.avatar) {
+          try {
+            await fsAsync.unlink(path.join(UPLOAD_DIR, user.avatar));
+          } catch (err) {
+            console.log('Error deleting old avatar picture');
+          }
+        }
+        const updateResult = updateAvatar(uuid, fileName);
+        if (!updateResult) return res.status(400).send({ message: 'Update failed' });
+        user.avatar = fileName;
+        res.status(200).send(user);
+      } catch (error) {
+        res.status(500).send({ message: 'Failed to update user' });
+      }
+    },
+  );
+
+  // Delete avatar picture, requires token
+  app.delete(
+    '/me/avatar',
+    {
+      schema: deleteAvatarSchema,
+      preHandler: [authPreHandler, tokenUuidCheck, updateLastSeenHandler],
+    },
+    async (req: FastifyRequest, res: FastifyReply) => {
+      try {
+        const uuid = req.user!.uuid;
+
+        const user = getUserStats(uuid);
+        if (!user) return res.status(404).send({ message: 'User not found' });
+        if (!user.avatar) return res.status(400).send({ message: 'No avatar to delete' });
+
+        try {
+          await fsAsync.unlink(user.avatar);
+        } catch (err) {
+          console.log('Error deleting old avatar picture');
+        }
+
+        const updateResult = updateAvatar(uuid);
+        if (!updateResult) return res.status(400).send({ message: 'Avatar delete failed' });
+        user.avatar = null;
+        res.status(200).send(user);
+      } catch (error) {
+        res.status(500).send({ message: 'Failed to delete avatar' });
+      }
+    },
+  );
+
+  app.get(
+    '/me/settings',
+    {
+      schema: getSettingsSchema,
+      preHandler: [authPreHandler, tokenUuidCheck, updateLastSeenHandler],
+    },
+    async (req: FastifyRequest, res: FastifyReply) => {
+      try {
+        const uuid = req.user!.uuid;
+        const settings = getUserSettings(uuid);
+        if (!settings) return res.status(404).send({ message: 'Failed to fetch user settings' });
+        res.status(200).send(settings);
+      } catch (err) {
+        res.status(500).send({ message: 'Failed to fetch user profile settings' });
+      }
+    },
+  );
+
+  app.patch(
+    '/me/settings',
+    {
+      schema: updateSettingsSchema,
+      preHandler: [authPreHandler, tokenUuidCheck, updateLastSeenHandler],
+    },
+    async (req: FastifyRequest, res: FastifyReply) => {
+      try {
+        const uuid = req.user!.uuid;
+        const { paddleColor, colorBlindMode, photoSensitiveMode } = req.body as {
+          paddleColor?: string;
+          colorBlindMode?: number;
+          photoSensitiveMode?: number;
+        };
+        const updateFields: Record<string, unknown> = {};
+        if (paddleColor !== undefined) updateFields.paddle_color = paddleColor;
+        if (colorBlindMode !== undefined) updateFields.color_blind_mode = colorBlindMode;
+        if (photoSensitiveMode !== undefined)
+          updateFields.photo_sensitive_mode = photoSensitiveMode;
+        const success = updateUserSettings(uuid, updateFields);
+        if (!success) return res.status(400).send({ message: 'Failed to update settings.' });
+        const settings = getUserSettings(uuid);
+        res.status(200).send(settings);
+      } catch (err) {
+        res.status(500).send({ message: 'Failed to update user profile settings.' });
+      }
+    },
+  );
+}
+
+const getExtensionFromMime = (mimetype: string): string => {
+  const mimeToExt: Record<string, string> = {
+    'image/jpeg': '.jpeg',
+    'image/jpg': '.jpg',
+    'image/png': '.png',
+  };
+  return mimeToExt[mimetype] || '';
+};
+
+===== END apps/backend/routes/users.ts =====
+
+
+===== BEGIN apps/backend/schemas/authSchemas.ts =====
+import {
+  SuccessResponseSchema,
+  ErrorResponseSchema,
+  ValidationErrorResponseSchema,
+} from './responseSchemas.ts';
+import {
+  PassSchema,
+  UsernameSchema,
+  EmailSchema,
+  UuidSchema,
+  AvatarSchema,
+} from './fieldSchemas.ts';
+
+const SignupBodySchema = {
+  type: 'object',
+  required: ['username', 'email'],
+  properties: {
+    username: UsernameSchema,
+    email: EmailSchema,
+    password: PassSchema,
+    googleAuth: {
+      type: 'string',
+      description: 'Google auth token (optional)',
+    },
+  },
+  additionalProperties: false,
+};
+
+const LoginBodySchema = {
+  type: 'object',
+  required: ['email', 'password'],
+  properties: {
+    email: EmailSchema,
+    password: PassSchema,
+  },
+  additionalProperties: false,
+};
+
+const ResetPassBodySchema = {
+  type: 'object',
+  required: ['newPassword'],
+  properties: {
+    newPassword: PassSchema,
+  },
+  additionalProperties: false,
+};
+
+export const signupSchema = {
+  tags: ['Auth'],
+  summary: 'Creates a new user account and sends a confirmation email to client',
+  body: SignupBodySchema,
+  response: {
+    200: SuccessResponseSchema,
+    400: ValidationErrorResponseSchema,
+    500: ErrorResponseSchema,
+  },
+};
+
+export const signupConfirmSchema = {
+  tags: ['Auth'],
+  summary: 'Confirms a new user account and returns a JWT token to the client',
+  response: {
+    200: {
+      type: 'object',
+      properties: {
+        token: {
+          type: 'string',
+          description: 'JWT authentication token',
+        },
+        user: {
+          type: 'object',
+          properties: {
+            username: UsernameSchema,
+          },
+        },
+      },
+    },
+    400: ErrorResponseSchema,
+    500: ErrorResponseSchema,
+  },
+};
+
+export const loginSchema = {
+  tags: ['Auth'],
+  summary: 'Sends a valid JWT token for the user',
+  body: LoginBodySchema,
+  response: {
+    200: {
+      type: 'object',
+      properties: {
+        token: {
+          type: 'string',
+          description: 'JWT authentication token',
+        },
+        user: {
+          type: 'object',
+          properties: {
+            username: UsernameSchema,
+            avatar: AvatarSchema,
+          },
+        },
+      },
+    },
+    400: ValidationErrorResponseSchema,
+    500: ErrorResponseSchema,
+  },
+};
+
+export const resetPassSchema = {
+  tags: ['Auth'],
+  summary: "Sends a reset password link to user's email address",
+  body: {
+    type: 'object',
+    properties: {
+      email: EmailSchema,
+    },
+    required: ['email'],
+  },
+  response: {
+    200: SuccessResponseSchema,
+    400: ErrorResponseSchema,
+    500: ErrorResponseSchema,
+  },
+};
+
+export const resetPassConfirmSchema = {
+  tags: ['Auth'],
+  summary: "Resets user's password.",
+  params: {
+    type: 'object',
+    required: ['token'],
+    properties: {
+      token: {
+        type: 'string',
+        minLength: 32,
+        maxLength: 32,
+        pattern: '^[a-f0-9]+$',
+        description: 'Password reset token from email',
+      },
+    },
+    additionalProperties: false,
+  },
+  body: ResetPassBodySchema,
+};
+
+export const logoutSchema = {
+  tags: ['Auth'],
+  summary: "Moves user's last_seen field back 10 minutes to appear offline",
+  security: [{ bearerAuth: [] }],
+  response: {
+    200: SuccessResponseSchema,
+    400: ErrorResponseSchema,
+    500: ErrorResponseSchema,
+  },
+};
+
+===== END apps/backend/schemas/authSchemas.ts =====
+
+
+===== BEGIN apps/backend/schemas/fieldSchemas.ts =====
+export const PaddleColorSchema = {
+  type: 'string',
+  pattern: '^#[0-9A-Fa-f]{6}$',
+  description: 'Paddle color in hex format (e.g., #FFFFFF)',
+  minLength: 7,
+  maxLength: 7,
+};
+
+export const ColorBlindSchema = {
+  type: 'integer',
+  minimum: 0,
+  maximum: 4,
+};
+
+export const PhotoSensitiveSchema = {
+  type: 'integer',
+  minimum: 0,
+  maximum: 2,
+};
+
+export const PassSchema = {
+  type: 'string',
+  minLength: 12,
+  maxLength: 42,
+  allOf: [
+    { pattern: '^[a-zA-Z0-9!@#$%^&*()\-_=+[\\]{};:|,<.>/?]+$' },
+    { pattern: '[a-z]' },
+    { pattern: '[A-Z]' },
+    { pattern: '[0-9]' },
+    { pattern: '[!@#$%^&*()\-_=+[\\]{};:|,<.>/?]+$' },
+  ],
+  description:
+    'Password: Must contain uppercase, lowercase, digit and special character (!@#$%^&()-_=+[]{};:|,<.>/?',
+};
+
+export const UsernameSchema = {
+  type: 'string',
+  minLength: 3,
+  maxLength: 16,
+  pattern: '^(?!-)(?!.*--)[a-zA-Z0-9-]+$',
+  description:
+    'Username: letters, numbers, dashes allowed. Cannot start with a dash or have consecutive dashes.',
+};
+
+export const EmailSchema = {
+  type: 'string',
+  format: 'email',
+  description: 'User email address',
+};
+
+export const UuidSchema = {
+  type: 'string',
+  format: 'uuid',
+  description: 'User unique id',
+};
+
+export const AvatarSchema = {
+  anyOf: [{ type: 'string' }, { type: 'null' }],
+  description: 'User avatar filename',
+};
+
+===== END apps/backend/schemas/fieldSchemas.ts =====
+
+
+===== BEGIN apps/backend/schemas/friendSchemas.ts =====
+import {
+  ErrorResponseSchema,
+  SuccessResponseSchema,
+  UsersSchema,
+  PublicUsersSchema,
+} from './responseSchemas.ts';
+import { UsernameSchema, UuidSchema, EmailSchema } from './fieldSchemas.ts';
+
+export const friendsSchema = {
+  tags: ['Friends'],
+  summary: 'Get all friends of user',
+  security: [{ bearerAuth: [] }],
+  response: {
+    200: {
+      type: 'array',
+      items: UsersSchema,
+    },
+    400: ErrorResponseSchema,
+    500: ErrorResponseSchema,
+  },
+};
+
+export const pendingSchema = {
+  tags: ['Friends'],
+  summary: 'Get all sent or received pending friend requests',
+  security: [{ bearerAuth: [] }],
+  response: {
+    200: {
+      type: 'array',
+      items: PublicUsersSchema,
+    },
+    500: ErrorResponseSchema,
+  },
+};
+
+export const respondFriendSchema = {
+  tags: ['Friends'],
+  summary: 'Respond to a received friend request',
+  security: [{ bearerAuth: [] }],
+  body: {
+    type: 'object',
+    properties: {
+      accept: {
+        type: 'boolean',
+      },
+    },
+    required: ['accept'],
+    additionalProperties: false,
+  },
+  response: {
+    200: SuccessResponseSchema,
+    400: ErrorResponseSchema,
+    500: ErrorResponseSchema,
+  },
+};
+
+export const sendFriendSchema = {
+  tags: ['Friends'],
+  summary: 'Send a friend request to another user',
+  security: [{ bearerAuth: [] }],
+  body: {
+    type: 'object',
+    properties: {
+      username: {
+        anyOf: [{ ...UsernameSchema }, { ...UuidSchema }, { ...EmailSchema }],
+      },
+    },
+    required: ['username'],
+    additionalProperties: false,
+  },
+  response: {
+    200: SuccessResponseSchema,
+    400: ErrorResponseSchema,
+    500: ErrorResponseSchema,
+  },
+};
+
+export const deleteFriendSchema = {
+  tags: ['Friends'],
+  summary: 'Delete an existing friendship',
+  security: [{ bearerAuth: [] }],
+  params: {
+    type: 'object',
+    required: ['user2Uuid'],
+    properties: {
+      user2Uuid: UuidSchema,
+    },
+  },
+  response: {
+    204: SuccessResponseSchema,
+    400: ErrorResponseSchema,
+    500: ErrorResponseSchema,
+  },
+};
+
+===== END apps/backend/schemas/friendSchemas.ts =====
+
+
+===== BEGIN apps/backend/schemas/responseSchemas.ts =====
+import {
+  UsernameSchema,
+  UuidSchema,
+  PaddleColorSchema,
+  ColorBlindSchema,
+  PhotoSensitiveSchema,
+} from './fieldSchemas.ts';
+
+export const SuccessResponseSchema = {
+  type: 'object',
+  properties: {
+    success: { type: 'string' },
+  },
+};
+
+export const ValidationErrorResponseSchema = {
+  type: 'object',
+  properties: {
+    message: { type: 'string' },
+    details: {
+      type: 'array',
+      items: {
+        type: 'object',
+        properties: {
+          field: { type: 'string' },
+          type: { type: 'string' },
+          message: { type: 'string' },
+          expected: { type: 'number' },
+          actual: { type: 'number' },
+        },
+      },
+    },
+  },
+};
+
+export const ErrorResponseSchema = {
+  type: 'object',
+  properties: {
+    message: { type: 'string' },
+  },
+};
+
+export const UsersSchema = {
+  type: 'object',
+  properties: {
+    username: UsernameSchema,
+    uuid: UuidSchema,
+    avatar: {
+      anyOf: [{ type: 'string' }, { type: 'null' }],
+    },
+    ranking: { type: 'integer' },
+    createdAt: { type: 'string', format: 'date-time' },
+    wins: { type: 'integer' },
+    losses: { type: 'integer' },
+    totalGames: { type: 'integer' },
+    online: { type: 'boolean' },
+  },
+};
+
+export const PublicUsersSchema = {
+  type: 'object',
+  properties: {
+    uuid: UuidSchema,
+    username: UsernameSchema,
+    avatar: {
+      anyOf: [{ type: 'string' }, { type: 'null' }],
+    },
+    ranking: { type: 'integer' },
+    createdAt: { type: 'string', format: 'date-time' },
+  },
+};
+
+export const SettingsSchema = {
+  type: 'object',
+  properties: {
+    uuid: UuidSchema,
+    paddleColor: PaddleColorSchema,
+    colorBlindMode: ColorBlindSchema,
+    photoSensitiveMode: PhotoSensitiveSchema,
+  },
+};
+
+===== END apps/backend/schemas/responseSchemas.ts =====
+
+
+===== BEGIN apps/backend/schemas/userSchemas.ts =====
+import {
+  ErrorResponseSchema,
+  ValidationErrorResponseSchema,
+  SuccessResponseSchema,
+  UsersSchema,
+  SettingsSchema,
+} from './responseSchemas.ts';
+
+import {
+  UsernameSchema,
+  UuidSchema,
+  PassSchema,
+  PaddleColorSchema,
+  ColorBlindSchema,
+  PhotoSensitiveSchema,
+} from './fieldSchemas.ts';
+
+export const getAllUsersSchema = {
+  tags: ['User'],
+  summary: 'Get all users from database',
+  response: {
+    200: {
+      type: 'array',
+      items: UsersSchema,
+    },
+    400: ErrorResponseSchema,
+    500: ErrorResponseSchema,
+  },
+};
+
+export const getUserSchema = {
+  tags: ['User'],
+  summary: 'Get user by UUID',
+  params: {
+    type: 'object',
+    required: ['uuid'],
+    properties: {
+      uuid: UuidSchema,
+    },
+  },
+  response: {
+    200: UsersSchema,
+    400: ErrorResponseSchema,
+    500: ErrorResponseSchema,
+  },
+};
+
+export const getMeSchema = {
+  tags: ['User'],
+  summary: 'Get the currently authenticated user',
+  security: [{ bearerAuth: [] }],
+  response: {
+    200: {
+      type: 'object',
+      properties: {
+        username: UsernameSchema,
+        uuid: UuidSchema,
+        avatar: { anyOf: [{ type: 'string' }, { type: 'null' }] },
+      },
+    },
+    401: ErrorResponseSchema,
+    404: ErrorResponseSchema,
+    500: ErrorResponseSchema,
+  },
+};
+
+export const userDeleteSchema = {
+  tags: ['User'],
+  summary: "Mark user for deletion and send a confirmation link to user's email",
+  security: [{ bearerAuth: [] }],
+  response: {
+    200: SuccessResponseSchema,
+    404: ErrorResponseSchema,
+    500: ErrorResponseSchema,
+  },
+};
+
+export const userDeleteConfirmSchema = {
+  tags: ['User'],
+  summary: 'Delete user from database',
+  security: [{ bearerAuth: [] }],
+  params: {
+    type: 'object',
+    required: ['token'],
+    properties: {
+      token: {
+        type: 'string',
+        minLength: 32,
+        maxLength: 32,
+        pattern: '^[a-f0-9]+$',
+        description: 'User deletion token from email',
+      },
+    },
+    additionalProperties: false,
+  },
+  response: {
+    204: { type: 'null' },
+    400: ErrorResponseSchema,
+    500: ErrorResponseSchema,
+  },
+};
+
+export const updateUsernameSchema = {
+  tags: ['User'],
+  summary: 'Update username',
+  security: [{ bearerAuth: [] }],
+  body: {
+    type: 'object',
+    properties: {
+      newUsername: UsernameSchema,
+    },
+    additionalProperties: false,
+    required: ['newUsername'],
+  },
+  response: {
+    200: UsersSchema,
+    404: ErrorResponseSchema,
+    400: ValidationErrorResponseSchema,
+    500: ErrorResponseSchema,
+  },
+};
+
+export const updatePassSchema = {
+  tags: ['User'],
+  summary: 'Update password',
+  security: [{ bearerAuth: [] }],
+  body: {
+    type: 'object',
+    properties: {
+      currentPassword: PassSchema,
+      newPassword: PassSchema,
+    },
+    additionalProperties: false,
+    required: ['currentPassword', 'newPassword'],
+  },
+  response: {
+    200: SuccessResponseSchema,
+    400: ValidationErrorResponseSchema,
+    404: ErrorResponseSchema,
+    500: ErrorResponseSchema,
+  },
+};
+
+export const updateAvatarSchema = {
+  tags: ['User'],
+  summary: 'Update avatar picture',
+  security: [{ bearerAuth: [] }],
+  consumes: ['multipart/form-data'],
+  response: {
+    200: UsersSchema,
+    400: ValidationErrorResponseSchema,
+    404: ErrorResponseSchema,
+    500: ErrorResponseSchema,
+  },
+};
+
+export const deleteAvatarSchema = {
+  tags: ['User'],
+  summary: "Delete users's avatar pic",
+  security: [{ bearerAuth: [] }],
+  response: {
+    200: UsersSchema,
+    400: ErrorResponseSchema,
+    404: ErrorResponseSchema,
+    500: ErrorResponseSchema,
+  },
+};
+
+export const getSettingsSchema = {
+  tags: ['User'],
+  summary: "Get user's profile settings",
+  security: [{ bearerAuth: [] }],
+  response: {
+    200: SettingsSchema,
+    404: ErrorResponseSchema,
+    500: ErrorResponseSchema,
+  },
+};
+
+export const updateSettingsSchema = {
+  tags: ['User'],
+  summary: "Update user's profile settings",
+  security: [{ bearerAuth: [] }],
+  body: {
+    type: 'object',
+    properties: {
+      paddleColor: PaddleColorSchema,
+      colorBlindMode: ColorBlindSchema,
+      photoSensitiveMode: PhotoSensitiveSchema,
+    },
+    required: [],
+    additionalProperties: false,
+  },
+  response: {
+    200: SettingsSchema,
+    400: ValidationErrorResponseSchema,
+    500: ErrorResponseSchema,
+  },
+};
+
+===== END apps/backend/schemas/userSchemas.ts =====
+
+
+===== BEGIN apps/backend/tests/friends.test.ts =====
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { createTestDb, cleanupTestDb } from './setup.ts';
+import type { Database } from 'better-sqlite3';
+
+describe('Friends Functions', () => {
+  let testDb: Database;
+
+  beforeEach(async () => {
+    vi.resetModules();
+    testDb = await createTestDb();
+    vi.doMock('../db/client.ts', () => ({
+      default: testDb,
+    }));
+  });
+
+  afterEach(() => {
+    cleanupTestDb(testDb);
+    vi.resetModules();
+    vi.clearAllMocks();
+  });
+
+  it('Send a friendship request, check the pendings for both users', async () => {
+    const { addUser } = await import('../db/queries/users.ts');
+    const {
+      addFriend,
+      getFriends,
+      getPendingFriendRequestsSent,
+      getPendingFriendRequestsReceived,
+    } = await import('../db/queries/friends.ts');
+    const player1Id = 'uuid-1';
+    const player2Id = 'uuid-2';
+    addUser(player1Id, 'Joe', 'hashPass', 'test@mail.com');
+    addUser(player2Id, 'Bob', 'hashPass', 'test1@mail.com');
+
+    const addResult = addFriend(player1Id, player2Id);
+    expect(addResult).toBeTruthy();
+
+    // Check that the received for player 1 is empty
+    const player1PendingReceived = getPendingFriendRequestsReceived(player1Id);
+    expect(player1PendingReceived).toHaveLength(0);
+    // Check that the sent for player 1 is length === 1
+    const player1PendingSent = getPendingFriendRequestsSent(player1Id);
+    expect(player1PendingSent).toHaveLength(1);
+    expect(player1PendingSent[0]!.uuid).toBe('uuid-2');
+    // Check that the sent for player 2 is empty
+    const player2PendingSent = getPendingFriendRequestsSent(player2Id);
+    expect(player2PendingSent).toHaveLength(0);
+    // Check that the received for player 2 is length === 1
+    const player2PendingReceived = getPendingFriendRequestsReceived(player2Id);
+    expect(player2PendingReceived).toHaveLength(1);
+    expect(player2PendingReceived[0]!.uuid).toBe('uuid-1');
+
+    // Check the accepted friends list for both users to make sure it is empty
+    const player1Friends = getFriends(player1Id);
+    expect(player1Friends).toHaveLength(0);
+    const player2Friends = getFriends(player2Id);
+    expect(player2Friends).toHaveLength(0);
+  });
+
+  it('Accept a friendship request', async () => {
+    const { addUser } = await import('../db/queries/users.ts');
+    const { addFriend, respondToFriendReq, getFriends } = await import('../db/queries/friends.ts');
+    const player1Id = 'uuid-1';
+    const player2Id = 'uuid-2';
+    addUser(player1Id, 'Joe', 'hashPass', 'test@mail.com');
+    addUser(player2Id, 'Bob', 'hashPass', 'test1@mail.com');
+
+    const addResult = addFriend(player1Id, player2Id);
+    expect(addResult).toBeTruthy();
+
+    // Accept friend request
+    const responseRes = respondToFriendReq(player2Id, player1Id, true);
+    expect(responseRes).toBeTruthy();
+
+    // Check that both users friend lists were updated
+    const player1Friends = getFriends(player1Id);
+    expect(player1Friends).toHaveLength(1);
+    expect(player1Friends[0]!.username).toBe('Bob');
+    const player2Friends = getFriends(player2Id);
+    expect(player2Friends).toHaveLength(1);
+    expect(player2Friends[0]!.username).toBe('Joe');
+  });
+
+  it('Decline a friendship request', async () => {
+    const { addUser } = await import('../db/queries/users.ts');
+    const {
+      addFriend,
+      respondToFriendReq,
+      getFriends,
+      getPendingFriendRequestsReceived,
+      getPendingFriendRequestsSent,
+    } = await import('../db/queries/friends.ts');
+    const player1Id = 'uuid-1';
+    const player2Id = 'uuid-2';
+    addUser(player1Id, 'Joe', 'hashPass', 'test@mail.com');
+    addUser(player2Id, 'Bob', 'hashPass', 'test1@mail.com');
+
+    const addResult = addFriend(player1Id, player2Id);
+    expect(addResult).toBeTruthy();
+
+    // Decline friend request
+    const responseRes = respondToFriendReq(player2Id, player1Id, false);
+    expect(responseRes).toBeTruthy();
+
+    // Check that both users friend lists are empty
+    const player1Friends = getFriends(player1Id);
+    expect(player1Friends).toHaveLength(0);
+    const player2Friends = getFriends(player2Id);
+    expect(player2Friends).toHaveLength(0);
+
+    // Check that the pending lists are also empty
+    const player1PendingReceived = getPendingFriendRequestsReceived(player1Id);
+    expect(player1PendingReceived).toHaveLength(0);
+    const player1PendingSent = getPendingFriendRequestsSent(player1Id);
+    expect(player1PendingSent).toHaveLength(0);
+    const player2PendingSent = getPendingFriendRequestsSent(player2Id);
+    expect(player2PendingSent).toHaveLength(0);
+    const player2PendingReceived = getPendingFriendRequestsReceived(player2Id);
+    expect(player2PendingReceived).toHaveLength(0);
+  });
+
+  it('Delete a friendship', async () => {
+    const { addUser } = await import('../db/queries/users.ts');
+    const { addFriend, deleteFriend, respondToFriendReq, getFriends } = await import(
+      '../db/queries/friends.ts'
+    );
+    const player1Id = 'uuid-1';
+    const player2Id = 'uuid-2';
+    addUser(player1Id, 'Joe', 'hashPass', 'test@mail.com');
+    addUser(player2Id, 'Bob', 'hashPass', 'test1@mail.com');
+
+    const addResult = addFriend(player1Id, player2Id);
+    expect(addResult).toBeTruthy();
+
+    // Accept friend request
+    const responseRes = respondToFriendReq(player2Id, player1Id, true);
+    expect(responseRes).toBeTruthy();
+
+    // Check that both users friend lists were updated
+    let player1Friends = getFriends(player1Id);
+    expect(player1Friends).toHaveLength(1);
+    expect(player1Friends[0]!.username).toBe('Bob');
+    let player2Friends = getFriends(player2Id);
+    expect(player2Friends).toHaveLength(1);
+    expect(player2Friends[0]!.username).toBe('Joe');
+
+    // Check the delete friend works
+    const deleteFriendRes = deleteFriend(player1Id, player2Id);
+    expect(deleteFriendRes).toBeTruthy();
+
+    // Check that both users friend lists are empty
+    player1Friends = getFriends(player1Id);
+    expect(player1Friends).toHaveLength(0);
+    player2Friends = getFriends(player2Id);
+    expect(player2Friends).toHaveLength(0);
+  });
+
+  it('Create a friendship between two users, check that uniqueness is enforced', async () => {
+    const { addUser } = await import('../db/queries/users.ts');
+    const {
+      addFriend,
+      respondToFriendReq,
+      getFriends,
+      getPendingFriendRequestsSent,
+      getPendingFriendRequestsReceived,
+    } = await import('../db/queries/friends.ts');
+    const player1Id = 'uuid-1';
+    const player2Id = 'uuid-2';
+    addUser(player1Id, 'Joe', 'hashPass', 'test@mail.com');
+    addUser(player2Id, 'Bob', 'hashPass', 'test1@mail.com');
+
+    const addResult = addFriend(player1Id, player2Id);
+    expect(addResult).toBeTruthy();
+
+    // Check that this fails when player1 has already sent a request to player2
+    const addReverseResult = addFriend(player2Id, player1Id);
+    expect(addReverseResult).toBeFalsy();
+
+    // Accept friend request
+    const responseRes = respondToFriendReq(player2Id, player1Id, true);
+    expect(responseRes).toBeTruthy();
+
+    // Check that both users friend lists were updated
+    const player1Friends = getFriends(player1Id);
+    expect(player1Friends).toHaveLength(1);
+    expect(player1Friends[0]!.username).toBe('Bob');
+    const player2Friends = getFriends(player2Id);
+    expect(player2Friends).toHaveLength(1);
+    expect(player2Friends[0]!.username).toBe('Joe');
+
+    // Try to do a new friend request, should not succeed
+    const addAgainResult = addFriend(player2Id, player1Id);
+    expect(addAgainResult).toBeFalsy();
+  });
+
+  it('Create a friendship between two users, delete the other user and check that the friendship gets deleted', async () => {
+    const { addUser } = await import('../db/queries/users.ts');
+    const { deleteUser } = await import('../db/queries/userDelete.ts');
+    const { addFriend, respondToFriendReq, getFriends } = await import('../db/queries/friends.ts');
+    const player1Id = 'uuid-1';
+    const player2Id = 'uuid-2';
+    addUser(player1Id, 'Joe', 'hashPass', 'test@mail.com');
+    addUser(player2Id, 'Bob', 'hashPass', 'test1@mail.com');
+
+    const addResult = addFriend(player1Id, player2Id);
+    expect(addResult).toBeTruthy();
+
+    // Accept friend request
+    const responseRes = respondToFriendReq(player2Id, player1Id, true);
+    expect(responseRes).toBeTruthy();
+
+    // Check that both users friend lists were updated
+    let player1Friends = getFriends(player1Id);
+    expect(player1Friends).toHaveLength(1);
+    expect(player1Friends[0]!.username).toBe('Bob');
+    const player2Friends = getFriends(player2Id);
+    expect(player2Friends).toHaveLength(1);
+    expect(player2Friends[0]!.username).toBe('Joe');
+
+    // Delete player2
+    const deleteRes = deleteUser(player2Id);
+    expect(deleteRes).toBeTruthy();
+    // Now getFriends should return an empty array
+    player1Friends = getFriends(player1Id);
+    expect(player1Friends).toHaveLength(0);
+  });
+});
+
+===== END apps/backend/tests/friends.test.ts =====
+
+
+===== BEGIN apps/backend/tests/games.test.ts =====
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { createTestDb, cleanupTestDb } from './setup.ts';
+import type { Database } from 'better-sqlite3';
+
+describe('Game Functions', () => {
+  let testDb: Database;
+
+  beforeEach(async () => {
+    vi.resetModules();
+    testDb = await createTestDb();
+    vi.doMock('../db/client.ts', () => ({
+      default: testDb,
+    }));
+  });
+
+  afterEach(() => {
+    cleanupTestDb(testDb);
+    vi.resetModules();
+    vi.clearAllMocks();
+  });
+
+  it('Create 1v1 game', async () => {
+    const { addGame, getGameWithPlayers } = await import('../db/queries/games.ts');
+    const { addUser } = await import('../db/queries/users.ts');
+    const player1Id = 'uuid-1';
+    const player2Id = 'uuid-2';
+    addUser(player1Id, 'Joe', 'hashPass', 'test@mail.com');
+    addUser(player2Id, 'Bob', 'hashPass', 'test1@mail.com');
+
+    const gameId = addGame(21, 15, player1Id, player2Id);
+    expect(gameId).toBeTruthy();
+    expect(typeof gameId).toBe('number');
+
+    const game = getGameWithPlayers(gameId!);
+    expect(game).toBeTruthy();
+    expect(game!.team1Score).toBe(21);
+    expect(game!.team2Score).toBe(15);
+    expect(game!.players.team1).toHaveLength(1);
+    expect(game!.players.team2).toHaveLength(1);
+    expect(game!.players.team1[0]!.username).toBe('Joe');
+    expect(game!.players.team2[0]!.username).toBe('Bob');
+  });
+
+  it('Create 2v2 game', async () => {
+    const { addGame, getGameWithPlayers } = await import('../db/queries/games.ts');
+    const { addUser } = await import('../db/queries/users.ts');
+    const player1Id = 'uuid-1';
+    const player2Id = 'uuid-2';
+    const player3Id = 'uuid-3';
+    const player4Id = 'uuid-4';
+    addUser(player1Id, 'Joe', 'hashPass', 'test@mail.com');
+    addUser(player2Id, 'Bob', 'hashPass', 'test1@mail.com');
+    addUser(player3Id, 'Alice', 'hashPass', 'test2@mail.com');
+    addUser(player4Id, 'Elizabeth', 'hashPass', 'test3@mail.com');
+
+    const team1 = [player1Id, player2Id];
+    const team2 = [player3Id, player4Id];
+
+    const gameId = addGame(21, 15, team1, team2);
+    expect(gameId).toBeTruthy();
+    expect(typeof gameId).toBe('number');
+
+    const game = getGameWithPlayers(gameId!);
+    expect(game).toBeTruthy();
+    expect(game!.team1Score).toBe(21);
+    expect(game!.team2Score).toBe(15);
+    expect(game!.players.team1).toHaveLength(2);
+    expect(game!.players.team2).toHaveLength(2);
+    expect(game!.players.team1[0]!.username).toBe('Joe');
+    expect(game!.players.team1[1]!.username).toBe('Bob');
+    expect(game!.players.team2[0]!.username).toBe('Alice');
+    expect(game!.players.team2[1]!.username).toBe('Elizabeth');
+  });
+
+  it('Transaction rollback, if Game/GamePlayer fails, nothing goes to database', async () => {
+    const { addGame } = await import('../db/queries/games.ts');
+
+    const gameId = addGame(21, 15, 'invalid-uuid', 'invalid-uuid-2');
+    expect(gameId).toBeNull();
+
+    const games = testDb.prepare('SELECT COUNT(*) as count from Games').get() as {
+      count: number;
+    };
+    expect(games.count).toBe(0);
+  });
+});
+
+===== END apps/backend/tests/games.test.ts =====
+
+
+===== BEGIN apps/backend/tests/setup.ts =====
+import Database from 'better-sqlite3';
+import { createUmzug } from '../db/umzug.ts';
+import fs from 'fs';
+import { v4 as uuidv4 } from 'uuid';
+
+export async function createTestDb(): Promise<Database.Database> {
+  const migrationFile = `./tests/.migrations-${uuidv4()}`;
+  const testDb = new Database(':memory:');
+  testDb.pragma('journal_mode = WAL');
+
+  const testUmzug = createUmzug(testDb, migrationFile);
+  await testUmzug.up();
+  (testDb as any)._migrationFile = migrationFile;
+
+  return testDb;
+}
+
+export function cleanupTestDb(db: Database.Database) {
+  const migrationFile = (db as any)._migrationFile;
+  if (fs.existsSync(migrationFile)) fs.unlinkSync(migrationFile);
+
+  db.close();
+}
+
+===== END apps/backend/tests/setup.ts =====
+
+
+===== BEGIN apps/backend/tests/testImg.png (SKIPPED: non-text) =====
+
+
+===== BEGIN apps/backend/tests/users.test.ts =====
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { createTestDb, cleanupTestDb } from './setup.ts';
+import type { Database } from 'better-sqlite3';
+
+describe('User Functions', () => {
+  let testDb: Database;
+
+  beforeEach(async () => {
+    vi.resetModules();
+    testDb = await createTestDb();
+    vi.doMock('../db/client.ts', () => ({
+      default: testDb,
+    }));
+  });
+
+  afterEach(() => {
+    cleanupTestDb(testDb);
+    vi.resetModules();
+    vi.clearAllMocks();
+  });
+
+  it('Add user and test the getter functions', async () => {
+    const { addUser, getUserByUuid, getUserByUsername, getUserByEmail, getUserStats } =
+      await import('../db/queries/users.ts');
+    const player1Id = 'uuid-1';
+    const user = addUser(player1Id, 'Joe', 'hashPass', 'test@mail.com');
+    expect(user).toBeTruthy();
+
+    const userByUuid = getUserByUuid(player1Id);
+    expect(userByUuid).toBeTruthy();
+    expect(userByUuid!.username).toBe('Joe');
+    const userByUsername = getUserByUsername('Joe');
+    expect(userByUsername).toBeTruthy();
+    expect(userByUsername!.username).toBe('Joe');
+    const userByEmail = getUserByEmail('test@mail.com');
+    expect(userByEmail).toBeTruthy();
+    expect(userByEmail!.username).toBe('Joe');
+    const userStats = getUserStats(player1Id);
+    expect(userStats).toBeTruthy();
+    expect(userStats!.username).toBe('Joe');
+
+    const allUserstats = getUserStats();
+    expect(allUserstats).toBeTruthy();
+    expect(allUserstats).toHaveLength(1);
+    expect(allUserstats[0]!.username).toBe('Joe');
+  });
+
+  it('Test uuid, email, username uniqueness', async () => {
+    const { addUser, getUserStats } = await import('../db/queries/users.ts');
+    const player1Id = 'uuid-1';
+    const user1 = addUser(player1Id, 'Joe', 'hashPass', 'test@mail.com');
+    expect(user1).toBeTruthy();
+
+    // Same UUID as user 1
+    const user2 = addUser(player1Id, 'Bob', 'hashPass', 'test1@mail.com');
+    expect(user2).toBeFalsy();
+
+    // Same username as user 1
+    const player2Id = 'uuid-2';
+    const user3 = addUser(player2Id, 'Joe', 'hashPass', 'test2@mail.com');
+    expect(user3).toBeFalsy();
+
+    // Same email as user 1
+    const player3Id = 'uuid-3';
+    const user4 = addUser(player3Id, 'Bobby', 'hashPass', 'test@mail.com');
+    expect(user3).toBeFalsy();
+
+    // Make sure only the first addUser call was successful
+    const users = getUserStats();
+    expect(users).toBeTruthy();
+    expect(users).toHaveLength(1);
+  });
+
+  it('Delete user', async () => {
+    const { addUser, getUserStats } = await import('../db/queries/users.ts');
+    const { deleteUser } = await import('../db/queries/userDelete.ts');
+    const playerId = 'uuid-1';
+    const user = addUser(playerId, 'Joe', 'hashPass', 'test@mail.com');
+    expect(user).toBeTruthy();
+
+    let users = getUserStats();
+    expect(users).toBeTruthy();
+    expect(users).toHaveLength(1);
+    expect(users[0]!.username).toBe('Joe');
+
+    const deletedUser = deleteUser(playerId);
+    expect(deletedUser).toBeTruthy();
+
+    users = getUserStats();
+    expect(users).toBeTruthy();
+    expect(users).toHaveLength(0);
+  });
+
+  it('Test avatar creation & deletion', async () => {
+    const { addUser, getUserStats, updateAvatar } = await import('../db/queries/users.ts');
+    const playerId = 'uuid-1';
+    const user = addUser(playerId, 'Joe', 'hashPass', 'test@mail.com');
+    expect(user).toBeTruthy();
+
+    let userStats = getUserStats(playerId);
+    expect(userStats).toBeTruthy();
+    expect(userStats!.username).toBe('Joe');
+    expect(userStats!.avatar).toBeNull;
+
+    let updateResult = updateAvatar(playerId, '/img.png');
+    expect(updateResult).toBeTruthy();
+
+    userStats = getUserStats(playerId);
+    expect(userStats).toBeTruthy();
+    expect(userStats!.username).toBe('Joe');
+    expect(userStats!.avatar).toBe('/img.png');
+
+    updateResult = updateAvatar(playerId);
+    expect(updateResult).toBeTruthy();
+
+    userStats = getUserStats(playerId);
+    expect(userStats).toBeTruthy();
+    expect(userStats!.username).toBe('Joe');
+    expect(userStats!.avatar).toBeNull;
+  });
+
+  it('Test password change', async () => {
+    const { addUser, getUserByUuid, updatePassword } = await import('../db/queries/users.ts');
+    const playerId = 'uuid-1';
+    const user = addUser(playerId, 'Joe', 'hashPass', 'test@mail.com');
+    expect(user).toBeTruthy();
+
+    let userInDb = getUserByUuid(playerId);
+    expect(userInDb).toBeTruthy();
+    let isValidPassword = 'hashPass' === userInDb?.passwordHash;
+    expect(isValidPassword).toBeTruthy();
+
+    const updateResult = updatePassword(playerId, 'newPass');
+    expect(updateResult).toBeTruthy();
+
+    userInDb = getUserByUuid(playerId);
+    expect(userInDb).toBeTruthy();
+    isValidPassword = 'newPass' === userInDb?.passwordHash;
+    expect(isValidPassword).toBeTruthy();
+  });
+
+  it('Test username change', async () => {
+    const { addUser, getUserStats, updateUsername } = await import('../db/queries/users.ts');
+    const playerId = 'uuid-1';
+    const user = addUser(playerId, 'Joe', 'hashPass', 'test@mail.com');
+    expect(user).toBeTruthy();
+
+    let userStats = getUserStats(playerId);
+    expect(userStats).toBeTruthy();
+    expect(userStats!.username).toBe('Joe');
+
+    const updateResult = updateUsername(playerId, 'Bob');
+    expect(updateResult).toBeTruthy();
+
+    userStats = getUserStats(playerId);
+    expect(userStats).toBeTruthy();
+    expect(userStats!.username).toBe('Bob');
+  });
+});
+
+===== END apps/backend/tests/users.test.ts =====
+
+
+===== BEGIN apps/backend/tsconfig.json =====
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "target": "ES2022",
+    "types": ["node", "vitest"],
+    "sourceMap": true,
+    "noEmit": true,
+    "isolatedModules": true
+  },
+  "include": ["index.ts", "db/**/*", "utils/**/*", "**/*.d.ts"]
+}
+
+===== END apps/backend/tsconfig.json =====
+
+
+===== BEGIN apps/backend/types/dbtypes.ts =====
+export interface UserDb {
+  uuid: string;
+  username: string;
+  email: string;
+  password_hash: string | null;
+  tfa: boolean;
+  avatar: string | null;
+  ranking: number;
+  created_at: string;
+  last_seen: string;
+  google_id: string | null;
+}
+
+export interface UserStatsDb {
+  username: string;
+  uuid: string;
+  email: string | null;
+  avatar: string | null;
+  ranking: number;
+  created_at: string;
+  wins: number;
+  losses: number;
+  total_games: number;
+  online: boolean;
+}
+
+export interface GameDb {
+  id: number;
+  team_1_score: number;
+  team_2_score: number;
+  created_at: string;
+}
+
+export interface GamePlayerDb {
+  team_number: number;
+  uuid: string | null;
+  username: string | null;
+  avatar: string | null;
+  ranking: number | null;
+  created_at: string | null;
+}
+
+export interface PublicUserDb {
+  uuid: string;
+  username: string;
+  avatar: string | null;
+  ranking: number;
+  created_at: string;
+}
+
+export interface PendingUserDb {
+  username: string;
+  email: string;
+  password_hash: string;
+  confirmation_token: string;
+  expires_at: string;
+  created_at: string;
+}
+
+export interface UserSettingsDb {
+  user_uuid: string;
+  paddle_color: string;
+  color_blind_mode: number;
+  photo_sensitive_mode: number;
+}
+
+===== END apps/backend/types/dbtypes.ts =====
+
+
+===== BEGIN apps/backend/types/types.ts =====
+import 'fastify';
+
+declare module 'fastify' {
+  interface FastifyRequest {
+    user?: JWTPayload;
+  }
+}
+
+export interface JWTPayload {
+  uuid: string;
+  username: string;
+  iat?: number;
+  exp?: number;
+}
+
+export interface User {
+  uuid: string;
+  username: string;
+  email: string;
+  passwordHash: string | null;
+  tfa: boolean;
+  avatar: string | null;
+  ranking: number;
+  createdAt: string;
+  googleId: string | null;
+}
+
+export interface UserStats {
+  username: string;
+  uuid: string;
+  avatar: string | null;
+  ranking: number;
+  createdAt: string;
+  wins: number;
+  losses: number;
+  totalGames: number;
+  online: boolean;
+}
+
+export interface PublicUser {
+  uuid: string;
+  username: string;
+  avatar: string | null;
+  ranking: number;
+  createdAt: string;
+}
+
+export interface GameWithPlayers {
+  id: number;
+  team1Score: number;
+  team2Score: number;
+  players: {
+    team1: (PublicUser | null)[];
+    team2: (PublicUser | null)[];
+  };
+  playedAt: string;
+}
+
+export interface UserSettings {
+  uuid: string;
+  paddleColor: string;
+  colorBlindMode: number;
+  photoSensitiveMode: number;
+}
+
+===== END apps/backend/types/types.ts =====
+
+
+===== BEGIN apps/backend/utils/config.ts =====
+import dotenv from 'dotenv';
+import { resolve, isAbsolute, dirname } from 'node:path';
+import { mkdir } from 'node:fs/promises';
+import type { SwaggerOptions } from '@fastify/swagger';
+
+dotenv.config();
+
+// fail fast on missing envs (optional)
+const REQUIRED = [
+  'FRONTEND_URL',
+  'SECRET',
+  'DATABASE_PATH',
+  'BACKEND_HOST',
+  'BACKEND_PORT',
+  'UPLOAD_DIR',
+] as const;
+for (const k of REQUIRED) {
+  if (!process.env[k]) throw new Error(`Missing env: ${k}`);
+}
+
+// Treat the backend working dir as project root
+const projectRoot = process.cwd();
+
+// Helper: turn relative env path into absolute
+const toAbs = (p: string) => (isAbsolute(p) ? p : resolve(projectRoot, p));
+
+// Resolve paths
+export const UPLOAD_DIR = toAbs(process.env.UPLOAD_DIR!);
+const DB_PATH = toAbs(process.env.DATABASE_PATH!);
+
+// Ensure dirs exist (do this once, early)
+await mkdir(UPLOAD_DIR, { recursive: true });
+await mkdir(dirname(DB_PATH), { recursive: true });
+
+// Export config
+export const DATABASE_PATH = DB_PATH;
+
+export const BACKEND_PORT = Number(process.env.BACKEND_PORT!);
+export const BACKEND_HOST = process.env.BACKEND_HOST as string;
+export const SECRET = process.env.SECRET as string;
+export const FRONTEND_URL = process.env.FRONTEND_URL as string;
+export const NGINX_PORT = process.env.NGINX_PORT as string;
+
+// Export Swagger config
+export const swaggerConfig: SwaggerOptions = {
+  openapi: {
+    openapi: '3.0.0',
+    info: {
+      title: 'PONG APIs',
+      version: '1.0.0',
+    },
+    servers: [
+      {
+        url: `http://localhost:${BACKEND_PORT}`,
+        description: 'Dev backend server',
+      },
+    ],
+    tags: [
+      { name: 'User', description: 'User related endpoints' },
+      { name: 'Game', description: 'Game related endpoints' },
+      { name: 'Auth', description: 'Authentication related endpoints' },
+      { name: 'Friends', description: 'Friends related endpoints' },
+    ],
+    components: {
+      securitySchemes: {
+        bearerAuth: {
+          type: 'http',
+          scheme: 'bearer',
+          bearerFormat: 'JWT',
+        },
+      },
+    },
+  },
+};
+
+===== END apps/backend/utils/config.ts =====
+
+
+===== BEGIN apps/backend/utils/errorHandler.ts =====
+import type { FastifyError, FastifyReply, FastifyRequest } from 'fastify';
+
+export const prettierErrorMessages = (
+  error: FastifyError,
+  request: FastifyRequest,
+  res: FastifyReply,
+) => {
+  if (error.validation) {
+    const friendlyErrors = error.validation.map((err: any) => {
+      const field = err.instancePath.replace('/body/', '').replace('/', '');
+
+      if (field === 'username') {
+        if (err.keyword === 'pattern') {
+          return {
+            field,
+            message:
+              'Username can only contain letters, numbers, and hyphens (no consecutive hyphens or starting with hyphen)',
+          };
+        }
+      }
+
+      if (field === 'email') {
+        if (err.keyword === 'format') {
+          return { field, message: 'Please enter a valid email address' };
+        }
+      }
+
+      if (field === 'password') {
+        if (err.keyword === 'minLength') {
+          return { field, message: 'Password must be at least 12 characters long' };
+        }
+        if (err.keyword === 'pattern') {
+          if (err.schemaPath.includes('allOf/0')) {
+            return { field, message: 'Password has invalid characters' };
+          }
+          if (err.schemaPath.includes('allOf/1')) {
+            return { field, message: 'Password must contain at least one lowercase letter' };
+          }
+          if (err.schemaPath.includes('allOf/2')) {
+            return { field, message: 'Password must contain at least one uppercase letter' };
+          }
+          if (err.schemaPath.includes('allOf/3')) {
+            return { field, message: 'Password must contain at least one number' };
+          }
+          if (err.schemaPath.includes('allOf/4')) {
+            return { field, message: 'Password must contain at least one special character' };
+          }
+        }
+      }
+
+      return { field, message: err.message };
+    });
+
+    res.status(400).send({
+      message: 'Validation failed',
+      details: friendlyErrors,
+    });
+    return;
+  }
+
+  res.send(error);
+};
+
+===== END apps/backend/utils/errorHandler.ts =====
+
+
+===== BEGIN apps/backend/utils/nodemailer/emailHtml.ts =====
+export const confirmationEmailHtml = (confirmUrl: string, frontendUrl: string): string => {
+  return `<div
+		style="font-family: sans-serif; max-width: 400px; margin: 2rem auto;
+		padding: 1rem; border-radius: 0.5rem;">
+		<h2>Confirm your email address to get started on playing BabylonPong</h2>
+			<a
+				href="${confirmUrl}"
+				style="
+					text-decoration: none;
+					background-color: #161f30;
+					color: white;
+					padding: 0.5rem 2rem;
+					border-radius: 0.3rem;
+					font-weight: bold;" >
+			Confirm my email
+			</a>
+			<p style="padding: 1rem 0; line-height: 2rem; font-size: 14px">
+				This link is valid for 24 hours. If you didn't register, please ignore this email.
+			</p>
+		<a href="${frontendUrl}" target="_blank" style="color: black">BabylonPong</a>
+	</div>`;
+};
+
+export const resetPasswordHtml = (resetUrl: string, frontendUrl: string): string => {
+  return `<div
+		style="font-family: sans-serif; max-width: 400px; margin: 2rem auto;
+		padding: 1rem; border-radius: 0.5rem;">
+		<h2>Reset your password for BabylonPong</h2>
+			<a
+				href="${resetUrl}"
+				style="
+					text-decoration: none;
+					background-color: #161f30;
+					color: white;
+					padding: 0.5rem 2rem;
+					border-radius: 0.3rem;
+					font-weight: bold;" >
+			Reset my password
+			</a>
+			<p style="padding: 1rem 0; line-height: 2rem; font-size: 14px">
+				This link is valid for 30 minutes. If you didn't ask for a password change, please ignore this email.
+			</p>
+		<a href="${frontendUrl}" target="_blank" style="color: black">BabylonPong</a>
+	</div>`;
+};
+
+export const deleteUserHtml = (resetUrl: string, frontendUrl: string): string => {
+  return `<div
+		style="font-family: sans-serif; max-width: 400px; margin: 2rem auto;
+		padding: 1rem; border-radius: 0.5rem;">
+		<h2>You have requested for your user's deletion from BabylonPong.</h2>
+			<a
+				href="${resetUrl}"
+				style="
+					text-decoration: none;
+					background-color: #161f30;
+					color: white;
+					padding: 0.5rem 2rem;
+					border-radius: 0.3rem;
+					font-weight: bold;" >
+			Delete my user account
+			</a>
+			<p style="padding: 1rem 0; line-height: 2rem; font-size: 14px">
+				This link is valid for 24 hours. If you didn't ask for user deletion, please ignore this email.
+			</p>
+		<a href="${frontendUrl}" target="_blank" style="color: black">BabylonPong</a>
+	</div>`;
+};
+
+===== END apps/backend/utils/nodemailer/emailHtml.ts =====
+
+
+===== BEGIN apps/backend/utils/nodemailer/index.ts =====
+import nodemailer from 'nodemailer';
+import { confirmationEmailHtml, resetPasswordHtml, deleteUserHtml } from './emailHtml.ts';
+import { FRONTEND_URL } from '../config.ts';
+
+/*
+	Uses testAccount - mail doesn't really get sent, but instead prints
+	an URL to console to preview the email.
+*/
+async function createTestTransporter() {
+  const testAccount = await nodemailer.createTestAccount();
+  return nodemailer.createTransport({
+    host: testAccount.smtp.host,
+    port: testAccount.smtp.port,
+    secure: testAccount.smtp.secure,
+    auth: {
+      user: testAccount.user,
+      pass: testAccount.pass,
+    },
+  });
+}
+
+export async function sendConfirmationEmail(recipientEmail: string, token: string) {
+  try {
+    const transporter = await createTestTransporter();
+    const url = `${FRONTEND_URL}/confirm/${token}`;
+    const html = confirmationEmailHtml(url, FRONTEND_URL);
+    const info = await transporter.sendMail({
+      from: '"No Reply" <no-reply@babylonpong.com>',
+      to: recipientEmail,
+      subject: 'Confirm your email for BabylonPong',
+      html: html,
+    });
+    console.log('\x1b[0;32mPreview URL\x1b[0m: %s', nodemailer.getTestMessageUrl(info));
+    return info.accepted.length > 0;
+  } catch (error) {
+    console.error('\x1b[0;31mError sending confirmation email\x1b[0m:', error);
+    return false;
+  }
+}
+
+export async function sendResetPasswordEmail(recipientEmail: string, token: string) {
+  try {
+    const transporter = await createTestTransporter();
+    const url = `${FRONTEND_URL}/reset-password/${token}`;
+    const html = resetPasswordHtml(url, FRONTEND_URL);
+    const info = await transporter.sendMail({
+      from: '"No Reply" <no-reply@babylonpong.com>',
+      to: recipientEmail,
+      subject: 'Reset your password for BabylonPong',
+      html: html,
+    });
+    console.log('\x1b[0;32mPreview URL\x1b[0m: %s', nodemailer.getTestMessageUrl(info));
+    return info.accepted.length > 0;
+  } catch (error) {
+    console.error('\x1b[0;31mError sending confirmation email\x1b[0m:', error);
+    return false;
+  }
+}
+
+export async function sendDeleteEmail(recipientEmail: string, token: string) {
+  try {
+    const transporter = await createTestTransporter();
+    const url = `${FRONTEND_URL}/delete-user/${token}`;
+    const html = deleteUserHtml(url, FRONTEND_URL);
+    const info = await transporter.sendMail({
+      from: '"No Reply" <no-reply@babylonpong.com>',
+      to: recipientEmail,
+      subject: 'Reset your password for BabylonPong',
+      html: html,
+    });
+    console.log('\x1b[0;32mPreview URL\x1b[0m: %s', nodemailer.getTestMessageUrl(info));
+    return info.accepted.length > 0;
+  } catch (error) {
+    console.error('\x1b[0;31mError sending confirmation email\x1b[0m:', error);
+  }
+}
+
+===== END apps/backend/utils/nodemailer/index.ts =====
+
+
+===== BEGIN apps/backend/utils/rollback.ts =====
+import { rollbackMigration } from '../db/migrations.ts';
+
+rollbackMigration();
+
+===== END apps/backend/utils/rollback.ts =====
+
+
+===== BEGIN apps/backend/utils/seedSecrets.ts =====
+import crypto from 'crypto';
+import fs from 'fs';
+import path from 'path';
+
+/*
+	Seeds a secret to backend .env and (TODO) to game server .env
+	Seeds a JWT secret to backend .env
+*/
+
+const gameSecret = crypto.randomBytes(32).toString('hex');
+const jwtSecret = crypto.randomBytes(32).toString('hex');
+
+const backendEnvPath = path.join(process.cwd(), '.env');
+//const gameServerEnvPath = path.join(process.cwd(), '../game-server/.env');
+
+const updateEnvFile = (filePath: string, key: string, value: string) => {
+  let envContent = '';
+  if (fs.existsSync(filePath)) envContent = fs.readFileSync(filePath, 'utf8');
+  const regex = new RegExp(`^${key}=.*$`, 'm');
+  if (regex.test(envContent)) envContent = envContent.replace(regex, `${key}=${value}`);
+  else envContent += `${key}=${value}\n`;
+  fs.writeFileSync(filePath, envContent);
+  console.log(`Updated ${key} in ${filePath}`);
+};
+
+updateEnvFile(backendEnvPath, 'SECRET', jwtSecret);
+//updateEnvFile(gameServerEnvPath, 'GAME_SECRET', jwtSecret);
+
+===== END apps/backend/utils/seedSecrets.ts =====
+
+
+===== BEGIN apps/backend/utils/seedTestData.ts =====
+import './config.ts';
+import { runMigrations } from '../db/migrations.ts';
+import { addUser, updateUserSettings, updateLastSeen } from '../db/queries/users.ts';
+import { v4 as uuidv4 } from 'uuid';
+import bcrypt from 'bcrypt';
+import { addFriend, respondToFriendReq } from '../db/queries/friends.ts';
+import { addGame } from '../db/queries/games.ts';
+import { createSettings } from '../db/queries/unconfirmedUsers.ts';
+
+// Run migrations first
+await runMigrations();
+
+const createUser = async (username: string, email: string, password: string) => {
+  const passwordHash = await bcrypt.hash(password, 10);
+  const uuid = uuidv4();
+  addUser(uuid, username, passwordHash, email);
+  createSettings(uuid);
+  return uuid;
+};
+
+// Create a few test users
+const uuidJoe = await createUser('Joe', 'joe@test.com', 'testPassword!1');
+const uuidBob = await createUser('Bob', 'bob@test.com', 'testPassword!1');
+const uuidWil = await createUser('Wil', 'wil@test.com', 'testPassword!1');
+// Make Joe and Bob friends
+addFriend(uuidJoe, uuidBob);
+respondToFriendReq(uuidBob, uuidJoe, true);
+// Make Joe and Wil friends
+addFriend(uuidJoe, uuidWil);
+respondToFriendReq(uuidWil, uuidJoe, true);
+// Bob wants to befriend Wil, but Wil has not responded
+addFriend(uuidBob, uuidWil);
+// Create a few games
+addGame(11, 5, uuidBob, uuidJoe);
+addGame(11, 0, uuidBob, uuidJoe);
+addGame(10, 12, uuidWil, uuidBob);
+addGame(1, 11, uuidJoe, uuidWil);
+// Change UserProfileSettings for Joe and Bob
+updateUserSettings(uuidJoe, {
+  paddle_color: '#FF0000',
+  photo_sensitive_mode: 1,
+  color_blind_mode: 1,
+});
+updateUserSettings(uuidBob, { paddle_color: '#BB00FF', color_blind_mode: 2 });
+
+// Move Joe's and Bob's last_seen to 10 minutes ago, so they appear offline
+const tenMinutesAgo = new Date(Date.now() - 10 * 60 * 1000);
+updateLastSeen(uuidJoe, tenMinutesAgo);
+updateLastSeen(uuidBob, tenMinutesAgo);
+
+===== END apps/backend/utils/seedTestData.ts =====
+
+
+===== BEGIN apps/backend/vitest.config.ts =====
+import { defineConfig } from 'vitest/config';
+
+export default defineConfig({
+  test: {
+    globals: true,
+    environment: 'node',
+  },
+});
+
+===== END apps/backend/vitest.config.ts =====
+

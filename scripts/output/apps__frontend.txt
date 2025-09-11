@@ -1,0 +1,2527 @@
+# apps/frontend
+
+===== BEGIN apps/frontend/.env =====
+VITE_BACKEND_URL=http://localhost:3001
+===== END apps/frontend/.env =====
+
+
+===== BEGIN apps/frontend/.env.example (SKIPPED: non-text) =====
+
+
+===== BEGIN apps/frontend/.gitignore (SKIPPED: non-text) =====
+
+
+===== BEGIN apps/frontend/.tsconfigs/tsconfig.app.json =====
+{
+  "compilerOptions": {
+    "tsBuildInfoFile": "../node_modules/.tmp/tsconfig.app.tsbuildinfo",
+    "target": "ES2022",
+    "useDefineForClassFields": true,
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "module": "ESNext",
+    "skipLibCheck": true,
+
+    /* bundler mode */
+    "moduleResolution": "bundler",
+    "allowImportingTsExtensions": true,
+    "verbatimModuleSyntax": true,
+    "moduleDetection": "force",
+    "noEmit": true,
+    "jsx": "react-jsx",
+
+    /* Types for app/test runtime */
+    "types": ["vite/client"],
+
+    /* Vite/TS ergonomics */
+    "isolatedModules": true,
+    "forceConsistentCasingInFileNames": true,
+
+    /* Linting */
+    "strict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "erasableSyntaxOnly": true,
+    "noFallthroughCasesInSwitch": true,
+    "noUncheckedSideEffectImports": true
+  },
+  "include": ["../src"],
+  "exclude": ["../dist", "../node_modules"]
+}
+
+===== END apps/frontend/.tsconfigs/tsconfig.app.json =====
+
+
+===== BEGIN apps/frontend/.tsconfigs/tsconfig.node.json =====
+{
+  "compilerOptions": {
+    "tsBuildInfoFile": "../node_modules/.tmp/tsconfig.node.tsbuildinfo",
+    "target": "ES2023",
+    "lib": ["ES2023"],
+    "module": "ESNext",
+    "skipLibCheck": true,
+
+    /* bundler mode */
+    "moduleResolution": "bundler",
+    "allowImportingTsExtensions": true,
+    "verbatimModuleSyntax": true,
+    "moduleDetection": "force",
+    "noEmit": true,
+
+    /* Linting */
+    "strict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "erasableSyntaxOnly": true,
+    "noFallthroughCasesInSwitch": true,
+    "noUncheckedSideEffectImports": true,
+    "types": ["node"]
+  },
+  "include": ["../vite.config.ts"]
+}
+
+===== END apps/frontend/.tsconfigs/tsconfig.node.json =====
+
+
+===== BEGIN apps/frontend/Dockerfile.dev (SKIPPED: non-text) =====
+
+
+===== BEGIN apps/frontend/index.html =====
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Vite + React + TS</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
+
+===== END apps/frontend/index.html =====
+
+
+===== BEGIN apps/frontend/package.json =====
+{
+  "name": "@app/web",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host 0.0.0.0 --strictPort --port 5173",
+    "build": "vite build",
+    "fix": "npm run -w ft_transcendence fix",
+    "typecheck": "tsc -b",
+    "preview": "vite preview",
+    "test": "vitest"
+  },
+  "dependencies": {
+    "@clerk/clerk-react": "^5.31.8",
+    "@tailwindcss/vite": "^4.1.12",
+    "axios": "^1.11.0",
+    "framer-motion": "^12.23.12",
+    "js-cookie": "^3.0.5",
+    "jwt-decode": "^4.0.0",
+    "lucide-react": "^0.536.0",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
+    "react-hot-toast": "^2.5.2",
+    "react-router-dom": "^7.6.0",
+    "tailwindcss": "^4.1.12"
+  },
+  "devDependencies": {
+    "@testing-library/jest-dom": "^6.7.0",
+    "@testing-library/react": "^16.3.0",
+    "@types/js-cookie": "^3.0.6",
+    "@types/react": "^19.1.2",
+    "@types/react-dom": "^19.1.2",
+    "@vitejs/plugin-react": "^4.4.1",
+    "jsdom": "^26.1.0"
+  },
+  "engines": {
+    "node": ">=20.19.0"
+  }
+}
+
+===== END apps/frontend/package.json =====
+
+
+===== BEGIN apps/frontend/public/vite.svg (SKIPPED: non-text) =====
+
+
+===== BEGIN apps/frontend/README.md =====
+create .env file with the next variable
+
+VITE_BACKEND_URL=http://localhost:3001
+
+then:
+
+npm run dev
+
+===== END apps/frontend/README.md =====
+
+
+===== BEGIN apps/frontend/src/App.tsx =====
+import Navbar from './components/Navbar';
+import { Route, Routes } from 'react-router-dom';
+import Registration from './pages/Registation';
+import Login from './pages/Login';
+import Home from './pages/Home';
+import Layout from './pages/Layout';
+import Profile from './pages/Profile';
+import { Toaster } from 'react-hot-toast';
+import Friends from './pages/Friends';
+import Confirmation from './pages/Confirmation';
+import PingPong from './pages/PingPong/PingPong';
+import LocalGame from './pages/PingPong/LocalGame';
+
+function App() {
+  return (
+    <div>
+      <Toaster />
+      <Navbar />
+
+      <Routes>
+        <Route path={'/'} element={<Home />} />
+        <Route path={'/signup'} element={<Registration />} />
+        <Route path={'/login'} element={<Login />} />
+        <Route path={'/ping-pong'} element={<PingPong />} />
+        <Route path={'/ping-pong/local'} element={<LocalGame />} />
+        <Route path={'/confirm/:confirmationToken'} element={<Confirmation />} />
+        <Route path={'/profile'} element={<Layout />}>
+          <Route index element={<Profile />} />
+          <Route path={'/profile/friends'} element={<Friends />} />
+        </Route>
+      </Routes>
+    </div>
+  );
+}
+
+export default App;
+
+===== END apps/frontend/src/App.tsx =====
+
+
+===== BEGIN apps/frontend/src/assets/arcade.png (SKIPPED: > 1048576 bytes) =====
+
+
+===== BEGIN apps/frontend/src/assets/background.png (SKIPPED: > 1048576 bytes) =====
+
+
+===== BEGIN apps/frontend/src/assets/game.gif (SKIPPED: > 1048576 bytes) =====
+
+
+===== BEGIN apps/frontend/src/assets/gif.mp4 (SKIPPED: > 1048576 bytes) =====
+
+
+===== BEGIN apps/frontend/src/assets/logo.png (SKIPPED: > 1048576 bytes) =====
+
+
+===== BEGIN apps/frontend/src/assets/react.svg (SKIPPED: non-text) =====
+
+
+===== BEGIN apps/frontend/src/assets/snake.jpeg (SKIPPED: non-text) =====
+
+
+===== BEGIN apps/frontend/src/assets/tetrist.jpg (SKIPPED: non-text) =====
+
+
+===== BEGIN apps/frontend/src/components/AuthForm.tsx =====
+import React, { useState } from 'react';
+
+interface AuthFormProps {
+  type: 'login' | 'register';
+  onSubmit: (data: {
+    username?: string;
+    password: string;
+    email: string;
+    confirmPassword?: string;
+  }) => void;
+}
+
+const AuthForm: React.FC<AuthFormProps> = ({ type, onSubmit }) => {
+  const [username, setUsername] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [success, setSuccess] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  const usernameRegex = /^(?!-)([a-zA-Z0-9-]+)(?<!-)$/;
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  const passwordRegex =
+    /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()\-=+[\]{};:|,<.>/?`]).{12,}$/;
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+    setSuccess(null);
+
+    if (!email || !password || (type === 'register' && !confirmPassword && !username)) {
+      setError('All fields are required.');
+      return;
+    }
+
+    if (!emailRegex.test(email)) {
+      setError('Please enter a valid email address.');
+      return;
+    }
+
+    if (type === 'register') {
+      // username validation
+      if (!usernameRegex.test(username)) {
+        setError(
+          'Username may only contain letters, numbers, and dashes, and cannot start or end with a dash.',
+        );
+        return;
+      }
+
+      // password match
+      if (password !== confirmPassword) {
+        setError('Passwords do not match.');
+        return;
+      }
+
+      // password validation
+      if (!passwordRegex.test(password)) {
+        setError(
+          'Password must be at least 12 characters and include uppercase, lowercase, a digit, and a special character.',
+        );
+        return;
+      }
+    }
+
+    // call container's onSubmit (container will call API / set context)
+    onSubmit({
+      username,
+      password,
+      email,
+      confirmPassword: type === 'register' ? confirmPassword : undefined,
+    });
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-4">
+      {error && <p className="text-red-500">{error}</p>}
+      {success && <p className="text-green-600">{success}</p>}
+
+      <div>
+        <label htmlFor="email" className="mb-1 block font-medium">
+          Email
+        </label>
+        <input
+          id="email"
+          type="text"
+          placeholder="Email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          className="w-full rounded border px-3 py-2"
+        />
+      </div>
+
+      {type === 'register' && (
+        <div>
+          <label htmlFor="username" className="mb-1 block font-medium">
+            Username
+          </label>
+          <input
+            id="username"
+            type="username"
+            placeholder="Username"
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+            className="w-full rounded border px-3 py-2"
+          />
+        </div>
+      )}
+
+      <div>
+        <label htmlFor="password" className="mb-1 block font-medium">
+          Password
+        </label>
+        <input
+          id="password"
+          type="password"
+          placeholder="Password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          className="w-full rounded border px-3 py-2"
+        />
+      </div>
+
+      {type === 'register' && (
+        <div>
+          <label htmlFor="confirmPassword" className="mb-1 block font-medium">
+            Confirm Password
+          </label>
+          <input
+            id="confirmPassword"
+            type="password"
+            placeholder="Confirm Password"
+            value={confirmPassword}
+            onChange={(e) => setConfirmPassword(e.target.value)}
+            className="w-full rounded border px-3 py-2"
+          />
+        </div>
+      )}
+
+      <button
+        type="submit"
+        className="mb-3 w-full rounded bg-blue-600 py-2 text-white hover:bg-blue-700"
+      >
+        {type === 'login' ? 'Login' : 'Register'}
+      </button>
+      <button
+        type="button"
+        onClick={() => (window.location.href = '/api/auth/google')}
+        className="w-full rounded bg-red-600 py-2 text-white hover:bg-red-700"
+      >
+        Sign in with Google
+      </button>
+    </form>
+  );
+};
+
+export default AuthForm;
+
+===== END apps/frontend/src/components/AuthForm.tsx =====
+
+
+===== BEGIN apps/frontend/src/components/Navbar.tsx =====
+import { Link } from 'react-router-dom';
+import { useAppContext } from '../context/AppContext';
+
+const Navbar = () => {
+  const { user, logout } = useAppContext();
+
+  return (
+    <nav className="bg-white/3 absolute left-0 top-0 z-50 flex w-full items-center justify-between border-b border-white/10 px-6 py-4 text-white backdrop-blur-md">
+      {/* Brand */}
+      <div className="bg-gradient-to-r from-indigo-400 to-purple-500 bg-clip-text text-2xl font-extrabold text-transparent drop-shadow-lg">
+        <Link to="/">
+          <img src="/src/assets/logo.png" alt="" className="size-10" />
+        </Link>
+      </div>
+
+      {/* Menu */}
+      <div className="flex items-center gap-4">
+        {user ? (
+          <>
+            <span className="text-sm font-medium text-indigo-300">Welcome {user.username} ✨</span>
+            <Link
+              to="/profile"
+              className="rounded-md bg-gradient-to-r from-indigo-600 to-purple-600 px-4 py-2 text-sm font-semibold text-white shadow transition hover:from-indigo-500 hover:to-purple-500"
+            >
+              Profile
+            </Link>
+            <button
+              onClick={logout}
+              className="rounded-md bg-gradient-to-r from-rose-600 to-red-600 px-4 py-2 text-sm font-semibold text-white shadow transition hover:from-rose-500 hover:to-red-500"
+            >
+              Logout
+            </button>
+          </>
+        ) : (
+          <Link
+            to="/login"
+            className="rounded-md bg-gradient-to-r from-green-600 to-emerald-600 px-4 py-2 text-sm font-semibold text-white shadow transition hover:from-green-500 hover:to-emerald-500"
+          >
+            Login
+          </Link>
+        )}
+      </div>
+    </nav>
+  );
+};
+
+export default Navbar;
+
+===== END apps/frontend/src/components/Navbar.tsx =====
+
+
+===== BEGIN apps/frontend/src/components/Sidebar.tsx =====
+import React from 'react';
+import { NavLink } from 'react-router-dom';
+
+interface SideBarLink {
+  name: string;
+  path: string;
+}
+
+const sideBarLinks: SideBarLink[] = [
+  { name: 'Profile', path: '/profile' },
+  { name: 'Stats', path: '/profile/stats' },
+  { name: 'Friends', path: '/profile/friends' },
+];
+
+const Sidebar: React.FC = () => {
+  return (
+    <div className="mt-20 flex h-full w-12 flex-col border-r border-gray-300 pt-3 text-base transition-all duration-300 md:w-64">
+      {sideBarLinks.map((item, index) => (
+        <NavLink
+          to={item.path}
+          key={index}
+          end
+          className={({ isActive }) =>
+            `flex items-center gap-3 px-4 py-3 md:px-8 ${
+              isActive
+                ? 'border-r-4 border-blue-600 bg-blue-600/10 text-blue-600 md:border-r-[6px]'
+                : 'border-white text-gray-700 hover:bg-gray-100/90'
+            }`
+          }
+        >
+          <p className="hidden text-center md:block">{item.name}</p>
+        </NavLink>
+      ))}
+    </div>
+  );
+};
+
+export default Sidebar;
+
+===== END apps/frontend/src/components/Sidebar.tsx =====
+
+
+===== BEGIN apps/frontend/src/context/AppContext.tsx =====
+// src/context/AppContext.tsx
+import React, { createContext, useContext, useEffect } from 'react';
+import axios from 'axios';
+import { useNavigate } from 'react-router-dom';
+import { useUser } from '../hooks/useUser';
+import { useAuth } from '../hooks/useAuth';
+import type { User } from '../types';
+
+axios.defaults.baseURL = import.meta.env.VITE_BACKEND_URL;
+
+type Ctx = {
+  navigate: ReturnType<typeof useNavigate>;
+  user: User | null;
+  getToken: () => string | null;
+  login: (token: string) => Promise<void>;
+  logout: () => void;
+  setUser: React.Dispatch<React.SetStateAction<User | null>>;
+  axios: typeof axios;
+};
+const AppContext = createContext<Ctx | undefined>(undefined);
+
+export const AppProvider: React.FC<React.PropsWithChildren> = ({ children }) => {
+  const navigate = useNavigate();
+  const { user, setUser } = useUser();
+  const { initAuth, login: authLogin, logout: authLogout, getToken } = useAuth();
+
+  // On mount: set Authorization from cookie; if we have a token but no user → fetch /me
+  useEffect(() => {
+    initAuth();
+    if (!localStorage.getItem('user') && getToken()) {
+      axios
+        .get('/api/users/me')
+        .then(({ data }) =>
+          setUser({
+            username: data.username,
+            uuid: data.uuid,
+            avatar: data.avatar ?? null,
+            id: data.id ?? 0,
+            email: data.email ?? '',
+            wins: data.wins ?? 0,
+            losses: data.losses ?? 0,
+            createdAt: data.createdAt ?? '',
+          }),
+        )
+        .catch(() => {});
+    }
+  }, []);
+
+  // Unified login: got token → save → fetch /me → store user
+  const login = async (token: string) => {
+    authLogin(token);
+    const { data } = await axios.get('/api/users/me');
+    setUser({
+      username: data.username,
+      uuid: data.uuid,
+      avatar: data.avatar ?? null,
+      id: data.id ?? 0,
+      email: data.email ?? '',
+      wins: data.wins ?? 0,
+      losses: data.losses ?? 0,
+      createdAt: data.createdAt ?? '',
+    });
+  };
+
+  const logout = () => {
+    authLogout();
+    setUser(null);
+    navigate('/');
+  };
+
+  return (
+    <AppContext.Provider value={{ navigate, user, login, logout, axios, setUser, getToken }}>
+      {children}
+    </AppContext.Provider>
+  );
+};
+
+export const useAppContext = () => {
+  const ctx = useContext(AppContext);
+  if (!ctx) throw new Error('useAppContext must be used inside AppProvider');
+  return ctx;
+};
+
+===== END apps/frontend/src/context/AppContext.tsx =====
+
+
+===== BEGIN apps/frontend/src/game/host/dom-embed.ts =====
+// src/app/host/dom-embed.ts
+import '@client/ui/tailwind.css';
+import '@babylonjs/core/Materials/standardMaterial';
+import '@babylonjs/core/Lights/Shadows/shadowGeneratorSceneComponent';
+import '@babylonjs/core/Rendering/boundingBoxRenderer';
+import '@babylonjs/core/Rendering/depthRendererSceneComponent';
+import '@babylonjs/core/Animations/animatable';
+
+import { createPongApp } from '../index';
+
+export async function bootstrapPong(canvas: HTMLCanvasElement) {
+  const app = await createPongApp({ mode: 'local', canvas });
+  app.start();
+  return app;
+}
+
+===== END apps/frontend/src/game/host/dom-embed.ts =====
+
+
+===== BEGIN apps/frontend/src/game/index.ts =====
+// src/app/index.ts
+export type AppMode = 'local' | 'online' | 'tournament';
+
+export type CreateAppOptions = {
+  mode: AppMode;
+  canvas: HTMLCanvasElement;
+};
+
+// Narrow public surface; only orchestrates the right mode.
+export async function createPongApp({ mode, canvas }: CreateAppOptions) {
+  if (mode === 'local') {
+    const { createLocalApp } = await import('./modes/local');
+    return createLocalApp(canvas);
+  }
+  // Stubs for future steps:
+  if (mode === 'online') throw new Error('online mode not implemented yet');
+  if (mode === 'tournament') throw new Error('tournament mode not implemented yet');
+  throw new Error(`Unknown mode: ${mode}`);
+}
+
+===== END apps/frontend/src/game/index.ts =====
+
+
+===== BEGIN apps/frontend/src/game/modes/local.ts =====
+// src/app/modes/local.ts
+import { createEngine } from '@pong/render';
+import { createLifecycle } from '@pong/render';
+import { createWorld } from '@pong/render';
+import {
+  attachLocalInput,
+  readIntent,
+  toggleControlsMirrored,
+  blockInputFor,
+} from '@pong/render';
+import { createBounces } from '@pong/render';
+import { FXManager } from '@pong/render';
+import { createScoreboard } from '@pong/render';
+import { updateHUD } from '@pong/render';
+import { createPaddleAnimator } from '@pong/render';
+
+import { computeBounds } from '@pong/render';
+import { detectEnteredServe, onEnteredServe } from '@pong/render';
+import { applyFrameEvents } from '@pong/render';
+import { mapStateForPlayerRows, mapHistoryForPlayers } from '@pong/render';
+
+import {
+  type GameState,
+  createInitialState,
+  stepPaddles,
+  handleSteps,
+  serveFrom,
+  createMatchController,
+  tableTennisRules,
+} from '@pong/game';
+
+import { pickInitialServer, SERVE_SELECT_TOTAL_MS } from '@pong/shared';
+import { deriveSeed32 } from '@pong/shared';
+import { nextLocalMatchSeed } from '@pong/render';
+import { disposeWorld } from '@pong/render';
+
+interface PongInstance {
+  start(): void;
+  destroy(): void;
+}
+
+export function createLocalApp(canvas: HTMLCanvasElement): PongInstance {
+  canvas.tabIndex = 1;
+
+  // Engine/scene/world
+  const { engine, engineDisposable } = createEngine(canvas);
+  const world = createWorld(engine);
+  const {
+    scene,
+    paddles: { left, right },
+    table,
+    ball,
+  } = world;
+
+  // HUD (DOM overlay anchored to canvas)
+  const hud = createScoreboard();
+  hud.attachToCanvas(canvas);
+
+  // Player display names (local defaults)
+  const names = { east: 'Magenta', west: 'Green' } as const;
+
+  // Bounds once (render → headless)
+  const { bounds } = computeBounds(world);
+
+  // FX manager
+  const fx = new FXManager(scene, {
+    wallZNorth: +bounds.halfWidthZ,
+    wallZSouth: -bounds.halfWidthZ,
+    ballMesh: ball.mesh,
+    ballRadius: bounds.ballRadius,
+    tableTop: table.tableTop,
+    camera: world.camera,
+  });
+
+  // Ruleset + match controller config
+  const RULES = tableTennisRules({
+    match: {
+      bestOf: 5,
+      switchEndsEachGame: true,
+      decidingGameMidSwapAtPoints: 5,
+      alternateInitialServerEachGame: true,
+    },
+  });
+
+  // === Deterministic per-match seed (depends on rules + table size) ===
+  const rulesetCrc = deriveSeed32(
+    RULES.game.targetScore,
+    RULES.game.winBy,
+    RULES.game.servesPerTurn,
+    RULES.game.deuceServesPerTurn,
+    RULES.match.bestOf,
+    RULES.match.switchEndsEachGame ? 1 : 0,
+    RULES.match.decidingGameMidSwapAtPoints ?? 0,
+    RULES.match.alternateInitialServerEachGame ? 1 : 0,
+  );
+  const tableW = bounds.halfLengthX * 2;
+  const tableH = bounds.halfWidthZ * 2;
+  const matchSeed = nextLocalMatchSeed(rulesetCrc, tableW, tableH);
+  const initialServer = pickInitialServer(matchSeed);
+
+  // Visual bounce helper — seeded per match (deterministic variety; visual-only)
+  const Bounces = createBounces(
+    ball.mesh,
+    table.tableTop.position.y,
+    bounds.ballRadius,
+    bounds.halfLengthX,
+    left.mesh,
+    right.mesh,
+    matchSeed,
+  );
+
+  // Match controller
+  const match = createMatchController(bounds, RULES, initialServer);
+
+  // Headless state (boot aligned to chosen initial server)
+  let state: GameState = createInitialState(bounds, initialServer);
+
+  // Input
+  const detachInput = attachLocalInput(canvas);
+  scene.onDisposeObservable.add(detachInput);
+
+  // Simple paddle-centering tween gate (kept in visuals)
+  const paddleAnim = createPaddleAnimator(scene, left.mesh, right.mesh);
+
+  // Track actual side swaps to know when the players have crossed (for HUD row mapping)
+  let rowsMirrored = false;
+
+  // Intro gate (wall-clock ms until which logic is gated)
+  let introUntil = 0;
+
+  // Fixed-step lifecycle (simulation cadence is set here)
+  const loop = createLifecycle(engine, scene, {
+    logicHz: 60,
+    update: (dtMs) => {
+      if (performance.now() < introUntil) return; // skip physics during intro FX
+      const dt = Math.min(0.05, dtMs / 1000);
+
+      // 1) Input → paddles
+      state = stepPaddles(state, readIntent(), dt);
+
+      // 2) Physics/flow
+      const prevPhase = state.phase;
+      const stepped = handleSteps(state, dt);
+
+      // 3) Match controller (scoring/game flow/swap sides)
+      const mc = match.afterPhysicsStep(stepped.next);
+      state = mc.state;
+
+      if (mc.events.swapSidesNow) {
+        // controls follow player
+        toggleControlsMirrored();
+
+        // color/skin follows player
+        const m = left.mesh.material;
+        left.mesh.material = right.mesh.material;
+        right.mesh.material = m;
+
+        // HUD mapping parity
+        rowsMirrored = !rowsMirrored;
+
+        // crossover cue
+        paddleAnim.cue(180);
+      }
+
+      // 4) Entered serve? Trigger cues
+      const entered = detectEnteredServe(prevPhase, state.phase);
+      if (entered) {
+        onEnteredServe(entered, {
+          ballMesh: ball.mesh,
+          Bounces,
+          paddleAnim,
+          blockInputFor,
+        });
+      }
+
+      // 5) HUD (player-pinned)
+      const snap = match.getSnapshot();
+      const stateForHUD = mapStateForPlayerRows(state, rowsMirrored);
+      const historyForHUD = mapHistoryForPlayers(snap.gamesHistory, RULES.match.switchEndsEachGame);
+      updateHUD(hud, stateForHUD, names, {
+        bestOf: snap.bestOf,
+        currentGameIndex: snap.currentGameIndex,
+        gamesHistory: historyForHUD,
+      });
+
+      // 6) Visual bounce Y + project meshes
+      const ballY = Bounces.update(state.ball.x, state.ball.vx);
+      ball.mesh.position.set(state.ball.x, ballY, state.ball.z);
+      if (!paddleAnim.isAnimating()) {
+        left.mesh.position.z = state.paddles.P1.z;
+        right.mesh.position.z = state.paddles.P2.z;
+      }
+
+      // 7) FX from events
+      applyFrameEvents(fx, stepped.events, ballY);
+    },
+  });
+
+  const destroy = () =>
+    disposeWorld({
+      loop,
+      world, // owns the Scene; disposes it
+      fx,
+      hud,
+      engineDisposable,
+    });
+
+  return {
+    start() {
+      // Pre-roll: run serve selection FX, gate input, then arm opening serve.
+      void import('@pong/render').then(({ incHide }) => {
+        incHide(ball.mesh);
+        incHide(ball.mesh);
+      });
+
+      blockInputFor(SERVE_SELECT_TOTAL_MS + 200);
+      introUntil = performance.now() + SERVE_SELECT_TOTAL_MS;
+
+      loop.start();
+
+      void fx.serveSelection(initialServer).then(async () => {
+        state = serveFrom(initialServer, state);
+        state = { ...state, tPauseBtwPointsMs: 0 };
+
+        const dir = initialServer === 'east' ? -1 : 1;
+        Bounces.scheduleServe(dir);
+
+        const { decHide } = await import('@pong/render');
+        decHide(ball.mesh);
+        decHide(ball.mesh);
+      });
+    },
+    destroy,
+  };
+}
+
+===== END apps/frontend/src/game/modes/local.ts =====
+
+
+===== BEGIN apps/frontend/src/game/modes/online.ts =====
+// src/app/modes/online.ts
+import { createEngine } from '@pong/render';
+import { createLifecycle } from '@pong/render';
+import { createWorld } from '@pong/render';
+import { FXManager } from '@pong/render';
+import { createScoreboard } from '@pong/render';
+import { updateHUD } from '@pong/render';
+import { applyFrameEvents } from '@pong/render';
+import { computeBounds } from '@pong/render';
+import { detectEnteredServe, onEnteredServe } from '@pong/render';
+import { mapStateForPlayerRows } from '@pong/render';
+
+import { readIntent } from '@pong/render';
+import { blockInputFor } from '@pong/render';
+import { /* mixOnlineAxes, */ type PlayerSeat } from '@pong/render';
+import { disposeWorld } from '@pong/render';
+
+import type { GameState } from '@pong/game';
+import type { FrameEvents } from '@pong/shared';
+import { SERVE_SELECT_TOTAL_MS } from '@pong/shared';
+import { clamp01 } from '@pong/shared';
+
+// --- Net placeholders (wire your transport here) -----------------------------------
+type OnlineClient = {
+  mySeat: PlayerSeat; // "P1" | "P2"
+  onSnapshot(cb: (s: GameState, ev: FrameEvents) => void): void;
+  onOpponentAxis(cb: (axis: number) => void): void; // scalar [-1..1]
+  sendLocalAxis(axis: number): void; // called every tick
+  disconnect(): void;
+};
+
+// Resolve this with your WebSocket/RTC layer.
+async function connectOnline(): Promise<OnlineClient> {
+  throw new Error('connectOnline(): wire your transport here');
+}
+
+// ------------------------------------------------------------------------------------
+interface PongInstance {
+  start(): void;
+  destroy(): void;
+}
+
+/**
+ * Server-authoritative thin client:
+ * - visuals/HUD locally
+ * - input uplink (single axis)
+ * - snapshots/events downlink
+ * - optional interpolation (kept tiny here)
+ */
+export function createOnlineApp(canvas: HTMLCanvasElement): PongInstance {
+  canvas.tabIndex = 1;
+
+  // Engine/scene/world (identical to local)
+  const { engine, engineDisposable } = createEngine(canvas);
+  const world = createWorld(engine);
+  const {
+    scene,
+    paddles: { left, right },
+    table,
+    ball,
+  } = world;
+
+  // HUD
+  const hud = createScoreboard();
+  hud.attachToCanvas(canvas);
+
+  // Names (you'll likely get these from the lobby/room)
+  const names = { east: 'Magenta', west: 'Green' } as const;
+
+  // Render→headless bounds + FX
+  const { bounds } = computeBounds(world);
+  const fx = new FXManager(scene, {
+    wallZNorth: +bounds.halfWidthZ,
+    wallZSouth: -bounds.halfWidthZ,
+    ballMesh: ball.mesh,
+    ballRadius: bounds.ballRadius,
+    tableTop: table.tableTop,
+    camera: world.camera,
+  });
+
+  // --- Net state -------------------------------------------------------------------
+  let net!: OnlineClient;
+  let mySeat: PlayerSeat = 'P1'; // set after connect()
+  let oppAxis = 0; // last known opponent axis
+  let latest: GameState | null = null; // latest server snapshot
+  let lastEvents: FrameEvents = {}; // events paired with latest snapshot
+  let prevPhase: GameState['phase'] | null = null;
+
+  // Simple (optional) rows mirroring knob if you choose to flip per-game
+  // NOTE: With server-authoritative flow, you can toggle this via messages.
+  let rowsMirrored = false;
+
+  // Interpolation cache (keep tiny: just ball X and paddle Z’s)
+  let prevSnap: GameState | null = null;
+  let prevT = 0,
+    currT = 0; // ms timestamps for snapshots
+
+  const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
+
+  // --- Lifecycle (same cadence & structure as local) --------------------------------
+  const loop = createLifecycle(engine, scene, {
+    logicHz: 60,
+    update: () => {
+      // 1) Input: read a single local axis and uplink it
+      //    (reuse the aggregator merge of keyboard+touch, but take my seat’s stick)
+      const inpt = readIntent(); // merged, allocation-free
+      const localAxis = mySeat === 'P1' ? inpt.leftAxis : inpt.rightAxis;
+      net?.sendLocalAxis(localAxis);
+
+      // 2) Visuals from server snapshot (with tiny interpolation)
+      const now = performance.now();
+      const hasPrev = !!prevSnap && prevT < currT;
+      const alpha = hasPrev ? clamp01((now - currT) / Math.max(1, currT - prevT)) : 1;
+
+      const snap = latest ?? prevSnap;
+      if (snap) {
+        // Interpolate a few hot fields; fall back to latest when no prev.
+        const ref = prevSnap ?? snap;
+        const ballX = hasPrev ? lerp(ref.ball.x, snap.ball.x, alpha) : snap.ball.x;
+        const ballVX = ((snap.ball.x - ref.ball.x) / Math.max(1, currT - prevT)) * 1000;
+
+        // Ball Y via the same visual bounce helper you use locally
+        // (optional — you can also drive Y directly from server if you send it)
+        const BOUNCE_Y = (() => {
+          // ultra-tiny stateless parabola over X; or keep at table height
+          return 0; // keep simple; or plug your existing createBounces if desired
+        })();
+
+        ball.mesh.position.set(
+          ballX,
+          BOUNCE_Y,
+          hasPrev ? lerp(ref.ball.z, snap.ball.z, alpha) : snap.ball.z,
+        );
+
+        // Paddles (authoritative from server)
+        left.mesh.position.z = hasPrev
+          ? lerp(ref.paddles.P1.z, snap.paddles.P1.z, alpha)
+          : snap.paddles.P1.z;
+        right.mesh.position.z = hasPrev
+          ? lerp(ref.paddles.P2.z, snap.paddles.P2.z, alpha)
+          : snap.paddles.P2.z;
+
+        // 3) HUD (player-pinned if you decide to mirror rows)
+        const stateForHUD = mapStateForPlayerRows(snap, rowsMirrored);
+        updateHUD(hud, stateForHUD, names /* optional match snapshot here */);
+      }
+
+      // 4) FX from last frame’s server events
+      if (lastEvents) {
+        const y = ball.mesh.position.y;
+        applyFrameEvents(fx, lastEvents, y);
+        // clear or keep — depends on how often server sends them; tiny shell: clear
+        lastEvents = {};
+      }
+    },
+  });
+
+  // --- Connect on start; wire streams ------------------------------------------------
+  async function start() {
+    // Gate local input briefly to match your local intro FX pacing.
+    blockInputFor(SERVE_SELECT_TOTAL_MS + 200);
+
+    net = await connectOnline();
+    mySeat = net.mySeat;
+
+    net.onOpponentAxis((axis) => {
+      oppAxis = axis;
+      // Ready for client-side prediction later:
+      // const intent = mixOnlineAxes(mySeat, lastLocalAxis, oppAxis);
+      // (If you enable prediction: feed `intent` into stepPaddles for visuals.)
+    });
+
+    net.onSnapshot((s, ev) => {
+      // Phase transition hook → serve cues
+      if (prevPhase && s.phase !== prevPhase) {
+        const entered = detectEnteredServe(prevPhase, s.phase);
+        if (entered) {
+          onEnteredServe(entered, {
+            ballMesh: ball.mesh,
+            // If you decide to use createBounces here, pass it; tiny shell omits for brevity.
+            Bounces: {
+              scheduleServe: () => {},
+              update: () => 0,
+              clear: () => {},
+            } as any,
+            paddleAnim: { cue: () => 0 },
+            blockInputFor,
+          });
+        }
+      }
+      prevPhase = s.phase;
+
+      // Snapshot ring for tiny interpolation
+      prevSnap = latest ?? s;
+      latest = s;
+      prevT = currT;
+      currT = performance.now() + 60; // small buffer; tune to your tick + net jitter
+
+      // FX events piggybacked with this snapshot
+      lastEvents = ev || {};
+    });
+
+    loop.start();
+  }
+
+  const destroy = () =>
+    disposeWorld({
+      loop,
+      net, // disconnect safely
+      world, // disposes Scene and meshes
+      fx,
+      hud,
+      engineDisposable,
+    });
+
+  return { start, destroy };
+}
+
+===== END apps/frontend/src/game/modes/online.ts =====
+
+
+===== BEGIN apps/frontend/src/game/modes/tournament.ts =====
+
+===== END apps/frontend/src/game/modes/tournament.ts =====
+
+
+===== BEGIN apps/frontend/src/hooks/useAuth.tsx =====
+import Cookies from 'js-cookie';
+import axios from 'axios';
+
+export const useAuth = () => {
+  const getToken = () => Cookies.get('token') || null;
+
+  const setAuth = (t: string | null) => {
+    if (t) axios.defaults.headers.common.Authorization = `Bearer ${t}`;
+    else delete axios.defaults.headers.common.Authorization;
+  };
+
+  const initAuth = () => setAuth(getToken());
+  const login = (token: string) => {
+    Cookies.set('token', token, { expires: 7, sameSite: 'Strict' });
+    setAuth(token);
+  };
+  const logout = () => {
+    Cookies.remove('token');
+    setAuth(null);
+  };
+
+  return { getToken, initAuth, login, logout };
+};
+
+===== END apps/frontend/src/hooks/useAuth.tsx =====
+
+
+===== BEGIN apps/frontend/src/hooks/useUser.tsx =====
+import { useState, useEffect, useCallback } from 'react';
+import type { User } from '../types';
+
+export const useUser = () => {
+  const [user, setUserState] = useState<User | null>(null);
+
+  useEffect(() => {
+    const s = localStorage.getItem('user');
+    if (s) {
+      try {
+        setUserState(JSON.parse(s));
+      } catch {
+        localStorage.removeItem('user');
+      }
+    }
+  }, []);
+
+  const setUser = useCallback<React.Dispatch<React.SetStateAction<User | null>>>((update) => {
+    setUserState((prev) => {
+      const next =
+        typeof update === 'function' ? (update as (p: User | null) => User | null)(prev) : update;
+
+      if (next) localStorage.setItem('user', JSON.stringify(next));
+      else localStorage.removeItem('user');
+
+      return next;
+    });
+  }, []);
+
+  return { user, setUser };
+};
+
+===== END apps/frontend/src/hooks/useUser.tsx =====
+
+
+===== BEGIN apps/frontend/src/index.css =====
+@import 'tailwindcss';
+
+@theme {
+  --color-primary: #2363eb;
+  --color-secondary: #fbbf24;
+}
+
+===== END apps/frontend/src/index.css =====
+
+
+===== BEGIN apps/frontend/src/main.tsx =====
+import { createRoot } from 'react-dom/client';
+import './index.css';
+import App from './App.tsx';
+import { BrowserRouter as Browser } from 'react-router-dom';
+import { AppProvider } from './context/AppContext.tsx';
+
+createRoot(document.getElementById('root')!).render(
+  <Browser>
+    <AppProvider>
+      <App />
+    </AppProvider>
+  </Browser>,
+);
+
+===== END apps/frontend/src/main.tsx =====
+
+
+===== BEGIN apps/frontend/src/pages/__tests__/Registration.test.tsx =====
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { describe, it, expect, vi } from 'vitest';
+import Registration from '../Registation';
+import type { User } from '../../types';
+
+// Helper: create a wrapper with fake context values
+function renderWithContext(ui: React.ReactNode, { axiosMock, loginMock, navigateMock }: any) {
+  // If Registration uses useAppContext, we need to mock its implementation
+  vi.mock('../../context/AppContext', () => ({
+    useAppContext: () => ({
+      axios: axiosMock,
+      login: loginMock,
+      navigate: navigateMock,
+    }),
+  }));
+  return render(ui);
+}
+
+describe('Registration page', () => {
+  it('submits form and logs in when backend returns user + token', async () => {
+    const loginMock = vi.fn();
+    const navigateMock = vi.fn();
+    const axiosMock = {
+      post: vi.fn().mockResolvedValue({
+        data: {
+          token: 'fake-token',
+          user: { id: 1, username: 'testuser' } as User,
+        },
+      }),
+    };
+
+    renderWithContext(<Registration />, { axiosMock, loginMock, navigateMock });
+
+    fireEvent.change(screen.getByLabelText(/username/i), { target: { value: 'testuser' } });
+    fireEvent.change(screen.getByLabelText(/email/i), { target: { value: 'e@e.e' } });
+    fireEvent.change(screen.getByLabelText('Password'), { target: { value: 'secret' } });
+    fireEvent.change(screen.getByLabelText('Confirm Password'), {
+      target: { value: 'secret' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: /register/i }));
+
+    await waitFor(() => {
+      expect(axiosMock.post).toHaveBeenCalledWith('/api/signup', {
+        username: 'testuser',
+        email: 'e@e.e',
+        password: 'secret',
+      });
+      expect(loginMock).toHaveBeenCalledWith({ id: 1, username: 'testuser' }, 'fake-token');
+      expect(navigateMock).toHaveBeenCalledWith('/');
+    });
+  });
+
+  it('shows error toast if signup fails', async () => {
+    // Arrange: error case
+    const loginMock = vi.fn();
+    const navigateMock = vi.fn();
+    const axiosMock = {
+      post: vi.fn().mockRejectedValue({
+        response: { data: { error: 'Username already taken' } },
+      }),
+    };
+
+    renderWithContext(<Registration />, { axiosMock, loginMock, navigateMock });
+
+    fireEvent.change(screen.getByLabelText(/username/i), { target: { value: 'taken' } });
+    fireEvent.change(screen.getByLabelText(/email/i), { target: { value: 'e@e.e' } });
+    fireEvent.change(screen.getByLabelText('Password'), { target: { value: 'secret' } });
+    fireEvent.change(screen.getByLabelText('Confirm Password'), {
+      target: { value: 'secret' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: /register/i }));
+
+    await waitFor(() => {
+      expect(axiosMock.post).toHaveBeenCalled();
+      expect(loginMock).not.toHaveBeenCalled();
+      expect(navigateMock).not.toHaveBeenCalled();
+    });
+  });
+});
+
+===== END apps/frontend/src/pages/__tests__/Registration.test.tsx =====
+
+
+===== BEGIN apps/frontend/src/pages/Confirmation.tsx =====
+import { useEffect, useState } from 'react';
+import { useParams } from 'react-router-dom';
+import { useAppContext } from '../context/AppContext';
+import Cookies from 'js-cookie';
+
+const Confirmation = () => {
+  const { confirmationToken } = useParams();
+  const { axios, navigate } = useAppContext();
+  const [status, setStatus] = useState<'validating' | 'success' | 'error'>('validating');
+
+  useEffect(() => {
+    const confirmAccount = async () => {
+      try {
+        console.log(confirmationToken);
+        const response = await axios.post(`/api/signup/validate/${confirmationToken}`);
+
+        const data = response.data;
+
+        // Example: save JWT in localStorage
+        if (data?.token) {
+          Cookies.set('token', data?.token, { expires: 7, sameSite: 'Strict' });
+        }
+
+        setStatus('success');
+
+        // Redirect after a short delay
+        setTimeout(() => navigate('/login'), 1500);
+      } catch (error) {
+        console.error(error);
+        setStatus('error');
+      }
+    };
+
+    if (confirmationToken) {
+      confirmAccount();
+    }
+  }, [confirmationToken, axios, navigate]);
+
+  return (
+    <div className="flex h-screen items-center justify-center">
+      {status === 'validating' && <p>Validating your account...</p>}
+      {status === 'success' && <p>Account confirmed! Redirecting...</p>}
+      {status === 'error' && <p>Invalid or expired confirmation link.</p>}
+    </div>
+  );
+};
+
+export default Confirmation;
+
+===== END apps/frontend/src/pages/Confirmation.tsx =====
+
+
+===== BEGIN apps/frontend/src/pages/Friends.tsx =====
+import React, { useState, useEffect } from 'react';
+import { useAppContext } from '../context/AppContext';
+import toast from 'react-hot-toast';
+import { AxiosError } from 'axios';
+
+interface FriendRequest {
+  username: string;
+  uuid: string;
+}
+type Friend = {
+  username: string;
+  avatar: string;
+  online: boolean;
+};
+
+const Friends: React.FC = () => {
+  const baseURL = import.meta.env.VITE_BACKEND_URL;
+  const [activeTab, setActiveTab] = useState<'all' | 'online' | 'offline' | 'pending' | 'add'>(
+    'online',
+  );
+  const [friendName, setFriendName] = useState('');
+
+  const [pendingSent, setPendingSent] = useState<FriendRequest[]>([]);
+  const [pendingReceived, setPendingReceived] = useState<FriendRequest[]>([]);
+
+  const [friends, setFriends] = useState<Friend[]>([]);
+  const [onlineFriends, setOnlineFriends] = useState<Friend[]>([]);
+  const [offlineFriends, setOfflineFriends] = useState<Friend[]>([]);
+
+  const { axios, getToken } = useAppContext();
+  getToken; // avoid unused variable warning
+
+  // Add friend
+  const handleAddFriend = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!friendName.trim()) return;
+
+    try {
+      await axios.post('/api/friends', { username: friendName });
+      toast.success(`Friend request sent to ${friendName}`);
+      setFriendName('');
+      fetchSentPendingFriends(); // refresh sent pending list
+    } catch (err) {
+      const axiosErr = err as AxiosError<{ message?: string }>;
+      toast.error(String(axiosErr?.response?.data?.message));
+    }
+  };
+
+  const fetchAllFriends = async () => {
+    try {
+      const res = await axios.get<Friend[]>('/api/friends/');
+
+      const friendsWithAvatar = res.data.map((f) => ({
+        ...f,
+        avatar: f.avatar ? `${baseURL}/uploads/${f.avatar}` : '/src/assets/react.svg',
+      }));
+
+      // Removed debug logging of avatar URLs
+      setFriends(friendsWithAvatar);
+
+      setOnlineFriends(friendsWithAvatar.filter((f) => f.online));
+      setOfflineFriends(friendsWithAvatar.filter((f) => !f.online));
+    } catch (err) {
+      const axiosErr = err as AxiosError<{ message?: string }>;
+      toast.error(String(axiosErr?.response?.data?.message));
+    }
+  };
+
+  // Fetch sent pending friend requests
+  const fetchSentPendingFriends = async () => {
+    try {
+      const res = await axios.get<FriendRequest[]>('/api/friends/pending/sent');
+      setPendingSent(res.data);
+    } catch (err) {
+      const axiosErr = err as AxiosError<{ message?: string }>;
+      toast.error(String(axiosErr?.response?.data?.message));
+    }
+  };
+
+  // Fetch received pending friend requests
+  const fetchReceivedPendingFriends = async () => {
+    try {
+      const res = await axios.get<FriendRequest[]>('/api/friends/pending/received');
+      setPendingReceived(res.data);
+    } catch (err) {
+      const axiosErr = err as AxiosError<{ message?: string }>;
+      toast.error(String(axiosErr?.response?.data?.message));
+    }
+  };
+
+  // Accept a received friend request
+  const handleAcceptFriend = async (senderUuid: string) => {
+    try {
+      await axios.patch(`/api/friends/respond/${senderUuid}`, { accept: true });
+      toast.success('Friend request accepted!');
+      fetchSentPendingFriends();
+      fetchReceivedPendingFriends();
+    } catch (err) {
+      const axiosErr = err as AxiosError<{ message?: string }>;
+      toast.error(String(axiosErr?.response?.data?.message));
+    }
+  };
+
+  // Reject a received friend request
+  const handleRejectFriend = async (senderUuid: string) => {
+    try {
+      await axios.patch(`/api/friends/respond/${senderUuid}`, { accept: false });
+      toast.success('Friend request rejected!');
+      fetchReceivedPendingFriends();
+    } catch (err) {
+      const axiosErr = err as AxiosError<{ message?: string }>;
+      toast.error(String(axiosErr?.response?.data?.message));
+    }
+  };
+
+  // Fetch pending requests when switching to pending tab
+  useEffect(() => {
+    if (activeTab === 'pending') {
+      fetchSentPendingFriends();
+      fetchReceivedPendingFriends();
+    }
+    if (activeTab === 'all' || activeTab === 'online' || activeTab === 'offline') {
+      fetchAllFriends();
+    }
+  }, [activeTab]);
+
+  return (
+    <div className="mt-12 p-6">
+      {/* Tabs */}
+      <div className="mb-6 flex space-x-4 border-b border-gray-300">
+        {['all', 'online', 'offline', 'pending', 'add'].map((tab) => (
+          <button
+            key={tab}
+            onClick={() => setActiveTab(tab as any)}
+            className={`px-4 pb-2 capitalize ${
+              activeTab === tab
+                ? 'border-b-2 border-blue-500 font-semibold text-blue-500'
+                : 'text-gray-500 hover:text-gray-700'
+            }`}
+          >
+            {tab}
+          </button>
+        ))}
+      </div>
+
+      {/* Content */}
+      <div>
+        {activeTab === 'all' && (
+          <div className="text-purple-600">
+            <h2 className="mb-4 text-xl font-bold">All Friends</h2>
+            <ul className="list-disc space-y-2 pl-5">
+              {friends.length > 0 ? (
+                friends.map((f) => (
+                  <li key={f.username} className="flex items-center space-x-2">
+                    <img src={f.avatar} alt={f.username} className="h-10 w-10 rounded-full" />
+                    <span>{f.username}</span>
+                  </li>
+                ))
+              ) : (
+                <li>You have no friends</li>
+              )}
+            </ul>
+          </div>
+        )}
+
+        {activeTab === 'online' && (
+          <div className="text-green-600">
+            <h2 className="mb-4 text-xl font-bold">Online Friends</h2>
+            <ul className="list-disc space-y-2 pl-5">
+              {onlineFriends.length > 0 ? (
+                onlineFriends.map((f) => (
+                  <li key={f.username} className="flex items-center space-x-2">
+                    <img src={f.avatar} alt={f.username} className="h-10 w-10 rounded-full" />
+                    <span>{f.username}</span>
+                  </li>
+                ))
+              ) : (
+                <li>You have no online friends</li>
+              )}
+            </ul>
+          </div>
+        )}
+
+        {activeTab === 'offline' && (
+          <div className="text-gray-600">
+            <h2 className="mb-4 text-xl font-bold">Offline Friends</h2>
+            <ul className="list-disc space-y-2 pl-5">
+              {offlineFriends.length > 0 ? (
+                offlineFriends.map((f) => (
+                  <li key={f.username} className="flex items-center space-x-2">
+                    <img src={f.avatar} alt={f.username} className="h-10 w-10 rounded-full" />
+                    <span>{f.username}</span>
+                  </li>
+                ))
+              ) : (
+                <li>You have no offline friends</li>
+              )}
+            </ul>
+          </div>
+        )}
+
+        {activeTab === 'pending' && (
+          <div className="text-yellow-600">
+            <h2 className="mb-4 text-xl font-bold">Pending Requests</h2>
+
+            <h3 className="mb-2 font-semibold">Sent</h3>
+            <ul className="mb-4 list-disc pl-5">
+              {pendingSent.length > 0 ? (
+                pendingSent.map((f) => <li key={f.uuid}>{f.username}</li>)
+              ) : (
+                <li>No sent requests</li>
+              )}
+            </ul>
+
+            <h3 className="mb-2 font-semibold">Received</h3>
+            <ul className="list-disc pl-5">
+              {pendingReceived.length > 0 ? (
+                pendingReceived.map((f) => (
+                  <li key={f.uuid} className="flex items-center justify-between">
+                    <span>{f.username}</span>
+                    <div className="flex space-x-2">
+                      <button
+                        onClick={() => handleAcceptFriend(f.uuid)}
+                        className="rounded bg-green-500 px-2 py-1 text-sm text-white hover:bg-green-600"
+                      >
+                        Accept
+                      </button>
+                      <button
+                        onClick={() => handleRejectFriend(f.uuid)}
+                        className="rounded bg-red-500 px-2 py-1 text-sm text-white hover:bg-red-600"
+                      >
+                        Reject
+                      </button>
+                    </div>
+                  </li>
+                ))
+              ) : (
+                <li>No received requests</li>
+              )}
+            </ul>
+          </div>
+        )}
+
+        {activeTab === 'add' && (
+          <div>
+            <h2 className="mb-4 text-xl font-bold">Add a Friend</h2>
+            <form onSubmit={handleAddFriend} className="flex space-x-2">
+              <input
+                type="text"
+                value={friendName}
+                onChange={(e) => setFriendName(e.target.value)}
+                placeholder="Enter username or email"
+                className="flex-1 rounded-lg border px-3 py-2"
+              />
+              <button
+                type="submit"
+                className="rounded-lg bg-blue-500 px-4 py-2 text-white hover:bg-blue-600"
+              >
+                Add
+              </button>
+            </form>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+export default Friends;
+
+===== END apps/frontend/src/pages/Friends.tsx =====
+
+
+===== BEGIN apps/frontend/src/pages/Home.tsx =====
+import React from 'react';
+import { motion } from 'framer-motion';
+import type { Variants } from 'framer-motion';
+import { useAppContext } from '../context/AppContext';
+import { Link } from 'react-router-dom';
+
+const containerVariants: Variants = {
+  hidden: {},
+  visible: {
+    transition: {
+      staggerChildren: 0.3,
+      delayChildren: 0.4,
+    },
+  },
+};
+
+const itemVariants: Variants = {
+  hidden: { opacity: 0, y: 20 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.3, ease: 'easeOut' },
+  },
+};
+
+const games = [
+  {
+    title: 'Ping Pong',
+    desc: 'Play against others in real-time ping pong battles.',
+    available: true,
+    image: '/src/assets/background.png',
+  },
+  {
+    title: 'Tetris',
+    desc: 'Stack and clear blocks — coming soon!',
+    available: false,
+    image: '/src/assets/tetrist.jpg',
+  },
+  {
+    title: 'Snake',
+    desc: 'Eat, grow, and survive — coming soon!',
+    available: false,
+    image: '/src/assets/snake.jpeg',
+  },
+];
+
+const Hero: React.FC = () => {
+  const { user } = useAppContext();
+
+  return (
+    <motion.div
+      className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-br from-gray-900 via-indigo-950 to-black px-6 text-white md:px-16 lg:px-24 xl:px-32"
+      variants={containerVariants}
+      initial="hidden"
+      animate="visible"
+    >
+      <motion.p
+        className="mt-12 rounded-sm border border-white/30 bg-white/10 px-4 py-1 text-sm font-semibold uppercase tracking-wide text-white backdrop-blur-md"
+        variants={itemVariants}
+      >
+        Welcome to
+      </motion.p>
+      <motion.img src="/src/assets/arcade.png" className="size-40" variants={itemVariants} />
+
+      <motion.h1
+        className="mt-4 text-center font-serif text-3xl md:text-5xl md:leading-tight"
+        variants={itemVariants}
+      >
+        Choose your game and start playing!
+      </motion.h1>
+
+      <motion.div
+        className="mt-12 grid w-full max-w-5xl grid-cols-1 gap-6 md:grid-cols-3"
+        variants={itemVariants}
+      >
+        {games.map((game, i) => (
+          <motion.div
+            key={i}
+            className={`flex transform flex-col overflow-hidden rounded-2xl border bg-white/10 shadow-lg backdrop-blur-md transition duration-300 hover:-translate-y-2 ${
+              game.available ? 'hover:shadow-indigo-500/40' : 'opacity-80'
+            }`}
+            variants={itemVariants}
+            whileHover={game.available ? { scale: 1.05 } : {}}
+          >
+            <div className="h-40 w-full bg-gray-900">
+              <img src={game.image} alt={game.title} className="h-full w-full object-cover" />
+            </div>
+            <div className="flex flex-1 flex-col p-4">
+              <h2 className="flex items-center gap-2 text-xl font-bold">
+                {game.title}
+                {game.available && (
+                  <span className="h-2 w-2 animate-pulse rounded-full bg-green-400"></span>
+                )}
+              </h2>
+              <p className="mt-2 text-sm text-white/80">{game.desc}</p>
+              <div className="mt-auto pt-4">
+                {game.available ? (
+                  <Link
+                    to={user ? '/ping-pong' : '/signup'}
+                    className="inline-block w-full rounded bg-gradient-to-r from-indigo-600 to-purple-600 px-4 py-2 text-center font-semibold text-white transition hover:from-indigo-500 hover:to-purple-500"
+                  >
+                    {user ? 'Play Now' : 'Sign Up to Play'}
+                  </Link>
+                ) : (
+                  <button
+                    disabled
+                    className="inline-block w-full cursor-not-allowed rounded bg-gray-700/60 px-4 py-2 text-center font-semibold text-white opacity-60"
+                  >
+                    Coming Soon
+                  </button>
+                )}
+              </div>
+            </div>
+          </motion.div>
+        ))}
+      </motion.div>
+    </motion.div>
+  );
+};
+
+export default Hero;
+
+===== END apps/frontend/src/pages/Home.tsx =====
+
+
+===== BEGIN apps/frontend/src/pages/Layout.tsx =====
+import Navbar from '../components/Navbar';
+import Sidebar from '../components/Sidebar';
+import { Outlet } from 'react-router-dom';
+import { useEffect } from 'react';
+import { useAppContext } from '../context/AppContext';
+
+const Layout: React.FC = () => {
+  const { user, navigate } = useAppContext();
+
+  useEffect(() => {
+    if (!user) {
+      navigate('/');
+    }
+  }, [user]);
+
+  return (
+    <div className="flex h-screen flex-col">
+      <Navbar />
+      <div className="flex h-full">
+        <Sidebar />
+        <div className="h-full flex-1 p-4 pt-10 md:px-10">
+          <Outlet />
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default Layout;
+
+===== END apps/frontend/src/pages/Layout.tsx =====
+
+
+===== BEGIN apps/frontend/src/pages/Login.tsx =====
+import React, { useEffect, useState } from 'react';
+import AuthForm from '../components/AuthForm';
+import { useAppContext } from '../context/AppContext';
+import { toast } from 'react-hot-toast';
+import type { AxiosError } from 'axios';
+import { Link } from 'react-router-dom';
+
+const Login: React.FC = () => {
+  const { axios, login, navigate, user } = useAppContext();
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (user) navigate('/');
+  }, [user, navigate]);
+
+  const handleLogin = async (data: { email: string; password: string }) => {
+    setLoading(true);
+    try {
+      // get token from backend
+      const res = await axios.post('/api/login', {
+        email: data.email,
+        password: data.password,
+      });
+
+      const { token } = res.data as { token: string };
+      if (!token) throw new Error('Invalid server response');
+
+      // unified login: save token, then AppContext will fetch /api/users/me
+      await login(token);
+
+      toast.success('Logged in');
+      // navigate('/') is optional; your useEffect will redirect once user is set
+    } catch (err: any) {
+      const axiosErr = err as AxiosError<{ message?: string }>;
+      toast.error(String(axiosErr?.response?.data?.message || 'Login failed'));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="flex min-h-screen items-center justify-center bg-gray-100">
+      <div className="w-full max-w-md rounded bg-white p-8 shadow-md">
+        <h1 className="mb-6 text-center text-2xl font-bold">Login</h1>
+        <AuthForm type="login" onSubmit={handleLogin} />
+        {loading && <p className="mt-2 text-sm">Authenticating…</p>}
+        <span className="text-gray-600">Don't have an account yet?</span>
+        <Link to="/signup" className="ml-2 text-blue-700">
+          Sign Up
+        </Link>
+      </div>
+    </div>
+  );
+};
+
+export default Login;
+
+===== END apps/frontend/src/pages/Login.tsx =====
+
+
+===== BEGIN apps/frontend/src/pages/PingPong/LocalGame.tsx =====
+import React, { useEffect, useState } from 'react';
+
+type AccessibilitySettings = {
+  colorBlindMode: 'none' | 'protanopia' | 'deuteranopia' | 'tritanopia' | 'highContrast';
+  photoSensitiveMode: 'none' | 'reducedFX' | 'noFlash';
+};
+
+type PlayerSettings = {
+  paddleColor: string;
+};
+
+type UserSettings = {
+  player1: PlayerSettings;
+  player2: PlayerSettings;
+  accessibility: AccessibilitySettings;
+};
+
+const defaultSettings: UserSettings = {
+  player1: { paddleColor: '#ffffff' },
+  player2: { paddleColor: '#ff0000' },
+  accessibility: { colorBlindMode: 'none', photoSensitiveMode: 'none' },
+};
+
+const LocalGame: React.FC = () => {
+  const [settings, setSettings] = useState<UserSettings>(defaultSettings);
+
+  // Load settings from localStorage
+  useEffect(() => {
+    const saved = localStorage.getItem('user_settings_v');
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        setSettings({
+          player1: {
+            paddleColor: parsed.player1?.paddleColor || defaultSettings.player1.paddleColor,
+          },
+          player2: {
+            paddleColor: parsed.player2?.paddleColor || defaultSettings.player2.paddleColor,
+          },
+          accessibility: {
+            colorBlindMode:
+              parsed.accessibility?.colorBlindMode || defaultSettings.accessibility.colorBlindMode,
+            photoSensitiveMode:
+              parsed.accessibility?.photoSensitiveMode ||
+              defaultSettings.accessibility.photoSensitiveMode,
+          },
+        });
+      } catch {
+        setSettings(defaultSettings);
+      }
+    }
+  }, []);
+
+  // Save to localStorage
+  const saveSettings = () => {
+    localStorage.setItem('user_settings_v', JSON.stringify(settings));
+    alert('Settings saved!');
+  };
+
+  // Reset to defaults
+  const resetSettings = () => {
+    setSettings(defaultSettings);
+    localStorage.removeItem('user_settings_v');
+  };
+
+  // Play handler
+  const handlePlay = () => {
+    console.log('Starting local game with settings:', settings);
+    // TODO: integrate with BabylonJS Pong
+  };
+
+  return (
+    <div className="relative h-screen w-full overflow-hidden">
+      {/* Video Background */}
+      <video
+        autoPlay
+        loop
+        muted
+        playsInline
+        className="absolute left-0 top-0 z-0 h-full w-full object-cover"
+      >
+        <source src="/src/assets/gif.mp4" type="video/mp4" />
+      </video>
+
+      {/* Overlay Content */}
+      <div className="relative z-10 flex min-h-screen flex-col items-center justify-center space-y-6 bg-black/60 text-white">
+        <h1 className="text-4xl font-bold">Local Game Settings</h1>
+
+        {/* Player Settings Row */}
+        <div className="flex flex-row space-x-8">
+          {/* Player 1 Settings */}
+          <div className="space-y-4 rounded-lg border-2 border-blue-400 p-4">
+            <h2 className="text-2xl font-semibold text-blue-400">Player 1</h2>
+            <label className="block font-semibold">Paddle Color</label>
+            <input
+              type="color"
+              value={settings.player1.paddleColor}
+              onChange={(e) =>
+                setSettings({ ...settings, player1: { paddleColor: e.target.value } })
+              }
+              className="h-10 w-20 cursor-pointer"
+            />
+          </div>
+
+          {/* Player 2 Settings */}
+          <div className="space-y-4 rounded-lg border-2 border-red-400 p-4">
+            <h2 className="text-2xl font-semibold text-red-400">Player 2</h2>
+            <label className="block font-semibold">Paddle Color</label>
+            <input
+              type="color"
+              value={settings.player2.paddleColor}
+              onChange={(e) =>
+                setSettings({ ...settings, player2: { paddleColor: e.target.value } })
+              }
+              className="h-10 w-20 cursor-pointer"
+            />
+          </div>
+        </div>
+
+        {/* Accessibility (Global) */}
+        <div className="space-y-4 rounded-lg border-2 border-green-400 p-4">
+          <h2 className="text-2xl font-semibold text-green-400">Accessibility</h2>
+
+          <div className="flex flex-col space-y-2">
+            <label className="font-semibold">Color Blind Mode</label>
+            <select
+              value={settings.accessibility.colorBlindMode}
+              onChange={(e) =>
+                setSettings({
+                  ...settings,
+                  accessibility: {
+                    ...settings.accessibility,
+                    colorBlindMode: e.target.value as AccessibilitySettings['colorBlindMode'],
+                  },
+                })
+              }
+              className="rounded bg-gray-800 p-2"
+            >
+              <option value="none">None</option>
+              <option value="protanopia">Protanopia</option>
+              <option value="deuteranopia">Deuteranopia</option>
+              <option value="tritanopia">Tritanopia</option>
+              <option value="highContrast">High Contrast</option>
+            </select>
+          </div>
+
+          <div className="flex flex-col space-y-2">
+            <label className="font-semibold">Photosensitive Mode</label>
+            <select
+              value={settings.accessibility.photoSensitiveMode}
+              onChange={(e) =>
+                setSettings({
+                  ...settings,
+                  accessibility: {
+                    ...settings.accessibility,
+                    photoSensitiveMode: e.target
+                      .value as AccessibilitySettings['photoSensitiveMode'],
+                  },
+                })
+              }
+              className="rounded bg-gray-800 p-2"
+            >
+              <option value="none">None</option>
+              <option value="reducedFX">Reduced FX</option>
+              <option value="noFlash">No Flash</option>
+            </select>
+          </div>
+        </div>
+
+        {/* Buttons */}
+        <div className="flex space-x-4">
+          <button
+            onClick={saveSettings}
+            className="rounded border border-green-400 px-6 py-2 text-green-400 transition hover:bg-green-400 hover:text-black"
+          >
+            Save as Default
+          </button>
+          <button
+            onClick={resetSettings}
+            className="rounded border border-red-400 px-6 py-2 text-red-400 transition hover:bg-red-400 hover:text-black"
+          >
+            Reset to Default
+          </button>
+        </div>
+
+        {/* Play button */}
+        <button
+          onClick={handlePlay}
+          className="rounded-lg border-2 border-pink-500 px-12 py-4 text-2xl font-bold text-pink-500 shadow-lg transition hover:bg-pink-500 hover:text-black"
+        >
+          Play 🚀
+        </button>
+      </div>
+    </div>
+  );
+};
+export default LocalGame;
+
+===== END apps/frontend/src/pages/PingPong/LocalGame.tsx =====
+
+
+===== BEGIN apps/frontend/src/pages/PingPong/OnlineGame.tsx =====
+
+===== END apps/frontend/src/pages/PingPong/OnlineGame.tsx =====
+
+
+===== BEGIN apps/frontend/src/pages/PingPong/PingPong.tsx =====
+import React from 'react';
+import { useNavigate } from 'react-router-dom';
+
+const PingPong: React.FC = () => {
+  const navigate = useNavigate();
+
+  const handleLocalPlay = () => navigate('/ping-pong/local');
+  const handleOnlinePlay = () => navigate('/ping-pong/online');
+  const handleTournaments = () => navigate('/ping-pong/tournaments');
+
+  return (
+    <div className="relative h-screen w-full overflow-hidden">
+      {/* Video Background */}
+      <video
+        autoPlay
+        loop
+        muted
+        playsInline
+        className="absolute left-0 top-0 h-full w-full object-cover"
+      >
+        <source src="/src/assets/gif.mp4" type="video/mp4" />
+      </video>
+
+      {/* Neon Menu */}
+      <div className="relative z-10 flex h-full flex-col items-center justify-start space-y-8 pt-40">
+        <button onClick={handleLocalPlay} className="neon-btn border-pink-500 text-pink-500">
+          Play Local
+        </button>
+
+        <button onClick={handleOnlinePlay} className="neon-btn border-blue-500 text-blue-500">
+          Play Online
+        </button>
+
+        <button onClick={handleTournaments} className="neon-btn border-purple-500 text-purple-500">
+          Tournaments
+        </button>
+      </div>
+
+      {/* Neon button styling */}
+      <style>{`
+        .neon-btn {
+          position: relative;
+          padding: 1rem 3rem;
+          font-size: 1.5rem;
+          font-weight: bold;
+          text-transform: uppercase;
+          border: 2px solid;
+          border-radius: 0.75rem;
+          background: transparent;
+          cursor: pointer;
+          box-shadow:
+            0 0 5px currentColor,
+            0 0 10px currentColor,
+            0 0 20px currentColor;
+          transition: all 0.3s ease-in-out;
+        }
+
+        .neon-btn:hover {
+          box-shadow:
+            0 0 10px currentColor,
+            0 0 20px currentColor,
+            0 0 40px currentColor,
+            0 0 80px currentColor;
+          transform: scale(1.05);
+        }
+      `}</style>
+    </div>
+  );
+};
+
+export default PingPong;
+
+===== END apps/frontend/src/pages/PingPong/PingPong.tsx =====
+
+
+===== BEGIN apps/frontend/src/pages/PingPong/Tournament.tsx =====
+
+===== END apps/frontend/src/pages/PingPong/Tournament.tsx =====
+
+
+===== BEGIN apps/frontend/src/pages/Profile.tsx =====
+import React, { useState, useEffect } from 'react';
+import type { ChangeEvent } from 'react';
+import { useAppContext } from '../context/AppContext';
+import toast from 'react-hot-toast';
+import type { AxiosError } from 'axios';
+
+interface PasswordState {
+  currentPassword: string;
+  newPassword: string;
+  confirmPassword: string;
+}
+
+const PLACEHOLDER = 'src/assets/react.svg'; // put any existing asset/public file
+
+// Turn whatever is in user.avatar into a usable URL for <img src>
+function resolveAvatarUrl(avatar: string | undefined | null, axiosBase?: string): string {
+  if (!avatar) return PLACEHOLDER;
+  if (/^https?:\/\//i.test(avatar)) return avatar; // external (e.g. Google)
+  const base = (axiosBase || '').replace(/\/+$/, ''); // strip trailing /
+  const filename = avatar.replace(/^\/?uploads\//, ''); // avoid double /uploads
+  return `${base}/uploads/${filename}`;
+}
+
+const Profile: React.FC = () => {
+  const { axios, user, setUser, getToken, logout } = useAppContext();
+
+  const [image, setImage] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string>(PLACEHOLDER);
+  const [username, setUsername] = useState<string>('');
+  const [newPassword, setNewPasswords] = useState<PasswordState>({
+    currentPassword: '',
+    newPassword: '',
+    confirmPassword: '',
+  });
+
+  const [loading, setLoading] = useState<boolean>(false);
+
+  useEffect(() => {
+    const url = resolveAvatarUrl(user?.avatar, axios.defaults.baseURL);
+    console.log('Profile resolved avatar URL =', url);
+    setImagePreview(url);
+  }, [user?.avatar, axios.defaults.baseURL]);
+
+  // Handle image selection
+  const handleImageChange = async (e: ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files) return;
+    const file = e.target.files[0];
+    console.log(file);
+    setImage(file);
+    setImagePreview(URL.createObjectURL(file));
+  };
+
+  const handleUsernameChange = async () => {
+    try {
+      if (!username) return;
+      const token = getToken();
+      const res = await axios.patch(
+        '/api/users/me',
+        {
+          newUsername: username,
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        },
+      );
+      setUser((prev) =>
+        prev
+          ? {
+              ...prev,
+              username: res.data.username,
+              uuid: res.data.uuid,
+              avatar: res.data.avatar ?? prev.avatar,
+            }
+          : {
+              username: res.data.username,
+              uuid: res.data.uuid,
+              avatar: res.data.avatar ?? null,
+              id: res.data.id ?? 0,
+              email: res.data.email ?? '',
+              wins: res.data.wins ?? 0,
+              losses: res.data.losses ?? 0,
+              createdAt: res.data.createdAt ?? '',
+            },
+      );
+      toast.success('Account username changed');
+    } catch (err: any) {
+      const axiosErr = err as AxiosError<{ error?: string }>;
+      const message = axiosErr?.response?.data?.error;
+      toast.error(String(message));
+    }
+  };
+
+  const handlePasswordChange = async () => {
+    try {
+      if (!newPassword.newPassword || !newPassword.currentPassword || !newPassword.confirmPassword)
+        return;
+      const token = getToken();
+      await axios.patch(
+        '/api/users/me/password',
+        {
+          newPassword: newPassword.newPassword,
+          currentPassword: newPassword.currentPassword,
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        },
+      );
+      toast.success('Account password changed');
+    } catch (err: any) {
+      const axiosErr = err as AxiosError<{ error?: string }>;
+      const message = axiosErr?.response?.data?.error;
+      toast.error(String(message));
+    }
+  };
+
+  const handleUpdate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      setLoading(true);
+
+      await handleUsernameChange();
+      await handlePasswordChange();
+
+      if (image) {
+        const token = getToken();
+        const formData = new FormData();
+        formData.append('avatar', image);
+
+        const res = await axios.patch('/api/users/me/avatar', formData, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'multipart/form-data',
+          },
+        });
+
+        // backend returns res.data.avatar (filename or url); update user & preview
+        setUser((prev) =>
+          prev
+            ? {
+                ...prev,
+                avatar: res.data.avatar ?? prev.avatar,
+              }
+            : {
+                username: res.data.username,
+                uuid: res.data.uuid,
+                avatar: res.data.avatar ?? null,
+                id: res.data.id ?? 0,
+                email: res.data.email ?? '',
+                wins: res.data.wins ?? 0,
+                losses: res.data.losses ?? 0,
+                createdAt: res.data.createdAt ?? '',
+              },
+        );
+        setImagePreview(resolveAvatarUrl(res.data.avatar, axios.defaults.baseURL));
+        toast.success('Account avatar has been changed');
+      }
+    } catch (err: any) {
+      const axiosErr = err as AxiosError<{ error?: string }>;
+      toast.error(String(axiosErr?.response?.data?.error || 'Update failed'));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Delete account
+  const handleDelete = async () => {
+    if (!window.confirm('Are you sure you want to delete your account?')) return;
+    try {
+      const token = getToken();
+      await axios.delete(`/api/users/me`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      toast.success('Account deleted');
+      logout();
+      // redirect or logout logic here
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || 'Delete failed');
+    }
+  };
+
+  return (
+    <div className="mx-auto mt-12 max-w-md rounded bg-white p-6 shadow">
+      <h2 className="mb-6 text-2xl font-bold">Profile</h2>
+      <form className="space-y-4">
+        {/* Profile Image */}
+        <div>
+          <label className="mb-2 ml-3 block font-medium">Avatar</label>
+
+          {imagePreview && (
+            <img
+              key={imagePreview}
+              src={imagePreview}
+              alt="Profile"
+              className="mb-2 h-24 w-24 rounded-full object-cover"
+              onError={(e) => {
+                (e.currentTarget as HTMLImageElement).src = PLACEHOLDER;
+              }}
+            />
+          )}
+          <input
+            type="file"
+            accept="image/*"
+            onChange={handleImageChange}
+            className="w-full rounded border p-2"
+          />
+        </div>
+
+        {/* Nickname */}
+        <div>
+          <label className="mb-2 block font-medium">Change Username</label>
+          <input
+            type="text"
+            value={username}
+            placeholder={user?.username}
+            onChange={(e) => setUsername(e.target.value)}
+            className="w-full rounded border p-2"
+          />
+        </div>
+
+        {/* Password */}
+        <div>
+          <label className="mb-2 block font-medium">Current Password</label>
+          <input
+            type="password"
+            value={newPassword.currentPassword}
+            onChange={(e) =>
+              setNewPasswords({
+                ...newPassword,
+                currentPassword: e.target.value,
+              })
+            }
+            className="w-full rounded border p-2"
+          />
+        </div>
+        <div>
+          <label className="mb-2 block font-medium">New Password</label>
+          <input
+            type="password"
+            value={newPassword.newPassword}
+            onChange={(e) => setNewPasswords({ ...newPassword, newPassword: e.target.value })}
+            className="w-full rounded border p-2"
+          />
+        </div>
+        <div>
+          <label className="mb-2 block font-medium">Confirm New Password</label>
+          <input
+            type="password"
+            value={newPassword.confirmPassword}
+            onChange={(e) =>
+              setNewPasswords({
+                ...newPassword,
+                confirmPassword: e.target.value,
+              })
+            }
+            className="w-full rounded border p-2"
+          />
+        </div>
+
+        {/* Buttons */}
+        <div className="flex items-center justify-between">
+          <button
+            type="submit"
+            onClick={handleUpdate}
+            disabled={loading}
+            className="rounded bg-blue-500 px-4 py-2 text-white hover:bg-blue-600 disabled:opacity-50"
+          >
+            {loading ? 'Updating...' : 'Update Profile'}
+          </button>
+
+          <button
+            type="button"
+            onClick={handleDelete}
+            className="rounded bg-red-500 px-4 py-2 text-white hover:bg-red-600"
+          >
+            Delete Account
+          </button>
+        </div>
+      </form>
+    </div>
+  );
+};
+
+export default Profile;
+
+===== END apps/frontend/src/pages/Profile.tsx =====
+
+
+===== BEGIN apps/frontend/src/pages/Registation.tsx =====
+import React, { useEffect, useState } from 'react';
+import AuthForm from '../components/AuthForm';
+import { useAppContext } from '../context/AppContext';
+import type { User } from '../types';
+import { toast } from 'react-hot-toast';
+import type { AxiosError } from 'axios';
+import type { AxiosResponse } from 'axios';
+
+const Registration: React.FC = () => {
+  const { axios, login, navigate, user } = useAppContext();
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (user) {
+      navigate('/');
+    }
+  }, [user, navigate]);
+
+  const handleRegister = async (data: {
+    username?: string;
+    email: string;
+    password: string;
+    confirmPassword?: string;
+  }) => {
+    setLoading(true);
+    try {
+      // POST to /api/signup
+      const res = await axios.post('/api/signup', {
+        username: data.username,
+        email: data.email,
+        password: data.password,
+      });
+
+      // If your server returns a token + user, you can auto-login:
+      const { token, user } = res.data as { token?: string; user?: User };
+
+      if (token && user) {
+        login(token);
+        toast.success('Account created and logged in');
+        navigate('/');
+        return;
+      }
+
+      // if server doesn't return token, fall back to showing success and asking user to login
+      console.log(res.data.success);
+      const axiosRes = res as AxiosResponse<{ success?: string }>;
+      const msg = axiosRes.data.success;
+      toast.success(String(msg));
+      navigate('/login');
+    } catch (err: any) {
+      const axiosErr = err as AxiosError<{ message?: string }>;
+      const msg = axiosErr?.response?.data?.message;
+      console.log(axiosErr);
+      toast.error(String(msg));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="flex min-h-screen items-center justify-center bg-gray-100">
+      <div className="w-full max-w-md rounded bg-white p-8 shadow-md">
+        <h1 className="mb-6 text-center text-2xl font-bold">Register</h1>
+        <AuthForm type="register" onSubmit={handleRegister} />
+        {loading && <p className="mt-2 text-sm">Creating account…</p>}
+      </div>
+    </div>
+  );
+};
+
+export default Registration;
+
+===== END apps/frontend/src/pages/Registation.tsx =====
+
+
+===== BEGIN apps/frontend/src/types.tsx =====
+// src/types.ts
+export interface User {
+  id: number;
+  uuid: string;
+  username: string;
+  email: string;
+  avatar: string;
+  wins: number;
+  losses: number;
+  createdAt: string;
+}
+
+===== END apps/frontend/src/types.tsx =====
+
+
+===== BEGIN apps/frontend/src/vite-env.d.ts =====
+/// <reference types="vite/client" />
+
+===== END apps/frontend/src/vite-env.d.ts =====
+
+
+===== BEGIN apps/frontend/tsconfig.json =====
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "moduleResolution": "bundler",
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "jsx": "react-jsx",
+    "types": ["vite/client", "vitest", "node"],
+    "noEmit": true
+  },
+  "include": ["src", "types", "vite-env.d.ts", "vite.config.ts"]
+}
+
+===== END apps/frontend/tsconfig.json =====
+
+
+===== BEGIN apps/frontend/vite.config.ts =====
+// apps/web/vite.config.ts
+import { defineConfig } from 'vitest/config';
+import react from '@vitejs/plugin-react';
+import tailwindcss from '@tailwindcss/vite';
+import tsconfigPaths from 'vite-tsconfig-paths';
+
+export default defineConfig({
+  server: {
+    host: '0.0.0.0',
+    port: 5173,
+    strictPort: true,
+    watch: { usePolling: true },
+    proxy: { '/api': { target: 'http://backend:3001', changeOrigin: true } }
+  },
+  plugins: [react(), tailwindcss(), tsconfigPaths()],
+  test: { globals: true, environment: 'jsdom' }
+});
+
+
+===== END apps/frontend/vite.config.ts =====
+
