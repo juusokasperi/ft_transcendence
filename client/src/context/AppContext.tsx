@@ -13,7 +13,7 @@ type Ctx = {
   user: User | null;
   getToken: () => string | null;
   login: (token: string) => Promise<void>;
-  logout: () => void;
+  logout: () => Promise<void>;
   setUser: React.Dispatch<React.SetStateAction<User | null>>;
   axios: typeof axios;
 };
@@ -62,7 +62,8 @@ export const AppProvider: React.FC<React.PropsWithChildren> = ({ children }) => 
     });
   };
 
-  const logout = () => {
+  const logout = async () => {
+    await axios.post('/api/logout');
     authLogout();
     setUser(null);
     navigate('/');

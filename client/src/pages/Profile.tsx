@@ -177,7 +177,7 @@ const Profile: React.FC = () => {
         },
       });
       toast.success('Account deleted');
-      logout();
+      await logout();
       // redirect or logout logic here
     } catch (err: any) {
       toast.error(err.response?.data?.message || 'Delete failed');
