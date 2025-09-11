@@ -8,7 +8,7 @@ describe('User Functions', () => {
   beforeEach(async () => {
     vi.resetModules();
     testDb = await createTestDb();
-    vi.doMock('../db/client.ts', () => ({
+    vi.doMock('../../../db/client.ts', () => ({
       default: testDb,
     }));
   });
