@@ -1,24 +1,24 @@
 // src/app/modes/online.ts
-import { createEngine } from "@client/engine/engine";
-import { createLifecycle } from "@client/engine/lifecycle";
-import { createWorld } from "@client/scene/scene";
-import { FXManager } from "@client/fx/manager";
-import { createScoreboard } from "@client/ui/scoreboard";
-import { updateHUD } from "@client/ui/hud-binding";
-import { applyFrameEvents } from "@app/adapters/events-to-fx";
-import { computeBounds } from "@app/adapters/bounds";
-import { detectEnteredServe, onEnteredServe } from "@app/adapters/serve-cue";
-import { mapStateForPlayerRows } from "@app/adapters/hud-map";
+import { createEngine } from '@pong/render';
+import { createLifecycle } from '@pong/render';
+import { createWorld } from '@pong/render';
+import { FXManager } from '@pong/render';
+import { createScoreboard } from '@pong/render';
+import { updateHUD } from '@pong/render';
+import { applyFrameEvents } from '@pong/render';
+import { computeBounds } from '@pong/render';
+import { detectEnteredServe, onEnteredServe } from '@pong/render';
+import { mapStateForPlayerRows } from '@pong/render';
 
-import { readIntent } from "@client/input/aggregate";
-import { blockInputFor } from "@client/input/block";
-import { mixOnlineAxes, type PlayerSeat } from "@app/adapters/seat-router";
-import { disposeWorld } from "@app/teardown";
+import { readIntent } from '@pong/render';
+import { blockInputFor } from '@pong/render';
+import { /* mixOnlineAxes, */ type PlayerSeat } from '@pong/render';
+import { disposeWorld } from '@pong/render';
 
-import type { GameState } from "@game";
-import type { FrameEvents } from "@shared";
-import { SERVE_SELECT_TOTAL_MS } from "@shared";
-import { clamp01 } from "@shared/utils/math";
+import type { GameState } from '@pong/game';
+import type { FrameEvents } from '@pong/shared';
+import { SERVE_SELECT_TOTAL_MS } from '@pong/shared';
+import { clamp01 } from '@pong/shared';
 
 // --- Net placeholders (wire your transport here) -----------------------------------
 type OnlineClient = {
@@ -31,7 +31,7 @@ type OnlineClient = {
 
 // Resolve this with your WebSocket/RTC layer.
 async function connectOnline(): Promise<OnlineClient> {
-  throw new Error("connectOnline(): wire your transport here");
+  throw new Error('connectOnline(): wire your transport here');
 }
 
 // ------------------------------------------------------------------------------------
@@ -65,7 +65,7 @@ export function createOnlineApp(canvas: HTMLCanvasElement): PongInstance {
   hud.attachToCanvas(canvas);
 
   // Names (you'll likely get these from the lobby/room)
-  const names = { east: "Magenta", west: "Green" } as const;
+  const names = { east: 'Magenta', west: 'Green' } as const;
 
   // Render→headless bounds + FX
   const { bounds } = computeBounds(world);
@@ -80,11 +80,11 @@ export function createOnlineApp(canvas: HTMLCanvasElement): PongInstance {
 
   // --- Net state -------------------------------------------------------------------
   let net!: OnlineClient;
-  let mySeat: PlayerSeat = "P1"; // set after connect()
+  let mySeat: PlayerSeat = 'P1'; // set after connect()
   let oppAxis = 0; // last known opponent axis
   let latest: GameState | null = null; // latest server snapshot
   let lastEvents: FrameEvents = {}; // events paired with latest snapshot
-  let prevPhase: GameState["phase"] | null = null;
+  let prevPhase: GameState['phase'] | null = null;
 
   // Simple (optional) rows mirroring knob if you choose to flip per-game
   // NOTE: With server-authoritative flow, you can toggle this via messages.
@@ -104,25 +104,20 @@ export function createOnlineApp(canvas: HTMLCanvasElement): PongInstance {
       // 1) Input: read a single local axis and uplink it
       //    (reuse the aggregator merge of keyboard+touch, but take my seat’s stick)
       const inpt = readIntent(); // merged, allocation-free
-      const localAxis = mySeat === "P1" ? inpt.leftAxis : inpt.rightAxis;
+      const localAxis = mySeat === 'P1' ? inpt.leftAxis : inpt.rightAxis;
       net?.sendLocalAxis(localAxis);
 
       // 2) Visuals from server snapshot (with tiny interpolation)
       const now = performance.now();
       const hasPrev = !!prevSnap && prevT < currT;
-      const alpha = hasPrev
-        ? clamp01((now - currT) / Math.max(1, currT - prevT))
-        : 1;
+      const alpha = hasPrev ? clamp01((now - currT) / Math.max(1, currT - prevT)) : 1;
 
       const snap = latest ?? prevSnap;
       if (snap) {
         // Interpolate a few hot fields; fall back to latest when no prev.
         const ref = prevSnap ?? snap;
-        const ballX = hasPrev
-          ? lerp(ref.ball.x, snap.ball.x, alpha)
-          : snap.ball.x;
-        const ballVX =
-          ((snap.ball.x - ref.ball.x) / Math.max(1, currT - prevT)) * 1000;
+        const ballX = hasPrev ? lerp(ref.ball.x, snap.ball.x, alpha) : snap.ball.x;
+        const ballVX = ((snap.ball.x - ref.ball.x) / Math.max(1, currT - prevT)) * 1000;
 
         // Ball Y via the same visual bounce helper you use locally
         // (optional — you can also drive Y directly from server if you send it)
@@ -211,8 +206,8 @@ export function createOnlineApp(canvas: HTMLCanvasElement): PongInstance {
   const destroy = () =>
     disposeWorld({
       loop,
-      net,                  // disconnect safely
-      world,                // disposes Scene and meshes
+      net, // disconnect safely
+      world, // disposes Scene and meshes
       fx,
       hud,
       engineDisposable,

@@ -1,40 +1,6 @@
-# Snapshot of log-management
-# Generated: 2025-09-10T06:01:23.427Z
-# Total files: 12
+# log-management
 
-===== BEGIN log-management/.env.example =====
-# Password for the 'elastic' superuser (at least 6 characters)
-# This user is for logging in to Kibana and cannot be renamed
-ELASTIC_PASSWORD=changeme
-
-# Password for the 'kibana_system' user (at least 6 characters)
-# This user is NOT for logging in
-KIBANA_PASSWORD=changeme
-
-# All parts of the stack should pull the same version 
-STACK_VERSION=9.1.3
-
-# Set to 'basic' or 'trial' to automatically start the 30-day trial
-LICENSE=basic
-#LICENSE=trial
-
-# Port to expose Elasticsearch HTTP API to the host
-ES_PORT=9200
-
-# Port to expose Kibana to the host, this is the web portal
-KIBANA_PORT=5601
-
-# Increase or decrease based on the available host memory (in bytes)
-ES_MEM_LIMIT=1073741824
-KB_MEM_LIMIT=1073741824
-LS_MEM_LIMIT=1073741824
-
-# Key needs to be stored to preserve reports across restarts.
-# Alphanumeric, min 32 chars
-ENCRYPTION_KEY=Jn7FYWRWLAVyiMK4hBYsaxbxAstwZKPF
-
-
-===== END log-management/.env.example =====
+===== BEGIN log-management/.env.example (SKIPPED: non-text) =====
 
 
 ===== BEGIN log-management/docker-compose.yml =====
@@ -217,35 +183,16 @@ services:
 ===== END log-management/docker-compose.yml =====
 
 
-===== BEGIN log-management/elastic_cert_setup/Dockerfile =====
-# default value should make the build fail if this variable not set
-ARG STACK_VERSION=UNSET_VERSION
-FROM docker.elastic.co/elasticsearch/elasticsearch:${STACK_VERSION}
-COPY setup.sh /usr/local/bin/setup.sh
-CMD ["/usr/local/bin/setup.sh"]
-
-===== END log-management/elastic_cert_setup/Dockerfile =====
+===== BEGIN log-management/elastic_cert_setup/Dockerfile (SKIPPED: non-text) =====
 
 
 ===== BEGIN log-management/elastic_cert_setup/setup.sh (SKIPPED: non-text) =====
 
 
-===== BEGIN log-management/elasticsearch/Dockerfile =====
-ARG STACK_VERSION=UNSET_VERSION
-FROM docker.elastic.co/elasticsearch/elasticsearch:${STACK_VERSION}
-
-===== END log-management/elasticsearch/Dockerfile =====
+===== BEGIN log-management/elasticsearch/Dockerfile (SKIPPED: non-text) =====
 
 
-===== BEGIN log-management/kibana-post/Dockerfile =====
-FROM curlimages/curl:8.7.1
-
-COPY logstash.ndjson /data/logstash.ndjson
-COPY import.sh /init/import.sh
-
-ENTRYPOINT ["/init/import.sh"]
-
-===== END log-management/kibana-post/Dockerfile =====
+===== BEGIN log-management/kibana-post/Dockerfile (SKIPPED: non-text) =====
 
 
 ===== BEGIN log-management/kibana-post/import.sh (SKIPPED: non-text) =====
@@ -254,43 +201,13 @@ ENTRYPOINT ["/init/import.sh"]
 ===== BEGIN log-management/kibana-post/logstash.ndjson (SKIPPED: non-text) =====
 
 
-===== BEGIN log-management/kibana/Dockerfile =====
-ARG STACK_VERSION=UNSET_VERSION
-FROM docker.elastic.co/kibana/kibana:${STACK_VERSION}
-
-===== END log-management/kibana/Dockerfile =====
+===== BEGIN log-management/kibana/Dockerfile (SKIPPED: non-text) =====
 
 
-===== BEGIN log-management/logstash/Dockerfile =====
-# default value should make the build fail if this variable not set
-ARG STACK_VERSION=UNSET_VERSION
-FROM docker.elastic.co/logstash/logstash:${STACK_VERSION}
-COPY ./logstash.conf /usr/share/logstash/pipeline/
-
-===== END log-management/logstash/Dockerfile =====
+===== BEGIN log-management/logstash/Dockerfile (SKIPPED: non-text) =====
 
 
-===== BEGIN log-management/logstash/logstash.conf =====
-input {
-  gelf {
-    port => 12201
-  }
-}
-
-filter {
-}
-
-output {
- elasticsearch {
-   index => "logstash-%{+YYYY.MM.dd}"
-   hosts=> "${ELASTIC_HOSTS}"
-   user=> "${ELASTIC_USER}"
-   password=> "${ELASTIC_PASSWORD}"
-   ssl_certificate_authorities=> ["/usr/share/logstash/certs/ca/ca.crt"]
- }
-}
-
-===== END log-management/logstash/logstash.conf =====
+===== BEGIN log-management/logstash/logstash.conf (SKIPPED: non-text) =====
 
 
 ===== BEGIN log-management/README.md =====

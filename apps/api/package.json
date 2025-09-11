@@ -1,34 +1,27 @@
 {
-  "name": "backend",
+  "name": "@app/api",
   "version": "1.0.0",
   "description": "",
   "license": "ISC",
   "author": "",
   "type": "module",
+  "private": true,
+  "engines": {
+    "node": ">=20.19.0"
+  },
   "main": "index.js",
   "scripts": {
     "ts-node": "ts-node",
     "dev": "tsx watch index.ts",
-    "migration:down": "npx tsx utils/rollback.ts",
+    "migration:down": "tsx utils/rollback.ts",
     "test": "vitest",
     "db:reset": "rm -rf data/",
-    "seed:secret": "npx tsx utils/seedSecrets.ts",
-    "db:seed": "npx tsx utils/seedTestData.ts",
-    "fix": "cd .. && npm run fix",
+    "seed:secret": "tsx utils/seedSecrets.ts",
+    "db:seed": "tsx utils/seedTestData.ts",
+    "fix": "npm run -w ft_transcendence fix",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "typecheck:watch": "tsc -p tsconfig.json --noEmit --watch"
-  },
-  "devDependencies": {
-    "@types/bcrypt": "^6.0.0",
-    "@types/better-sqlite3": "^7.6.13",
-    "@types/node": "^24.3.0",
-    "@types/nodemailer": "^7.0.1",
-    "@types/umzug": "^2.3.9",
-    "@types/uuid": "^10.0.0",
-    "ts-node": "^10.9.2",
-    "tsx": "^4.20.5",
-    "typescript": "^5.9.2",
-    "vitest": "^3.2.4"
+    "typecheck:watch": "tsc -p tsconfig.json --noEmit --watch",
+    "migrate": "tsx utils/migrate.ts"
   },
   "dependencies": {
     "@fastify/cookie": "^11.0.2",
@@ -46,7 +39,11 @@
     "umzug": "^3.8.2",
     "uuid": "^13.0.0"
   },
-  "engines": {
-    "node": ">=20.19.0 || >=22.12.0"
+  "devDependencies": {
+    "@types/bcrypt": "^6.0.0",
+    "@types/better-sqlite3": "^7.6.13",
+    "@types/nodemailer": "^7.0.1",
+    "@types/umzug": "^2.3.9",
+    "@types/uuid": "^10.0.0"
   }
 }

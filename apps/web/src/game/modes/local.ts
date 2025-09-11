@@ -1,26 +1,23 @@
 // src/app/modes/local.ts
-import { createEngine } from "@client/engine/engine";
-import { createLifecycle } from "@client/engine/lifecycle";
-import { createWorld } from "@client/scene/scene";
+import { createEngine } from '@pong/render';
+import { createLifecycle } from '@pong/render';
+import { createWorld } from '@pong/render';
 import {
   attachLocalInput,
   readIntent,
   toggleControlsMirrored,
   blockInputFor,
-} from "@client/input/aggregate";
-import { createBounces } from "@client/visuals/bounce/bounces";
-import { FXManager } from "@client/fx/manager";
-import { createScoreboard } from "@client/ui/scoreboard";
-import { updateHUD } from "@client/ui/hud-binding";
-import { createPaddleAnimator } from "@client/visuals/animate-paddle";
+} from '@pong/render';
+import { createBounces } from '@pong/render';
+import { FXManager } from '@pong/render';
+import { createScoreboard } from '@pong/render';
+import { updateHUD } from '@pong/render';
+import { createPaddleAnimator } from '@pong/render';
 
-import { computeBounds } from "@app/adapters/bounds";
-import { detectEnteredServe, onEnteredServe } from "@app/adapters/serve-cue";
-import { applyFrameEvents } from "@app/adapters/events-to-fx";
-import {
-  mapStateForPlayerRows,
-  mapHistoryForPlayers,
-} from "@app/adapters/hud-map";
+import { computeBounds } from '@pong/render';
+import { detectEnteredServe, onEnteredServe } from '@pong/render';
+import { applyFrameEvents } from '@pong/render';
+import { mapStateForPlayerRows, mapHistoryForPlayers } from '@pong/render';
 
 import {
   type GameState,
@@ -30,12 +27,12 @@ import {
   serveFrom,
   createMatchController,
   tableTennisRules,
-} from "@game";
+} from '@pong/game';
 
-import { pickInitialServer, SERVE_SELECT_TOTAL_MS } from "@shared";
-import { deriveSeed32 } from "@shared/utils/random";
-import { nextLocalMatchSeed } from "@app/seed";
-import { disposeWorld } from "@app/teardown";
+import { pickInitialServer, SERVE_SELECT_TOTAL_MS } from '@pong/shared';
+import { deriveSeed32 } from '@pong/shared';
+import { nextLocalMatchSeed } from '@pong/render';
+import { disposeWorld } from '@pong/render';
 
 interface PongInstance {
   start(): void;
@@ -60,7 +57,7 @@ export function createLocalApp(canvas: HTMLCanvasElement): PongInstance {
   hud.attachToCanvas(canvas);
 
   // Player display names (local defaults)
-  const names = { east: "Magenta", west: "Green" } as const;
+  const names = { east: 'Magenta', west: 'Green' } as const;
 
   // Bounds once (render → headless)
   const { bounds } = computeBounds(world);
@@ -179,10 +176,7 @@ export function createLocalApp(canvas: HTMLCanvasElement): PongInstance {
       // 5) HUD (player-pinned)
       const snap = match.getSnapshot();
       const stateForHUD = mapStateForPlayerRows(state, rowsMirrored);
-      const historyForHUD = mapHistoryForPlayers(
-        snap.gamesHistory,
-        RULES.match.switchEndsEachGame,
-      );
+      const historyForHUD = mapHistoryForPlayers(snap.gamesHistory, RULES.match.switchEndsEachGame);
       updateHUD(hud, stateForHUD, names, {
         bestOf: snap.bestOf,
         currentGameIndex: snap.currentGameIndex,
@@ -202,20 +196,19 @@ export function createLocalApp(canvas: HTMLCanvasElement): PongInstance {
     },
   });
 
-
   const destroy = () =>
     disposeWorld({
       loop,
-      world,                // owns the Scene; disposes it
+      world, // owns the Scene; disposes it
       fx,
       hud,
       engineDisposable,
-  });
+    });
 
   return {
     start() {
       // Pre-roll: run serve selection FX, gate input, then arm opening serve.
-      void import("@client/fx/utils").then(({ incHide }) => {
+      void import('@pong/render').then(({ incHide }) => {
         incHide(ball.mesh);
         incHide(ball.mesh);
       });
@@ -229,10 +222,10 @@ export function createLocalApp(canvas: HTMLCanvasElement): PongInstance {
         state = serveFrom(initialServer, state);
         state = { ...state, tPauseBtwPointsMs: 0 };
 
-        const dir = initialServer === "east" ? -1 : 1;
+        const dir = initialServer === 'east' ? -1 : 1;
         Bounces.scheduleServe(dir);
 
-        const { decHide } = await import("@client/fx/utils");
+        const { decHide } = await import('@pong/render');
         decHide(ball.mesh);
         decHide(ball.mesh);
       });

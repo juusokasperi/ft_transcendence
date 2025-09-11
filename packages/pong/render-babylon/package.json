@@ -1,0 +1,34 @@
+{
+  "name": "@pong/render-babylon",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "sideEffects": false,
+  "engines": {
+    "node": ">=20.19.0"
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "typecheck": "tsc -b"
+  },
+  "dependencies": {
+    "@babylonjs/core": "^8.26.2",
+    "@babylonjs/gui": "^8.26.2",
+    "@babylonjs/loaders": "^8.26.2",
+    "@babylonjs/materials": "^8.26.2",
+    "@pong/game-logic": "0.0.0",
+    "@pong/shared": "0.0.0"
+  }
+}

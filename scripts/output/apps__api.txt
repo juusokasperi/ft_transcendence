@@ -1,6 +1,4 @@
-# Snapshot of apps/api
-# Generated: 2025-09-10T06:01:23.369Z
-# Total files: 77
+# apps/api
 
 ===== BEGIN apps/api/.env =====
 SECRET=yourSecretForJWTToken
@@ -12,31 +10,10 @@ UPLOAD_DIR=./data/sqlite/uploads
 ===== END apps/api/.env =====
 
 
-===== BEGIN apps/api/.env.example =====
-SECRET=yourSecretForJWTToken
-FRONTEND_URL=localhost:5173
-DATABASE_PATH=./data/sqlite/db.sqlite
-BACKEND_PORT=3001
-BACKEND_HOST=0.0.0.0
-UPLOAD_DIR=./data/sqlite/uploads
-
-# OAuth (example for Google)
-#BASE_URL=http://localhost
-NODE_ENV=development
-GOOGLE_OAUTH_REDIRECT_PATH=/api/auth/google/callback
-GOOGLE_CLIENT_ID=xxx.apps.googleusercontent.com
-GOOGLE_CLIENT_SECRET=your_secret
-===== END apps/api/.env.example =====
+===== BEGIN apps/api/.env.example (SKIPPED: non-text) =====
 
 
-===== BEGIN apps/api/.gitignore =====
-node_modules/
-.env
-.DS_Store
-*.db*
-data/
-
-===== END apps/api/.gitignore =====
+===== BEGIN apps/api/.gitignore (SKIPPED: non-text) =====
 
 
 ===== BEGIN apps/api/data/.umzug.json =====
@@ -1470,36 +1447,29 @@ app.listen({ host: BACKEND_HOST, port: BACKEND_PORT }, function (err, address) {
 
 ===== BEGIN apps/api/package.json =====
 {
-  "name": "backend",
+  "name": "@app/api",
   "version": "1.0.0",
   "description": "",
   "license": "ISC",
   "author": "",
   "type": "module",
+  "private": true,
+  "engines": {
+    "node": ">=20.19.0"
+  },
   "main": "index.js",
   "scripts": {
     "ts-node": "ts-node",
     "dev": "tsx watch index.ts",
-    "migration:down": "npx tsx utils/rollback.ts",
+    "migration:down": "tsx utils/rollback.ts",
     "test": "vitest",
     "db:reset": "rm -rf data/",
-    "seed:secret": "npx tsx utils/seedSecrets.ts",
-    "db:seed": "npx tsx utils/seedTestData.ts",
-    "fix": "cd .. && npm run fix",
+    "seed:secret": "tsx utils/seedSecrets.ts",
+    "db:seed": "tsx utils/seedTestData.ts",
+    "fix": "npm run -w ft_transcendence fix",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "typecheck:watch": "tsc -p tsconfig.json --noEmit --watch"
-  },
-  "devDependencies": {
-    "@types/bcrypt": "^6.0.0",
-    "@types/better-sqlite3": "^7.6.13",
-    "@types/node": "^24.3.0",
-    "@types/nodemailer": "^7.0.1",
-    "@types/umzug": "^2.3.9",
-    "@types/uuid": "^10.0.0",
-    "ts-node": "^10.9.2",
-    "tsx": "^4.20.5",
-    "typescript": "^5.9.2",
-    "vitest": "^3.2.4"
+    "typecheck:watch": "tsc -p tsconfig.json --noEmit --watch",
+    "migrate": "tsx utils/migrate.ts"
   },
   "dependencies": {
     "@fastify/cookie": "^11.0.2",
@@ -1517,8 +1487,12 @@ app.listen({ host: BACKEND_HOST, port: BACKEND_PORT }, function (err, address) {
     "umzug": "^3.8.2",
     "uuid": "^13.0.0"
   },
-  "engines": {
-    "node": ">=20.19.0 || >=22.12.0"
+  "devDependencies": {
+    "@types/bcrypt": "^6.0.0",
+    "@types/better-sqlite3": "^7.6.13",
+    "@types/nodemailer": "^7.0.1",
+    "@types/umzug": "^2.3.9",
+    "@types/uuid": "^10.0.0"
   }
 }
 
@@ -3802,34 +3776,17 @@ describe('User Functions', () => {
 
 ===== BEGIN apps/api/tsconfig.json =====
 {
+  "extends": "../../tsconfig.base.json",
   "compilerOptions": {
-    "allowImportingTsExtensions": true,
-    "noEmit": true,
-    "module": "nodenext",
-    "moduleResolution": "nodenext",
-    "target": "esnext",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "target": "ES2022",
     "types": ["node", "vitest"],
     "sourceMap": true,
-    "declaration": true,
-    "declarationMap": true,
-    "noUncheckedIndexedAccess": true,
-    "exactOptionalPropertyTypes": true,
-    "noImplicitAny": false,
-    // "noImplicitReturns": true,
-    // "noImplicitOverride": true,
-    // "noUnusedLocals": true,
-    // "noUnusedParameters": true,
-    // "noFallthroughCasesInSwitch": true,
-    // "noPropertyAccessFromIndexSignature": true,
-    // Recommended Options
-    "strict": true,
-    "verbatimModuleSyntax": true,
-    "isolatedModules": true,
-    "noUncheckedSideEffectImports": true,
-    "moduleDetection": "force",
-    "skipLibCheck": true
+    "noEmit": true,
+    "isolatedModules": true
   },
-  "include": ["db/**/*", "utils/**/*"]
+  "include": ["index.ts", "db/**/*", "utils/**/*", "**/*.d.ts"]
 }
 
 ===== END apps/api/tsconfig.json =====

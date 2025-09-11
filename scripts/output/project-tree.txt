@@ -1,8 +1,5 @@
 .
-├── .config
-│   └── prettier
-│       ├── .prettierignore
-│       └── prettier.config.cjs
+├── .dependency-cruiser.mjs
 ├── .env
 ├── .env.example
 ├── .github
@@ -12,12 +9,11 @@
 │       ├── MakefileCI.yml
 │       └── SyntaxCheck.yml
 ├── .gitignore
+├── .prettierignore
 ├── .vscode
 │   └── settings.json
 ├── Makefile
 ├── README.md
-├── StyleFormatter.md
-├── all_repo.txt
 ├── apps
 │   ├── api
 │   │   ├── .env
@@ -176,12 +172,17 @@
 │   └── worker
 ├── docker-compose.yml
 ├── docs
-│   ├── TODO.md
-│   ├── UserDataFromDB.md
-│   ├── UserDataFromGame.md
-│   ├── UserTunableRules.md
-│   ├── UserTunableSettings.md
-│   └── ft_transcendence.subject.pdf
+│   ├── StyleFormatter.md
+│   ├── ft_transcendence.subject.pdf
+│   └── to0nsa
+│       ├── README.md
+│       ├── TODO.md
+│       ├── TechStack.md
+│       ├── UserDataFromDB.md
+│       ├── UserDataFromGame.md
+│       ├── UserTunableRules.md
+│       └── UserTunableSettings.md
+├── eslint.config.js
 ├── infra
 │   └── nginx
 │       ├── Dockerfile.dev
@@ -207,155 +208,155 @@
 ├── package-lock.json
 ├── package.json
 ├── packages
-│   ├── game-logic
-│   │   ├── constants.ts
-│   │   ├── index.ts
-│   │   ├── lifecycle
-│   │   │   ├── boot.ts
-│   │   │   └── headless-smoke.ts
-│   │   ├── match
-│   │   │   └── controller.ts
-│   │   ├── model
-│   │   │   └── state.ts
-│   │   ├── rules
-│   │   │   └── presets.ts
-│   │   └── systems
-│   │       ├── control
-│   │       │   └── paddle.ts
-│   │       ├── flow
-│   │       │   ├── pause.ts
-│   │       │   ├── phases.ts
-│   │       │   ├── scoring.ts
-│   │       │   ├── service.ts
-│   │       │   └── win.ts
-│   │       ├── physics
-│   │       │   └── collisions.ts
-│   │       └── utils.ts
-│   ├── protocol
-│   │   ├── events.ts
-│   │   ├── input.ts
-│   │   └── state.ts
-│   ├── render-babylon
-│   │   ├── .dependency-cruiser.mjs
-│   │   ├── .gitignore
-│   │   ├── .prettier.json
-│   │   ├── .prettierignore
-│   │   ├── README.md
-│   │   ├── TechStack.md
-│   │   ├── demo
-│   │   │   ├── index.html
-│   │   │   └── src
-│   │   │       ├── main.ts
-│   │   │       └── vite-env.d.ts
-│   │   ├── eslint.config.js
-│   │   ├── package.json
-│   │   ├── src
-│   │   │   ├── app
-│   │   │   │   ├── adapters
+│   ├── pong
+│   │   ├── game-logic
+│   │   │   ├── package.json
+│   │   │   ├── src
+│   │   │   │   ├── constants.ts
+│   │   │   │   ├── index.ts
+│   │   │   │   ├── lifecycle
+│   │   │   │   │   └── boot.ts
+│   │   │   │   ├── match
+│   │   │   │   │   └── controller.ts
+│   │   │   │   ├── model
+│   │   │   │   │   └── state.ts
+│   │   │   │   ├── rules
+│   │   │   │   │   └── presets.ts
+│   │   │   │   └── systems
+│   │   │   │       ├── control
+│   │   │   │       │   └── paddle.ts
+│   │   │   │       ├── flow
+│   │   │   │       │   ├── pause.ts
+│   │   │   │       │   ├── phases.ts
+│   │   │   │       │   ├── scoring.ts
+│   │   │   │       │   ├── service.ts
+│   │   │   │       │   └── win.ts
+│   │   │   │       ├── physics
+│   │   │   │       │   └── collisions.ts
+│   │   │   │       └── utils.ts
+│   │   │   ├── tsconfig.json
+│   │   │   └── tsconfig.tsbuildinfo
+│   │   ├── render-babylon
+│   │   │   ├── .gitignore
+│   │   │   ├── package.json
+│   │   │   ├── src
+│   │   │   │   ├── app
 │   │   │   │   │   ├── bounds.ts
 │   │   │   │   │   ├── events-to-fx.ts
 │   │   │   │   │   ├── hud-map.ts
 │   │   │   │   │   ├── seat-router.ts
+│   │   │   │   │   ├── seed.ts
 │   │   │   │   │   └── serve-cue.ts
-│   │   │   │   ├── host
-│   │   │   │   └── modes
-│   │   │   ├── client
-│   │   │   │   ├── babylon-register.ts
-│   │   │   │   ├── engine
-│   │   │   │   │   ├── engine.ts
-│   │   │   │   │   ├── lifecycle.ts
-│   │   │   │   │   ├── raf-ticker.ts
-│   │   │   │   │   ├── render-loop.ts
-│   │   │   │   │   └── teardown.ts
-│   │   │   │   ├── fx
-│   │   │   │   │   ├── burst.ts
-│   │   │   │   │   ├── camera-shake.ts
-│   │   │   │   │   ├── colors.ts
-│   │   │   │   │   ├── config.ts
-│   │   │   │   │   ├── context.ts
-│   │   │   │   │   ├── force-field.ts
-│   │   │   │   │   ├── manager.ts
-│   │   │   │   │   ├── pool.ts
-│   │   │   │   │   ├── serve-select.ts
-│   │   │   │   │   └── utils.ts
-│   │   │   │   ├── input
-│   │   │   │   │   ├── aggregate.ts
-│   │   │   │   │   ├── block.ts
-│   │   │   │   │   ├── keyboard.ts
-│   │   │   │   │   └── touch-zones.ts
-│   │   │   │   ├── scene
-│   │   │   │   │   ├── background.ts
-│   │   │   │   │   ├── camera
-│   │   │   │   │   │   └── camera.ts
-│   │   │   │   │   ├── color.ts
-│   │   │   │   │   ├── light
-│   │   │   │   │   │   ├── light.ts
-│   │   │   │   │   │   └── shadows.ts
-│   │   │   │   │   ├── materials
-│   │   │   │   │   │   ├── glass.ts
-│   │   │   │   │   │   └── neon-glass.ts
-│   │   │   │   │   ├── mesh
-│   │   │   │   │   │   ├── ball.ts
-│   │   │   │   │   │   ├── net.ts
-│   │   │   │   │   │   ├── paddle.ts
-│   │   │   │   │   │   └── table.ts
-│   │   │   │   │   └── scene.ts
-│   │   │   │   ├── ui
-│   │   │   │   │   ├── hud-binding.ts
-│   │   │   │   │   ├── scoreboard.ts
-│   │   │   │   │   └── tailwind.css
-│   │   │   │   ├── utils
-│   │   │   │   │   └── platform.ts
-│   │   │   │   └── visuals
-│   │   │   │       ├── animate-paddle.ts
-│   │   │   │       └── bounce
-│   │   │   │           ├── aim-paddle.ts
-│   │   │   │           ├── bounces.ts
-│   │   │   │           └── math.ts
-│   │   │   ├── server
-│   │   │   │   └── runtime
-│   │   │   └── types
-│   │   │       └── babylon.dynamicTexture.d.ts
-│   │   ├── tsconfig.json
-│   │   ├── typedoc.json
-│   │   └── vite.config.ts
-│   └── shared
-│       ├── domain
-│       │   ├── ids.ts
-│       │   ├── rules.ts
-│       │   └── timing.ts
-│       ├── index.ts
-│       └── utils
-│           ├── disposable.ts
-│           ├── logger.ts
-│           ├── math.ts
-│           ├── random.ts
-│           └── seed.ts
-└── scripts
-    ├── export-pm-config.js
-    ├── export-tree.sh
-    ├── exports-folders-to-txt.js
-    └── output
-        ├── .gitkeep
-        ├── apps__api.txt
-        ├── apps__web.txt
-        ├── devcontainer.txt
-        ├── docker.txt
-        ├── dotconfig.txt
-        ├── env-samples.txt
-        ├── husky.txt
-        ├── infra.txt
-        ├── log-management.txt
-        ├── makefiles.txt
-        ├── miscellaneous.txt
-        ├── nginx.txt
-        ├── package-management.txt
-        ├── packages__game-logic.txt
-        ├── packages__protocol.txt
-        ├── packages__render-babylon.txt
-        ├── packages__shared.txt
-        ├── project-tree.txt
-        ├── vscode.txt
-        └── workflows.txt
+│   │   │   │   ├── client
+│   │   │   │   │   ├── babylon-register.ts
+│   │   │   │   │   ├── engine
+│   │   │   │   │   │   ├── engine.ts
+│   │   │   │   │   │   ├── lifecycle.ts
+│   │   │   │   │   │   ├── raf-ticker.ts
+│   │   │   │   │   │   ├── render-loop.ts
+│   │   │   │   │   │   └── teardown.ts
+│   │   │   │   │   ├── fx
+│   │   │   │   │   │   ├── burst.ts
+│   │   │   │   │   │   ├── camera-shake.ts
+│   │   │   │   │   │   ├── colors.ts
+│   │   │   │   │   │   ├── config.ts
+│   │   │   │   │   │   ├── context.ts
+│   │   │   │   │   │   ├── force-field.ts
+│   │   │   │   │   │   ├── manager.ts
+│   │   │   │   │   │   ├── pool.ts
+│   │   │   │   │   │   ├── serve-select.ts
+│   │   │   │   │   │   └── utils.ts
+│   │   │   │   │   ├── input
+│   │   │   │   │   │   ├── aggregate.ts
+│   │   │   │   │   │   ├── block.ts
+│   │   │   │   │   │   ├── keyboard.ts
+│   │   │   │   │   │   └── touch-zones.ts
+│   │   │   │   │   ├── scene
+│   │   │   │   │   │   ├── background.ts
+│   │   │   │   │   │   ├── camera
+│   │   │   │   │   │   │   └── camera.ts
+│   │   │   │   │   │   ├── color.ts
+│   │   │   │   │   │   ├── light
+│   │   │   │   │   │   │   ├── light.ts
+│   │   │   │   │   │   │   └── shadows.ts
+│   │   │   │   │   │   ├── materials
+│   │   │   │   │   │   │   ├── glass.ts
+│   │   │   │   │   │   │   └── neon-glass.ts
+│   │   │   │   │   │   ├── mesh
+│   │   │   │   │   │   │   ├── ball.ts
+│   │   │   │   │   │   │   ├── net.ts
+│   │   │   │   │   │   │   ├── paddle.ts
+│   │   │   │   │   │   │   └── table.ts
+│   │   │   │   │   │   └── scene.ts
+│   │   │   │   │   ├── ui
+│   │   │   │   │   │   ├── hud-binding.ts
+│   │   │   │   │   │   ├── scoreboard.ts
+│   │   │   │   │   │   └── tailwind.css
+│   │   │   │   │   ├── utils
+│   │   │   │   │   │   └── platform.ts
+│   │   │   │   │   └── visuals
+│   │   │   │   │       ├── animate-paddle.ts
+│   │   │   │   │       └── bounce
+│   │   │   │   │           ├── aim-paddle.ts
+│   │   │   │   │           ├── bounces.ts
+│   │   │   │   │           └── math.ts
+│   │   │   │   ├── demo
+│   │   │   │   │   ├── index.html
+│   │   │   │   │   └── src
+│   │   │   │   │       ├── host
+│   │   │   │   │       │   └── dom-embed.ts
+│   │   │   │   │       ├── main.ts
+│   │   │   │   │       └── vite-env.d.ts
+│   │   │   │   ├── index.ts
+│   │   │   │   └── types
+│   │   │   │       └── babylon.dynamicTexture.d.ts
+│   │   │   ├── tsconfig.json
+│   │   │   ├── tsconfig.tsbuildinfo
+│   │   │   └── vite.config.ts
+│   │   └── shared
+│   │       ├── package.json
+│   │       ├── src
+│   │       │   ├── domain
+│   │       │   │   ├── ids.ts
+│   │       │   │   ├── rules.ts
+│   │       │   │   └── timing.ts
+│   │       │   ├── index.ts
+│   │       │   ├── protocol
+│   │       │   │   ├── events.ts
+│   │       │   │   ├── input.ts
+│   │       │   │   └── state.ts
+│   │       │   └── utils
+│   │       │       ├── disposable.ts
+│   │       │       ├── logger.ts
+│   │       │       ├── math.ts
+│   │       │       └── random.ts
+│   │       ├── tsconfig.json
+│   │       └── tsconfig.tsbuildinfo
+│   └── tetris
+│       └── .gitkeep
+├── prettier.config.cjs
+├── scripts
+│   ├── export-all.sh
+│   ├── export-dockerfiles.mjs
+│   ├── export-folders-to-txt.mjs
+│   ├── export-packages-json.mjs
+│   ├── export-tree.sh
+│   ├── export-tsconfigs-json.mjs
+│   └── output
+│       ├── .gitkeep
+│       ├── apps__api.txt
+│       ├── apps__web.txt
+│       ├── dockerfiles-and-compose.txt
+│       ├── infra__nginx.txt
+│       ├── log-management.txt
+│       ├── packages-json.txt
+│       ├── packages__pong__game-logic.txt
+│       ├── packages__pong__render-babylon.txt
+│       ├── packages__pong__shared.txt
+│       ├── project-tree.txt
+│       └── tsconfig-json.txt
+├── tsconfig.base.json
+├── tsconfig.build.json
+└── typedoc.json
 
-86 directories, 273 files
+85 directories, 275 files

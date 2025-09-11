@@ -3,47 +3,66 @@
   "version": "1.0.0",
   "description": "---",
   "private": true,
-  "main": "index.js",
-  "packageManager": "npm@10",
-  "engines": { "node": ">=20.10" },
-
+  "packageManager": "npm@11.4.2",
+  "engines": {
+    "node": ">=20.19.0"
+  },
   "workspaces": [
     "apps/*",
-    "packages/*",
-    "tools/*"
+    "packages/pong/*"
   ],
-
   "scripts": {
-    "check": "prettier . --check --config .config/prettier/prettier.config.cjs --ignore-path .config/prettier/.prettierignore",
-    "fix":   "prettier . --write --config .config/prettier/prettier.config.cjs --ignore-path .config/prettier/.prettierignore",
+    "check": "prettier . --check",
+    "fix": "prettier . --write",
+    "typecheck": "npm run -ws --if-present typecheck",
+    "lint": "npm run -ws --if-present lint",
+    "test": "npm run -ws --if-present test",
+    "format": "npm run fix",
+    "dev": "npm run -w @app/web dev",
+    "dev:web": "npm run -w @app/web dev",
+    "dev:api": "npm run -w @app/api dev",
+    "migrate": "npm run -w @app/api migrate",
+    "build:libs": "tsc -b -v tsconfig.build.json",
+    "build:web": "npm run -w @app/web build",
+    "build": "npm run build:libs && npm run build:web"
 
-    "build":      "npm run -ws --if-present build",
-    "typecheck":  "npm run -ws --if-present typecheck",
-    "lint":       "npm run -ws --if-present lint",
-    "test":       "npm run -ws --if-present test",
-    "format":     "npm run fix",
-    "clean":      "git clean -Xfd",
-
-    "dev":        "npm run -w apps/web dev",
-    "dev:web":    "npm run -w apps/web dev",
-    "dev:api":    "npm run -w apps/api dev",
-    "migrate":    "npm run -w apps/api migrate"
   },
-
   "repository": {
     "type": "git",
     "url": "git+https://github.com/juusokasperi/ft_transcendence.git"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
   "bugs": {
     "url": "https://github.com/juusokasperi/ft_transcendence/issues"
   },
   "homepage": "https://github.com/juusokasperi/ft_transcendence#readme",
-
   "devDependencies": {
+    "@eslint/js": "^9.34.0",
+    "@tailwindcss/vite": "^4.1.12",
+    "@types/node": "^24.3.1",
+    "@typescript-eslint/eslint-plugin": "^8.42.0",
+    "@typescript-eslint/parser": "^8.42.0",
+    "dependency-cruiser": "^17.0.1",
+    "eslint": "^9.34.0",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-security": "^3.0.1",
+    "eslint-plugin-sonarjs": "^3.0.5",
+    "eslint-plugin-unicorn": "^60.0.0",
     "prettier": "^3.6.2",
-    "prettier-plugin-tailwindcss": "^0.6.14"
+    "prettier-plugin-tailwindcss": "^0.6.14",
+    "rimraf": "^6.0.0",
+    "tailwindcss": "^4.1.12",
+    "ts-node": "^10.9.2",
+    "tsconfig-paths": "^4.2.0",
+    "tsx": "^4.20.5",
+    "typedoc": "^0.28.10",
+    "typedoc-plugin-markdown": "^4.8.1",
+    "typescript": "^5.9.2",
+    "vite": "^7.1.2",
+    "vite-tsconfig-paths": "^5.1.4",
+    "vitest": "^3.2.4"
+  },
+  "overrides": {
+    "typescript": "^5.9.2",
+    "vite": "^7.1.2"
   }
 }

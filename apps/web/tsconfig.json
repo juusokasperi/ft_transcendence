@@ -1,7 +1,11 @@
 {
-  "files": [],
-  "references": [
-    { "path": "./.tsconfigs/tsconfig.app.json" },
-    { "path": "./.tsconfigs/tsconfig.node.json" }
-  ]
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "moduleResolution": "bundler",
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "jsx": "react-jsx",
+    "types": ["vite/client", "vitest", "node"],
+    "noEmit": true
+  },
+  "include": ["src", "types", "vite-env.d.ts", "vite.config.ts"]
 }
