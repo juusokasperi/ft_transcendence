@@ -68,7 +68,7 @@ describe('GET /api/users/me', () => {
       headers: { authorization: 'Bearer not-a-valid-jwt' },
     });
     expect(res.statusCode).toBe(401);
-    expect(res.json().message).toMatch(/Invalid token/i);
+    expect(res.json().message).toMatch(/Invalid or expired token/i);
   });
 
   it('404 when user not found', async () => {

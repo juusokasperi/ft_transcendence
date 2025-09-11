@@ -8,13 +8,13 @@ export function authPreHandler(req: FastifyRequest, res: FastifyReply, done: Fun
   const authHeader = req.headers.authorization;
   if (!authHeader || !authHeader.toLowerCase().startsWith('bearer '))
     return res.status(401).send({ message: 'Missing or invalid token' });
-  const token = authHeader.replace('Bearer ', '');
+  const token = authHeader.split(' ')[1];
   try {
     const payload = jwt.verify(token, SECRET);
     req.user = payload;
     done();
   } catch {
-    return res.status(401).send({ message: 'Invalid token' });
+    return res.status(401).send({ message: 'Invalid or expired token' });
   }
 }
 
