@@ -59,7 +59,9 @@ describe('Friends Functions', () => {
 
   it('Accept a friendship request', async () => {
     const { addUser } = await import('../../../db/queries/users.ts');
-    const { addFriend, respondToFriendReq, getFriends } = await import('../../../db/queries/friends.ts');
+    const { addFriend, respondToFriendReq, getFriends } = await import(
+      '../../../db/queries/friends.ts'
+    );
     const player1Id = 'uuid-1';
     const player2Id = 'uuid-2';
     addUser(player1Id, 'Joe', 'hashPass', 'test@mail.com');
@@ -196,7 +198,9 @@ describe('Friends Functions', () => {
   it('Create a friendship between two users, delete the other user and check that the friendship gets deleted', async () => {
     const { addUser } = await import('../../../db/queries/users.ts');
     const { deleteUser } = await import('../../../db/queries/userDelete.ts');
-    const { addFriend, respondToFriendReq, getFriends } = await import('../../../db/queries/friends.ts');
+    const { addFriend, respondToFriendReq, getFriends } = await import(
+      '../../../db/queries/friends.ts'
+    );
     const player1Id = 'uuid-1';
     const player2Id = 'uuid-2';
     addUser(player1Id, 'Joe', 'hashPass', 'test@mail.com');

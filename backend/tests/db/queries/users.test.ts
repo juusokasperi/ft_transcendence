@@ -158,7 +158,9 @@ describe('User Functions', () => {
   });
 
   it('createUserFromGoogle inserts a user and maps fields', async () => {
-    const { createUserFromGoogle, getUserByGoogleId } = await import('../../../db/queries/users.ts');
+    const { createUserFromGoogle, getUserByGoogleId } = await import(
+      '../../../db/queries/users.ts'
+    );
 
     const created = createUserFromGoogle({
       googleId: 'g-1',
