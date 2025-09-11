@@ -1,5 +1,5 @@
 import type { WorldKit } from '../client/scene/scene';
-import type { GameState } from '@pong/game';
+import type { GameState } from '@pong/game-logic';
 
 /** Read Babylon geometry once and derive headless bounds. */
 export function computeBounds(world: WorldKit): {

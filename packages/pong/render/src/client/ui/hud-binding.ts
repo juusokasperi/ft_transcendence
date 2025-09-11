@@ -1,4 +1,4 @@
-import type { GameState } from '@pong/game';
+import type { GameState } from '@pong/game-logic';
 import type { DomScoreboardAPI } from './scoreboard';
 import type { TableEnd } from '@pong/shared';
 

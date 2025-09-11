@@ -1,4 +1,4 @@
-import type { GameState } from '@pong/game';
+import type { GameState } from '@pong/game-logic';
 import type { TableEnd } from '@pong/shared';
 import type { GameHistoryEntry } from '@pong/shared';
 

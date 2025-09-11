@@ -1,4 +1,4 @@
-// packages/pong/render-babylon/src/index.ts
+// packages/pong/render/src/index.ts
 
 // ── Engine lifecycle ───────────────────────────────────────────────────────────
 export { createEngine } from './client/engine/engine';

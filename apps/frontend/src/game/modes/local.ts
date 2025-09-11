@@ -1,23 +1,23 @@
 // src/app/modes/local.ts
-import { createEngine } from '@pong/render';
-import { createLifecycle } from '@pong/render';
-import { createWorld } from '@pong/render';
+import { createEngine } from 'packages/pong/render/src';
+import { createLifecycle } from 'packages/pong/render/src';
+import { createWorld } from 'packages/pong/render/src';
 import {
   attachLocalInput,
   readIntent,
   toggleControlsMirrored,
   blockInputFor,
-} from '@pong/render';
-import { createBounces } from '@pong/render';
-import { FXManager } from '@pong/render';
-import { createScoreboard } from '@pong/render';
-import { updateHUD } from '@pong/render';
-import { createPaddleAnimator } from '@pong/render';
+} from 'packages/pong/render/src';
+import { createBounces } from 'packages/pong/render/src';
+import { FXManager } from 'packages/pong/render/src';
+import { createScoreboard } from 'packages/pong/render/src';
+import { updateHUD } from 'packages/pong/render/src';
+import { createPaddleAnimator } from 'packages/pong/render/src';
 
-import { computeBounds } from '@pong/render';
-import { detectEnteredServe, onEnteredServe } from '@pong/render';
-import { applyFrameEvents } from '@pong/render';
-import { mapStateForPlayerRows, mapHistoryForPlayers } from '@pong/render';
+import { computeBounds } from 'packages/pong/render/src';
+import { detectEnteredServe, onEnteredServe } from 'packages/pong/render/src';
+import { applyFrameEvents } from 'packages/pong/render/src';
+import { mapStateForPlayerRows, mapHistoryForPlayers } from 'packages/pong/render/src';
 
 import {
   type GameState,
@@ -27,12 +27,12 @@ import {
   serveFrom,
   createMatchController,
   tableTennisRules,
-} from '@pong/game';
+} from '@pong/game-logic';
 
 import { pickInitialServer, SERVE_SELECT_TOTAL_MS } from '@pong/shared';
 import { deriveSeed32 } from '@pong/shared';
-import { nextLocalMatchSeed } from '@pong/render';
-import { disposeWorld } from '@pong/render';
+import { nextLocalMatchSeed } from 'packages/pong/render/src';
+import { disposeWorld } from 'packages/pong/render/src';
 
 interface PongInstance {
   start(): void;
@@ -208,7 +208,7 @@ export function createLocalApp(canvas: HTMLCanvasElement): PongInstance {
   return {
     start() {
       // Pre-roll: run serve selection FX, gate input, then arm opening serve.
-      void import('@pong/render').then(({ incHide }) => {
+      void import('packages/pong/render/src').then(({ incHide }) => {
         incHide(ball.mesh);
         incHide(ball.mesh);
       });
@@ -225,7 +225,7 @@ export function createLocalApp(canvas: HTMLCanvasElement): PongInstance {
         const dir = initialServer === 'east' ? -1 : 1;
         Bounces.scheduleServe(dir);
 
-        const { decHide } = await import('@pong/render');
+        const { decHide } = await import('packages/pong/render/src');
         decHide(ball.mesh);
         decHide(ball.mesh);
       });

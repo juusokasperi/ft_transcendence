@@ -1,4 +1,4 @@
-import type { Phase } from '@pong/game';
+import type { Phase } from '@pong/game-logic';
 import { decHide } from '../client/fx/utils';
 import type { AbstractMesh } from '@babylonjs/core/Meshes/abstractMesh';
 

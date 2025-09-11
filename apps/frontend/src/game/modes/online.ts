@@ -1,21 +1,21 @@
 // src/app/modes/online.ts
-import { createEngine } from '@pong/render';
-import { createLifecycle } from '@pong/render';
-import { createWorld } from '@pong/render';
-import { FXManager } from '@pong/render';
-import { createScoreboard } from '@pong/render';
-import { updateHUD } from '@pong/render';
-import { applyFrameEvents } from '@pong/render';
-import { computeBounds } from '@pong/render';
-import { detectEnteredServe, onEnteredServe } from '@pong/render';
-import { mapStateForPlayerRows } from '@pong/render';
+import { createEngine } from 'packages/pong/render/src';
+import { createLifecycle } from 'packages/pong/render/src';
+import { createWorld } from 'packages/pong/render/src';
+import { FXManager } from 'packages/pong/render/src';
+import { createScoreboard } from 'packages/pong/render/src';
+import { updateHUD } from 'packages/pong/render/src';
+import { applyFrameEvents } from 'packages/pong/render/src';
+import { computeBounds } from 'packages/pong/render/src';
+import { detectEnteredServe, onEnteredServe } from 'packages/pong/render/src';
+import { mapStateForPlayerRows } from 'packages/pong/render/src';
 
-import { readIntent } from '@pong/render';
-import { blockInputFor } from '@pong/render';
-import { /* mixOnlineAxes, */ type PlayerSeat } from '@pong/render';
-import { disposeWorld } from '@pong/render';
+import { readIntent } from 'packages/pong/render/src';
+import { blockInputFor } from 'packages/pong/render/src';
+import { /* mixOnlineAxes, */ type PlayerSeat } from 'packages/pong/render/src';
+import { disposeWorld } from 'packages/pong/render/src';
 
-import type { GameState } from '@pong/game';
+import type { GameState } from '@pong/game-logic';
 import type { FrameEvents } from '@pong/shared';
 import { SERVE_SELECT_TOTAL_MS } from '@pong/shared';
 import { clamp01 } from '@pong/shared';
