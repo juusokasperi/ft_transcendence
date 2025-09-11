@@ -1,1 +1,0 @@
-{"version":3,"file":"paddle.d.ts","sourceRoot":"","sources":["../../../src/systems/control/paddle.ts"],"names":[],"mappings":"AAAA,OAAO,KAAK,EAAE,SAAS,EAAE,MAAM,mBAAmB,CAAC;AAEnD,OAAO,KAAK,EAAE,WAAW,EAAE,MAAM,cAAc,CAAC;AAEhD,+DAA+D;AAC/D,wBAAgB,WAAW,CAAC,CAAC,EAAE,SAAS,EAAE,IAAI,EAAE,WAAW,EAAE,EAAE,EAAE,MAAM,GAAG,SAAS,CAiBlF"}
