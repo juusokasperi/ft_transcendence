@@ -38,6 +38,7 @@ coverage/
 .tmp/
 temp/
 tmp/
+.dev-npm-stamps/workspaces.lock.sha256
 
 ### Environment files
 .env
