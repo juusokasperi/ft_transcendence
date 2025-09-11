@@ -137,7 +137,7 @@ export async function friendsRoutes(app: FastifyInstance) {
         const result = deleteFriend(user1Uuid, user2Uuid);
         if (!result)
           return res.status(400).send({ message: 'No friendship found with supplied UUIDs.' });
-        res.status(204).send({ success: 'Friendship successfully removed' });
+        res.status(204).send({ success: 'Friendship successfully removed' }); // 204 No Content  - res.status(204).send();
       } catch (error) {
         return res.status(500).send({ message: 'Failed to delete friendship' });
       }
