@@ -1,3 +1,0 @@
-# apps/web
-
-Directory not found or not a directory.

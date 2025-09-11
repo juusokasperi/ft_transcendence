@@ -1,7 +1,0 @@
-# nginx
-
-===== BEGIN nginx/default.conf (SKIPPED: non-text) =====
-
-
-===== BEGIN nginx/Dockerfile.dev (SKIPPED: non-text) =====
-
