@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { createTestDb, cleanupTestDb } from './setup.ts';
+import { createTestDb, cleanupTestDb } from '../../setup.ts';
 import type { Database } from 'better-sqlite3';
 
 describe('User Functions', () => {
@@ -21,7 +21,7 @@ describe('User Functions', () => {
 
   it('Add user and test the getter functions', async () => {
     const { addUser, getUserByUuid, getUserByUsername, getUserByEmail, getUserStats } =
-      await import('../db/queries/users.ts');
+      await import('../../../db/queries/users.ts');
     const player1Id = 'uuid-1';
     const user = addUser(player1Id, 'Joe', 'hashPass', 'test@mail.com');
     expect(user).toBeTruthy();
@@ -46,7 +46,7 @@ describe('User Functions', () => {
   });
 
   it('Test uuid, email, username uniqueness', async () => {
-    const { addUser, getUserStats } = await import('../db/queries/users.ts');
+    const { addUser, getUserStats } = await import('../../../db/queries/users.ts');
     const player1Id = 'uuid-1';
     const user1 = addUser(player1Id, 'Joe', 'hashPass', 'test@mail.com');
     expect(user1).toBeTruthy();
@@ -72,8 +72,8 @@ describe('User Functions', () => {
   });
 
   it('Delete user', async () => {
-    const { addUser, getUserStats } = await import('../db/queries/users.ts');
-    const { deleteUser } = await import('../db/queries/userDelete.ts');
+    const { addUser, getUserStats } = await import('../../../db/queries/users.ts');
+    const { deleteUser } = await import('../../../db/queries/userDelete.ts');
     const playerId = 'uuid-1';
     const user = addUser(playerId, 'Joe', 'hashPass', 'test@mail.com');
     expect(user).toBeTruthy();
@@ -92,7 +92,7 @@ describe('User Functions', () => {
   });
 
   it('Test avatar creation & deletion', async () => {
-    const { addUser, getUserStats, updateAvatar } = await import('../db/queries/users.ts');
+    const { addUser, getUserStats, updateAvatar } = await import('../../../db/queries/users.ts');
     const playerId = 'uuid-1';
     const user = addUser(playerId, 'Joe', 'hashPass', 'test@mail.com');
     expect(user).toBeTruthy();
@@ -120,7 +120,7 @@ describe('User Functions', () => {
   });
 
   it('Test password change', async () => {
-    const { addUser, getUserByUuid, updatePassword } = await import('../db/queries/users.ts');
+    const { addUser, getUserByUuid, updatePassword } = await import('../../../db/queries/users.ts');
     const playerId = 'uuid-1';
     const user = addUser(playerId, 'Joe', 'hashPass', 'test@mail.com');
     expect(user).toBeTruthy();
@@ -140,7 +140,7 @@ describe('User Functions', () => {
   });
 
   it('Test username change', async () => {
-    const { addUser, getUserStats, updateUsername } = await import('../db/queries/users.ts');
+    const { addUser, getUserStats, updateUsername } = await import('../../../db/queries/users.ts');
     const playerId = 'uuid-1';
     const user = addUser(playerId, 'Joe', 'hashPass', 'test@mail.com');
     expect(user).toBeTruthy();
@@ -158,7 +158,7 @@ describe('User Functions', () => {
   });
 
   it('createUserFromGoogle inserts a user and maps fields', async () => {
-    const { createUserFromGoogle, getUserByGoogleId } = await import('../db/queries/users.ts');
+    const { createUserFromGoogle, getUserByGoogleId } = await import('../../../db/queries/users.ts');
 
     const created = createUserFromGoogle({
       googleId: 'g-1',
@@ -180,7 +180,7 @@ describe('User Functions', () => {
   });
 
   it('getUserByGoogleId returns undefined when not found', async () => {
-    const { getUserByGoogleId } = await import('../db/queries/users.ts');
+    const { getUserByGoogleId } = await import('../../../db/queries/users.ts');
     expect(getUserByGoogleId('nope')).toBeUndefined();
   });
 
@@ -194,7 +194,7 @@ describe('User Functions', () => {
       )
       .run('u-empty', 'u-name', 'new@mail.com', '', 'g-2', '');
 
-    const { updateGoogleUser, getUserByGoogleId } = await import('../db/queries/users.ts');
+    const { updateGoogleUser, getUserByGoogleId } = await import('../../../db/queries/users.ts');
 
     const ok = updateGoogleUser({
       googleId: 'g-2',
@@ -220,7 +220,7 @@ describe('User Functions', () => {
       )
       .run('u-has', 'Fixed', 'old@mail.com', '/old.png', 'g-3', '');
 
-    const { updateGoogleUser, getUserByGoogleId } = await import('../db/queries/users.ts');
+    const { updateGoogleUser, getUserByGoogleId } = await import('../../../db/queries/users.ts');
 
     const ok = updateGoogleUser({
       googleId: 'g-3',
@@ -240,7 +240,7 @@ describe('User Functions', () => {
 
   it('linkGoogleToUser sets google_id and backfills avatar ONLY if empty', async () => {
     const { addUser, getUser, getUserByGoogleId, updateAvatar, linkGoogleToUser } = await import(
-      '../db/queries/users.ts'
+      '../../../db/queries/users.ts'
     );
 
     // Case A: avatar empty -> backfill from provided picture

@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { createTestDb, cleanupTestDb } from './setup.ts';
+import { createTestDb, cleanupTestDb } from '../../setup.ts';
 import type { Database } from 'better-sqlite3';
 
 describe('Game Functions', () => {
@@ -8,7 +8,7 @@ describe('Game Functions', () => {
   beforeEach(async () => {
     vi.resetModules();
     testDb = await createTestDb();
-    vi.doMock('../db/client.ts', () => ({
+    vi.doMock('../../../db/client.ts', () => ({
       default: testDb,
     }));
   });
@@ -20,8 +20,8 @@ describe('Game Functions', () => {
   });
 
   it('Create 1v1 game', async () => {
-    const { addGame, getGameWithPlayers } = await import('../db/queries/games.ts');
-    const { addUser } = await import('../db/queries/users.ts');
+    const { addGame, getGameWithPlayers } = await import('../../../db/queries/games.ts');
+    const { addUser } = await import('../../../db/queries/users.ts');
     const player1Id = 'uuid-1';
     const player2Id = 'uuid-2';
     addUser(player1Id, 'Joe', 'hashPass', 'test@mail.com');
@@ -42,8 +42,8 @@ describe('Game Functions', () => {
   });
 
   it('Create 2v2 game', async () => {
-    const { addGame, getGameWithPlayers } = await import('../db/queries/games.ts');
-    const { addUser } = await import('../db/queries/users.ts');
+    const { addGame, getGameWithPlayers } = await import('../../../db/queries/games.ts');
+    const { addUser } = await import('../../../db/queries/users.ts');
     const player1Id = 'uuid-1';
     const player2Id = 'uuid-2';
     const player3Id = 'uuid-3';
@@ -73,7 +73,7 @@ describe('Game Functions', () => {
   });
 
   it('Transaction rollback, if Game/GamePlayer fails, nothing goes to database', async () => {
-    const { addGame } = await import('../db/queries/games.ts');
+    const { addGame } = await import('../../../db/queries/games.ts');
 
     const gameId = addGame(21, 15, 'invalid-uuid', 'invalid-uuid-2');
     expect(gameId).toBeNull();
