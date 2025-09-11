@@ -1,24 +1,45 @@
+volumes:
+  grafana-storage:
+    driver: local
+
+# TODO: labels?
 services:
   prometheus:
     image: prom/prometheus
+    profiles:
+      - monitoring
     volumes:
       - ./prometheus.yml:/etc/prometheus/prometheus.yml
+    networks:
+      - devnet
     ports:
       - "9090:9090"
 
-  # grafana:
-  #   image: grafana/grafana
-  #   ports:
-  #     - "3002:3000"
+  nginx-exporter:
+    image: nginx/nginx-prometheus-exporter:latest
+    profiles:
+      - monitoring
+    command:
+      - "-nginx.scrape-uri=http://nginx:80/stub_status"
+    networks:
+      - devnet
+    ports:
+      - "9113:9113"
+
+  # TODO: password
+  grafana:
+    image: grafana/grafana
+    profiles:
+      - monitoring
+    volumes:
+      - grafana-storage:/var/lib/grafana
+      - ./datasource-prometheus.yaml:/etc/grafana/provisioning/datasources/prometheus.yaml
+    networks:
+      - devnet
+    ports:
+      - "3002:3000"
 
   # cadvisor:
   #   image: gcr.io/cadvisor/cadvisor:latest
   #   ports:
   #     - "8080:8080"
-
-  # nginx-exporter:
-  #   image: nginxinc/nginx-prometheus-exporter:latest
-  #   command:
-  #     - "-nginx.scrape-uri=http://nginx:80/stub_status"
-  #   ports:
-  #     - "9113:9113"
