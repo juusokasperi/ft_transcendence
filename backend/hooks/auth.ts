@@ -6,9 +6,13 @@ import { SECRET } from '../utils/config.ts';
 // and that the token is valid.
 export function authPreHandler(req: FastifyRequest, res: FastifyReply, done: Function) {
   const authHeader = req.headers.authorization;
-  if (!authHeader || !authHeader.toLowerCase().startsWith('bearer '))
-    return res.status(401).send({ message: 'Missing or invalid token' });
-  const token = authHeader.split(' ')[1];
+  let token: string | undefined;
+  if (authHeader && authHeader.toLowerCase().startsWith('bearer ')) {
+    token = authHeader.split(' ')[1];
+  } else if (req.cookies.token) {
+    token = req.cookies.token as string;
+  }
+  if (!token) return res.status(401).send({ message: 'Missing or invalid token' });
   try {
     const payload = jwt.verify(token, SECRET);
     req.user = payload;

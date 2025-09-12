@@ -21,6 +21,7 @@ export async function logoutRoutes(app: FastifyInstance) {
           res.status(500).send({ message: 'Failed to logout user' });
           return;
         }
+        res.clearCookie('token', { path: '/' });
         res.status(200).send({ success: 'Successfully logged out.' });
       } catch (error) {
         res.status(500).send({ message: 'Failed to logout user' });
