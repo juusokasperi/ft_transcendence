@@ -30,7 +30,6 @@ const Registration: React.FC = () => {
         password: data.password,
       });
 
-      // if server doesn't return token, fall back to showing success and asking user to login
       console.log(res.data.success);
       const axiosRes = res as AxiosResponse<{ success?: string }>;
       const msg = axiosRes.data.success;

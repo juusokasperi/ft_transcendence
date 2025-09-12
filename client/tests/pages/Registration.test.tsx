@@ -1,8 +1,18 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import '@testing-library/jest-dom';
-import type { User } from '../../src/types';
 import { vi } from 'vitest';
 
+// Mock toast so it doesn't actually render toasts
+const successMock = vi.fn();
+const errorMock = vi.fn();
+vi.mock('react-hot-toast', () => ({
+  toast: {
+    success: (...args: any[]) => successMock(...args),
+    error: (...args: any[]) => errorMock(...args),
+  },
+}));
+
+// Context mocks
 const axiosMock = { post: vi.fn() };
 const loginMock = vi.fn();
 const navigateMock = vi.fn();
@@ -16,25 +26,23 @@ vi.mock('../../src/context/AppContext', () => ({
   }),
 }));
 
-import Registration from '../../src/pages/Registation';
+import Registration from '../../src/pages/Registration';
 
 describe('Registration page', () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
-  it('submits form and logs in when backend returns token and user', async () => {
+  it('shows success and navigates to /login when signup succeeds (email confirmation flow)', async () => {
     axiosMock.post.mockResolvedValue({
-      data: { token: 'fake-token', user: { id: 1, username: 'testuser' } as User },
+      data: { success: 'Confirmation link sent to email.' },
     });
 
     render(<Registration />);
 
     fireEvent.change(screen.getByLabelText(/username/i), { target: { value: 'testuser' } });
     fireEvent.change(screen.getByLabelText(/email/i), { target: { value: 'e@e.e' } });
-    fireEvent.change(screen.getByLabelText('Password'), {
-      target: { value: 'StrongPass123!' },
-    });
+    fireEvent.change(screen.getByLabelText('Password'), { target: { value: 'StrongPass123!' } });
     fireEvent.change(screen.getByLabelText('Confirm Password'), {
       target: { value: 'StrongPass123!' },
     });
@@ -46,12 +54,14 @@ describe('Registration page', () => {
         email: 'e@e.e',
         password: 'StrongPass123!',
       });
-      expect(loginMock).toHaveBeenCalledWith('fake-token');
-      expect(navigateMock).toHaveBeenCalledWith('/');
+      // no auto-login in email confirmation flow
+      expect(loginMock).not.toHaveBeenCalled();
+      expect(successMock).toHaveBeenCalledWith('Confirmation link sent to email.');
+      expect(navigateMock).toHaveBeenCalledWith('/login');
     });
   });
 
-  it('does not navigate when signup fails', async () => {
+  it('shows error and does not navigate when signup fails', async () => {
     axiosMock.post.mockRejectedValue({
       response: { data: { message: 'Username already taken' } },
     });
@@ -68,6 +78,7 @@ describe('Registration page', () => {
 
     await waitFor(() => {
       expect(axiosMock.post).toHaveBeenCalled();
+      expect(errorMock).toHaveBeenCalledWith('Username already taken');
       expect(loginMock).not.toHaveBeenCalled();
       expect(navigateMock).not.toHaveBeenCalled();
     });
