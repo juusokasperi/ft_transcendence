@@ -5,7 +5,7 @@
   "type": "module",
   "sideEffects": ["src/client/babylon-register.ts", "src/client/ui/tailwind.css"],
   "engines": {
-    "node": ">=20.19.0"
+    "node": ">=22.19.0"
   },
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
