@@ -35,6 +35,9 @@ jobs:
       - name: Set up .env
         run: cp apps/backend/.env.example apps/backend/.env
 
+      - name: Build all packages
+        run: pnpm run build:libs
+
       - name: Run typecheck
         run: pnpm -F @app/api typecheck
 

@@ -35,6 +35,9 @@ jobs:
       - name: Set up .env
         run: cp apps/frontend/.env.example apps/frontend/.env
 
+      - name: Build all packages
+        run: pnpm run build:libs
+
       - name: Run typecheck
         run: cd apps/frontend && pnpm run typecheck
 
