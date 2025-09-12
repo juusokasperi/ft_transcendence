@@ -23,7 +23,6 @@
     "build": "rimraf dist && tsc -b",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "clean": "rimraf dist",
-    "test": "vitest",
     "lint": "pnpm -F ft_transcendence lint",
     "check-format": "pnpm -F ft_transcendence check-format",
     "fix-format": "pnpm -F ft_transcendence fix-format"

@@ -25,7 +25,6 @@
     "check-format": "pnpm -F ft_transcendence check-format",
     "fix-format": "pnpm -F ft_transcendence fix-format",
     "lint": "pnpm -F ft_transcendence lint",
-    "test": "vitest",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
