@@ -33,13 +33,29 @@ services:
       - monitoring
     volumes:
       - grafana-storage:/var/lib/grafana
-      - ./datasource-prometheus.yaml:/etc/grafana/provisioning/datasources/prometheus.yaml
+      - ./grafana-datasources.yaml:/etc/grafana/provisioning/datasources/prometheus.yaml
     networks:
       - devnet
     ports:
       - "3002:3000"
 
-  # cadvisor:
-  #   image: gcr.io/cadvisor/cadvisor:latest
-  #   ports:
-  #     - "8080:8080"
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor:v0.52.0
+    profiles:
+      - monitoring
+    command:
+      - "--disable_metrics=disk,percpu,network,memory"
+    # privileged: true
+    ports:
+      - "8090:8080"
+    volumes:
+      - "/:/rootfs:ro"
+      - "/var/run:/var/run:ro"
+      # - "/sys:/sys:ro"
+      # - "/var/lib/docker/:/var/lib/docker:ro"
+      # - "/proc:/host/proc:ro"
+      # - "/dev/disk/:/dev/disk:ro"
+    # devices:
+    #   - "/dev/kmsg:/dev/kmsg"
+    networks:
+      - devnet

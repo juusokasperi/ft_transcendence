@@ -1,4 +1,4 @@
-## GEtting data into Prometheus
+## Getting data into Prometheus
 
 ### Nginx
 
@@ -6,7 +6,8 @@
 
 ### Node, including SQLite
 
-- prom-client
+- easier with fastify-metrics OR
+- prom-client directly, could also wrap database calls for more data...
 
 ### Container resource usage
 
