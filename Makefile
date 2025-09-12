@@ -1,11 +1,9 @@
 # Project / compose
 NAME             = ft-transcendence-dev
 ROOT_COMPOSE     = -f docker-compose.yml
-ELK_COMPOSE      = -f docker-compose.yml -f log-management/docker-compose.yml
 
 # Env files
 ENV_ROOT         = --env-file .env
-ENV_ELK          = --env-file log-management/.env
 
 # Known services (for helper targets)
 SERVICES         = deps frontend backend nginx elastic_cert_setup elasticsearch kibana kibana-post logstash
@@ -69,21 +67,17 @@ detached:
 
 elk:
 	$(ensure_dirs)
-	docker compose -p $(NAME) $(ELK_COMPOSE) $(ENV_ELK) --profile elk up --build
+	docker compose -p $(NAME) --profile elk up --build
 
 elk-detached:
 	$(ensure_dirs)
-	docker compose -p $(NAME) $(ELK_COMPOSE) $(ENV_ELK) --profile elk up --build -d
+	docker compose -p $(NAME) --profile elk up --build -d
 
 down:
-	docker compose -p $(NAME) $(ROOT_COMPOSE) $(ENV_ROOT) down --remove-orphans
-
-down-elk:
-	docker compose -p $(NAME) $(ELK_COMPOSE) $(ENV_ELK) --profile elk down --remove-orphans
+	docker compose -p $(NAME) $(ROOT_COMPOSE) $(ENV_ROOT) --profile elk down --remove-orphans
 
 fclean:
 	-$(MAKE) down
-	-$(MAKE) down-elk
 	# Prune images/volumes tagged by either project label or dangling (best effort)
 	-docker system prune -a -f --volumes --filter "label=project=$(NAME)"
 	-docker system prune -a -f --volumes --filter "label=project=transcendence"
@@ -99,7 +93,7 @@ restart:
 	docker compose -p $(NAME) $(ROOT_COMPOSE) $(ENV_ROOT) restart
 
 restart-elk:
-	docker compose -p $(NAME) $(ELK_COMPOSE) $(ENV_ELK) --profile elk restart
+	docker compose -p $(NAME) --profile elk restart
 
 restart-%:
 	@if echo "$(SERVICES)" | grep -qw "$*"; then \
