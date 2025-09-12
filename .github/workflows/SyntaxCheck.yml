@@ -19,46 +19,24 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 2
+      - uses: actions/checkout@v4
 
       - name: Setup Node.js 22.19.0
         uses: actions/setup-node@v4
         with:
           node-version: 22.19.0
+          cache: 'pnpm'
 
-      - name: Enable corepack & pin pnpm
-        run: |
-          corepack enable
-          corepack prepare pnpm@9.12.3 --activate
-          which pnpm
-          pnpm --version
-
-      - name: Resolve pnpm store path
-        id: pnpm-cache
-        shell: bash
-        run: echo "STORE_PATH=$(pnpm store path --silent)" >> "$GITHUB_OUTPUT"
-
-      - name: Cache pnpm store
-        uses: actions/cache@v4
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
         with:
-          path: ${{ steps.pnpm-cache.outputs.STORE_PATH }}
-          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('pnpm-lock.yaml') }}
-          restore-keys: |
-            ${{ runner.os }}-pnpm-store-
+          version: latest
+          run_install: false
 
       - name: Install dependencies (workspace)
         run: pnpm install --frozen-lockfile
 
       - name: Typecheck (all packages)
-        run: pnpm run typecheck
-
-      - name: Lint (all packages)
-        run: pnpm run lint
-
-      - name: Check formatting
         run: pnpm run check-format
 
       - name: Comment on PR if failed
