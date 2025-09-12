@@ -2,7 +2,7 @@
 
 This document explains how TypeScript is configured and orchestrated across the repository, how the different tsconfig files relate to each other, and what the setup expects from applications and libraries.
 
-- Node version: >= 20.19.0
+- Node version: >= 22.19.0
 - TypeScript: ^5.9
 - Package manager: pnpm
 - ESM everywhere (all packages/apps use "type": "module")
@@ -114,7 +114,7 @@ Important nuance about JS output:
 Expectations:
 
 - Vite handles module bundling; ensure any path alias resolution integrates with Vite (e.g., via vite-tsconfig-paths)
-- Typecheck via pnpm -F @app/web typecheck (tsc -b)
+- Typecheck via pnpm -F @app/frontend typecheck (tsc -b)
 
 ### Backend (apps/backend)
 
@@ -151,7 +151,7 @@ From individual packages:
 - packages/pong/shared: pnpm -F @pong/shared build (tsc -b)
 - packages/pong/game-logic: pnpm -F @pong/game-logic build (tsc -b)
 - packages/pong/render: pnpm -F @pong/render build (tsc -b && vite build)
-- apps/frontend: pnpm -F @app/web typecheck (tsc -b), pnpm -F @app/web build (vite)
+- apps/frontend: pnpm -F @app/frontend typecheck (tsc -b), pnpm -F @app/frontend build (vite)
 - apps/backend: pnpm -F @app/api dev (tsx), pnpm -F @app/api build (tsc -p)
 
 ## Adding a new internal library

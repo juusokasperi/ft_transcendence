@@ -5,20 +5,20 @@
   "private": true,
   "packageManager": "pnpm@9.12.3",
   "engines": {
-    "node": ">=20.19.0"
+    "node": ">=22.19.0"
   },
   "scripts": {
     "build": "pnpm run build:libs && pnpm run build:frontend",
     "build:frontend": "pnpm -F @app/web build",
     "build:backend": "pnpm -F @app/api build",
     "build:full": "pnpm run build && pnpm run build:backend",
-    "build:libs": "tsc -b -v tsconfig.build.json",
-    "check-format": "prettier . --check",
-    "fix-format": "prettier . --write",
+    "build:libs": "tsc -b -v .config/tsconfig.build.json",
+    "check-format": "prettier . --check --config .config/prettier/prettier.config.cjs --ignore-path .config/prettier/.prettierignore",
+    "fix-format": "prettier . --write --config .config/prettier/prettier.config.cjs --ignore-path .config/prettier/.prettierignore",
     "dev": "pnpm -F @app/web dev",
     "dev:backend": "pnpm -F @app/api dev",
     "dev:frontend": "pnpm -F @app/web dev",
-    "lint": "pnpm -r --if-present lint",
+    "lint": "pnpm -r --if-present lint --config .config/eslint.config.js",
     "migrate": "pnpm -F @app/api migrate",
     "test": "pnpm -r --if-present test",
     "typecheck": "pnpm -r --if-present typecheck"

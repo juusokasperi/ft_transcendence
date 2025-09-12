@@ -32,7 +32,12 @@ const OUT_DIR = path.join(ROOT, 'scripts', 'output');
 const OUT_FILE = path.join(OUT_DIR, 'root-configs.txt');
 const rel = (p) => path.relative(ROOT, p);
 
-const TARGETS = ['prettier.config.cjs', '.prettierignore', 'eslint.config.js', 'typedoc.json'];
+const TARGETS = [
+  '.config/prettier/prettier.config.cjs',
+  '.config/prettier/.prettierignore',
+  '.config/eslint.config.js',
+  '.config/typedoc.json',
+];
 
 async function main() {
   const chunks = [];

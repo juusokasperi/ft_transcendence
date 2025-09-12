@@ -48,5 +48,5 @@ module.exports = {
   plugins: [
     'prettier-plugin-tailwindcss',
   ],
-  tailwindStylesheet: './client/src/index.css',
+  tailwindStylesheet: './apps/frontend/src/index.css',
 };

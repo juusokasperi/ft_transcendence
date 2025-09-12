@@ -44,10 +44,12 @@ const Profile: React.FC = () => {
   // Handle image selection
   const handleImageChange = async (e: ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files) return;
-    const file = e.target.files[0];
+    const file = e.target.files[0] ?? null;
     console.log(file);
     setImage(file);
-    setImagePreview(URL.createObjectURL(file));
+    if (file) {
+      setImagePreview(URL.createObjectURL(file));
+    }
   };
 
   const handleUsernameChange = async () => {

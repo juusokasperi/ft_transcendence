@@ -13,32 +13,40 @@ jobs:
       contents: read
       pull-requests: write
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: backend
+
     steps:
       - uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9.12.3
+          run_install: false
 
       - name: Setup Node.js 22.19.0 LTS
         uses: actions/setup-node@v4
         with:
           node-version: 22.19.0
+          cache: 'pnpm'
 
-      - name: Install dependencies
-        run: npm ci
+      - name: Install dependencies (root)
+        run: pnpm install --frozen-lockfile
 
       - name: Set up .env
-        run: cp .env.example .env
+        run: cp apps/backend/.env.example apps/backend/.env
+
+      - name: Build all packages
+        run: pnpm run build:libs
 
       - name: Run typecheck
-        run: npm run typecheck
+        run: pnpm -F @app/api typecheck
 
       # -------------------------------
       # 1️⃣ Run backend server for smoke/integration
       # -------------------------------
       - name: Run backend server
         run: |
-          PORT=3001 npm run dev > server.log 2>&1 &
+          PORT=3001 pnpm -F @app/api dev > server.log 2>&1 &
           SERVER_PID=$!
           echo "Server PID: $SERVER_PID"
           for i in {1..15}; do
@@ -60,7 +68,7 @@ jobs:
       # 2️⃣ Run backend tests
       # -------------------------------
       - name: Run backend tests
-        run: npm run test -- --run --reporter=dot
+        run: pnpm -F @app/api test -- --run --reporter=dot
 
       # -------------------------------
       # 3️⃣ Stop backend server

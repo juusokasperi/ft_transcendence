@@ -3,9 +3,12 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
-  "sideEffects": ["src/client/babylon-register.ts", "src/client/ui/tailwind.css"],
+  "sideEffects": [
+    "src/client/babylon-register.ts",
+    "src/client/ui/tailwind.css"
+  ],
   "engines": {
-    "node": ">=20.19.0"
+    "node": ">=22.19.0"
   },
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -17,7 +20,10 @@
     "./ui/tailwind.css": "./src/client/ui/tailwind.css",
     "./register": "./src/client/babylon-register.ts"
   },
-  "files": ["dist", "src/client/ui/tailwind.css"],
+  "files": [
+    "dist",
+    "src/client/ui/tailwind.css"
+  ],
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
