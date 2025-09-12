@@ -5,9 +5,7 @@
   "description": "...",
   "type": "module",
   "sideEffects": false,
-  "engines": {
-    "node": ">=20.19.0"
-  },
+  "engines": { "node": ">=20.19.0" },
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "exports": {
@@ -19,12 +17,14 @@
   "files": ["dist"],
   "scripts": {
     "build": "rimraf dist && tsc -b",
-    "typecheck": "tsc -p tsconfig.json --noEmit",
     "clean": "rimraf dist",
-    "lint": "echo \"(eslint config to be added)\"",
-    "test": "vitest"
+    "check-format": "pnpm -F ft_transcendence check-format",
+    "fix-format": "pnpm -F ft_transcendence fix-format",
+    "lint": "pnpm -F ft_transcendence lint",
+    "test": "vitest",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
-    "@pong/shared": "0.0.0"
+    "@pong/shared": "workspace:*"
   }
 }

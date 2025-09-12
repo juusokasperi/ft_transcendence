@@ -3,17 +3,23 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
+  "engines": {
+    "node": ">=20.19.0"
+  },
   "scripts": {
-    "dev": "vite --host 0.0.0.0 --strictPort --port 5173",
     "build": "vite build",
-    "fix": "npm run -w ft_transcendence fix",
-    "typecheck": "tsc -b",
+    "dev": "vite --host 0.0.0.0 --strictPort --port 5173",
+    "check-format": "pnpm -F ft_transcendence check-format",
+    "fix-format": "pnpm -F ft_transcendence fix-format",
     "preview": "vite preview",
-    "test": "vitest"
+    "test": "vitest",
+    "typecheck": "tsc -b"
   },
   "dependencies": {
     "@clerk/clerk-react": "^5.31.8",
-    "@tailwindcss/vite": "^4.1.12",
+    "@pong/game-logic": "workspace:*",
+    "@pong/render": "workspace:*",
+    "@pong/shared": "workspace:*",
     "axios": "^1.11.0",
     "framer-motion": "^12.23.12",
     "js-cookie": "^3.0.5",
@@ -22,19 +28,22 @@
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
     "react-hot-toast": "^2.5.2",
-    "react-router-dom": "^7.6.0",
-    "tailwindcss": "^4.1.12"
+    "react-router-dom": "^7.6.0"
   },
   "devDependencies": {
+    "@babel/core": "^7.28.4",
+    "@babel/plugin-transform-react-jsx-self": "^7.27.1",
+    "@babel/plugin-transform-react-jsx-source": "^7.27.1",
+    "@tailwindcss/vite": "^4.1.12",
     "@testing-library/jest-dom": "^6.7.0",
     "@testing-library/react": "^16.3.0",
     "@types/js-cookie": "^3.0.6",
     "@types/react": "^19.1.2",
     "@types/react-dom": "^19.1.2",
-    "@vitejs/plugin-react": "^4.4.1",
-    "jsdom": "^26.1.0"
-  },
-  "engines": {
-    "node": ">=20.19.0"
+    "@vitejs/plugin-react": "^5.0.2",
+    "jsdom": "^26.1.0",
+    "react-refresh": "^0.17.0",
+    "tailwindcss": "^4.1.12",
+    "vite": "^7.1.2"
   }
 }

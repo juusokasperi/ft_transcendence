@@ -9,19 +9,23 @@
   "engines": {
     "node": ">=20.19.0"
   },
-  "main": "index.js",
+  "main": "dist/index.js",
   "scripts": {
-    "ts-node": "ts-node",
-    "dev": "tsx watch index.ts",
-    "migration:down": "tsx utils/rollback.ts",
-    "test": "vitest",
+    "build": "tsc -p tsconfig.build.json",
     "db:reset": "rm -rf data/",
-    "seed:secret": "npx tsx utils/seedSecrets.ts",
     "db:seed": "tsx utils/seedTestData.ts",
-    "fix": "npm run -w ft_transcendence fix",
+    "dev": "tsx --tsconfig ./tsconfig.json --watch index.ts",
+    "check-format": "pnpm -F ft_transcendence check-format",
+    "fix-format": "pnpm -F ft_transcendence fix-format",
+    "lint": "eslint './**/*.{ts,tsx}' --max-warnings=0",
+    "migrate": "tsx utils/migrate.ts",
+    "migration:down": "tsx utils/rollback.ts",
+    "seed:secret": "npx tsx utils/seedSecrets.ts",
+    "start": "node dist/index.js",
+    "test": "vitest",
+    "ts-node": "ts-node",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "typecheck:watch": "tsc -p tsconfig.json --noEmit --watch",
-    "migrate": "tsx utils/migrate.ts"
+    "typecheck:watch": "tsc -p tsconfig.json --noEmit --watch"
   },
   "dependencies": {
     "@fastify/cookie": "^11.0.2",
@@ -42,6 +46,7 @@
   "devDependencies": {
     "@types/bcrypt": "^6.0.0",
     "@types/better-sqlite3": "^7.6.13",
+    "@types/jsonwebtoken": "^9.0.10",
     "@types/nodemailer": "^7.0.1",
     "@types/umzug": "^2.3.9",
     "@types/uuid": "^10.0.0"

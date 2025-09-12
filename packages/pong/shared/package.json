@@ -5,9 +5,7 @@
   "description": "Shared domain types and pure utilities used by game and adapters.",
   "type": "module",
   "sideEffects": false,
-  "engines": {
-    "node": ">=20.19.0"
-  },
+  "engines": { "node": ">=20.19.0" },
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "exports": {
@@ -21,6 +19,9 @@
     "build": "rimraf dist && tsc -b",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "clean": "rimraf dist",
-    "test": "vitest"
+    "test": "vitest",
+    "lint": "pnpm -F ft_transcendence lint",
+    "check-format": "pnpm -F ft_transcendence check-format",
+    "fix-format": "pnpm -F ft_transcendence fix-format"
   }
 }
