@@ -3,8 +3,13 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
-  "sideEffects": false,
-  "engines": { "node": ">=20.19.0" },
+  "sideEffects": [
+    "src/client/babylon-register.ts",
+    "src/client/ui/tailwind.css"
+  ],
+  "engines": {
+    "node": ">=20.19.0"
+  },
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "exports": {
@@ -15,7 +20,10 @@
     "./ui/tailwind.css": "./src/client/ui/tailwind.css",
     "./register": "./src/client/babylon-register.ts"
   },
-  "files": ["dist", "src/client/ui/tailwind.css"],
+  "files": [
+    "dist",
+    "src/client/ui/tailwind.css"
+  ],
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
@@ -26,10 +34,10 @@
     "lint": "pnpm -F ft_transcendence lint"
   },
   "dependencies": {
-    "@babylonjs/core": "^8.26.2",
-    "@babylonjs/gui": "^8.26.2",
-    "@babylonjs/loaders": "^8.26.2",
-    "@babylonjs/materials": "^8.26.2",
+    "@babylonjs/core": "^8.27.0",
+    "@babylonjs/gui": "^8.27.0",
+    "@babylonjs/loaders": "^8.27.0",
+    "@babylonjs/materials": "^8.27.0",
     "@pong/game-logic": "workspace:*",
     "@pong/shared": "workspace:*"
   },
@@ -37,6 +45,6 @@
     "tailwindcss": "^4.1.12"
   },
   "devDependencies": {
-    "vite": "^7.1.2"
+    "vite": "^7.1.5"
   }
 }
