@@ -1,5 +1,5 @@
-// apps/web/vite.config.ts
-import { defineConfig } from 'vitest/config';
+// apps/frontend/vite.config.ts
+import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
 import tsconfigPaths from 'vite-tsconfig-paths';
@@ -10,9 +10,10 @@ export default defineConfig({
     port: 5173,
     strictPort: true,
     watch: { usePolling: true },
-    proxy: { '/api': { target: 'http://backend:3001', changeOrigin: true } }
+    proxy: { '/api': { target: 'http://backend:3001', changeOrigin: true, ws: true } },
   },
-  plugins: [react(), tailwindcss(), tsconfigPaths()],
-  test: { globals: true, environment: 'jsdom' }
+  cacheDir: './.vite',
+  plugins: [react(), tailwindcss(), tsconfigPaths({ projects: ['./tsconfig.json'] })],
+  test: { globals: true, environment: 'jsdom' },
 });
 
