@@ -78,7 +78,7 @@ const LocalGame: React.FC = () => {
       const { bootstrapPong } = await import('../../game/host/dom-embed');
       if (cancelled) return;
 
-      const app = await bootstrapPong(canvasRef.current);
+      const app = await bootstrapPong(canvasRef.current!);
       appRef.current = app;
     })().catch((e) => {
       console.error('Failed to start Pong', e);

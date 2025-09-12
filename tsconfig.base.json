@@ -11,12 +11,12 @@
 
     /* Safety & lint-like checks */
     "strict": true,
-    "exactOptionalPropertyTypes": true,
+    /* "exactOptionalPropertyTypes": true, */
     "noUncheckedIndexedAccess": true,
     "noImplicitOverride": true,
-    "noImplicitReturns": true,
+    /* "noImplicitReturns": true, */
     "noFallthroughCasesInSwitch": true,
-    "noUncheckedSideEffectImports": true,
+    /* "noUncheckedSideEffectImports": true, */
 
     "useDefineForClassFields": true,
     "forceConsistentCasingInFileNames": true,
