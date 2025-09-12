@@ -12,7 +12,7 @@
     "build:frontend": "pnpm -F @app/web build",
     "build:backend": "pnpm -F @app/api build",
     "build:full": "pnpm run build && pnpm run build:backend",
-    "build:libs": "tsc -b -v tsconfig.build.json",
+    "build:libs": "tsc -b -v .config/tsconfig.build.json",
     "check-format": "prettier . --check --config .config/prettier/prettier.config.cjs --ignore-path .config/prettier/.prettierignore",
     "fix-format": "prettier . --write --config .config/prettier/prettier.config.cjs --ignore-path .config/prettier/.prettierignore",
     "dev": "pnpm -F @app/web dev",
