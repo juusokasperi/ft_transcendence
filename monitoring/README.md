@@ -19,3 +19,6 @@
 - Node exporter https://github.com/prometheus/node_exporter
 
 ## Grafana
+
+- TODO: set password
+- TODO: add premade dashboards

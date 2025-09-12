@@ -39,20 +39,22 @@ services:
     ports:
       - "3002:3000"
 
+  # How much cAdvisor can do really depends how much privileges you have
+  # on the host. Enabling too many things will fill the logs with spam.
   cadvisor:
     image: gcr.io/cadvisor/cadvisor:v0.52.0
     profiles:
       - monitoring
     command:
-      - "--disable_metrics=disk,percpu,network,memory"
+      - "--disable_metrics=disk,percpu,network,memory,referenced_memory"
     # privileged: true
     ports:
       - "8090:8080"
     volumes:
       - "/:/rootfs:ro"
       - "/var/run:/var/run:ro"
-      # - "/sys:/sys:ro"
-      # - "/var/lib/docker/:/var/lib/docker:ro"
+      - "/sys:/sys:ro"
+      - "/var/lib/docker/:/var/lib/docker:ro"
       # - "/proc:/host/proc:ro"
       # - "/dev/disk/:/dev/disk:ro"
     # devices:
