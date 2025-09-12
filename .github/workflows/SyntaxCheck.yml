@@ -28,28 +28,38 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 22.19.0
-          cache: pnpm
 
-      - name: Setup pnpm 9.12.3
-        uses: pnpm/action-setup@v4
+      - name: Enable corepack & pin pnpm
+        run: |
+          corepack enable
+          corepack prepare pnpm@9.12.3 --activate
+          which pnpm
+          pnpm --version
+
+      - name: Resolve pnpm store path
+        id: pnpm-cache
+        shell: bash
+        run: echo "STORE_PATH=$(pnpm store path --silent)" >> "$GITHUB_OUTPUT"
+
+      - name: Cache pnpm store
+        uses: actions/cache@v4
         with:
-          version: 9.12.3
-          run_install: true
+          path: ${{ steps.pnpm-cache.outputs.STORE_PATH }}
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-store-
 
       - name: Install dependencies (workspace)
         run: pnpm install --frozen-lockfile
 
       - name: Typecheck (all packages)
         run: pnpm run typecheck
-        # root script fans out: "pnpm -r --if-present typecheck"
 
-      - name: Lint (all packages with lint script)
+      - name: Lint (all packages)
         run: pnpm run lint
-        # root script fans out: "pnpm -r --if-present lint"
 
       - name: Check formatting
         run: pnpm run check-format
-        # root script runs Prettier in repo root
 
       - name: Comment on PR if failed
         if: ${{ failure() && github.event_name == 'pull_request' }}
@@ -61,7 +71,6 @@ jobs:
               core.info('No PR number found; skipping comment.');
               return;
             }
-            const failedSteps = context.runId; // simple link to run
             const body = [
               '**SyntaxCheck CI** failed for the monorepo.',
               `Commit: \`${process.env.GITHUB_SHA.slice(0,7)}\``,
