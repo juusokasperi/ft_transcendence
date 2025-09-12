@@ -9,7 +9,7 @@ export function authPreHandler(req: FastifyRequest, res: FastifyReply, done: Fun
   let token: string | undefined;
   if (authHeader && authHeader.toLowerCase().startsWith('bearer ')) {
     token = authHeader.split(' ')[1];
-  } else if (req.cookies.token) {
+  } else if (req.cookies?.token) {
     token = req.cookies.token as string;
   }
   if (!token) return res.status(401).send({ message: 'Missing or invalid token' });
