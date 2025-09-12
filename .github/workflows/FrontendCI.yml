@@ -13,29 +13,37 @@ jobs:
       contents: read
       pull-requests: write
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: client
+
     steps:
       - uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9.12.3
+          run_install: false
 
       - name: Setup Node.js 22.19.0 LTS
         uses: actions/setup-node@v4
         with:
           node-version: 22.19.0
+          cache: 'pnpm'
 
       - name: Install dependencies
-        run: npm ci
+        run: pnpm install --frozen-lockfile
 
       - name: Set up .env
-        run: cp .env.example .env
+        run: cp apps/frontend/.env.example apps/frontend/.env
+
+      - name: Build all packages
+        run: pnpm run build:libs
 
       - name: Run typecheck
-        run: npm run typecheck
+        run: cd apps/frontend && pnpm run typecheck
 
       - name: Run dev server
         run: |
-          nohup npm run dev > frontend.log 2>&1 &
+          nohup pnpm -F @app/web dev > frontend.log 2>&1 &
           sleep 10
           curl -f http://localhost:5173 || (cat frontend.log && exit 1)
 

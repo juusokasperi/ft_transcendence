@@ -1,3 +1,87 @@
-.DS_Store
+# --- Monorepo root .gitignore ---
+
+### Node / package managers
 node_modules/
+**/node_modules/
+
+# Lockfiles: keep root, ignore nested
+**/package-lock.json
+**/pnpm-lock.yaml
+**/yarn.lock
+!/package-lock.json
+!/pnpm-lock.yaml
+!/yarn.lock
+.pnpm-store
+
+### Logs
+logs
+**/logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+### Build & tooling outputs
+dist/
+**/dist/
+dist-ssr/
+build/
+**/dist/
+**/dist-ssr/
+**/build/
+.vite/
+**/.vite/
+coverage/
+**/coverage/
+*.tsbuildinfo
+.turbo/
+.cache/
+.tmp/
+temp/
+tmp/
+apps/frontend/.vite/
+WARP.md
+
+### Environment files
 .env
+.env.local
+.env.*.local
+**/.env
+**/.env.local
+**/.env.*.local
+!.env.example
+!**/.env.example
+
+### Editors/IDEs
+.vscode/*
+!.vscode/extensions.json
+**/.vscode/*
+!**/.vscode/extensions.json
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+### OS files
+.DS_Store
+Thumbs.db
+
+### Project-specific artifacts
+# Backend local data (SQLite, uploads, etc.)
+apps/backend/data/
+*.db
+*.db-*
+
+# Package docs (keep root /docs)
+packages/**/docs/
+
+# Old/export helper outputs seen in repo history
+all_repo.txt
+all_src_code.txt
+tree.txt
+
+### Scripts output
+scripts/output/
