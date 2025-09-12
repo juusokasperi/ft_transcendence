@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 
 type AccessibilitySettings = {
   colorBlindMode: 'none' | 'protanopia' | 'deuteranopia' | 'tritanopia' | 'highContrast';
@@ -16,13 +16,17 @@ type UserSettings = {
 };
 
 const defaultSettings: UserSettings = {
-  player1: { paddleColor: '#ffffff' },
+  player1: { paddleColor: '#795fecff' },
   player2: { paddleColor: '#ff0000' },
   accessibility: { colorBlindMode: 'none', photoSensitiveMode: 'none' },
 };
 
 const LocalGame: React.FC = () => {
   const [settings, setSettings] = useState<UserSettings>(defaultSettings);
+  const [isPlaying, setIsPlaying] = useState(false);
+
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const appRef = useRef<{ destroy(): void } | null>(null);
 
   // Load settings from localStorage
   useEffect(() => {
@@ -51,7 +55,7 @@ const LocalGame: React.FC = () => {
     }
   }, []);
 
-  // Save to localStorage
+  // Persist settings
   const saveSettings = () => {
     localStorage.setItem('user_settings_v', JSON.stringify(settings));
     alert('Settings saved!');
@@ -63,12 +67,54 @@ const LocalGame: React.FC = () => {
     localStorage.removeItem('user_settings_v');
   };
 
-  // Play handler
-  const handlePlay = () => {
-    console.log('Starting local game with settings:', settings);
-    // TODO: integrate with BabylonJS Pong
-  };
+  // Boot game when we enter "playing" and a canvas is present; teardown on exit
+  useEffect(() => {
+    if (!isPlaying || !canvasRef.current) return;
 
+    let cancelled = false;
+
+    (async () => {
+      // Lazy-load Babylon + host adapter only when starting the game
+      const { bootstrapPong } = await import('../../game/host/dom-embed');
+      if (cancelled) return;
+
+      const app = await bootstrapPong(canvasRef.current);
+      appRef.current = app;
+    })().catch((e) => {
+      console.error('Failed to start Pong', e);
+      setIsPlaying(false);
+    });
+
+    return () => {
+      cancelled = true;
+      appRef.current?.destroy();
+      appRef.current = null;
+    };
+  }, [isPlaying]);
+
+  // Button handlers
+  const handlePlay = () => {
+    // TODO: plumb `settings` into your render layer when exposed
+    setIsPlaying(true);
+  };
+  const handleQuit = () => setIsPlaying(false);
+
+  // Playing view: fullscreen canvas + Quit
+  if (isPlaying) {
+    return (
+      <div className="relative h-screen w-full bg-black">
+        <canvas ref={canvasRef} className="block h-full w-full" />
+        <button
+          onClick={handleQuit}
+          className="absolute right-4 top-4 rounded bg-white/10 px-4 py-2 text-sm font-semibold text-white backdrop-blur hover:bg-white/20"
+        >
+          Quit
+        </button>
+      </div>
+    );
+  }
+
+  // Settings view (+ Play button)
   return (
     <div className="relative h-screen w-full overflow-hidden">
       {/* Video Background */}
@@ -153,8 +199,7 @@ const LocalGame: React.FC = () => {
                   ...settings,
                   accessibility: {
                     ...settings.accessibility,
-                    photoSensitiveMode: e.target
-                      .value as AccessibilitySettings['photoSensitiveMode'],
+                    photoSensitiveMode: e.target.value as AccessibilitySettings['photoSensitiveMode'],
                   },
                 })
               }
@@ -194,4 +239,5 @@ const LocalGame: React.FC = () => {
     </div>
   );
 };
+
 export default LocalGame;

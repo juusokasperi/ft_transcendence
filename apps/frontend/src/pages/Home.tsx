@@ -96,10 +96,10 @@ const Hero: React.FC = () => {
               <div className="mt-auto pt-4">
                 {game.available ? (
                   <Link
-                    to={user ? '/ping-pong' : '/signup'}
+                    to={ '/ping-pong'}
                     className="inline-block w-full rounded bg-gradient-to-r from-indigo-600 to-purple-600 px-4 py-2 text-center font-semibold text-white transition hover:from-indigo-500 hover:to-purple-500"
                   >
-                    {user ? 'Play Now' : 'Sign Up to Play'}
+                    {'Play Now'}
                   </Link>
                 ) : (
                   <button

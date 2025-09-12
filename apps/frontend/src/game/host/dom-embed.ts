@@ -1,10 +1,6 @@
 // src/app/host/dom-embed.ts
-import '@client/ui/tailwind.css';
-import '@babylonjs/core/Materials/standardMaterial';
-import '@babylonjs/core/Lights/Shadows/shadowGeneratorSceneComponent';
-import '@babylonjs/core/Rendering/boundingBoxRenderer';
-import '@babylonjs/core/Rendering/depthRendererSceneComponent';
-import '@babylonjs/core/Animations/animatable';
+import '@pong/render/ui/tailwind.css';
+import '@pong/render/register';
 
 import { createPongApp } from '../index';
 

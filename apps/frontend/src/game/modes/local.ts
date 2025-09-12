@@ -1,23 +1,23 @@
 // src/app/modes/local.ts
-import { createEngine } from 'packages/pong/render/src';
-import { createLifecycle } from 'packages/pong/render/src';
-import { createWorld } from 'packages/pong/render/src';
+import { createEngine } from '@pong/render';
+import { createLifecycle } from '@pong/render';
+import { createWorld } from '@pong/render';
 import {
   attachLocalInput,
   readIntent,
   toggleControlsMirrored,
   blockInputFor,
-} from 'packages/pong/render/src';
-import { createBounces } from 'packages/pong/render/src';
-import { FXManager } from 'packages/pong/render/src';
-import { createScoreboard } from 'packages/pong/render/src';
-import { updateHUD } from 'packages/pong/render/src';
-import { createPaddleAnimator } from 'packages/pong/render/src';
+} from '@pong/render';
+import { createBounces } from '@pong/render';
+import { FXManager } from '@pong/render';
+import { createScoreboard } from '@pong/render';
+import { updateHUD } from '@pong/render';
+import { createPaddleAnimator } from '@pong/render';
 
-import { computeBounds } from 'packages/pong/render/src';
-import { detectEnteredServe, onEnteredServe } from 'packages/pong/render/src';
-import { applyFrameEvents } from 'packages/pong/render/src';
-import { mapStateForPlayerRows, mapHistoryForPlayers } from 'packages/pong/render/src';
+import { computeBounds } from '@pong/render';
+import { detectEnteredServe, onEnteredServe } from '@pong/render';
+import { applyFrameEvents } from '@pong/render';
+import { mapStateForPlayerRows, mapHistoryForPlayers } from '@pong/render';
 
 import {
   type GameState,
@@ -31,8 +31,8 @@ import {
 
 import { pickInitialServer, SERVE_SELECT_TOTAL_MS } from '@pong/shared';
 import { deriveSeed32 } from '@pong/shared';
-import { nextLocalMatchSeed } from 'packages/pong/render/src';
-import { disposeWorld } from 'packages/pong/render/src';
+import { nextLocalMatchSeed } from '@pong/render';
+import { disposeWorld } from '@pong/render';
 
 interface PongInstance {
   start(): void;
@@ -40,7 +40,7 @@ interface PongInstance {
 }
 
 export function createLocalApp(canvas: HTMLCanvasElement): PongInstance {
-  canvas.tabIndex = 1;
+  canvas.tabIndex = 0;
 
   // Engine/scene/world
   const { engine, engineDisposable } = createEngine(canvas);
@@ -117,6 +117,11 @@ export function createLocalApp(canvas: HTMLCanvasElement): PongInstance {
 
   // Input
   const detachInput = attachLocalInput(canvas);
+  window.addEventListener('keydown', (e) => {
+  if (['z','w','s','ArrowUp','ArrowDown'].includes(e.key)) {
+      console.log('[dbg] keydown:', e.key, 'activeElement=', document.activeElement?.tagName);
+    }
+  });
   scene.onDisposeObservable.add(detachInput);
 
   // Simple paddle-centering tween gate (kept in visuals)
@@ -208,7 +213,7 @@ export function createLocalApp(canvas: HTMLCanvasElement): PongInstance {
   return {
     start() {
       // Pre-roll: run serve selection FX, gate input, then arm opening serve.
-      void import('packages/pong/render/src').then(({ incHide }) => {
+      void import('@pong/render').then(({ incHide }) => {
         incHide(ball.mesh);
         incHide(ball.mesh);
       });
@@ -225,7 +230,7 @@ export function createLocalApp(canvas: HTMLCanvasElement): PongInstance {
         const dir = initialServer === 'east' ? -1 : 1;
         Bounces.scheduleServe(dir);
 
-        const { decHide } = await import('packages/pong/render/src');
+        const { decHide } = await import('@pong/render');
         decHide(ball.mesh);
         decHide(ball.mesh);
       });
