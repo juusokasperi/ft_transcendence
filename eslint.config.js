@@ -35,21 +35,6 @@ export default [
           message: 'Do not time-seed game logic',
         },
       ],
-      // --- Imports ---
-      // Discourage parent-relative imports ("../") to keep imports clean and maintainable
-      // But only warn (not error), so it doesn’t block you when refactoring.
-      'no-restricted-imports': [
-        'warn',
-        {
-          patterns: [
-            {
-              group: ['^\\.{2}(/|$)'],
-              message:
-                'Prefer path aliases (@shared, @game, @client, ...) instead of parent-relative imports.',
-            },
-          ],
-        },
-      ],
 
       // --- Naming conventions ---
       // Enforce kebab-case filenames (consistent across OSes and build tools)
