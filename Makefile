@@ -15,42 +15,6 @@ define ensure_dirs
 	fi
 endef
 
-# --------------------------
-# Default target: show usage
-# --------------------------
-.PHONY: help
-help:
-	@echo "Usage:"
-	@echo "  make / make up            # Build & start root stack (frontend, backend, nginx)"
-	@echo "  make detached             # Same, detached (-d)"
-	@echo "  make elk                  # Root stack + ELK (profile: elk)"
-	@echo "  make elk-detached         # Same, detached"
-	@echo "  make down                 # Stop & remove root stack"
-	@echo "  make down-elk             # Stop & remove ELK stack"
-	@echo "  make fclean               # Stop & remove EVERYTHING (root+ELK, volumes, images)"
-	@echo "  make re                   # fclean + up"
-	@echo ""
-	@echo "Utilities:"
-	@echo "  make ps                   # Show containers"
-	@echo "  make logs-[service]       # Follow logs for a service"
-	@echo "  make sh-[service]         # Open sh in a service"
-	@echo "  make bash-[service]       # Open bash (fallback to sh) in a service"
-	@echo "  make restart              # Restart root stack services"
-	@echo "  make restart-elk          # Restart ELK services"
-	@echo "  make restart-[service]    # Restart single service"
-	@echo "  make stop                 # Stop all containers for this project"
-	@echo ""
-	@echo "Repo tasks (via deps container):"
-	@echo "  make pnpm-install         # pnpm install (root lockfile)"
-	@echo "  make build                # pnpm build (libs + frontend)"
-	@echo "  make typecheck            # pnpm typecheck (all)"
-	@echo "  make lint                 # pnpm lint (all)"
-	@echo "  make fmt-check            # prettier --check"
-	@echo "  make fmt                  # prettier --write"
-	@echo "  make test                 # pnpm test (all)"
-	@echo "  make migrate              # backend migrations"
-	@echo "  make db-reset             # wipe backend ./apps/backend/data"
-
 # ========================
 #  Orchestration
 # ========================
@@ -103,6 +67,42 @@ restart-%:
 		echo "Usage: make restart-[service]"; \
 		echo "Available services: $(SERVICES)"; \
 	fi
+
+# --------------------------
+# Default target: show usage
+# --------------------------
+.PHONY: help
+help:
+	@echo "Usage:"
+	@echo "  make / make up            # Build & start root stack (frontend, backend, nginx)"
+	@echo "  make detached             # Same, detached (-d)"
+	@echo "  make elk                  # Root stack + ELK (profile: elk)"
+	@echo "  make elk-detached         # Same, detached"
+	@echo "  make down                 # Stop & remove root stack"
+	@echo "  make down-elk             # Stop & remove ELK stack"
+	@echo "  make fclean               # Stop & remove EVERYTHING (root+ELK, volumes, images)"
+	@echo "  make re                   # fclean + up"
+	@echo ""
+	@echo "Utilities:"
+	@echo "  make ps                   # Show containers"
+	@echo "  make logs-[service]       # Follow logs for a service"
+	@echo "  make sh-[service]         # Open sh in a service"
+	@echo "  make bash-[service]       # Open bash (fallback to sh) in a service"
+	@echo "  make restart              # Restart root stack services"
+	@echo "  make restart-elk          # Restart ELK services"
+	@echo "  make restart-[service]    # Restart single service"
+	@echo "  make stop                 # Stop all containers for this project"
+	@echo ""
+	@echo "Repo tasks (via deps container):"
+	@echo "  make pnpm-install         # pnpm install (root lockfile)"
+	@echo "  make build                # pnpm build (libs + frontend)"
+	@echo "  make typecheck            # pnpm typecheck (all)"
+	@echo "  make lint                 # pnpm lint (all)"
+	@echo "  make fmt-check            # prettier --check"
+	@echo "  make fmt                  # prettier --write"
+	@echo "  make test                 # pnpm test (all)"
+	@echo "  make migrate              # backend migrations"
+	@echo "  make db-reset             # wipe backend ./apps/backend/data"
 
 # ========================
 #  Logs & utilities
@@ -166,3 +166,8 @@ migrate:
 
 db-reset:
 	@if [ -d "./apps/backend/data" ]; then rm -rf ./apps/backend/data; fi
+
+# Catch-all for unknown targets
+%:
+	@echo "Unknown command: $@"
+	@$(MAKE) help
