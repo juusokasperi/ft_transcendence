@@ -30,7 +30,7 @@ This document explains how TypeScript is configured and orchestrated across the 
   - shared/ — shared domain types and utilities (foundation lib)
   - game-logic/ — game logic lib
   - render/ — renderer lib
-  Each has its own tsconfig.json, and libraries use project references between them.
+    Each has its own tsconfig.json, and libraries use project references between them.
 
 ## Base config: tsconfig.base.json
 
@@ -49,13 +49,13 @@ All projects extend the base config. Key options:
 
 What this means:
 
-- Import from @pong/* always resolves to the package’s src/, not its published build
+- Import from @pong/\* always resolves to the package’s src/, not its published build
 - Consumers (apps, other packages) compile against source, gaining fast feedback and type fidelity
 
 Expectation:
 
 - Each internal package exposes src/index.ts as its primary entry. If you add a new internal lib, add its alias here.
-  
+
 ## Solution build: tsconfig.build.json
 
 This file orchestrates library builds via project references. It lists the libraries in build order:
@@ -76,7 +76,7 @@ Expectation:
 
 ## Library packages
 
-Common patterns across packages/pong/*:
+Common patterns across packages/pong/\*:
 
 - composite: true and incremental: true to participate in tsc -b builds
 - Declaration output enabled (declaration, declarationMap) for consumer types
@@ -103,7 +103,6 @@ Important nuance about JS output:
 - For app consumption, this is fine because the frontend bundler and dev tooling compile from source under the aliases
 - If you need Node-consumable JS in dist for these libs, remove emitDeclarationOnly: true so tsc emits JS, or add a bundling/emit step
 
-
 ## Applications
 
 ### Frontend (apps/frontend)
@@ -113,6 +112,7 @@ Important nuance about JS output:
 - .tsconfigs/tsconfig.node.json is a focused config for Node-based tooling like vite.config.ts; it targets ES2023 and limits included files to the config
 
 Expectations:
+
 - Vite handles module bundling; ensure any path alias resolution integrates with Vite (e.g., via vite-tsconfig-paths)
 - Typecheck via pnpm -F @app/web typecheck (tsc -b)
 
@@ -123,23 +123,23 @@ Expectations:
 - tsconfig.build.json switches to noEmit: false and configures outDir: dist, rootDir: . and emit modes appropriate for build; currently set to emit declaration files (emitDeclarationOnly: true)
 
 Expectations:
+
 - For development, tsx compiles and runs directly from TS
 - For production JS output, ensure tsc emits JS (remove emitDeclarationOnly: true) or introduce a build step that produces JS in dist. The current build script emits declarations only.
-
 
 ## How the pieces fit together
 
 - Shared defaults live in tsconfig.base.json
 - Libraries are built and orchestrated via project references (tsc -b tsconfig.build.json)
   - shared -> game-logic -> render
-- Apps import from @pong/* which resolves to the packages’ src using base paths
+- Apps import from @pong/\* which resolves to the packages’ src using base paths
   - Frontend uses Vite to compile and bundle the TS sources
   - Backend uses tsx in dev and can use tsc for builds
-
 
 ## Commands cheat-sheet
 
 From repository root (package.json):
+
 - Build libraries: pnpm run build:libs
 - Build frontend app: pnpm run build:frontend
 - Build backend app: pnpm run build:backend
@@ -147,25 +147,24 @@ From repository root (package.json):
 - Typecheck all packages/apps: pnpm run typecheck
 
 From individual packages:
+
 - packages/pong/shared: pnpm -F @pong/shared build (tsc -b)
 - packages/pong/game-logic: pnpm -F @pong/game-logic build (tsc -b)
 - packages/pong/render: pnpm -F @pong/render build (tsc -b && vite build)
 - apps/frontend: pnpm -F @app/web typecheck (tsc -b), pnpm -F @app/web build (vite)
 - apps/backend: pnpm -F @app/api dev (tsx), pnpm -F @app/api build (tsc -p)
 
-
 ## Adding a new internal library
 
-1) Create the package directory under packages/<scope>/<name>/ with src/index.ts
-2) Add tsconfig.json in the new package with at least:
+1. Create the package directory under packages/<scope>/<name>/ with src/index.ts
+2. Add tsconfig.json in the new package with at least:
    - extends: ../../../tsconfig.base.json
    - compilerOptions: { composite: true, incremental: true, rootDir: "src", outDir: "dist", declaration: true, declarationMap: true, sourceMap: true, noEmitOnError: true }
-3) If it depends on another internal lib, add a references entry: [{ "path": "../that-lib" }]
-4) Add its alias in tsconfig.base.json paths so apps can import from @your/new-lib
-5) Add the project to tsconfig.build.json references (if you want it built by pnpm run build:libs)
-6) Set package.json fields (main, types, exports) to point to dist outputs
-7) Run pnpm run build:libs to verify topological build succeeds
-
+3. If it depends on another internal lib, add a references entry: [{ "path": "../that-lib" }]
+4. Add its alias in tsconfig.base.json paths so apps can import from @your/new-lib
+5. Add the project to tsconfig.build.json references (if you want it built by pnpm run build:libs)
+6. Set package.json fields (main, types, exports) to point to dist outputs
+7. Run pnpm run build:libs to verify topological build succeeds
 
 ## Using the path aliases
 
@@ -173,12 +172,10 @@ From individual packages:
 - For node-specific files/configuration, avoid importing browser-only modules and vice versa
 - The shared package forbids .ts extension imports (allowImportingTsExtensions: false) to keep published specifiers clean
 
-
 ## Strictness and ergonomics
 
 - The base config opts into a number of strictness checks. Expect more type errors upfront but better safety overall.
 - Apps/libraries can raise strictness further (e.g., noUnusedLocals, noUnusedParameters in the frontend app configs) or relax locally via // @ts-expect-error in exceptional cases.
-
 
 ## Common pitfalls and tips
 
@@ -193,14 +190,12 @@ From individual packages:
 - Incremental builds
   - tsc -b caches build info; if you see stale outputs, clean with rimraf dist (and optionally remove .tsbuildinfo files) before rebuilding
 
-
 ## What this setup expects
 
 - Node 20+ and TypeScript 5.9+
 - Apps rely on a bundler (Vite) for JS emission and path alias resolution
-- Internal packages are consumed via source imports under the @pong/* aliases
+- Internal packages are consumed via source imports under the @pong/\* aliases
 - Library packages participate in project-references builds (composite + references)
-
 
 ## Reference of tsconfig files
 

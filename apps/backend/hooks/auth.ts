@@ -4,11 +4,7 @@ import { SECRET } from '../utils/config.ts';
 
 // Checks that the request came with an authorization (for protected routes)
 // and that the token is valid.
-export function authPreHandler(
-  req: FastifyRequest,
-  res: FastifyReply,
-  done: Function,
-): void {
+export function authPreHandler(req: FastifyRequest, res: FastifyReply, done: Function): void {
   const authHeader = req.headers.authorization;
   if (!authHeader || !authHeader.toLowerCase().startsWith('bearer ')) {
     res.status(401).send({ message: 'Missing or invalid token' });
@@ -24,11 +20,7 @@ export function authPreHandler(
   }
 }
 
-export function tokenUuidCheck(
-  req: FastifyRequest,
-  res: FastifyReply,
-  done: Function,
-): void {
+export function tokenUuidCheck(req: FastifyRequest, res: FastifyReply, done: Function): void {
   const uuid = req.user?.uuid;
   if (!uuid) {
     res.status(403).send({ message: 'No UUID in token' });

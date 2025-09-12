@@ -32,12 +32,7 @@ const OUT_DIR = path.join(ROOT, 'scripts', 'output');
 const OUT_FILE = path.join(OUT_DIR, 'root-configs.txt');
 const rel = (p) => path.relative(ROOT, p);
 
-const TARGETS = [
-  'prettier.config.cjs',
-  '.prettierignore',
-  'eslint.config.js',
-  'typedoc.json'
-];
+const TARGETS = ['prettier.config.cjs', '.prettierignore', 'eslint.config.js', 'typedoc.json'];
 
 async function main() {
   const chunks = [];
@@ -51,7 +46,7 @@ async function main() {
         `===== BEGIN ${rel(abs)} =====`,
         content.trimEnd(),
         `===== END ${rel(abs)} =====`,
-        ''
+        '',
       );
       found++;
     } catch (e) {
@@ -59,7 +54,7 @@ async function main() {
         `===== BEGIN ${name} (NOT FOUND) =====`,
         `<${name} not found at repository root>`,
         `===== END ${name} (NOT FOUND) =====`,
-        ''
+        '',
       );
     }
   }
@@ -68,10 +63,12 @@ async function main() {
   await fs.writeFile(OUT_FILE, chunks.join('\n'), 'utf8');
 
   const secs = ((Date.now() - START) / 1000).toFixed(2);
-  console.log(`${SCRIPT}:\n  found: ${found} of ${TARGETS.length}\n  wrote: ${rel(OUT_FILE)}\n  time: ${secs}s`);
+  console.log(
+    `${SCRIPT}:\n  found: ${found} of ${TARGETS.length}\n  wrote: ${rel(OUT_FILE)}\n  time: ${secs}s`,
+  );
 }
 
 main().catch((err) => {
-  console.error('[error]', SCRIPT+':', err);
+  console.error('[error]', SCRIPT + ':', err);
   process.exitCode = 1;
 });

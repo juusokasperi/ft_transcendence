@@ -3,6 +3,7 @@
 Below is a complete, line-by-line explanation of our Nginx configuration, tailored to how it’s used in our ft_transcendence project. I’ve included an overview first, then the annotated breakdown. I also reference how this file is wired up in our docker-compose to show the full picture.
 
 ## Overview
+
 - Purpose: Provide a single-origin dev entry point so the app is reachable at http://localhost:8080 by default, while proxying:
   - `/api/` and `/uploads/` to the backend (Fastify on 3001)
   - Everything else (including Vite’s HMR) to the frontend (Vite dev server on 5173)
@@ -10,6 +11,7 @@ Below is a complete, line-by-line explanation of our Nginx configuration, tailor
 - How it’s wired: In `docker-compose.yml`, the `nginx` service mounts this file into `/etc/nginx/conf.d/default.conf` and publishes host port `${NGINX_PORT:-8080}` to container port `80`. The service names `frontend` and `backend` become DNS-resolvable hostnames within the Docker network.
 
 ## Actual config as committed
+
 ```nginx
 # /etc/nginx/conf.d/default.conf
 
@@ -93,6 +95,7 @@ server {
 - `client_max_body_size 20m;` — Allow uploads up to ~20 MB; prevent 413 errors.
 
 API block (`location /api/`):
+
 - `set $be http://backend:3001;` — Target backend service in Docker network.
 - `proxy_pass $be;` — Forward requests to backend with original path retained (including `/api/`).
 - `proxy_http_version 1.1;` — Needed for keep-alive and WebSockets.
@@ -105,18 +108,22 @@ API block (`location /api/`):
 - `proxy_read_timeout`/`proxy_send_timeout 300s;` — Generous timeouts for dev.
 
 Uploads block (`location /uploads/`):
+
 - Routes static uploads through the backend (where they’re stored/persisted via compose volumes).
 - `proxy_set_header Host $http_host;` — Preserve host; other forwarded headers not strictly necessary here.
 
 Vite HMR block (`location /@vite`):
+
 - Routes HMR/WebSocket traffic to Vite dev server.
 - Long timeouts and `proxy_buffering off;` to keep the connection live and reduce latency.
 
 Catch-all (`location /`):
+
 - Everything else goes to the Vite dev server.
 - Timeouts + `proxy_buffering off;` help during development for responsiveness.
 
 ## How Nginx fits into docker-compose
+
 - Service: `nginx`
   - `depends_on`: `frontend`, `backend` — ensures proxies target running services.
   - `ports`: `${NGINX_PORT:-8080}:80` — browse at `http://localhost:8080` by default.
@@ -125,8 +132,8 @@ Catch-all (`location /`):
 - Upstreams: `backend:3001` (Fastify API + uploads), `frontend:5173` (Vite + HMR).
 
 ## Notes and tips
+
 - If you change service names or ports in `docker-compose.yml`, update them here (`backend:3001`, `frontend:5173`).
 - For larger uploads, increase `client_max_body_size` and ensure backend accepts the new limit.
 - If generating absolute URLs on the backend, prefer using `X-Forwarded-Proto` and `X-Forwarded-Host`.
 - Production will differ: typically add TLS, caching, stricter timeouts, health checks, and static asset serving from Nginx instead of proxying to Vite.
-

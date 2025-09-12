@@ -13,5 +13,13 @@
     "isolatedModules": false,
     "types": ["node"]
   },
-  "include": ["index.ts","db/**/*","routes/**/*","schemas/**/*","hooks/**/*","utils/**/*","types/**/*"]
+  "include": [
+    "index.ts",
+    "db/**/*",
+    "routes/**/*",
+    "schemas/**/*",
+    "hooks/**/*",
+    "utils/**/*",
+    "types/**/*"
+  ]
 }

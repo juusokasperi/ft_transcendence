@@ -1,8 +1,7 @@
 import type { GameState } from '../model/state';
 import { createInitialState } from '../model/state';
 import { serveFrom } from '../systems/flow/service';
-import { PAUSE_BETWEEN_GAMES_MS,
-        PAUSE_MATCH_OVER_MS } from '../constants';
+import { PAUSE_BETWEEN_GAMES_MS, PAUSE_MATCH_OVER_MS } from '../constants';
 import type { TableEnd } from '@pong/shared';
 import type { Ruleset } from '@pong/shared';
 import { sideOpposite } from '@pong/shared';

@@ -52,6 +52,7 @@ networks:
 ## Service: deps (dependency bootstrapper)
 
 Source excerpt:
+
 ```
 # 1) Install deps ONCE for the whole repo (root lockfile)
 deps:
@@ -91,10 +92,10 @@ deps:
 
 - command: bash -lc "..."
   - bash -lc runs a login-like shell to ensure environment is initialized as expected. The script:
-    1) corepack enable — enables package manager shims.
-    2) corepack prepare pnpm@9.12.3 --activate — installs and activates the exact pnpm version specified in package.json (packageManager), matching the repo.
-    3) pnpm install --frozen-lockfile — installs dependencies exactly as locked. Fails if lockfile is out of sync, protecting reproducibility.
-    4) pnpm run --if-present build:libs — builds shared TypeScript libraries via tsc project references; this minimizes downstream build work.
+    1. corepack enable — enables package manager shims.
+    2. corepack prepare pnpm@9.12.3 --activate — installs and activates the exact pnpm version specified in package.json (packageManager), matching the repo.
+    3. pnpm install --frozen-lockfile — installs dependencies exactly as locked. Fails if lockfile is out of sync, protecting reproducibility.
+    4. pnpm run --if-present build:libs — builds shared TypeScript libraries via tsc project references; this minimizes downstream build work.
 
 - volumes:
   - .:/work:cached — bind-mounts your working tree. The cached flag is a performance hint for Docker Desktop-like environments; it’s safe elsewhere.
@@ -114,6 +115,7 @@ Why this service exists: Frontend and backend run in watch mode and shouldn’t 
 ## Service: frontend (Vite dev server)
 
 Source excerpt:
+
 ```
 # 2) Frontend (Vite dev server)
 frontend:
@@ -174,6 +176,7 @@ frontend:
 ## Service: backend (Fastify + tsx watch)
 
 Source excerpt:
+
 ```
 # 3) Backend (Fastify + tsx watch)
 backend:
@@ -239,6 +242,7 @@ backend:
 ## Service: nginx (single-origin dev)
 
 Source excerpt:
+
 ```
 # 4) Nginx (single-origin dev, optional but convenient)
 nginx:
@@ -321,4 +325,3 @@ While specifics depend on your deployment environment, a production Compose conf
   - Use Compose/Swarm/Kubernetes resource limits. Horizontal scaling of stateless services (frontend, backend) as needed.
 
 In summary, production emphasizes immutable, minimal images, secure defaults, and scalable architecture, while development prioritizes rapid iteration and convenience with mounted source and watch-mode processes.
-

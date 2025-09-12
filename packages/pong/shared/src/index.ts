@@ -5,7 +5,11 @@ export type { GameRules, MatchRules, Ruleset } from './domain/rules';
 export { sideOpposite } from './domain/rules';
 
 export {
-  xorshift32, XorShift32, deriveSeed32, pickInitialServer, type MatchSeed,
+  xorshift32,
+  XorShift32,
+  deriveSeed32,
+  pickInitialServer,
+  type MatchSeed,
 } from './utils/random';
 export { type Disposable } from './utils/disposable';
 export { default as Logger } from './utils/logger';
@@ -16,4 +20,3 @@ export { ZeroIntent } from './protocol/input';
 
 export type { GameHistoryEntry } from './protocol/state';
 export { clamp01 } from './utils/math';
-

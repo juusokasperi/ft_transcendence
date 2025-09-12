@@ -167,7 +167,7 @@ export function createUserFromGoogle(profile: {
 // Update existing Google user on each login (soft-sync)
 export function updateGoogleUser(profile: {
   googleId: string;
-  email?: string  | undefined; // Google OIDC email (usually verified)
+  email?: string | undefined; // Google OIDC email (usually verified)
   name?: string | undefined; // Google 'name'
   picture?: string | undefined; // Google 'picture' (URL)
 }): boolean {

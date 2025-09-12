@@ -28,8 +28,15 @@ const OUT_FILE = path.join(OUT_DIR, 'dockerfiles-and-compose.txt');
 const START = Date.now();
 
 const IGNORE_DIRS = new Set([
-  'node_modules', '.git', '.turbo', '.cache',
-  'dist', 'build', 'coverage', 'tmp', 'temp',
+  'node_modules',
+  '.git',
+  '.turbo',
+  '.cache',
+  'dist',
+  'build',
+  'coverage',
+  'tmp',
+  'temp',
   'log-management',
 ]);
 
@@ -66,8 +73,8 @@ async function main() {
   if (path.basename(SEARCH_ROOT) !== 'log-management') {
     const composePath = path.join(SEARCH_ROOT, 'docker-compose.yml');
     try {
-    const st = await fs.stat(composePath);
-    if (st.isFile()) files.push(composePath);
+      const st = await fs.stat(composePath);
+      if (st.isFile()) files.push(composePath);
     } catch {}
   }
 
@@ -104,7 +111,7 @@ async function main() {
       `===== BEGIN ${posixRel} =====`,
       content.trimEnd(),
       `===== END ${posixRel} =====`,
-      '' // spacer
+      '', // spacer
     );
   }
 
@@ -112,7 +119,9 @@ async function main() {
   await fs.writeFile(OUT_FILE, chunks.join('\n'), 'utf8');
 
   const secs = ((Date.now() - START) / 1000).toFixed(2);
-  console.log(`${SCRIPT}:\n  found: ${files.length}\n  wrote: ${path.relative(ROOT, OUT_FILE)}\n  time: ${secs}s`);
+  console.log(
+    `${SCRIPT}:\n  found: ${files.length}\n  wrote: ${path.relative(ROOT, OUT_FILE)}\n  time: ${secs}s`,
+  );
 }
 
 main().catch((err) => {

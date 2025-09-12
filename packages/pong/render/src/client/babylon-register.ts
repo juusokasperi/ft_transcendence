@@ -10,7 +10,7 @@ import '@babylonjs/core/Rendering/outlineRenderer';
 import '@babylonjs/core/Shaders/standard.vertex';
 import '@babylonjs/core/Shaders/standard.fragment';
 
-//import '@babylonjs/core/Shaders/shadows.vertex';
+import '@babylonjs/core/Shaders/shadows.vertex';
 import '@babylonjs/core/Shaders/shadows.fragment';
 
 import '@babylonjs/core/Shaders/postprocess.fragment';

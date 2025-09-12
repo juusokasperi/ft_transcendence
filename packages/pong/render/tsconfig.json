@@ -19,8 +19,5 @@
   },
   "include": ["src"],
   "exclude": ["src/demo/**"],
-  "references": [
-    { "path": "../shared" },
-    { "path": "../game-logic" }
-  ]
+  "references": [{ "path": "../shared" }, { "path": "../game-logic" }]
 }

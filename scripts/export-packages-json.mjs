@@ -15,9 +15,22 @@ const OUT_FILE = path.join(OUT_DIR, 'packages-json.txt');
 
 // ignore noisy/build/system dirs
 const IGNORE_DIRS = new Set([
-  'node_modules','.git','.turbo','.cache','.next','.vite','.svelte-kit',
-  'dist','build','coverage','tmp','temp','.pnpm-store','pnpm-store',
-  '.vercel','.DS_Store'
+  'node_modules',
+  '.git',
+  '.turbo',
+  '.cache',
+  '.next',
+  '.vite',
+  '.svelte-kit',
+  'dist',
+  'build',
+  'coverage',
+  'tmp',
+  'temp',
+  '.pnpm-store',
+  'pnpm-store',
+  '.vercel',
+  '.DS_Store',
 ]);
 
 const EXTRA_FILES = [
@@ -25,8 +38,8 @@ const EXTRA_FILES = [
   'pnpm-workspace.yaml',
   'pnpm-workspace.yml',
   // requested tsconfigs for frontend app
-  path.join('apps','frontend','.tsconfigs','tsconfig.app.json'),
-  path.join('apps','frontend','.tsconfigs','tsconfig.node.json'),
+  path.join('apps', 'frontend', '.tsconfigs', 'tsconfig.app.json'),
+  path.join('apps', 'frontend', '.tsconfigs', 'tsconfig.node.json'),
 ];
 
 function rel(p) {
@@ -44,8 +57,11 @@ async function safeRead(p) {
 async function walkForPackages(dir, acc) {
   /** @type {import('node:fs').Dirent[]} */
   let ents;
-  try { ents = await fs.readdir(dir, { withFileTypes: true }); }
-  catch { return; }
+  try {
+    ents = await fs.readdir(dir, { withFileTypes: true });
+  } catch {
+    return;
+  }
 
   for (const ent of ents) {
     const name = ent.name;
@@ -64,14 +80,14 @@ async function main() {
     `# root: ${rel(ROOT) || '.'}`,
     `# search_root: ${rel(SEARCH_ROOT) || '.'}`,
     `# date: ${new Date().toISOString()}`,
-    ''
+    '',
   ].join('\n');
 
   // 1) collect package.json files
   /** @type {string[]} */
   const pkgFiles = [];
   await walkForPackages(SEARCH_ROOT, pkgFiles);
-  pkgFiles.sort((a,b) => rel(a).localeCompare(rel(b)));
+  pkgFiles.sort((a, b) => rel(a).localeCompare(rel(b)));
 
   // 2) collect extras (workspace + requested tsconfigs)
   /** @type {{file: string, present: boolean}[]} */
@@ -79,7 +95,11 @@ async function main() {
   for (const relPath of EXTRA_FILES) {
     const abs = path.join(SEARCH_ROOT, relPath);
     let present = true;
-    try { await fs.access(abs); } catch { present = false; }
+    try {
+      await fs.access(abs);
+    } catch {
+      present = false;
+    }
     extras.push({ file: abs, present });
   }
 
@@ -104,8 +124,10 @@ async function main() {
 
   const secs = ((Date.now() - START) / 1000).toFixed(2);
   const foundPkgs = pkgFiles.length;
-  const foundExtras = extras.filter(e => e.present).length;
-  console.log(`${SCRIPT}:\n  found: ${foundPkgs} package.json, ${foundExtras}/${extras.length} extras\n  wrote: ${rel(OUT_FILE)}\n  time: ${secs}s`);
+  const foundExtras = extras.filter((e) => e.present).length;
+  console.log(
+    `${SCRIPT}:\n  found: ${foundPkgs} package.json, ${foundExtras}/${extras.length} extras\n  wrote: ${rel(OUT_FILE)}\n  time: ${secs}s`,
+  );
 }
 
 main().catch((err) => {

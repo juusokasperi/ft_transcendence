@@ -2,12 +2,7 @@
 import { createEngine } from '@pong/render';
 import { createLifecycle } from '@pong/render';
 import { createWorld } from '@pong/render';
-import {
-  attachLocalInput,
-  readIntent,
-  toggleControlsMirrored,
-  blockInputFor,
-} from '@pong/render';
+import { attachLocalInput, readIntent, toggleControlsMirrored, blockInputFor } from '@pong/render';
 import { createBounces } from '@pong/render';
 import { FXManager } from '@pong/render';
 import { createScoreboard } from '@pong/render';
@@ -118,7 +113,7 @@ export function createLocalApp(canvas: HTMLCanvasElement): PongInstance {
   // Input
   const detachInput = attachLocalInput(canvas);
   window.addEventListener('keydown', (e) => {
-  if (['z','w','s','ArrowUp','ArrowDown'].includes(e.key)) {
+    if (['z', 'w', 's', 'ArrowUp', 'ArrowDown'].includes(e.key)) {
       console.log('[dbg] keydown:', e.key, 'activeElement=', document.activeElement?.tagName);
     }
   });

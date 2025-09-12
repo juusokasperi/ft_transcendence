@@ -199,7 +199,8 @@ const LocalGame: React.FC = () => {
                   ...settings,
                   accessibility: {
                     ...settings.accessibility,
-                    photoSensitiveMode: e.target.value as AccessibilitySettings['photoSensitiveMode'],
+                    photoSensitiveMode: e.target
+                      .value as AccessibilitySettings['photoSensitiveMode'],
                   },
                 })
               }

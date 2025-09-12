@@ -65,4 +65,3 @@ export function makePool<T>(
 
   return api;
 }
-

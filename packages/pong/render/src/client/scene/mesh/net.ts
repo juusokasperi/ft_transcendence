@@ -110,9 +110,9 @@ function roundedRectShape(width: number, height: number, r: number, stepsPerCorn
 
   // usage
   arc(w2 - rClamped, -h2 + rClamped, -Math.PI / 2, 0, true); // include first only once
-  arc(w2 - rClamped,  h2 - rClamped,  0, Math.PI / 2);
-  arc(-w2 + rClamped,  h2 - rClamped,  Math.PI / 2, Math.PI);
-  arc(-w2 + rClamped, -h2 + rClamped,  Math.PI, (3 * Math.PI) / 2);
+  arc(w2 - rClamped, h2 - rClamped, 0, Math.PI / 2);
+  arc(-w2 + rClamped, h2 - rClamped, Math.PI / 2, Math.PI);
+  arc(-w2 + rClamped, -h2 + rClamped, Math.PI, (3 * Math.PI) / 2);
 
   // Ensure closure
   const firstPt = first ?? pts[0]!;
