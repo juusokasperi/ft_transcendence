@@ -17,7 +17,6 @@
     "dev": "tsx --tsconfig ./tsconfig.json --watch index.ts",
     "check-format": "pnpm -F ft_transcendence check-format",
     "fix-format": "pnpm -F ft_transcendence fix-format",
-    "lint": "eslint './**/*.{ts,tsx}' --max-warnings=0",
     "migrate": "tsx utils/migrate.ts",
     "migration:down": "tsx utils/rollback.ts",
     "seed:secret": "npx tsx utils/seedSecrets.ts",
