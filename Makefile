@@ -11,7 +11,7 @@
 # **************************************************************************** #
 
 # Project / compose
-NAME            ?= ft-transcendence-dev
+NAME             = ft-transcendence-dev
 ROOT_COMPOSE     = -f docker-compose.yml
 ELK_COMPOSE      = -f docker-compose.yml -f log-management/docker-compose.yml
 
