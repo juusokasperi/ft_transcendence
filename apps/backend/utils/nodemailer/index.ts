@@ -72,5 +72,6 @@ export async function sendDeleteEmail(recipientEmail: string, token: string) {
     return info.accepted.length > 0;
   } catch (error) {
     console.error('\x1b[0;31mError sending confirmation email\x1b[0m:', error);
+    return false;
   }
 }

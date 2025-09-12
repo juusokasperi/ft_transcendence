@@ -178,7 +178,7 @@ export default async function googleSign(app: FastifyInstance) {
     // Set JS-readable cookies so your SPA behaves the same as normal login:
     reply.setCookie('token', appToken, {
       httpOnly: false, // JS must read it (js-cookie)
-      sameSite: 'Strict', // matches FE
+      sameSite: 'strict', // matches FE
       secure: process.env.NODE_ENV === 'production',
       path: '/',
       maxAge: 60 * 60 * 4, // 4h

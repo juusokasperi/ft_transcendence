@@ -147,9 +147,9 @@ function ensureUniqueUsername(preferred: string): string {
 
 export function createUserFromGoogle(profile: {
   googleId: string;
-  email?: string;
-  name?: string;
-  picture?: string;
+  email?: string | undefined;
+  name?: string | undefined;
+  picture?: string | undefined;
 }): User | undefined {
   try {
     const uuid = crypto.randomUUID();
@@ -167,9 +167,9 @@ export function createUserFromGoogle(profile: {
 // Update existing Google user on each login (soft-sync)
 export function updateGoogleUser(profile: {
   googleId: string;
-  email?: string; // Google OIDC email (usually verified)
-  name?: string; // Google 'name'
-  picture?: string; // Google 'picture' (URL)
+  email?: string  | undefined; // Google OIDC email (usually verified)
+  name?: string | undefined; // Google 'name'
+  picture?: string | undefined; // Google 'picture' (URL)
 }): boolean {
   try {
     // Soft policy:

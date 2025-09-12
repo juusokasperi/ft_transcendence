@@ -4,23 +4,36 @@ import { SECRET } from '../utils/config.ts';
 
 // Checks that the request came with an authorization (for protected routes)
 // and that the token is valid.
-export function authPreHandler(req: FastifyRequest, res: FastifyReply, done: Function) {
+export function authPreHandler(
+  req: FastifyRequest,
+  res: FastifyReply,
+  done: Function,
+): void {
   const authHeader = req.headers.authorization;
-  if (!authHeader || !authHeader.toLowerCase().startsWith('bearer '))
-    return res.status(401).send({ message: 'Missing or invalid token' });
+  if (!authHeader || !authHeader.toLowerCase().startsWith('bearer ')) {
+    res.status(401).send({ message: 'Missing or invalid token' });
+    return;
+  }
   const token = authHeader.replace('Bearer ', '');
   try {
-    const payload = jwt.verify(token, SECRET);
-    req.user = payload;
+    const payload = jwt.verify(token, SECRET); // (optionally: as any as JWTPayload)
+    req.user = payload as any; // keep minimal; or type-narrow with your JWTPayload
     done();
   } catch {
-    return res.status(401).send({ message: 'Invalid token' });
+    res.status(401).send({ message: 'Invalid token' });
   }
 }
 
-export function tokenUuidCheck(req: FastifyRequest, res: FastifyReply, done: Function) {
+export function tokenUuidCheck(
+  req: FastifyRequest,
+  res: FastifyReply,
+  done: Function,
+): void {
   const uuid = req.user?.uuid;
-  if (!uuid) return res.status(403).send({ message: 'No UUID in token' });
+  if (!uuid) {
+    res.status(403).send({ message: 'No UUID in token' });
+    return;
+  }
   done();
 }
 
