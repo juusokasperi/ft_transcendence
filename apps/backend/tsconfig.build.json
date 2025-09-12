@@ -1,0 +1,25 @@
+{
+  "extends": "../../.config/tsconfig.base.json",
+  "compilerOptions": {
+    "emitDeclarationOnly": true,
+    "declaration": true,
+    "noEmit": false,
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "target": "ES2022",
+    "rootDir": ".",
+    "outDir": "dist",
+    "sourceMap": true,
+    "isolatedModules": false,
+    "types": ["node"]
+  },
+  "include": [
+    "index.ts",
+    "db/**/*",
+    "routes/**/*",
+    "schemas/**/*",
+    "hooks/**/*",
+    "utils/**/*",
+    "types/**/*"
+  ]
+}

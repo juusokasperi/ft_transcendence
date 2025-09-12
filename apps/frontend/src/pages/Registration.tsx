@@ -1,0 +1,59 @@
+import React, { useEffect, useState } from 'react';
+import AuthForm from '../components/AuthForm';
+import { useAppContext } from '../context/AppContext';
+import { toast } from 'react-hot-toast';
+import type { AxiosError } from 'axios';
+import type { AxiosResponse } from 'axios';
+
+const Registration: React.FC = () => {
+  const { axios, navigate, user } = useAppContext();
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (user) {
+      navigate('/');
+    }
+  }, [user, navigate]);
+
+  const handleRegister = async (data: {
+    username?: string;
+    email: string;
+    password: string;
+    confirmPassword?: string;
+  }) => {
+    setLoading(true);
+    try {
+      // POST to /api/signup
+      const res = await axios.post('/api/signup', {
+        username: data.username,
+        email: data.email,
+        password: data.password,
+      });
+
+      console.log(res.data.success);
+      const axiosRes = res as AxiosResponse<{ success?: string }>;
+      const msg = axiosRes.data.success;
+      toast.success(String(msg));
+      navigate('/login');
+    } catch (err: any) {
+      const axiosErr = err as AxiosError<{ message?: string }>;
+      const msg = axiosErr?.response?.data?.message;
+      console.log(axiosErr);
+      toast.error(String(msg));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="flex min-h-screen items-center justify-center bg-gray-100">
+      <div className="w-full max-w-md rounded bg-white p-8 shadow-md">
+        <h1 className="mb-6 text-center text-2xl font-bold">Register</h1>
+        <AuthForm type="register" onSubmit={handleRegister} />
+        {loading && <p className="mt-2 text-sm">Creating account…</p>}
+      </div>
+    </div>
+  );
+};
+
+export default Registration;

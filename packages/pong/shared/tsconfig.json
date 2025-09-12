@@ -1,0 +1,20 @@
+{
+  "extends": "../../../.config/tsconfig.base.json",
+  "compilerOptions": {
+    "lib": ["ES2022"],
+    "composite": true,
+    "incremental": true,
+
+    "rootDir": "src",
+    "outDir": "dist",
+    "declaration": true,
+    "declarationMap": true,
+    "sourceMap": true,
+    "stripInternal": true,
+    "noEmitOnError": true,
+
+    /* Shared package explicitly forbids TS-extension imports */
+    "allowImportingTsExtensions": false
+  },
+  "include": ["src"]
+}

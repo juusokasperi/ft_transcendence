@@ -7,25 +7,38 @@ on:
   pull_request:
     branches: [ main, development ]
 
+concurrency:
+  group: syntax-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   syntax-check:
     permissions:
       contents: read
       pull-requests: write
     runs-on: ubuntu-latest
+
     steps:
       - uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9.12.3
+          run_install: false
 
       - name: Setup Node.js 22.19.0 LTS
         uses: actions/setup-node@v4
         with:
           node-version: 22.19.0
+          cache: 'pnpm'
 
-      - name: Install dependencies
-        run: npm i
 
-      - name: Run npm check
-        run: npm run check
+      - name: Install dependencies (workspace)
+        run: pnpm install --frozen-lockfile
+
+      - name: Typecheck (all packages)
+        run: pnpm run check-format
 
       - name: Comment on PR if failed
         if: ${{ failure() && github.event_name == 'pull_request' }}
@@ -38,9 +51,9 @@ jobs:
               return;
             }
             const body = [
-              '**SyntaxCheck CI** failed.',
+              '**SyntaxCheck CI** failed for the monorepo.',
               `Commit: \`${process.env.GITHUB_SHA.slice(0,7)}\``,
-              `Logs: ${process.env.GITHUB_SERVER_URL}/${process.env.GITHUB_REPOSITORY}/actions/runs/${process.env.GITHUB_RUN_ID}`
+              `Run: ${process.env.GITHUB_SERVER_URL}/${process.env.GITHUB_REPOSITORY}/actions/runs/${process.env.GITHUB_RUN_ID}`
             ].join('\n');
             await github.rest.issues.createComment({
               owner: context.repo.owner,
@@ -48,4 +61,3 @@ jobs:
               issue_number: pr,
               body
             });
-
