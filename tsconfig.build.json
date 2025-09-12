@@ -3,6 +3,6 @@
   "references": [
     { "path": "packages/pong/shared" },
     { "path": "packages/pong/game-logic" },
-    { "path": "packages/pong/render-babylon" }
+    { "path": "packages/pong/render" }
   ]
 }

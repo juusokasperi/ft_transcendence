@@ -3,11 +3,11 @@
   "compilerOptions": {
     "module": "NodeNext",
     "moduleResolution": "NodeNext",
-    "target": "ES2022",
     "types": ["node", "vitest"],
     "sourceMap": true,
     "noEmit": true,
-    "isolatedModules": true
+    "isolatedModules": true,
+    "target": "ES2022"
   },
   "include": ["index.ts", "db/**/*", "utils/**/*", "**/*.d.ts"]
 }

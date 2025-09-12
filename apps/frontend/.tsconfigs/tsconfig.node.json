@@ -1,26 +1,19 @@
 {
+  "extends": "../../../tsconfig.base.json",
   "compilerOptions": {
     "tsBuildInfoFile": "../node_modules/.tmp/tsconfig.node.tsbuildinfo",
+
+    /* Node-side tooling (vite config, etc.) */
     "target": "ES2023",
     "lib": ["ES2023"],
-    "module": "ESNext",
-    "skipLibCheck": true,
+    "types": ["node"],
 
-    /* bundler mode */
-    "moduleResolution": "bundler",
-    "allowImportingTsExtensions": true,
-    "verbatimModuleSyntax": true,
-    "moduleDetection": "force",
-    "noEmit": true,
-
-    /* Linting */
-    "strict": true,
+    /* Extra lint-y checks for tooling */
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "erasableSyntaxOnly": true,
-    "noFallthroughCasesInSwitch": true,
-    "noUncheckedSideEffectImports": true,
-    "types": ["node"]
+
+    "noEmit": true
   },
   "include": ["../vite.config.ts"]
 }

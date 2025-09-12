@@ -1,7 +1,6 @@
 {
   "extends": "../../../tsconfig.base.json",
   "compilerOptions": {
-    "moduleResolution": "bundler",
     "lib": ["ES2022"],
     "composite": true,
     "incremental": true,
@@ -14,6 +13,7 @@
     "stripInternal": true,
     "noEmitOnError": true,
 
+    /* Shared package explicitly forbids TS-extension imports */
     "allowImportingTsExtensions": false
   },
   "include": ["src"]
