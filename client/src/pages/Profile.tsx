@@ -22,7 +22,7 @@ function resolveAvatarUrl(avatar: string | undefined | null, axiosBase?: string)
 }
 
 const Profile: React.FC = () => {
-  const { axios, user, setUser, getToken, logout } = useAppContext();
+  const { axios, user, setUser, logout } = useAppContext();
 
   const [image, setImage] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string>(PLACEHOLDER);
@@ -53,18 +53,9 @@ const Profile: React.FC = () => {
   const handleUsernameChange = async () => {
     try {
       if (!username) return;
-      const token = getToken();
-      const res = await axios.patch(
-        '/api/users/me',
-        {
-          newUsername: username,
-        },
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        },
-      );
+      const res = await axios.patch('/api/users/me', {
+        newUsername: username,
+      });
       setUser((prev) =>
         prev
           ? {
@@ -96,19 +87,10 @@ const Profile: React.FC = () => {
     try {
       if (!newPassword.newPassword || !newPassword.currentPassword || !newPassword.confirmPassword)
         return;
-      const token = getToken();
-      await axios.patch(
-        '/api/users/me/password',
-        {
-          newPassword: newPassword.newPassword,
-          currentPassword: newPassword.currentPassword,
-        },
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        },
-      );
+      await axios.patch('/api/users/me/password', {
+        newPassword: newPassword.newPassword,
+        currentPassword: newPassword.currentPassword,
+      });
       toast.success('Account password changed');
     } catch (err: any) {
       const axiosErr = err as AxiosError<{ error?: string }>;
@@ -126,13 +108,11 @@ const Profile: React.FC = () => {
       await handlePasswordChange();
 
       if (image) {
-        const token = getToken();
         const formData = new FormData();
         formData.append('avatar', image);
 
         const res = await axios.patch('/api/users/me/avatar', formData, {
           headers: {
-            Authorization: `Bearer ${token}`,
             'Content-Type': 'multipart/form-data',
           },
         });
@@ -170,12 +150,7 @@ const Profile: React.FC = () => {
   const handleDelete = async () => {
     if (!window.confirm('Are you sure you want to delete your account?')) return;
     try {
-      const token = getToken();
-      await axios.delete(`/api/users/me`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+      await axios.delete(`/api/users/me`);
       toast.success('Account deleted');
       await logout();
       // redirect or logout logic here
