@@ -4,6 +4,7 @@ import { useAppContext } from '../context/AppContext';
 import { toast } from 'react-hot-toast';
 import type { AxiosError } from 'axios';
 import { Link } from 'react-router-dom';
+import type { User } from '../types';
 
 const Login: React.FC = () => {
   const { axios, login, navigate, user } = useAppContext();
@@ -16,17 +17,15 @@ const Login: React.FC = () => {
   const handleLogin = async (data: { email: string; password: string }) => {
     setLoading(true);
     try {
-      // get token from backend
       const res = await axios.post('/api/login', {
         email: data.email,
         password: data.password,
       });
 
-      const { token } = res.data as { token: string };
-      if (!token) throw new Error('Invalid server response');
+      const { user: loggedIn } = res.data as { user: User };
+      if (!loggedIn) throw new Error('Invalid server response');
 
-      // unified login: save token, then AppContext will fetch /api/users/me
-      await login(token);
+      login(loggedIn);
 
       toast.success('Logged in');
       // navigate('/') is optional; your useEffect will redirect once user is set
