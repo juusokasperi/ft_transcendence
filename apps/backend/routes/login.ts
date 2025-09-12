@@ -34,7 +34,7 @@ export async function loginRoutes(app: FastifyInstance) {
         // Does the front need UUID anymore?
         res.setCookie('token', token, {
           httpOnly: true,
-          sameSite: 'Strict',
+          sameSite: 'strict',
           secure: process.env.NODE_ENV === 'production',
           path: '/',
           maxAge: 60 * 60 * 4, // 4h

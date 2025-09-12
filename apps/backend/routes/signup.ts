@@ -86,7 +86,7 @@ export async function signupRoutes(app: FastifyInstance) {
         // Does the front need UUID anymore?
         res.setCookie('token', jwtoken, {
           httpOnly: true,
-          sameSite: 'Strict',
+          sameSite: 'strict',
           secure: process.env.NODE_ENV === 'production',
           path: '/',
           maxAge: 60 * 60 * 4,

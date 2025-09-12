@@ -12,13 +12,16 @@ export function authPreHandler(req: FastifyRequest, res: FastifyReply, done: Fun
   } else if (req.cookies?.token) {
     token = req.cookies.token as string;
   }
-  if (!token) return res.status(401).send({ message: 'Missing or invalid token' });
+  if (!token) {
+    res.status(401).send({ message: 'Missing or invalid token' });
+    return;
+  }
   try {
     const payload = jwt.verify(token, SECRET); // (optionally: as any as JWTPayload)
     req.user = payload as any; // keep minimal; or type-narrow with your JWTPayload
     done();
   } catch {
-    return res.status(401).send({ message: 'Invalid or expired token' });
+    res.status(401).send({ message: 'Invalid or expired token' });
   }
 }
 
