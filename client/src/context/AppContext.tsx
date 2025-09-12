@@ -6,6 +6,7 @@ import { useUser } from '../hooks/useUser';
 import type { User } from '../types';
 
 axios.defaults.baseURL = import.meta.env.VITE_BACKEND_URL;
+axios.defaults.withCredentials = true;
 
 type Ctx = {
   navigate: ReturnType<typeof useNavigate>;
