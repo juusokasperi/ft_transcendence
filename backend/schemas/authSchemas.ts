@@ -92,7 +92,7 @@ export const loginSchema = {
           type: 'object',
           properties: {
             username: UsernameSchema,
-            //uuid: UuidSchema, // might not be needed on frontend. Check.
+            uuid: UuidSchema, // might not be needed on frontend. Check.
             avatar: AvatarSchema,
           },
         },

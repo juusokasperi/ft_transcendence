@@ -55,7 +55,7 @@ describe('GET /api/users/me', () => {
     vi.restoreAllMocks();
   });
 
-  it('401 when Authorization header is missing', async () => {
+  it('401 when token cookie is missing', async () => {
     const res = await app.inject({ method: 'GET', url: '/api/users/me' });
     expect(res.statusCode).toBe(401);
     expect(res.json().message).toMatch(/Missing or invalid token/i);
@@ -65,7 +65,7 @@ describe('GET /api/users/me', () => {
     const res = await app.inject({
       method: 'GET',
       url: '/api/users/me',
-      headers: { authorization: 'Bearer not-a-valid-jwt' },
+      headers: { cookie: `token=not-a-valid-jwt` },
     });
     expect(res.statusCode).toBe(401);
     expect(res.json().message).toMatch(/Invalid or expired token/i);
@@ -96,7 +96,7 @@ describe('GET /api/users/me', () => {
     const res = await app.inject({
       method: 'GET',
       url: '/api/users/me',
-      headers: { authorization: `Bearer ${token}` },
+      headers: { cookie: `token=${token}` },
     });
 
     expect(res.statusCode).toBe(200);
