@@ -48,7 +48,7 @@ jobs:
           curl -f http://localhost:5173 || (cat frontend.log && exit 1)
 
       - name: Run backend tests
-        run: npm run test -- --run --reporter=dot
+        run: pnpm -F @app/web test -- --run --reporter=dot
 
       - name: Comment on PR if failed
         if: ${{ failure() && github.event_name == 'pull_request' }}
