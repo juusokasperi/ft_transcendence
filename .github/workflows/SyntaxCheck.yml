@@ -17,6 +17,7 @@ jobs:
       contents: read
       pull-requests: write
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -28,25 +29,27 @@ jobs:
         with:
           node-version: 22.19.0
           cache: pnpm
-          cache-dependency-path: pnpm-lock.yaml
 
-      - name: Enable corepack & pin pnpm
-        run: |
-          corepack enable
-          corepack prepare pnpm@9.12.3 --activate
-          pnpm --version
+      - name: Setup pnpm 9.12.3
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9.12.3
+          run_install: true
 
       - name: Install dependencies (workspace)
         run: pnpm install --frozen-lockfile
 
       - name: Typecheck (all packages)
         run: pnpm run typecheck
+        # root script fans out: "pnpm -r --if-present typecheck"
 
-      - name: Lint (all packages)
+      - name: Lint (all packages with lint script)
         run: pnpm run lint
+        # root script fans out: "pnpm -r --if-present lint"
 
       - name: Check formatting
         run: pnpm run check-format
+        # root script runs Prettier in repo root
 
       - name: Comment on PR if failed
         if: ${{ failure() && github.event_name == 'pull_request' }}
@@ -58,6 +61,7 @@ jobs:
               core.info('No PR number found; skipping comment.');
               return;
             }
+            const failedSteps = context.runId; // simple link to run
             const body = [
               '**SyntaxCheck CI** failed for the monorepo.',
               `Commit: \`${process.env.GITHUB_SHA.slice(0,7)}\``,
