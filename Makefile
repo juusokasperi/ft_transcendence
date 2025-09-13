@@ -2,6 +2,13 @@
 NAME             = ft-transcendence-dev
 ROOT_COMPOSE     = -f docker-compose.yml
 
+# Env variables for docker services
+HOST_UID := $(shell id -u)
+HOST_GID := $(shell id -g)
+export HOST_UID
+export HOST_GID
+HELPER_IMAGE ?= alpine:3.20
+
 # Env files
 ENV_ROOT         = --env-file .env
 
@@ -54,7 +61,7 @@ help:
 # ========================
 #  Orchestration
 # ========================
-.PHONY: all up detached elk elk-detached down down-elk fclean re stop restart restart-elk restart-%
+.PHONY: all up detached elk elk-detached down clean-images fclean re stop restart restart-elk restart-%
 all: up
 
 up:
@@ -74,14 +81,32 @@ elk-detached:
 	docker compose -p $(NAME) --profile elk up --build -d
 
 down:
-	docker compose -p $(NAME) $(ROOT_COMPOSE) $(ENV_ROOT) --profile elk down --remove-orphans
+	docker compose -p $(NAME) $(ROOT_COMPOSE) $(ENV_ROOT) --profile elk down -v --remove-orphans
+
+clean-images:
+# If any stray containers from the helper image exist, remove them first
+	- docker ps -aq --filter "ancestor=$(HELPER_IMAGE)" | xargs -r docker rm -f
+# Remove the helper image itself
+	- docker image rm -f $(HELPER_IMAGE) 2>/dev/null || true
 
 fclean:
 	-$(MAKE) down
-	# Prune images/volumes tagged by either project label or dangling (best effort)
-	-docker system prune -a -f --volumes --filter "label=project=$(NAME)"
-	-docker system prune -a -f --volumes --filter "label=project=transcendence"
-	@if [ -d "./apps/backend/data" ]; then rm -rf ./apps/backend/data; fi
+# Hard-remove anything labeled to this compose project
+	-docker ps 				-aq --filter "label=com.docker.compose.project=$(NAME)" | xargs -r docker rm -f
+	-docker network ls -q --filter "label=com.docker.compose.project=$(NAME)" | xargs -r docker network rm
+	-docker volume ls  -q --filter "label=com.docker.compose.project=$(NAME)" | xargs -r docker volume rm
+	-docker image ls   -q --filter "label=com.docker.compose.project=$(NAME)" | xargs -r docker rmi -f
+
+# Remove a root-owned project-level pnpm store if present
+	@if [ -d ./.pnpm-store ]; then \
+	  docker run --rm -v "$$(pwd):/w" $(HELPER_IMAGE) sh -lc 'rm -rf /w/.pnpm-store || true'; \
+	fi
+
+# Nuke backend data (handles root-owned content without sudo)
+	@if [ -d "./apps/backend/data" ]; then \
+	  docker run --rm -v "$$(pwd)/apps/backend/data:/data" $(HELPER_IMAGE) sh -lc 'rm -rf /data/* /data/.[!.]* /data/..?*'; \
+	  rm -rf ./apps/backend/data; \
+	fi
 
 re: fclean up
 
