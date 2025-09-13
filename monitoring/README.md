@@ -29,5 +29,4 @@
 
 ### Grafana
 
-- TODO: set password
 - TODO: add premade dashboards
