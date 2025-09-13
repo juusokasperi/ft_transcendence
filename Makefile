@@ -162,6 +162,9 @@ restart-elk:
 	@echo ">> Restarting services in profile 'elk'"
 	docker compose -p $(NAME) --profile elk restart
 
+restart-mon:
+	docker compose -p $(NAME) --profile monitoring restart
+
 restart-%:
 	@echo ">> Restarting service '$*' (if present in any compose file)"
 	@if echo "$(SERVICES)" | grep -qw "$*"; then \
