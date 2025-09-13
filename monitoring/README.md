@@ -1,24 +1,33 @@
-## Getting data into Prometheus
+# Monitoring with Prometheus and Grafana
 
-### Nginx
+## How to use
+
+1. `make mon-detached`
+2. Go with browser to localhost:3002
+
+## Components:
+
+### Getting data into Prometheus
+
+#### Nginx
 
 - nginx-prometheus-exporter
 
-### Node, including SQLite
+#### Node, including SQLite
 
 - easier with fastify-metrics OR
 - prom-client directly, could also wrap database calls for more data...
 
-### Container resource usage
+#### Container resource usage
 
 - cadvisor
 
-### OS and hardware
+#### OS and hardware
 
 - Forget about this because we will not have root when deploying?
 - Node exporter https://github.com/prometheus/node_exporter
 
-## Grafana
+### Grafana
 
 - TODO: set password
 - TODO: add premade dashboards
