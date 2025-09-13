@@ -16,7 +16,9 @@
       "import": "./src/index.ts"
     }
   },
-  "files": ["src"],
+  "files": [
+    "src"
+  ],
   "scripts": {
     "build": "rimraf dist && tsc -b",
     "clean": "rimraf dist",

@@ -20,7 +20,9 @@
     "./ui/tailwind.css": "./src/client/ui/tailwind.css",
     "./register": "./src/client/babylon-register.ts"
   },
-  "files": ["src"],
+  "files": [
+    "src"
+  ],
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
