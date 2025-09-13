@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { useAppContext } from '../context/AppContext';
-import Cookies from 'js-cookie';
 
 const Confirmation = () => {
   const { confirmationToken } = useParams();
@@ -12,14 +11,7 @@ const Confirmation = () => {
     const confirmAccount = async () => {
       try {
         console.log(confirmationToken);
-        const response = await axios.post(`/api/signup/validate/${confirmationToken}`);
-
-        const data = response.data;
-
-        // Example: save JWT in localStorage
-        if (data?.token) {
-          Cookies.set('token', data?.token, { expires: 7, sameSite: 'Strict' });
-        }
+        await axios.post(`/api/signup/validate/${confirmationToken}`);
 
         setStatus('success');
 

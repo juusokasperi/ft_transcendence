@@ -1,13 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import AuthForm from '../components/AuthForm';
 import { useAppContext } from '../context/AppContext';
-import type { User } from '../types';
 import { toast } from 'react-hot-toast';
 import type { AxiosError } from 'axios';
 import type { AxiosResponse } from 'axios';
 
 const Registration: React.FC = () => {
-  const { axios, login, navigate, user } = useAppContext();
+  const { axios, navigate, user } = useAppContext();
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -31,17 +30,6 @@ const Registration: React.FC = () => {
         password: data.password,
       });
 
-      // If your server returns a token + user, you can auto-login:
-      const { token, user } = res.data as { token?: string; user?: User };
-
-      if (token && user) {
-        login(token);
-        toast.success('Account created and logged in');
-        navigate('/');
-        return;
-      }
-
-      // if server doesn't return token, fall back to showing success and asking user to login
       console.log(res.data.success);
       const axiosRes = res as AxiosResponse<{ success?: string }>;
       const msg = axiosRes.data.success;

@@ -27,8 +27,7 @@ const Friends: React.FC = () => {
   const [onlineFriends, setOnlineFriends] = useState<Friend[]>([]);
   const [offlineFriends, setOfflineFriends] = useState<Friend[]>([]);
 
-  const { axios, getToken } = useAppContext();
-  getToken; // avoid unused variable warning
+  const { axios } = useAppContext();
 
   // Add friend
   const handleAddFriend = async (e: React.FormEvent) => {

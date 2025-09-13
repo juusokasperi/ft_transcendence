@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { createTestDb, cleanupTestDb } from './setup.ts';
+import { createTestDb, cleanupTestDb } from '../../setup.ts';
 import type { Database } from 'better-sqlite3';
 
 describe('Friends Functions', () => {
@@ -8,7 +8,7 @@ describe('Friends Functions', () => {
   beforeEach(async () => {
     vi.resetModules();
     testDb = await createTestDb();
-    vi.doMock('../db/client.ts', () => ({
+    vi.doMock('../../../db/client.ts', () => ({
       default: testDb,
     }));
   });
@@ -20,13 +20,13 @@ describe('Friends Functions', () => {
   });
 
   it('Send a friendship request, check the pendings for both users', async () => {
-    const { addUser } = await import('../db/queries/users.ts');
+    const { addUser } = await import('../../../db/queries/users.ts');
     const {
       addFriend,
       getFriends,
       getPendingFriendRequestsSent,
       getPendingFriendRequestsReceived,
-    } = await import('../db/queries/friends.ts');
+    } = await import('../../../db/queries/friends.ts');
     const player1Id = 'uuid-1';
     const player2Id = 'uuid-2';
     addUser(player1Id, 'Joe', 'hashPass', 'test@mail.com');
@@ -58,8 +58,10 @@ describe('Friends Functions', () => {
   });
 
   it('Accept a friendship request', async () => {
-    const { addUser } = await import('../db/queries/users.ts');
-    const { addFriend, respondToFriendReq, getFriends } = await import('../db/queries/friends.ts');
+    const { addUser } = await import('../../../db/queries/users.ts');
+    const { addFriend, respondToFriendReq, getFriends } = await import(
+      '../../../db/queries/friends.ts'
+    );
     const player1Id = 'uuid-1';
     const player2Id = 'uuid-2';
     addUser(player1Id, 'Joe', 'hashPass', 'test@mail.com');
@@ -82,14 +84,14 @@ describe('Friends Functions', () => {
   });
 
   it('Decline a friendship request', async () => {
-    const { addUser } = await import('../db/queries/users.ts');
+    const { addUser } = await import('../../../db/queries/users.ts');
     const {
       addFriend,
       respondToFriendReq,
       getFriends,
       getPendingFriendRequestsReceived,
       getPendingFriendRequestsSent,
-    } = await import('../db/queries/friends.ts');
+    } = await import('../../../db/queries/friends.ts');
     const player1Id = 'uuid-1';
     const player2Id = 'uuid-2';
     addUser(player1Id, 'Joe', 'hashPass', 'test@mail.com');
@@ -120,9 +122,9 @@ describe('Friends Functions', () => {
   });
 
   it('Delete a friendship', async () => {
-    const { addUser } = await import('../db/queries/users.ts');
+    const { addUser } = await import('../../../db/queries/users.ts');
     const { addFriend, deleteFriend, respondToFriendReq, getFriends } = await import(
-      '../db/queries/friends.ts'
+      '../../../db/queries/friends.ts'
     );
     const player1Id = 'uuid-1';
     const player2Id = 'uuid-2';
@@ -156,14 +158,14 @@ describe('Friends Functions', () => {
   });
 
   it('Create a friendship between two users, check that uniqueness is enforced', async () => {
-    const { addUser } = await import('../db/queries/users.ts');
+    const { addUser } = await import('../../../db/queries/users.ts');
     const {
       addFriend,
       respondToFriendReq,
       getFriends,
       getPendingFriendRequestsSent,
       getPendingFriendRequestsReceived,
-    } = await import('../db/queries/friends.ts');
+    } = await import('../../../db/queries/friends.ts');
     const player1Id = 'uuid-1';
     const player2Id = 'uuid-2';
     addUser(player1Id, 'Joe', 'hashPass', 'test@mail.com');
@@ -194,9 +196,11 @@ describe('Friends Functions', () => {
   });
 
   it('Create a friendship between two users, delete the other user and check that the friendship gets deleted', async () => {
-    const { addUser } = await import('../db/queries/users.ts');
-    const { deleteUser } = await import('../db/queries/userDelete.ts');
-    const { addFriend, respondToFriendReq, getFriends } = await import('../db/queries/friends.ts');
+    const { addUser } = await import('../../../db/queries/users.ts');
+    const { deleteUser } = await import('../../../db/queries/userDelete.ts');
+    const { addFriend, respondToFriendReq, getFriends } = await import(
+      '../../../db/queries/friends.ts'
+    );
     const player1Id = 'uuid-1';
     const player2Id = 'uuid-2';
     addUser(player1Id, 'Joe', 'hashPass', 'test@mail.com');

@@ -88,14 +88,11 @@ export const loginSchema = {
     200: {
       type: 'object',
       properties: {
-        token: {
-          type: 'string',
-          description: 'JWT authentication token',
-        },
         user: {
           type: 'object',
           properties: {
             username: UsernameSchema,
+            uuid: UuidSchema, // might not be needed on frontend. Check.
             avatar: AvatarSchema,
           },
         },
