@@ -87,10 +87,7 @@ export function getUserByGoogleId(googleId: string): User | undefined {
 
 export function getUser(identifier: string): User | undefined {
   const user = db
-    .prepare(
-      `SELECT * FROM Users WHERE uuid = ? OR username = ? OR email = ?
-		`,
-    )
+    .prepare(`SELECT * FROM Users WHERE uuid = ? OR username = ? OR email = ?`)
     .get(identifier, identifier, identifier) as UserDb | null;
   if (!user) return undefined;
   return {

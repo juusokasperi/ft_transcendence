@@ -6,17 +6,22 @@ import { SECRET } from '../utils/config.ts';
 // and that the token is valid.
 export function authPreHandler(req: FastifyRequest, res: FastifyReply, done: Function): void {
   const authHeader = req.headers.authorization;
-  if (!authHeader || !authHeader.toLowerCase().startsWith('bearer ')) {
+  let token: string | undefined;
+  if (authHeader && authHeader.toLowerCase().startsWith('bearer ')) {
+    token = authHeader.split(' ')[1];
+  } else if (req.cookies?.token) {
+    token = req.cookies.token as string;
+  }
+  if (!token) {
     res.status(401).send({ message: 'Missing or invalid token' });
     return;
   }
-  const token = authHeader.replace('Bearer ', '');
   try {
     const payload = jwt.verify(token, SECRET); // (optionally: as any as JWTPayload)
     req.user = payload as any; // keep minimal; or type-narrow with your JWTPayload
     done();
   } catch {
-    res.status(401).send({ message: 'Invalid token' });
+    res.status(401).send({ message: 'Invalid or expired token' });
   }
 }
 

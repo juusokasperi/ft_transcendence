@@ -32,8 +32,14 @@ export async function loginRoutes(app: FastifyInstance) {
 
         const token = jwt.sign(userForToken, SECRET, { expiresIn: '4h' });
         // Does the front need UUID anymore?
+        res.setCookie('token', token, {
+          httpOnly: true,
+          sameSite: 'strict',
+          secure: process.env.NODE_ENV === 'production',
+          path: '/',
+          maxAge: 60 * 60 * 4, // 4h
+        });
         res.status(200).send({
-          token,
           user: {
             username: userInDb.username,
             uuid: userInDb.uuid,

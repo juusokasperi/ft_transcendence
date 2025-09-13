@@ -25,7 +25,7 @@ const Navbar = () => {
               Profile
             </Link>
             <button
-              onClick={logout}
+              onClick={async () => await logout()}
               className="rounded-md bg-gradient-to-r from-rose-600 to-red-600 px-4 py-2 text-sm font-semibold text-white shadow transition hover:from-rose-500 hover:to-red-500"
             >
               Logout
