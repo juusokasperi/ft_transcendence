@@ -18,6 +18,9 @@ If you play around and end up creating some nice dashboard, it can probably be e
 - Route everything through nginx, so no extra ports need to be exposed.
 - Start ELK stack first, so we dont miss logs from startup.
 - Persist data on bind mounts?
-- Create less privileged user?
+- Create less privileged user for Kibana?
 - Create nice premade dashboard.
 - Github Actions
+- Logstash filters
+- Data retention and archiving policies
+-
