@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
 
 type AccessibilitySettings = {
   colorBlindMode: 'none' | 'protanopia' | 'deuteranopia' | 'tritanopia' | 'highContrast';
@@ -75,35 +75,57 @@ const LocalGame: React.FC = () => {
 
     (async () => {
       // Lazy-load Babylon + host adapter only when starting the game
-      const { bootstrapPong } = await import('../../game/host/dom-embed');
-      if (cancelled) return;
-
-      const app = await bootstrapPong(canvasRef.current!);
-      appRef.current = app;
-    })().catch((e) => {
-      console.error('Failed to start Pong', e);
-      setIsPlaying(false);
-    });
+      //console.log('[LocalGame] Attempting to lazy-load Pong...');
+      try {
+        const { bootstrapPong } = await import('../../game/host/dom-embed');
+        if (cancelled) {
+          //console.log('[LocalGame] Cancelled before bootstrap.');
+          return;
+        }
+        //console.log('[LocalGame] bootstrapPong loaded, booting...');
+        const app = await bootstrapPong(canvasRef.current!);
+        appRef.current = app;
+        // Ensure keyboard input is captured without requiring a click
+        //requestAnimationFrame(() => canvasRef.current?.focus({ preventScroll: true }));
+        //console.log('[LocalGame] Pong booted:', app);
+      } catch (e) {
+        console.error('[LocalGame] Failed to start Pong', e);
+        setIsPlaying(false);
+      }
+    })();
 
     return () => {
       cancelled = true;
-      appRef.current?.destroy();
-      appRef.current = null;
+      if (appRef.current) {
+        //console.log('[LocalGame] Destroying Pong app...');
+        appRef.current.destroy();
+        appRef.current = null;
+      }
     };
+  }, [isPlaying]);
+
+  // Ensure the canvas has keyboard focus whenever play begins
+  useLayoutEffect(() => {
+    if (!isPlaying || !canvasRef.current) return;
+    requestAnimationFrame(() => canvasRef.current?.focus({ preventScroll: true }));
   }, [isPlaying]);
 
   // Button handlers
   const handlePlay = () => {
     // TODO: plumb `settings` into your render layer when exposed
+    //console.log('[LocalGame] Play button clicked. Settings:', settings);
     setIsPlaying(true);
   };
-  const handleQuit = () => setIsPlaying(false);
+  const handleQuit = () => {
+    //console.log('[LocalGame] Quit button clicked.');
+    setIsPlaying(false);
+  };
 
   // Playing view: fullscreen canvas + Quit
   if (isPlaying) {
     return (
       <div className="relative h-screen w-full bg-black">
-        <canvas ref={canvasRef} className="block h-full w-full" />
+        <canvas ref={canvasRef} className="block h-full w-full" tabIndex={0} />
         <button
           onClick={handleQuit}
           className="absolute right-4 top-4 rounded bg-white/10 px-4 py-2 text-sm font-semibold text-white backdrop-blur hover:bg-white/20"
