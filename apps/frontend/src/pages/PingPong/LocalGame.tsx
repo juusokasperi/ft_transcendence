@@ -27,18 +27,6 @@ const LocalGame: React.FC = () => {
 
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const appRef = useRef<{ destroy(): void } | null>(null);
-  const isMobileRef = useRef(false);
-  const skipRePushOnBackRef = useRef(false);
-
-  // Detect mobile-ish environment once (pointer:coarse or viewport < md)
-  useEffect(() => {
-    try {
-      const coarse = window.matchMedia?.('(pointer: coarse)').matches ?? false;
-      isMobileRef.current = coarse || window.innerWidth < 768;
-    } catch {
-      isMobileRef.current = false;
-    }
-  }, []);
 
   // Load settings from localStorage
   useEffect(() => {
@@ -134,29 +122,6 @@ const LocalGame: React.FC = () => {
     return () => document.body.classList.remove(cls);
   }, [isPlaying]);
 
-  // Mobile back button integration: when playing, push a dummy state so back closes the game
-  useEffect(() => {
-    if (!isPlaying || !isMobileRef.current) return;
-    const onPop = () => {
-      if (!isPlaying) return;
-      setIsPlaying(false);
-      if (skipRePushOnBackRef.current) {
-        // Pop caused by explicit quit; do not re-push
-        skipRePushOnBackRef.current = false;
-      } else {
-        // Keep user on page; next back will navigate out
-        try {
-          window.history.pushState({ __pongGame: true }, '', window.location.href);
-        } catch {}
-      }
-    };
-    try {
-      window.history.pushState({ __pongGame: true }, '', window.location.href);
-    } catch {}
-    window.addEventListener('popstate', onPop);
-    return () => window.removeEventListener('popstate', onPop);
-  }, [isPlaying]);
-
   // Button handlers
   const handlePlay = () => {
     // TODO: plumb `settings` into your render layer when exposed
@@ -164,17 +129,8 @@ const LocalGame: React.FC = () => {
     setIsPlaying(true);
   };
   const handleQuit = () => {
-    // On mobile, integrate with the browser back button
-    if (isMobileRef.current) {
-      skipRePushOnBackRef.current = true;
-      try {
-        window.history.back();
-      } catch {
-        setIsPlaying(false);
-      }
-    } else {
-      setIsPlaying(false);
-    }
+    //console.log('[LocalGame] Quit button clicked.');
+    setIsPlaying(false);
   };
 
   // Playing view: fullscreen canvas + Quit
@@ -190,7 +146,7 @@ const LocalGame: React.FC = () => {
         <button
           type="button"
           onClick={handleQuit}
-          className="game-quit-button absolute right-5 bottom-5 hidden min-[398px]:block"
+          className="game-quit-button absolute right-5 top-5"
           aria-label="Quit game"
         >
           Quit
