@@ -1,1 +1,25 @@
 @import 'tailwindcss';
+
+@layer components {
+  /* Root + overlay positioning */
+  .pong-hud-root {@apply pointer-events-none fixed inset-0 z-[1000];}
+  .pong-hud-overlay {@apply pointer-events-none absolute inset-0;}
+
+  /* Structure */
+  .pong-hud-wrap {@apply relative mx-auto mt-3 grid items-center gap-x-3 w-fit;}
+  .pong-hud-panel {@apply row-span-2 rounded-xl border border-white/12 bg-slate-900/60 backdrop-blur-md px-2 py-1 shadow-[0_8px_24px_rgba(0,0,0,0.38)];}
+  .pong-hud-name-row {@apply grid items-center gap-x-2 h-10;}
+  .pong-hud-orb {@apply w-[14px] h-[14px] rounded-full border border-white/20 bg-white/12 shadow-[0_0_0_1px_rgba(255,255,255,.06)];}
+  .pong-hud-orb-active {@apply bg-cyan-300 shadow-[0_0_10px_rgba(56,189,248,.85),0_0_2px_rgba(56,189,248,.9)] border-cyan-300/70;}
+  .pong-hud-name {@apply whitespace-nowrap px-[6px] text-[24px] md:text-[26px] leading-[1.05] font-semibold text-slate-100 select-none;}
+  .pong-hud-divider {@apply my-1 h-[3px] rounded-full bg-gradient-to-r from-cyan-300/80 via-sky-400/80 to-cyan-300/80 shadow-[0_0_12px_rgba(56,189,248,.35)];}
+  .pong-hud-right-row {@apply h-10 flex items-center gap-1 justify-start;}
+  .pong-hud-deuce {@apply col-span-2 justify-self-center mt-1 px-2 py-[2px] rounded-md bg-white/10 text-white/90 text-[11px] tracking-wider font-semibold uppercase border border-white/15 shadow-[0_6px_16px_rgba(0,0,0,.25)] transition-opacity;}
+
+  /* Score boxes */
+  .pong-hud-box {@apply w-9 h-9 rounded-md border border-white/10 grid place-items-center bg-white/5 text-white/90 text-[13px] font-extrabold tabular-nums select-none;}
+  .pong-hud-box-winner {@apply ring-1 ring-cyan-300/70 text-[16px] shadow-[0_0_0_1px_rgba(56,189,248,.35),0_0_18px_rgba(56,189,248,.25)] bg-white/10;}
+  .pong-hud-box-current {@apply ring-1 ring-white/30 shadow-[inset_0_0_0_1px_rgba(255,255,255,.05)] text-[24px] md:text-[26px] leading-[0.95];}
+}
+
+/* score flip animation removed */
