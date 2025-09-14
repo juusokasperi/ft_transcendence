@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // scripts/export-dockerfiles.mjs
-// Recursively snapshots all Dockerfile.dev files and the docker-compose.yml
-// at the (search) root into scripts/output/dockerfiles-and-compose.txt
+// Recursively snapshots all docker-compose files and Dockerfiles under the (search) root
+// into scripts/output/dockerfiles-and-compose.txt
 //
 // Usage:
 //   node scripts/export-dockerfiles.mjs
@@ -9,7 +9,7 @@
 //
 // Output format follows the other export scripts:
 // export-dockerfiles:
-//   found: <n>
+//   found: <n> (compose:<c>, dockerfiles:<d>)
 //   wrote: scripts/output/dockerfiles-and-compose.txt
 //   time: <secs>s
 //
@@ -37,8 +37,13 @@ const IGNORE_DIRS = new Set([
   'coverage',
   'tmp',
   'temp',
-  'log-management',
 ]);
+
+// Match common Compose filenames: compose.yml|yaml, docker-compose.yml|yaml, and their variants
+const COMPOSE_RE = /^(?:docker-)?compose(?:\.[\w.-]+)?\.(?:ya?ml)$/i;
+
+// Match Dockerfiles: Dockerfile, Dockerfile.dev, Dockerfile.prod, etc. (case-insensitive)
+const DOCKERFILE_RE = /^dockerfile(?:\.[\w.-]+)?$/i;
 
 function rel(p) {
   return path.relative(SEARCH_ROOT, p).split(path.sep).join('/');
@@ -58,7 +63,8 @@ async function* walk(dir) {
         yield* walk(full);
       }
     } else if (e.isFile()) {
-      if (e.name === 'Dockerfile.dev') {
+      const name = e.name;
+      if (COMPOSE_RE.test(name) || DOCKERFILE_RE.test(name)) {
         yield full;
       }
     }
@@ -66,33 +72,25 @@ async function* walk(dir) {
 }
 
 async function main() {
-  const files = [];
+  const composeFiles = [];
+  const dockerfiles = [];
 
-  // Add docker-compose.yml at the SEARCH_ROOT, if present
-  // Skip docker-compose.yml if the search root *is* the log-management directory
-  if (path.basename(SEARCH_ROOT) !== 'log-management') {
-    const composePath = path.join(SEARCH_ROOT, 'docker-compose.yml');
-    try {
-      const st = await fs.stat(composePath);
-      if (st.isFile()) files.push(composePath);
-    } catch {}
+  for await (const p of walk(SEARCH_ROOT)) {
+    const base = path.basename(p);
+    if (COMPOSE_RE.test(base)) composeFiles.push(p);
+    else if (DOCKERFILE_RE.test(base)) dockerfiles.push(p);
   }
 
-  for await (const p of walk(SEARCH_ROOT)) files.push(p);
-  // Sort for deterministic output: docker-compose first (if any), then Dockerfiles by path
-  files.sort((a, b) => {
-    const aIsCompose = path.basename(a) === 'docker-compose.yml';
-    const bIsCompose = path.basename(b) === 'docker-compose.yml';
-    if (aIsCompose && !bIsCompose) return -1;
-    if (!aIsCompose && bIsCompose) return 1;
-    return a.localeCompare(b);
-  });
+  // Sort for deterministic output: compose first (by path), then dockerfiles (by path)
+  composeFiles.sort((a, b) => a.localeCompare(b));
+  dockerfiles.sort((a, b) => a.localeCompare(b));
+  const files = [...composeFiles, ...dockerfiles];
 
   const header = [
-    '# docker snapshot',
+    '# docker files snapshot',
     `# Root: ${rel(SEARCH_ROOT) || '.'}`,
     `# Generated: ${new Date().toISOString()}`,
-    `# Total files: ${files.length}`,
+    `# Total files: ${files.length} (compose:${composeFiles.length}, dockerfiles:${dockerfiles.length})`,
     '',
   ].join('\n');
 
@@ -120,7 +118,7 @@ async function main() {
 
   const secs = ((Date.now() - START) / 1000).toFixed(2);
   console.log(
-    `${SCRIPT}:\n  found: ${files.length}\n  wrote: ${path.relative(ROOT, OUT_FILE)}\n  time: ${secs}s`,
+    `${SCRIPT}:\n  found: ${files.length} (compose:${composeFiles.length}, dockerfiles:${dockerfiles.length})\n  wrote: ${path.relative(ROOT, OUT_FILE)}\n  time: ${secs}s`,
   );
 }
 
