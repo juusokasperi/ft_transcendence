@@ -86,7 +86,7 @@ const LocalGame: React.FC = () => {
         const app = await bootstrapPong(canvasRef.current!);
         appRef.current = app;
         // Ensure keyboard input is captured without requiring a click
-      //requestAnimationFrame(() => canvasRef.current?.focus({ preventScroll: true }));
+        //requestAnimationFrame(() => canvasRef.current?.focus({ preventScroll: true }));
         //console.log('[LocalGame] Pong booted:', app);
       } catch (e) {
         console.error('[LocalGame] Failed to start Pong', e);
@@ -104,7 +104,7 @@ const LocalGame: React.FC = () => {
     };
   }, [isPlaying]);
 
-    // Ensure the canvas has keyboard focus whenever play begins
+  // Ensure the canvas has keyboard focus whenever play begins
   useLayoutEffect(() => {
     if (!isPlaying || !canvasRef.current) return;
     requestAnimationFrame(() => canvasRef.current?.focus({ preventScroll: true }));

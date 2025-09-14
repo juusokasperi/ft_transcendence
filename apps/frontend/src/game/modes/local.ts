@@ -220,7 +220,7 @@ export function createLocalApp(canvas: HTMLCanvasElement): PongInstance {
       //console.log('[LocalGame] start() called');
       //canvas.focus();
       //console.log('[LocalGame] Canvas focused:', document.activeElement === canvas);
-/*       if (document.activeElement !== canvas) {
+      /*       if (document.activeElement !== canvas) {
         console.warn('[LocalGame] Canvas is not focused. Keyboard controls will not work until you click inside the game area.');
       } */
       // Pre-roll: run serve selection FX, gate input, then arm opening serve.
