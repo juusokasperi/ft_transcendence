@@ -111,6 +111,17 @@ const LocalGame: React.FC = () => {
     requestAnimationFrame(() => canvasRef.current?.focus({ preventScroll: true }));
   }, [isPlaying]);
 
+  // Hide global navbar while playing (via body class)
+  useEffect(() => {
+    const cls = 'pong-playing';
+    if (isPlaying) {
+      document.body.classList.add(cls);
+    } else {
+      document.body.classList.remove(cls);
+    }
+    return () => document.body.classList.remove(cls);
+  }, [isPlaying]);
+
   // Button handlers
   const handlePlay = () => {
     // TODO: plumb `settings` into your render layer when exposed
