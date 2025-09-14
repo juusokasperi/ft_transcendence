@@ -2,7 +2,6 @@ import { Animation } from '@babylonjs/core/Animations/animation';
 import { CubicEase, EasingFunction } from '@babylonjs/core/Animations/easing';
 import type { Scene } from '@babylonjs/core/scene';
 import type { AbstractMesh } from '@babylonjs/core/Meshes/abstractMesh';
-import '@babylonjs/core/Animations/animatable'; // Nicolas, check here. If we remove we get "Uncaught TypeError: scene.beginAnimation is not a function... "
 
 /** One-off tween of mesh.position.z over `ms` milliseconds. */
 function animateZTo(

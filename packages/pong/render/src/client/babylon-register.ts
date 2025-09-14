@@ -5,6 +5,7 @@ import '@babylonjs/core/Materials/standardMaterial';
 import '@babylonjs/core/Materials/Textures/texture';
 import '@babylonjs/core/Rendering/geometryBufferRendererSceneComponent';
 import '@babylonjs/core/Rendering/outlineRenderer';
+import '@babylonjs/core/Animations/animatable';
 
 // Add the shader side-effect imports (only what we use)
 // Babylon.js 8 removed the `standard.*` shader pair in favor of `default.*`
