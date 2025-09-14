@@ -14,6 +14,9 @@ BUILDER ?= $(NAME)-builder
 # Env file passed to docker compose (keep secrets out of the Makefile)
 ENV_ROOT         = --env-file .env
 
+# Helper image for host filesystem cleanup
+CLEAN_HELPER_IMG ?= alpine:3.19
+
 # Known services (for helper targets)
 SERVICES         = deps frontend backend nginx elastic_cert_setup elasticsearch kibana kibana-post logstash
 
@@ -90,10 +93,14 @@ clean:
 	- docker image ls   -q  --filter "label=com.docker.compose.project=$(NAME)" | xargs -r docker rmi -f
 	@echo ">> Pruning UNUSED resources with this project label"
 	-$(MAKE) prune-label
-	@echo ">> Removing workspace-level package store (if present)"
-	@if [ -d ./.pnpm-store ]; then sudo rm -rf ./.pnpm-store; fi
-	@echo ">> Removing app data directory (if present)"
-	@if [ -d "./apps/backend/data" ]; then sudo rm -rf ./apps/backend/data; fi
+	@echo ">> Removing workspace-level package store and backend data via helper image ($(CLEAN_HELPER_IMG))"
+	@docker run --rm -v "$(CURDIR)":/work -w /work $(CLEAN_HELPER_IMG) \
+	  sh -c "\
+	    if [ -d ./.pnpm-store ]; then echo '>> Deleting ./.pnpm-store'; rm -rf ./.pnpm-store; fi; \
+	    if [ -d ./apps/backend/data ]; then echo '>> Deleting ./apps/backend/data'; rm -rf ./apps/backend/data; fi \
+	  "
+	@echo ">> Removing helper image ($(CLEAN_HELPER_IMG))"
+	- docker image rm -f $(CLEAN_HELPER_IMG) || true
 
 # 'fclean' = clean + remove per-project build cache & builder
 fclean:
