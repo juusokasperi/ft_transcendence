@@ -37,4 +37,3 @@
     return ctx;
   } as typeof HTMLCanvasElement.prototype.getContext;
 })();
-

@@ -137,12 +137,7 @@ const LocalGame: React.FC = () => {
   if (isPlaying) {
     return (
       <div className="relative h-screen w-full bg-black">
-        <canvas
-          ref={canvasRef}
-          className="block h-full w-full"
-          tabIndex={0}
-          autoFocus
-        />
+        <canvas ref={canvasRef} className="block h-full w-full" tabIndex={0} autoFocus />
         <button
           type="button"
           onClick={handleQuit}
@@ -150,7 +145,9 @@ const LocalGame: React.FC = () => {
           aria-label="Quit game"
         >
           Quit
-          <span aria-hidden className="game-quit-hover-text">Quit</span>
+          <span aria-hidden className="game-quit-hover-text">
+            Quit
+          </span>
         </button>
       </div>
     );
