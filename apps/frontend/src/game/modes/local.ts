@@ -112,9 +112,12 @@ export function createLocalApp(canvas: HTMLCanvasElement): PongInstance {
 
   // Input
   const detachInput = attachLocalInput(canvas);
+
+  // Ensure the canvas receives keyboard input immediately
+  canvas.focus({ preventScroll: true });
   window.addEventListener('keydown', (e) => {
     if (['z', 'w', 's', 'ArrowUp', 'ArrowDown'].includes(e.key)) {
-      console.log('[dbg] keydown:', e.key, 'activeElement=', document.activeElement?.tagName);
+      console.log('[LocalGame] keydown:', e.key, 'activeElement=', document.activeElement?.tagName);
     }
   });
   scene.onDisposeObservable.add(detachInput);
@@ -136,7 +139,10 @@ export function createLocalApp(canvas: HTMLCanvasElement): PongInstance {
       const dt = Math.min(0.05, dtMs / 1000);
 
       // 1) Input → paddles
-      state = stepPaddles(state, readIntent(), dt);
+      const intent = readIntent();
+      //console.log('[LocalGame] Intent:', intent, 'Before step:', state.paddles);
+      state = stepPaddles(state, intent, dt);
+      //console.log('[LocalGame] After step:', state.paddles);
 
       // 2) Physics/flow
       const prevPhase = state.phase;
@@ -195,8 +201,10 @@ export function createLocalApp(canvas: HTMLCanvasElement): PongInstance {
       applyFrameEvents(fx, stepped.events, ballY);
     },
   });
+  //console.log('[LocalGame] Lifecycle created:', loop);
 
-  const destroy = () =>
+  const destroy = () => {
+    //console.log('[LocalGame] Destroy called');
     disposeWorld({
       loop,
       world, // owns the Scene; disposes it
@@ -204,9 +212,17 @@ export function createLocalApp(canvas: HTMLCanvasElement): PongInstance {
       hud,
       engineDisposable,
     });
+    //console.log('[LocalGame] World disposed');
+  };
 
   return {
     start() {
+      //console.log('[LocalGame] start() called');
+      //canvas.focus();
+      //console.log('[LocalGame] Canvas focused:', document.activeElement === canvas);
+/*       if (document.activeElement !== canvas) {
+        console.warn('[LocalGame] Canvas is not focused. Keyboard controls will not work until you click inside the game area.');
+      } */
       // Pre-roll: run serve selection FX, gate input, then arm opening serve.
       void import('@pong/render').then(({ incHide }) => {
         incHide(ball.mesh);
