@@ -1,4 +1,6 @@
 // src/app/host/dom-embed.ts
+// Install the WebGL shim before Babylon registers/creates contexts.
+import './gl-shim';
 import '@pong/render/ui/tailwind.css';
 import '@pong/render/register';
 
