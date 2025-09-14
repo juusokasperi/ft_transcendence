@@ -144,10 +144,13 @@ const LocalGame: React.FC = () => {
           autoFocus
         />
         <button
+          type="button"
           onClick={handleQuit}
-          className="absolute right-20 top-20 rounded bg-white/10 px-4 py-2 text-sm font-semibold text-white backdrop-blur hover:bg-white/20"
+          className="game-quit-button absolute right-5 top-5"
+          aria-label="Quit game"
         >
           Quit
+          <span aria-hidden className="game-quit-hover-text">Quit</span>
         </button>
       </div>
     );

@@ -20,6 +20,48 @@
   .pong-hud-box {@apply w-9 h-9 rounded-md border border-white/10 grid place-items-center bg-white/5 text-white/90 text-[13px] font-extrabold tabular-nums select-none;}
   .pong-hud-box-winner {@apply ring-1 ring-cyan-300/70 text-[16px] shadow-[0_0_0_1px_rgba(56,189,248,.35),0_0_18px_rgba(56,189,248,.25)] bg-white/10;}
   .pong-hud-box-current {@apply ring-1 ring-white/30 shadow-[inset_0_0_0_1px_rgba(255,255,255,.05)] text-[24px] md:text-[26px] leading-[0.95];}
+
+  /* Game Quit Button (Uiverse-inspired outline hover) */
+  .game-quit-button {
+    /* reset */
+    margin: 1;
+    height: auto;
+    background: transparent;
+    padding: 0;
+    border: none;
+    cursor: pointer;
+
+    /* custom props */
+    --text-stroke-color: rgba(255, 255, 255, 0.6);
+    --animation-color: #d6271b;
+    --fs-size: 1.5em;
+
+    /* typography/appearance */
+    letter-spacing: 3px;
+    text-decoration: none;
+    font-size: var(--fs-size);
+    font-family: Arial, sans-serif;
+    position: relative;
+    text-transform: uppercase;
+    color: transparent;
+    -webkit-text-stroke: 1px var(--text-stroke-color);
+  }
+  .game-quit-hover-text {
+    position: absolute;
+    box-sizing: border-box;
+    color: var(--animation-color);
+    width: 0%;
+    inset: 0 0 0 0;
+    border-right: var(--border-right) solid var(--animation-color);
+    overflow: hidden;
+    transition: width 0.5s ease;
+    -webkit-text-stroke: 1px var(--animation-color);
+  }
+
+  .game-quit-button:hover .game-quit-hover-text {
+    width: 100%;
+    filter: drop-shadow(0 0 23px var(--animation-color));
+  }
 }
 
 /* score flip animation removed */
