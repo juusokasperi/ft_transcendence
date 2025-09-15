@@ -71,7 +71,10 @@ const OnlineGame: React.FC = () => {
   }, [serverUrl, matchId, seat]);
 
   const handleCreateLobby = () => clientRef.current?.createLobby();
-  const handleReady = () => lobbyId && clientRef.current?.setReady(lobbyId, true);
+  const handleReady = () => {
+    console.log('Ready clicked, lobbyId=', lobbyId);
+    lobbyId && clientRef.current?.setReady(lobbyId, true);
+  };
   const handleJoinLobby = () => {
     if (!joinLobbyId) return;
     clientRef.current?.acceptInvite(joinLobbyId);
@@ -88,7 +91,7 @@ const OnlineGame: React.FC = () => {
             <>
               <p>Lobby: {lobbyId}</p>
               <button onClick={handleReady} className="rounded border px-4 py-2">
-                Ready
+                Click me if you are Ready
               </button>
             </>
           ) : (

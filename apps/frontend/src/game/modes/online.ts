@@ -128,7 +128,7 @@ export function createOnlineApp(
   const hud = createScoreboard();
   hud.attachToCanvas(canvas);
 
-// Input
+  // Input
   const detachInput = attachLocalInput(canvas);
   const detachFocus = setupCanvasFocus(canvas);
 
@@ -136,7 +136,6 @@ export function createOnlineApp(
     detachInput();
     detachFocus();
   });
-
 
   // Names (you'll likely get these from the lobby/room)
   const names = { east: 'Magenta', west: 'Green' } as const;
