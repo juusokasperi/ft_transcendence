@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { createMatchmakingClient, type MatchmakingMessage } from '../../services/matchmaking';
+import type { PlayerSeat } from '@pong/render';
 
 const OnlineGame: React.FC = () => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -12,6 +13,10 @@ const OnlineGame: React.FC = () => {
     'connecting',
   );
 
+  const [serverUrl, setServerUrl] = useState('');
+  const [matchId, setMatchId] = useState('');
+  const [seat, setSeat] = useState<PlayerSeat>('P1');
+
   useEffect(() => {
     const client = createMatchmakingClient((msg: MatchmakingMessage) => {
       switch (msg.type) {
@@ -23,8 +28,12 @@ const OnlineGame: React.FC = () => {
           setLobbyId(msg.lobbyId);
           setStatus('lobby');
           break;
-        case 'lobbyReady':
+        case 'matchFound':
+          setServerUrl(msg.gameServerUrl);
+          setMatchId(msg.matchId);
+          setSeat(msg.seat);
           setStatus('starting');
+          client.socket.close();
           break;
       }
     });
@@ -40,7 +49,11 @@ const OnlineGame: React.FC = () => {
       try {
         const { bootstrapOnlinePong } = await import('../../game/host/online-embed');
         if (cancelled) return;
-        const app = await bootstrapOnlinePong(canvasRef.current!);
+        const app = await bootstrapOnlinePong(canvasRef.current!, {
+          serverUrl,
+          matchId,
+          seat,
+        });
         appRef.current = app;
         setStatus('playing');
       } catch (e) {
@@ -53,7 +66,7 @@ const OnlineGame: React.FC = () => {
       appRef.current?.destroy();
       appRef.current = null;
     };
-  }, [status]);
+  }, [status, serverUrl, matchId, seat]);
 
   const handleCreateLobby = () => clientRef.current?.createLobby();
   const handleReady = () => lobbyId && clientRef.current?.setReady(lobbyId, true);
