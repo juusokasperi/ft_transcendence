@@ -1,0 +1,106 @@
+{
+  "id": null,
+  "title": "Nginx Exporter Overview",
+  "tags": ["nginx", "prometheus"],
+  "timezone": "browser",
+  "schemaVersion": 36,
+  "version": 1,
+  "refresh": "30s",
+  "panels": [
+    {
+      "type": "stat",
+      "title": "Active Connections",
+      "targets": [
+        {
+          "expr": "nginx_connections_active",
+          "legendFormat": "active"
+        }
+      ],
+      "gridPos": { "x": 0, "y": 0, "w": 6, "h": 4 }
+    },
+    {
+      "type": "graph",
+      "title": "Accepted vs Handled Connections",
+      "targets": [
+        {
+          "expr": "irate(nginx_connections_accepted[5m])",
+          "legendFormat": "accepted"
+        },
+        {
+          "expr": "irate(nginx_connections_handled[5m])",
+          "legendFormat": "handled"
+        }
+      ],
+      "gridPos": { "x": 6, "y": 0, "w": 12, "h": 8 }
+    },
+    {
+      "type": "graph",
+      "title": "Requests Rate",
+      "targets": [
+        {
+          "expr": "irate(nginx_http_requests_total[5m])",
+          "legendFormat": "requests"
+        }
+      ],
+      "gridPos": { "x": 0, "y": 4, "w": 12, "h": 8 }
+    },
+    {
+      "type": "graph",
+      "title": "Bytes Sent",
+      "targets": [
+        {
+          "expr": "irate(nginx_http_response_bytes_total[5m])",
+          "legendFormat": "bytes sent"
+        }
+      ],
+      "gridPos": { "x": 12, "y": 8, "w": 12, "h": 8 }
+    },
+    {
+      "type": "graph",
+      "title": "Error Rate (4xx / 5xx)",
+      "targets": [
+        {
+          "expr": "irate(nginx_http_requests_total{status=~\"4..\"}[5m])",
+          "legendFormat": "4xx"
+        },
+        {
+          "expr": "irate(nginx_http_requests_total{status=~\"5..\"}[5m])",
+          "legendFormat": "5xx"
+        }
+      ],
+      "gridPos": { "x": 0, "y": 12, "w": 12, "h": 8 }
+    },
+    {
+      "type": "graph",
+      "title": "Connection States",
+      "targets": [
+        {
+          "expr": "nginx_connections_reading",
+          "legendFormat": "reading"
+        },
+        {
+          "expr": "nginx_connections_writing",
+          "legendFormat": "writing"
+        },
+        {
+          "expr": "nginx_connections_waiting",
+          "legendFormat": "waiting"
+        }
+      ],
+      "gridPos": { "x": 12, "y": 12, "w": 12, "h": 8 }
+    }
+  ],
+  "templating": {
+    "list": [
+      {
+        "name": "job",
+        "type": "query",
+        "datasource": "Prometheus",
+        "query": "label_values(nginx_connections_active, job)",
+        "refresh": 1,
+        "includeAll": true,
+        "multi": true
+      }
+    ]
+  }
+}
