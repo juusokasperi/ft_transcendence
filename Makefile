@@ -6,7 +6,7 @@ ROOT_COMPOSE     = -f docker-compose.yml
 ENV_ROOT         = --env-file .env
 
 # Known services (for helper targets)
-SERVICES         = deps frontend backend nginx elastic_cert_setup elasticsearch kibana kibana-post logstash
+SERVICES         = deps frontend backend nginx elastic_cert_setup elasticsearch kibana kibana-post logstash game-server matchmaking
 
 # Ensure required bind-mount directories exist
 define ensure_dirs
