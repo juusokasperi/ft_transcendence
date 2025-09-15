@@ -3,8 +3,12 @@ NAME             = ft-transcendence-dev
 ROOT_COMPOSE     = -f docker-compose.yml
 
 # No user-mapping variables needed anymore; volumes are cleaned by helper image
+# Node/pnpm strategy:
+# - All pnpm commands run inside containers via Corepack (use `corepack pnpm`).
+# - No global Corepack symlinks; we prefer a writable COREPACK_HOME inside containers.
+# - The `deps` service installs workspace deps and builds libs; other services depend on it.
 
-# Buildx (Option A: per-project builder)
+# Buildx (per-project builder)
 BUILDER ?= $(NAME)-builder
 
 # Env file passed to docker compose (keep secrets out of the Makefile)
@@ -37,7 +41,7 @@ endef
 # ========================
 #  Orchestration
 # ========================
-.PHONY: all up detached elk elk-detached down down-elk clean prune-label nuke check-leftovers fclean re stop restart restart-elk restart-% builder-init builder-use builder-prune builder-rm check-leftovers-global
+.PHONY: all up detached elk elk-detached down down-elk clean prune-label nuke check-leftovers fclean re stop restart restart-elk restart-% builder-init builder-use builder-prune builder-rm check-leftovers-global overview-docker
 all: up
 
 up:
@@ -89,12 +93,25 @@ clean:
 	- docker image ls   -q  --filter "label=com.docker.compose.project=$(NAME)" | xargs -r docker rmi -f
 	@echo ">> Pruning UNUSED resources with this project label"
 	-$(MAKE) prune-label
-	@echo ">> Removing workspace-level package store and backend data via helper image ($(CLEAN_HELPER_IMG))"
+	@echo ">> Removing workspace artifacts via helper image ($(CLEAN_HELPER_IMG))"
 	@docker run --rm -v "$(CURDIR)":/work -w /work $(CLEAN_HELPER_IMG) \
 	  sh -c "\
 	    if [ -d ./.pnpm-store ]; then echo '>> Deleting ./.pnpm-store'; rm -rf ./.pnpm-store; fi; \
-	    if [ -d ./apps/backend/data ]; then echo '>> Deleting ./apps/backend/data'; rm -rf ./apps/backend/data; fi \
+	    if [ -d ./apps/backend/data ]; then echo '>> Deleting ./apps/backend/data'; rm -rf ./apps/backend/data; fi; \
+	    if [ -d ./apps/frontend/.vite ]; then echo '>> Deleting ./apps/frontend/.vite'; rm -rf ./apps/frontend/.vite; fi; \
+	    if [ -d ./packages/pong/game-logic/dist ]; then echo '>> Deleting ./packages/pong/game-logic/dist'; rm -rf ./packages/pong/game-logic/dist; fi; \
+	    if [ -d ./packages/pong/game-logic/node_modules ]; then echo '>> Deleting ./packages/pong/game-logic/node_modules'; rm -rf ./packages/pong/game-logic/node_modules; fi; \
+	    if [ -d ./packages/pong/render/dist ]; then echo '>> Deleting ./packages/pong/render/dist'; rm -rf ./packages/pong/render/dist; fi; \
+	    if [ -d ./packages/pong/shared/dist ]; then echo '>> Deleting ./packages/pong/shared/dist'; rm -rf ./packages/pong/shared/dist; fi \
 	  "
+	@echo ">> Removing additional workspace artifacts (host)"
+	@if [ -d ./apps/backend/node_modules ]; then echo '>> Deleting ./apps/backend/node_modules'; rm -rf ./apps/backend/node_modules; fi
+	@if [ -d ./apps/frontend/node_modules ]; then echo '>> Deleting ./apps/frontend/node_modules'; rm -rf ./apps/frontend/node_modules; fi
+	@if [ -d ./node_modules ]; then echo '>> Deleting ./node_modules'; rm -rf ./node_modules; fi
+	@if [ -f ./packages/pong/game-logic/tsconfig.tsbuildinfo ]; then echo '>> Deleting ./packages/pong/game-logic/tsconfig.tsbuildinfo'; rm -f ./packages/pong/game-logic/tsconfig.tsbuildinfo; fi
+	@if [ -d ./packages/pong/render/node_modules ]; then echo '>> Deleting ./packages/pong/render/node_modules'; rm -rf ./packages/pong/render/node_modules; fi
+	@if [ -f ./packages/pong/render/tsconfig.tsbuildinfo ]; then echo '>> Deleting ./packages/pong/render/tsconfig.tsbuildinfo'; rm -f ./packages/pong/render/tsconfig.tsbuildinfo; fi
+	@if [ -f ./packages/pong/shared/tsconfig.tsbuildinfo ]; then echo '>> Deleting ./packages/pong/shared/tsconfig.tsbuildinfo'; rm -f ./packages/pong/shared/tsconfig.tsbuildinfo; fi
 	@echo ">> Removing helper image ($(CLEAN_HELPER_IMG))"
 	- docker image rm -f $(CLEAN_HELPER_IMG) || true
 
@@ -175,16 +192,8 @@ nuke:
 	@echo ">> GLOBAL builder prune: docker builder prune -af"
 	- docker builder prune -af
 
-check-leftovers:
-	@echo ">> Remaining resources labeled to this project (if any)"
-	- docker ps -a      --filter "label=com.docker.compose.project=$(NAME)"
-	- docker image ls --format '{{.Repository}}\t{{.Tag}}\t{{.ID}}\t{{.CreatedSince}}' | awk -v p='$(NAME)-' '$$1 ~ p'
-	- docker network ls --filter "label=com.docker.compose.project=$(NAME)"
-	- docker volume ls  --filter "label=com.docker.compose.project=$(NAME)"
-	- docker buildx du  --builder $(BUILDER) --verbose
-
-# Global overview of all Docker resources and Buildx caches 
-check-leftovers-global:
+# Global overview of all Docker resources and Buildx caches
+overview-docker:
 	@echo ">> GLOBAL: docker system df -v (disk usage overview)"
 	- docker system df -v
 	@echo ">> GLOBAL: All containers (any project)"
@@ -195,17 +204,6 @@ check-leftovers-global:
 	- docker network ls
 	@echo ">> GLOBAL: All volumes"
 	- docker volume ls
-	@echo ">> GLOBAL: Buildx cache usage for all builders"
-	- sh -c '\
-	  builders=$$(docker buildx ls | tail -n +2 | awk "{print $$1}" | cut -d"/" -f1 | sort -u); \
-	  if [ -z "$$builders" ]; then \
-	    echo "(no buildx builders found)"; \
-	  else \
-	    for b in $$builders; do \
-	      echo "-- Builder: $$b"; \
-	      docker buildx du --builder "$$b" --verbose || true; \
-	    done; \
-	  fi'
 
 # --------------------------
 # Default target: show usage
@@ -224,8 +222,7 @@ help:
 	@echo "  make re                   # fclean + up"
 	@echo "  make prune-label          # Prune UNUSED resources with this project's label"
 	@echo "  make nuke CONFIRM=1       # GLOBAL prune of ALL UNUSED Docker data (+builder cache)"
-	@echo "  make check-leftovers      # Show remaining labeled resources"
-	@echo "  make check-leftovers-global # Show ALL Docker resources on this machine"
+	@echo "  overview-docker           # Show ALL Docker resources on this machine"
 	@echo ""
 	@echo "Build cache (Option A - per-project builder):"
 	@echo "  make builder-init         # Create/select the per-project buildx builder"
@@ -290,41 +287,41 @@ bash-%:
 	fi
 
 # ========================
-#  Repo tasks (pnpm via deps svc)
+#  Repo tasks (pnpm via deps svc; no host pnpm needed)
 # ========================
 .PHONY: pnpm-install build typecheck lint fmt-check fmt test migrate db-reset
 
 pnpm-install:
 	@echo ">> Running pnpm install in 'deps' container"
-	docker compose -p $(NAME) run --rm deps bash -lc "corepack enable && corepack prepare pnpm@9.12.3 --activate && pnpm install --frozen-lockfile"
+	docker compose -p $(NAME) run --rm deps bash -lc "COREPACK_ENABLE_DOWNLOAD_PROMPT=0 COREPACK_HOME=/tmp/corepack corepack pnpm install --frozen-lockfile"
 
 build:
 	@echo ">> Running pnpm build via 'deps' container"
-	docker compose -p $(NAME) run --rm deps bash -lc "corepack enable && corepack prepare pnpm@9.12.3 --activate && pnpm run build"
+	docker compose -p $(NAME) run --rm deps bash -lc "COREPACK_ENABLE_DOWNLOAD_PROMPT=0 COREPACK_HOME=/tmp/corepack corepack pnpm run build"
 
 typecheck:
 	@echo ">> Type checking all packages via 'deps' container"
-	docker compose -p $(NAME) run --rm deps bash -lc "corepack enable && corepack prepare pnpm@9.12.3 --activate && pnpm run typecheck"
+	docker compose -p $(NAME) run --rm deps bash -lc "COREPACK_ENABLE_DOWNLOAD_PROMPT=0 COREPACK_HOME=/tmp/corepack corepack pnpm run typecheck"
 
 lint:
 	@echo ">> Linting all packages via 'deps' container"
-	docker compose -p $(NAME) run --rm deps bash -lc "corepack enable && corepack prepare pnpm@9.12.3 --activate && pnpm run lint"
+	docker compose -p $(NAME) run --rm deps bash -lc "COREPACK_ENABLE_DOWNLOAD_PROMPT=0 COREPACK_HOME=/tmp/corepack corepack pnpm run lint"
 
 fmt-check:
 	@echo ">> Prettier check via 'deps' container"
-	docker compose -p $(NAME) run --rm deps bash -lc "corepack enable && corepack prepare pnpm@9.12.3 --activate && pnpm run check-format"
+	docker compose -p $(NAME) run --rm deps bash -lc "COREPACK_ENABLE_DOWNLOAD_PROMPT=0 COREPACK_HOME=/tmp/corepack corepack pnpm run check-format"
 
 fmt:
 	@echo ">> Prettier write via 'deps' container"
-	docker compose -p $(NAME) run --rm deps bash -lc "corepack enable && corepack prepare pnpm@9.12.3 --activate && pnpm run fix-format"
+	docker compose -p $(NAME) run --rm deps bash -lc "COREPACK_ENABLE_DOWNLOAD_PROMPT=0 COREPACK_HOME=/tmp/corepack corepack pnpm run fix-format"
 
 test:
 	@echo ">> Running tests via 'deps' container"
-	docker compose -p $(NAME) run --rm deps bash -lc "corepack enable && corepack prepare pnpm@9.12.3 --activate && pnpm test"
+	docker compose -p $(NAME) run --rm deps bash -lc "COREPACK_ENABLE_DOWNLOAD_PROMPT=0 COREPACK_HOME=/tmp/corepack corepack pnpm test"
 
 migrate:
 	@echo ">> Running backend migrations"
-	docker compose -p $(NAME) run --rm backend bash -lc "pnpm migrate"
+	docker compose -p $(NAME) run --rm backend bash -lc "COREPACK_ENABLE_DOWNLOAD_PROMPT=0 COREPACK_HOME=/tmp/corepack corepack pnpm migrate"
 
 db-reset:
 	@echo ">> Removing app data directory (if present)"

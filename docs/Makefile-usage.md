@@ -1,6 +1,6 @@
 # Makefile Guide
 
-This Makefile wraps Docker Compose and Buildx to run the full dev stack consistently. It does not require Node on the host; everything runs in containers.
+This Makefile wraps Docker Compose and Buildx to run the dev stack. No host Node/pnpm is required; everything runs in containers via Corepack.
 
 ## Prerequisites
 
@@ -20,6 +20,8 @@ Default ports (overridable via `.env`):
 - Frontend: `FRONTEND_PORT` (default 5173)
 - Backend: `BACKEND_PORT` (default 3001)
 - Nginx proxy: `NGINX_PORT` (default 8080)
+
+First run: the `deps` service installs workspace dependencies with `corepack pnpm` and builds shared libs before frontend/backend start. Subsequent runs reuse volumes and are faster.
 
 ## ELK Profile (optional)
 
@@ -56,6 +58,8 @@ Default ports (overridable via `.env`):
   - `make prune-label`
 - Show remaining project‑labeled resources:
   - `make check-leftovers`
+- Global Docker/Buildx overview (all projects):
+  - `make overview-docker`
 - Global prune of ALL UNUSED Docker data (dangerous if you have other projects):
   - `make nuke CONFIRM=1`
 
