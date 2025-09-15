@@ -12,8 +12,13 @@ export async function createPongApp({ mode, canvas }: CreateAppOptions) {
     const { createLocalApp } = await import('./modes/local');
     return createLocalApp(canvas);
   }
+
+  if (mode === 'online') {
+    const { createOnlineApp } = await import('./modes/online');
+    return createOnlineApp(canvas);
+  }
+
   // Stubs for future steps:
-  if (mode === 'online') throw new Error('online mode not implemented yet');
   if (mode === 'tournament') throw new Error('tournament mode not implemented yet');
   throw new Error(`Unknown mode: ${mode}`);
 }
