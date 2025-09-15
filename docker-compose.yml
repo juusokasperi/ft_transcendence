@@ -20,12 +20,12 @@ services:
       PNPM_STORE_DIR: /pnpm/store
       TMPDIR: /tmp
       COREPACK_ENABLE_DOWNLOAD_PROMPT: "0"
+      COREPACK_HOME: /tmp/corepack
     command: >
       bash -lc "
-        corepack enable &&
-        corepack prepare pnpm@9.12.3 --activate &&
-        pnpm install --frozen-lockfile &&
-        pnpm run --if-present build:libs
+        corepack pnpm --version &&
+        corepack pnpm install --frozen-lockfile &&
+        corepack pnpm run --if-present build:libs
       "
     volumes:
       - .:/work:cached
@@ -45,7 +45,9 @@ services:
       PNPM_STORE_DIR: /pnpm/store
       CHOKIDAR_USEPOLLING: "true"
       WATCHPACK_POLLING: "true"
-    command: bash -lc "corepack enable && corepack prepare pnpm@9.12.3 --activate && pnpm dev"
+      COREPACK_ENABLE_DOWNLOAD_PROMPT: "0"
+      COREPACK_HOME: /tmp/corepack
+    command: bash -lc "corepack pnpm dev"
     depends_on:
       deps:
         condition: service_completed_successfully
@@ -56,6 +58,7 @@ services:
       - pnpm-store:/pnpm/store
       - node_modules:/work/node_modules:ro
       - frontend_node_modules:/work/apps/frontend/node_modules
+      - render_node_modules:/work/packages/pong/render/node_modules:ro
     networks: [devnet]
     logging: # needed for logstash (ELK stack)
       driver: gelf
@@ -65,7 +68,6 @@ services:
   # 3) Backend (Fastify + tsx watch)
   backend:
     image: node:22-bookworm
-    user: "${HOST_UID:-1000}:${HOST_GID:-1000}"
     init: true
     working_dir: /work/apps/backend
     env_file:
@@ -73,7 +75,9 @@ services:
     environment:
       PNPM_STORE_DIR: /pnpm/store
       CHOKIDAR_USEPOLLING: "true"
-    command: bash -lc "corepack enable && corepack prepare pnpm@9.12.3 --activate && pnpm dev"
+      COREPACK_ENABLE_DOWNLOAD_PROMPT: "0"
+      COREPACK_HOME: /tmp/corepack
+    command: bash -lc "corepack pnpm dev"
     depends_on:
       deps:
         condition: service_completed_successfully
