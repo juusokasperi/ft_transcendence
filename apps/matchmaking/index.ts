@@ -1,4 +1,4 @@
-import { WebSocketServer, type WebSocket } from 'ws';
+import { WebSocketServer, type WebSocket, type RawData } from 'ws';
 import { v4 as uuid } from 'uuid';
 import dotenv from 'dotenv';
 
@@ -75,14 +75,14 @@ function log(...args: any[]) {
 console.log(`Matchmaking WebSocket server listening on ${PORT}`);
 log(`Server started on port ${PORT}`);
 
-wss.on('connection', (socket) => {
+wss.on('connection', (socket: WebSocket) => {
   const id = uuid();
   const client: ClientInfo = { id, socket, ready: false };
   clients.set(id, client);
   log(`Client connected: ${id}`);
   socket.send(JSON.stringify({ type: 'connected', clientId: id }));
 
-  socket.on('message', (raw) => {
+  socket.on('message', (raw: RawData) => {
     let data: any;
     try {
       data = JSON.parse(raw.toString());

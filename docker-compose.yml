@@ -116,7 +116,7 @@ services:
     init: true
     working_dir: /work/apps/matchmaking
     env_file:
-      - ./apps/matchmaking/.env
+      - .env
     environment:
       PNPM_STORE_DIR: /pnpm/store
       CHOKIDAR_USEPOLLING: "true"
@@ -132,6 +132,11 @@ services:
       deps:
         condition: service_completed_successfully
     networks: [devnet]
+    #logging: # needed for logstash (ELK stack) #Ask Leon about this
+      #driver: gelf
+      #options:
+        #gelf-address: udp://localhost:12201
+
 
 
 include:
