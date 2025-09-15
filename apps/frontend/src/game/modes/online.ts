@@ -30,81 +30,54 @@ type OnlineClient = {
 };
 
 // Resolve this with your WebSocket/RTC layer.
-async function connectOnline(): Promise<OnlineClient> {
-  //throw new Error('connectOnline(): wire your transport here');
-  // 1. Connect to matchmaking service and wait for a match.
-  const matchmakingUrl = 'ws://localhost:4242'; // your matchmaking WS URL here
-
-  const matchmaking = new WebSocket(matchmakingUrl);
+async function connectOnline(cfg: {
+  serverUrl: string;
+  matchId: string;
+  seat: PlayerSeat;
+}): Promise<OnlineClient> {
+  const { serverUrl, matchId, seat } = cfg;
+  const gameWs = new WebSocket(`${serverUrl}/${matchId}?seat=${seat}`);
 
   return await new Promise<OnlineClient>((resolve, reject) => {
-    matchmaking.addEventListener('error', (err) => {
-      reject(err);
-    });
+    gameWs.addEventListener('error', (err) => reject(err));
 
-    matchmaking.addEventListener('message', (event) => {
-      try {
-        const msg = JSON.parse(event.data as string) as {
-          type: string;
-          gameServerUrl: string;
-          matchId: string;
-          seat: PlayerSeat;
-        };
+    gameWs.addEventListener('open', () => {
+      const snapshotListeners = new Set<(s: GameState, ev: FrameEvents) => void>();
+      const opponentAxisListeners = new Set<(axis: number) => void>();
 
-        if (msg.type !== 'matchFound') return;
+      gameWs.addEventListener('message', (ev) => {
+        const data = JSON.parse(ev.data as string) as any;
+        switch (data.type) {
+          case 'snapshot':
+            snapshotListeners.forEach((cb) => cb(data.state, data.events));
+            break;
+          case 'opponentAxis':
+            opponentAxisListeners.forEach((cb) => cb(data.axis));
+            break;
+          default:
+            break;
+        }
+      });
 
-        const { gameServerUrl, matchId, seat } = msg;
-        matchmaking.close();
+      const client: OnlineClient = {
+        mySeat: seat,
+        onSnapshot(cb) {
+          snapshotListeners.add(cb);
+        },
+        onOpponentAxis(cb) {
+          opponentAxisListeners.add(cb);
+        },
+        sendLocalAxis(axis: number) {
+          if (gameWs.readyState === WebSocket.OPEN) {
+            gameWs.send(JSON.stringify({ type: 'axis', axis }));
+          }
+        },
+        disconnect() {
+          gameWs.close();
+        },
+      };
 
-        // 4. Connect to the game server for this match.
-        const gameWs = new WebSocket(`${gameServerUrl}/${matchId}`);
-
-        gameWs.addEventListener('error', (err) => reject(err));
-
-        gameWs.addEventListener('open', () => {
-          const snapshotListeners = new Set<
-            (s: GameState, ev: FrameEvents) => void
-          >();
-          const opponentAxisListeners = new Set<(axis: number) => void>();
-
-          gameWs.addEventListener('message', (ev) => {
-            const data = JSON.parse(ev.data as string) as any;
-            switch (data.type) {
-              case 'snapshot':
-                snapshotListeners.forEach((cb) => cb(data.state, data.events));
-                break;
-              case 'opponentAxis':
-                opponentAxisListeners.forEach((cb) => cb(data.axis));
-                break;
-              default:
-                break;
-            }
-          });
-
-          const client: OnlineClient = {
-            mySeat: seat,
-            onSnapshot(cb) {
-              snapshotListeners.add(cb);
-            },
-            onOpponentAxis(cb) {
-              opponentAxisListeners.add(cb);
-            },
-            sendLocalAxis(axis: number) {
-              if (gameWs.readyState === WebSocket.OPEN) {
-                const payload = JSON.stringify({ type: 'axis', axis });
-                gameWs.send(payload);
-              }
-            },
-            disconnect() {
-              gameWs.close();
-            },
-          };
-
-          resolve(client);
-        });
-      } catch (e) {
-        reject(e);
-      }
+      resolve(client);
     });
   });
 }
@@ -122,7 +95,10 @@ interface PongInstance {
  * - snapshots/events downlink
  * - optional interpolation (kept tiny here)
  */
-export function createOnlineApp(canvas: HTMLCanvasElement): PongInstance {
+export function createOnlineApp(
+  canvas: HTMLCanvasElement,
+  cfg: { serverUrl: string; matchId: string; seat: PlayerSeat },
+): PongInstance {
   canvas.tabIndex = 1;
 
   // Engine/scene/world (identical to local)
@@ -235,7 +211,7 @@ export function createOnlineApp(canvas: HTMLCanvasElement): PongInstance {
     // Gate local input briefly to match your local intro FX pacing.
     blockInputFor(SERVE_SELECT_TOTAL_MS + 200);
 
-    net = await connectOnline();
+    net = await connectOnline(cfg);
     mySeat = net.mySeat;
 
     net.onOpponentAxis((axis) => {
