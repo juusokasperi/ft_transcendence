@@ -38,6 +38,8 @@ services:
       - ./grafana/datasources.yaml:/etc/grafana/provisioning/datasources/prometheus.yaml
       - ./grafana/dashboards-nginx.yaml:/etc/grafana/provisioning/dashboards/dashboards-nginx.yaml
       - ./grafana/dashboards/nginx:/etc/grafana/dashboards/nginx
+      - ./grafana/dashboards-cadvisor.yaml:/etc/grafana/provisioning/dashboards/dashboards-cadvisor.yaml
+      - ./grafana/dashboards/cadvisor:/etc/grafana/dashboards/cadvisor
 
     networks:
       - devnet

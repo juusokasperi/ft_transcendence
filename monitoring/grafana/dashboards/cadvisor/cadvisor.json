@@ -1,0 +1,90 @@
+{
+  "id": null,
+  "title": "cAdvisor (restricted)",
+  "tags": ["cadvisor", "docker"],
+  "timezone": "browser",
+  "schemaVersion": 36,
+  "version": 2,
+  "refresh": "30s",
+  "panels": [
+    {
+      "type": "graph",
+      "title": "Container CPU Usage (%)",
+      "targets": [
+        {
+          "expr": "rate(container_cpu_usage_seconds_total{image!=\"\"}[5m]) * 100",
+          "legendFormat": "{{ name }}"
+        }
+      ],
+      "lines": true,
+      "linewidth": 2,
+      "gridPos": { "x": 0, "y": 0, "w": 12, "h": 8 }
+    },
+    {
+      "type": "graph",
+      "title": "Total CPU Usage (%)",
+      "targets": [
+        {
+          "expr": "sum(rate(container_cpu_usage_seconds_total{image!=\"\"}[5m])) * 100",
+          "legendFormat": "total"
+        }
+      ],
+      "lines": true,
+      "linewidth": 2,
+      "gridPos": { "x": 12, "y": 0, "w": 12, "h": 8 }
+    },
+    {
+      "type": "table",
+      "title": "Container Uptime",
+      "targets": [
+        {
+          "expr": "max(time() - container_start_time_seconds{image!=\"\"}) by (container_label_com_docker_compose_service)",
+          "format": "table",
+          "legendFormat": "{{ container_label_com_docker_compose_service }}"
+        }
+      ],
+      "options": {
+        "showHeader": true,
+        "columns": [
+          {
+            "text": "Service",
+            "value": "container_label_com_docker_compose_service"
+          },
+          {
+            "text": "Uptime",
+            "value": "Value",
+            "unit": "d HMS",
+            "decimals": 0
+          }
+        ]
+      },
+      "gridPos": { "x": 0, "y": 8, "w": 12, "h": 6 }
+    },
+    {
+      "type": "graph",
+      "title": "Container Restarts (last hour)",
+      "targets": [
+        {
+          "expr": "changes(container_start_time_seconds{image!=\"\"}[1h])",
+          "legendFormat": "{{ name }}"
+        }
+      ],
+      "lines": true,
+      "linewidth": 2,
+      "gridPos": { "x": 12, "y": 8, "w": 12, "h": 8 }
+    }
+  ],
+  "templating": {
+    "list": [
+      {
+        "name": "container",
+        "type": "query",
+        "datasource": "Prometheus",
+        "query": "label_values(container_cpu_usage_seconds_total{image!=\"\"}, name)",
+        "refresh": 1,
+        "includeAll": true,
+        "multi": true
+      }
+    ]
+  }
+}
