@@ -2,7 +2,7 @@ import type { Engine } from '@babylonjs/core/Engines/engine';
 import type { Scene } from '@babylonjs/core/scene';
 
 export function createRenderLoop(engine: Engine, scene: Scene, preRender?: () => void) {
-  let loop: (() => void) | null = null;
+  let running = false;
 
   const frame = () => {
     // Guard against teardown races
@@ -14,20 +14,21 @@ export function createRenderLoop(engine: Engine, scene: Scene, preRender?: () =>
 
   return {
     start() {
-      if (loop) return;
-      loop = frame;
-      engine.runRenderLoop(loop);
+      if (running) return;
+      running = true;
+      console.log('[RenderLoop] frame type:', typeof frame, frame);
+      engine.runRenderLoop(frame);
     },
     stop() {
-      if (!loop) return;
-      engine.stopRenderLoop(loop);
-      loop = null;
+      if (!running) return;
+      engine.stopRenderLoop(frame);
+      running = false;
     },
     setPreRender(fn?: () => void) {
       preRender = fn;
     },
     isRunning(): boolean {
-      return loop !== null;
+      return running;
     },
   };
 }
