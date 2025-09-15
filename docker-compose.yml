@@ -24,7 +24,8 @@ services:
       bash -lc "
         corepack enable &&
         corepack prepare pnpm@9.12.3 --activate &&
-        pnpm install --frozen-lockfile
+        pnpm install --frozen-lockfile &&
+        pnpm run --if-present build:libs
       "
     volumes:
       - .:/work:cached

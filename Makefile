@@ -37,7 +37,7 @@ endef
 # ========================
 #  Orchestration
 # ========================
-.PHONY: all up detached elk elk-detached down down-elk clean prune-label nuke check-leftovers fclean re stop restart restart-elk restart-% builder-init builder-use builder-prune builder-rm
+.PHONY: all up detached elk elk-detached down down-elk clean prune-label nuke check-leftovers fclean re stop restart restart-elk restart-% builder-init builder-use builder-prune builder-rm check-leftovers-global
 all: up
 
 up:
@@ -183,6 +183,30 @@ check-leftovers:
 	- docker volume ls  --filter "label=com.docker.compose.project=$(NAME)"
 	- docker buildx du  --builder $(BUILDER) --verbose
 
+# Global overview of all Docker resources and Buildx caches 
+check-leftovers-global:
+	@echo ">> GLOBAL: docker system df -v (disk usage overview)"
+	- docker system df -v
+	@echo ">> GLOBAL: All containers (any project)"
+	- docker ps -a
+	@echo ">> GLOBAL: All images"
+	- docker image ls --format '{{.Repository}}\t{{.Tag}}\t{{.ID}}\t{{.CreatedSince}}'
+	@echo ">> GLOBAL: All networks"
+	- docker network ls
+	@echo ">> GLOBAL: All volumes"
+	- docker volume ls
+	@echo ">> GLOBAL: Buildx cache usage for all builders"
+	- sh -c '\
+	  builders=$$(docker buildx ls | tail -n +2 | awk "{print $$1}" | cut -d"/" -f1 | sort -u); \
+	  if [ -z "$$builders" ]; then \
+	    echo "(no buildx builders found)"; \
+	  else \
+	    for b in $$builders; do \
+	      echo "-- Builder: $$b"; \
+	      docker buildx du --builder "$$b" --verbose || true; \
+	    done; \
+	  fi'
+
 # --------------------------
 # Default target: show usage
 # --------------------------
@@ -201,6 +225,7 @@ help:
 	@echo "  make prune-label          # Prune UNUSED resources with this project's label"
 	@echo "  make nuke CONFIRM=1       # GLOBAL prune of ALL UNUSED Docker data (+builder cache)"
 	@echo "  make check-leftovers      # Show remaining labeled resources"
+	@echo "  make check-leftovers-global # Show ALL Docker resources on this machine"
 	@echo ""
 	@echo "Build cache (Option A - per-project builder):"
 	@echo "  make builder-init         # Create/select the per-project buildx builder"
