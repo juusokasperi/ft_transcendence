@@ -43,6 +43,7 @@ const OnlineGame: React.FC = () => {
   }, []);
 
   useEffect(() => {
+    if (status === 'playing') return;
     if (status !== 'starting' || !canvasRef.current) return;
 
     let cancelled = false;
@@ -67,7 +68,7 @@ const OnlineGame: React.FC = () => {
       appRef.current?.destroy();
       appRef.current = null;
     };
-  }, [status, serverUrl, matchId, seat]);
+  }, [serverUrl, matchId, seat]);
 
   const handleCreateLobby = () => clientRef.current?.createLobby();
   const handleReady = () => lobbyId && clientRef.current?.setReady(lobbyId, true);

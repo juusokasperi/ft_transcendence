@@ -76,7 +76,7 @@ async function connectOnline(cfg: {
         },
         sendLocalAxis(axis: number) {
           if (gameWs.readyState === WebSocket.OPEN) {
-            console.log('[OnlineGame] Sending axis:', axis);
+            //console.log('[OnlineGame] Sending axis:', axis);
             gameWs.send(JSON.stringify({ type: 'axis', axis }));
           }
         },
