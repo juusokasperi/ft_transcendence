@@ -2,11 +2,7 @@
 NAME             = ft-transcendence-dev
 ROOT_COMPOSE     = -f docker-compose.yml
 
-# Env variables exported to containers (used by compose for user mapping, etc.)
-HOST_UID := $(shell id -u)
-HOST_GID := $(shell id -g)
-export HOST_UID
-export HOST_GID
+# No user-mapping variables needed anymore; volumes are cleaned by helper image
 
 # Buildx (Option A: per-project builder)
 BUILDER ?= $(NAME)-builder

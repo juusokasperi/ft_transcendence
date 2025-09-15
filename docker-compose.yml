@@ -24,8 +24,7 @@ services:
       bash -lc "
         corepack enable &&
         corepack prepare pnpm@9.12.3 --activate &&
-        pnpm install --frozen-lockfile &&
-        pnpm run --if-present build:libs
+        pnpm install --frozen-lockfile
       "
     volumes:
       - .:/work:cached
@@ -65,7 +64,6 @@ services:
   # 3) Backend (Fastify + tsx watch)
   backend:
     image: node:22-bookworm
-    user: "${HOST_UID:-1000}:${HOST_GID:-1000}"
     init: true
     working_dir: /work/apps/backend
     env_file:
