@@ -16,6 +16,7 @@ const OnlineGame: React.FC = () => {
   const [serverUrl, setServerUrl] = useState('');
   const [matchId, setMatchId] = useState('');
   const [seat, setSeat] = useState<PlayerSeat>('P1');
+  const [joinLobbyId, setJoinLobbyId] = useState('');
 
   useEffect(() => {
     const client = createMatchmakingClient((msg: MatchmakingMessage) => {
@@ -70,6 +71,12 @@ const OnlineGame: React.FC = () => {
 
   const handleCreateLobby = () => clientRef.current?.createLobby();
   const handleReady = () => lobbyId && clientRef.current?.setReady(lobbyId, true);
+  const handleJoinLobby = () => {
+    if (!joinLobbyId) return;
+    clientRef.current?.acceptInvite(joinLobbyId);
+    setLobbyId(joinLobbyId);
+    setJoinLobbyId('');
+  };
 
   return (
     <div className="flex flex-col items-center space-y-4 p-4 mt-30">
@@ -84,9 +91,22 @@ const OnlineGame: React.FC = () => {
               </button>
             </>
           ) : (
-            <button onClick={handleCreateLobby} className="rounded border px-4 py-2">
-              Create Lobby
-            </button>
+           <>
+              <button onClick={handleCreateLobby} className="rounded border px-4 py-2">
+                Create Lobby
+              </button>
+              <div className="mt-2 space-x-2">
+                <input
+                  value={joinLobbyId}
+                  onChange={(e) => setJoinLobbyId(e.target.value)}
+                  placeholder="Lobby ID"
+                  className="rounded border px-2 py-1"
+                />
+                <button onClick={handleJoinLobby} className="rounded border px-4 py-2">
+                  Join Lobby
+                </button>
+              </div>
+            </>
           )}
         </div>
       )}
