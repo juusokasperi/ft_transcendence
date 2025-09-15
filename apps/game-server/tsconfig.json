@@ -8,5 +8,5 @@
     "noEmit": true,
     "isolatedModules": true
   },
-  "include": ["index.ts", "ws.d.ts"]
+  "include": ["index.ts"]
 }
