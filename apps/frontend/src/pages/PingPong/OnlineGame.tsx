@@ -79,7 +79,7 @@ const OnlineGame: React.FC = () => {
   };
 
   return (
-    <div className="flex flex-col items-center space-y-4 p-4 mt-30">
+    <div className="mt-30 flex flex-col items-center space-y-4 p-4">
       {status !== 'playing' && (
         <div className="space-y-2 text-center">
           <p>Client: {clientId || '...'}</p>
@@ -91,7 +91,7 @@ const OnlineGame: React.FC = () => {
               </button>
             </>
           ) : (
-           <>
+            <>
               <button onClick={handleCreateLobby} className="rounded border px-4 py-2">
                 Create Lobby
               </button>

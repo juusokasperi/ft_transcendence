@@ -12,7 +12,7 @@ export type MatchmakingMessage =
       matchId: string;
       gameServerUrl: string;
       seat: 'P1' | 'P2';
-    }
+    };
 
 export function createMatchmakingClient(onMessage: (msg: MatchmakingMessage) => void) {
   const url = import.meta.env.VITE_MATCHMAKING_URL as string;

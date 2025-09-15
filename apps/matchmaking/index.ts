@@ -117,9 +117,7 @@ wss.on('connection', (socket: WebSocket) => {
       const target = clients.get(targetId);
       if (target) {
         log(`Invite: ${id} invited ${targetId} to lobby ${lobbyId}`);
-        target.socket.send(
-          JSON.stringify({ type: 'invited', lobbyId, from: id }),
-        );
+        target.socket.send(JSON.stringify({ type: 'invited', lobbyId, from: id }));
       }
     } else if (type === 'acceptInvite') {
       const { lobbyId } = data;
@@ -145,7 +143,9 @@ wss.on('connection', (socket: WebSocket) => {
     } else if (type === 'ready') {
       const { lobbyId, ready } = data;
       if (client.lobbyId !== lobbyId) {
-        log(`Ready failed: client ${id} tried to set ready for lobby ${lobbyId}, but is in lobby ${client.lobbyId}`);
+        log(
+          `Ready failed: client ${id} tried to set ready for lobby ${lobbyId}, but is in lobby ${client.lobbyId}`,
+        );
         return;
       }
       client.ready = !!ready;
