@@ -63,6 +63,23 @@ function checkLobbyReady(lobbyId: string) {
     (id) => clients.get(id)?.ready,
   );
   if (allReady && lobby.members.size > 0) {
+    const matchId = uuid();
+    const gameServerUrl = `ws://localhost:55555`; // Set to env later
+
+    let seat = 0;
+    lobby.members.forEach((id) => {
+      const c = clients.get(id);
+      c?.socket.send(
+        JSON.stringify({
+          type: 'matchFound',
+          gameServerUrl,
+          matchId,
+          seat: seat === 0 ? 'P1' : 'P2',
+        }),
+      );
+      seat++;
+    });
+
     broadcast(lobbyId, { type: 'lobbyReady', lobbyId });
     cleanupLobby(lobbyId);
   }
