@@ -36,17 +36,23 @@ async function connectOnline(cfg: {
   seat: PlayerSeat;
 }): Promise<OnlineClient> {
   const { serverUrl, matchId, seat } = cfg;
+  console.log('[OnlineGame] Connecting to server:', serverUrl, 'matchId:', matchId, 'seat:', seat);
   const gameWs = new WebSocket(`${serverUrl}/${matchId}?seat=${seat}`);
 
   return await new Promise<OnlineClient>((resolve, reject) => {
-    gameWs.addEventListener('error', (err) => reject(err));
+    gameWs.addEventListener('error', (err) => {
+      console.error('[OnlineGame] WebSocket error:', err);
+      reject(err);
+    });
 
     gameWs.addEventListener('open', () => {
+      console.log('[OnlineGame] WebSocket connection opened');
       const snapshotListeners = new Set<(s: GameState, ev: FrameEvents) => void>();
       const opponentAxisListeners = new Set<(axis: number) => void>();
 
       gameWs.addEventListener('message', (ev) => {
         const data = JSON.parse(ev.data as string) as any;
+        //console.log('[OnlineGame] Received message:', data);
         switch (data.type) {
           case 'snapshot':
             snapshotListeners.forEach((cb) => cb(data.state, data.events));
@@ -55,6 +61,7 @@ async function connectOnline(cfg: {
             opponentAxisListeners.forEach((cb) => cb(data.axis));
             break;
           default:
+            console.warn('[OnlineGame] Unknown message type:', data.type);
             break;
         }
       });
@@ -69,10 +76,12 @@ async function connectOnline(cfg: {
         },
         sendLocalAxis(axis: number) {
           if (gameWs.readyState === WebSocket.OPEN) {
+            console.log('[OnlineGame] Sending axis:', axis);
             gameWs.send(JSON.stringify({ type: 'axis', axis }));
           }
         },
         disconnect() {
+          console.log('[OnlineGame] Disconnecting WebSocket');
           gameWs.close();
         },
       };
@@ -100,6 +109,7 @@ export function createOnlineApp(
   cfg: { serverUrl: string; matchId: string; seat: PlayerSeat },
 ): PongInstance {
   canvas.tabIndex = 1;
+  console.log('[OnlineGame] Canvas tabIndex set to', canvas.tabIndex);
 
   // Engine/scene/world (identical to local)
   const { engine, engineDisposable } = createEngine(canvas);
@@ -208,20 +218,20 @@ export function createOnlineApp(
 
   // --- Connect on start; wire streams ------------------------------------------------
   async function start() {
-    // Gate local input briefly to match your local intro FX pacing.
+    console.log('[OnlineGame] Starting online game with config:', cfg);
     blockInputFor(SERVE_SELECT_TOTAL_MS + 200);
 
     net = await connectOnline(cfg);
     mySeat = net.mySeat;
+    console.log('[OnlineGame] Connected. My seat:', mySeat);
 
     net.onOpponentAxis((axis) => {
       oppAxis = axis;
-      // Ready for client-side prediction later:
-      // const intent = mixOnlineAxes(mySeat, lastLocalAxis, oppAxis);
-      // (If you enable prediction: feed `intent` into stepPaddles for visuals.)
+      //console.log('[OnlineGame] Received opponent axis:', axis);
     });
 
     net.onSnapshot((s, ev) => {
+      //console.log('[OnlineGame] Received snapshot. Phase:', s.phase);
       // Phase transition hook → serve cues
       if (prevPhase && s.phase !== prevPhase) {
         const entered = detectEnteredServe(prevPhase, s.phase);
@@ -252,17 +262,20 @@ export function createOnlineApp(
     });
 
     loop.start();
+    console.log('[OnlineGame] Game loop started');
   }
 
-  const destroy = () =>
+  const destroy = () => {
+    console.log('[OnlineGame] Destroying online game');
     disposeWorld({
       loop,
-      net, // disconnect safely
-      world, // disposes Scene and meshes
+      net,
+      world,
       fx,
       hud,
       engineDisposable,
     });
+  };
 
   return { start, destroy };
 }

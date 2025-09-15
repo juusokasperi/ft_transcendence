@@ -46,6 +46,7 @@ function createBounds(): GameState['bounds'] {
 
 function startMatch(match: Match) {
   if (match.loop) return;
+  console.log(`[GameServer] Starting match ${match.id}`);
   match.state = serveFrom('east', match.state);
   match.state = { ...match.state, tPauseBtwPointsMs: 0 };
   match.loop = setInterval(() => {
@@ -74,6 +75,7 @@ function startMatch(match: Match) {
 
 function broadcast(match: Match, payload: any) {
   const msg = JSON.stringify(payload);
+  //console.log(`[GameServer] Broadcasting to match ${match.id}:`, payload);
   match.players.P1?.socket.send(msg);
   match.players.P2?.socket.send(msg);
 }
@@ -83,8 +85,11 @@ wss.on('connection', (socket, req) => {
   const matchId = url.pathname.replace(/^\//, '') || 'default';
   const seat = (url.searchParams.get('seat') as 'P1' | 'P2') || 'P1';
 
+  console.log(`[GameServer] New connection: matchId=${matchId}, seat=${seat}`);
+
   let match = matches.get(matchId);
   if (!match) {
+    console.log(`[GameServer] Creating new match: ${matchId}`);
     const bounds = createBounds();
     const rules = tableTennisRules();
     const controller = createMatchController(bounds, rules, 'east');
@@ -100,29 +105,37 @@ wss.on('connection', (socket, req) => {
 
   const player: Player = { socket, seat, axis: 0 };
   match.players[seat] = player;
+  console.log(`[GameServer] Player joined: seat=${seat}, matchId=${matchId}`);
 
   socket.on('message', (raw: RawData) => {
     try {
       const data = JSON.parse(raw.toString());
       if (data.type === 'axis') {
         player.axis = Number(data.axis) || 0;
+        // Debug axis input
+        console.log(`[GameServer] Received axis from ${seat} in match ${matchId}:`, player.axis);
       }
     } catch {
-      // ignore malformed
+      console.warn(`[GameServer] Malformed message from ${seat} in match ${matchId}`);
     }
   });
 
   socket.on('close', () => {
+    console.log(`[GameServer] Player disconnected: seat=${seat}, matchId=${matchId}`);
     if (match) {
       delete match.players[seat];
       if (!match.players.P1 && !match.players.P2) {
-        if (match.loop) clearInterval(match.loop);
+        if (match.loop) {
+          clearInterval(match.loop);
+          console.log(`[GameServer] Match ${matchId} ended and cleaned up`);
+        }
         matches.delete(matchId);
       }
     }
   });
 
   if (match.players.P1 && match.players.P2) {
+    console.log(`[GameServer] Both players connected for match ${matchId}, starting match`);
     startMatch(match);
   }
 });
