@@ -36,7 +36,9 @@ services:
     volumes:
       - grafana-storage:/var/lib/grafana
       - ./grafana/datasources.yaml:/etc/grafana/provisioning/datasources/prometheus.yaml
-      - ./grafana/nginx-dashboard.json:/etc/grafana/provisioning/dashboards/nginx-dashboard.json
+      - ./grafana/dashboards-nginx.yaml:/etc/grafana/provisioning/dashboards/dashboards-nginx.yaml
+      - ./grafana/dashboards/nginx:/etc/grafana/dashboards/nginx
+
     networks:
       - devnet
     ports:

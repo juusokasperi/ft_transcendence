@@ -9,9 +9,9 @@
 
 ### Getting data into Prometheus
 
-#### Nginx
+#### Nginx with nginx-prometheus-exporter
 
-- nginx-prometheus-exporter
+- We have 4 different panels now. Having more would require VTS plugin for nginx
 
 #### Node, including SQLite
 
