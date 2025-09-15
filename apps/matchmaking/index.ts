@@ -18,6 +18,7 @@ interface Lobby {
 }
 
 const PORT = Number(process.env.MATCHMAKING_PORT || 4242);
+const GAME_SERVER_URL = process.env.GAME_SERVER_URL || 'ws://localhost:55555';
 const LOBBY_TTL_MS = 5 * 60 * 1000; // 5 minutes. We need a timeout to avoid stale lobbies.
 
 const wss = new WebSocketServer({ port: PORT });
@@ -59,28 +60,22 @@ function broadcast(lobbyId: string, data: any) {
 function checkLobbyReady(lobbyId: string) {
   const lobby = lobbies.get(lobbyId);
   if (!lobby) return;
-  const allReady = Array.from(lobby.members).every(
-    (id) => clients.get(id)?.ready,
-  );
-  if (allReady && lobby.members.size > 0) {
+  const members = Array.from(lobby.members);
+  const allReady = members.every((id) => clients.get(id)?.ready);
+  if (allReady && members.length === 2) {
     const matchId = uuid();
-    const gameServerUrl = `ws://localhost:55555`; // Set to env later
-
-    let seat = 0;
-    lobby.members.forEach((id) => {
-      const c = clients.get(id);
-      c?.socket.send(
+    members.forEach((id, idx) => {
+      const seat = idx === 0 ? 'P1' : 'P2';
+      clients.get(id)?.socket.send(
         JSON.stringify({
           type: 'matchFound',
-          gameServerUrl,
+          lobbyId,
           matchId,
-          seat: seat === 0 ? 'P1' : 'P2',
+          gameServerUrl: GAME_SERVER_URL,
+          seat,
         }),
       );
-      seat++;
     });
-
-    broadcast(lobbyId, { type: 'lobbyReady', lobbyId });
     cleanupLobby(lobbyId);
   }
 }
