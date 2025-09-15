@@ -11,7 +11,7 @@ This Makefile wraps Docker Compose and Buildx to run the dev stack. No host Node
 ## Quick Start
 
 - Start the default stack (attached):
-  - `make up`
+  - `make up` / `make`
 - Start the default stack (detached):
   - `make detached`
 
@@ -54,10 +54,6 @@ First run: the `deps` service installs workspace dependencies with `corepack pnp
   - `make fclean`
 - Recreate from scratch:
   - `make re` (equivalent to `fclean` then `up`)
-- Prune only resources labeled to this project:
-  - `make prune-label`
-- Show remaining project‑labeled resources:
-  - `make check-leftovers`
 - Global Docker/Buildx overview (all projects):
   - `make overview-docker`
 - Global prune of ALL UNUSED Docker data (dangerous if you have other projects):
