@@ -6,6 +6,7 @@ volumes:
   frontend_node_modules: {}
   backend_node_modules: {}
   render_node_modules: {}
+  matchmaking_node_modules: {}
 
 networks:
   devnet:
@@ -34,6 +35,7 @@ services:
       - frontend_node_modules:/work/apps/frontend/node_modules
       - backend_node_modules:/work/apps/backend/node_modules
       - render_node_modules:/work/packages/pong/render/node_modules
+      - matchmaking_node_modules:/work/apps/matchmaking/node_modules
     networks: [devnet]
 
   # 2) Frontend (Vite dev server)
@@ -107,6 +109,29 @@ services:
       driver: gelf
       options:
         gelf-address: udp://localhost:12201
+
+# 5) Matchmaking service (WebSocket server)
+  matchmaking-service:
+    image: node:22-bookworm
+    init: true
+    working_dir: /work/apps/matchmaking
+    env_file:
+      - ./apps/matchmaking/.env
+    environment:
+      PNPM_STORE_DIR: /pnpm/store
+      CHOKIDAR_USEPOLLING: "true"
+    ports:
+      - "${MATCHMAKING_PORT:-4242}:4242"
+    volumes:
+      - .:/work:cached
+      - pnpm-store:/pnpm/store
+      - node_modules:/work/node_modules:ro
+      - matchmaking_node_modules:/work/apps/matchmaking/node_modules:ro
+    command: bash -lc "corepack enable && corepack prepare pnpm@9.12.3 --activate && pnpm dev"
+    depends_on:
+      deps:
+        condition: service_completed_successfully
+    networks: [devnet]
 
 
 include:
