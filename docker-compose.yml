@@ -7,6 +7,7 @@ volumes:
   backend_node_modules: {}
   render_node_modules: {}
   matchmaking_node_modules: {}
+  game_server_node_modules: {}
 
 networks:
   devnet:
@@ -36,6 +37,7 @@ services:
       - backend_node_modules:/work/apps/backend/node_modules
       - render_node_modules:/work/packages/pong/render/node_modules
       - matchmaking_node_modules:/work/apps/matchmaking/node_modules
+      - game_server_node_modules:/work/apps/game-server/node_modules
     networks: [devnet]
 
   # 2) Frontend (Vite dev server)
@@ -127,6 +129,33 @@ services:
       - pnpm-store:/pnpm/store
       - node_modules:/work/node_modules:ro
       - matchmaking_node_modules:/work/apps/matchmaking/node_modules:ro
+    command: bash -lc "corepack enable && corepack prepare pnpm@9.12.3 --activate && pnpm dev"
+    depends_on:
+      deps:
+        condition: service_completed_successfully
+    networks: [devnet]
+    #logging: # needed for logstash (ELK stack) #Ask Leon about this
+      #driver: gelf
+      #options:
+        #gelf-address: udp://localhost:12201
+
+# 6) Game server (WebSocket server)
+  game-server:
+    image: node:22-bookworm
+    init: true
+    working_dir: /work/apps/game-server
+    env_file:
+      - .env
+    environment:
+      PNPM_STORE_DIR: /pnpm/store
+      CHOKIDAR_USEPOLLING: "true"
+    ports:
+      - "${GAME_SERVER_PORT:-55555}:55555"
+    volumes:
+      - .:/work:cached
+      - pnpm-store:/pnpm/store
+      - node_modules:/work/node_modules:ro
+      - game_server_node_modules:/work/apps/game-server/node_modules:ro
     command: bash -lc "corepack enable && corepack prepare pnpm@9.12.3 --activate && pnpm dev"
     depends_on:
       deps:
