@@ -226,6 +226,12 @@ importers:
 
   apps/game-server:
     dependencies:
+      '@pong/game-logic':
+        specifier: workspace:*
+        version: link:../../packages/pong/game-logic
+      '@pong/shared':
+        specifier: workspace:*
+        version: link:../../packages/pong/shared
       dotenv:
         specifier: ^17.2.2
         version: 17.2.2
