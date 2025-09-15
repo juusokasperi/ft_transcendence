@@ -29,6 +29,8 @@ import { deriveSeed32 } from '@pong/shared';
 import { nextLocalMatchSeed } from '@pong/render';
 import { disposeWorld } from '@pong/render';
 
+import { setupCanvasFocus } from '../utils/canvasFocus';
+
 interface PongInstance {
   start(): void;
   destroy(): void;
@@ -112,15 +114,13 @@ export function createLocalApp(canvas: HTMLCanvasElement): PongInstance {
 
   // Input
   const detachInput = attachLocalInput(canvas);
+  const detachFocus = setupCanvasFocus(canvas);
 
   // Ensure the canvas receives keyboard input immediately
-  canvas.focus({ preventScroll: true });
-  window.addEventListener('keydown', (e) => {
-    if (['z', 'w', 's', 'ArrowUp', 'ArrowDown'].includes(e.key)) {
-      console.log('[LocalGame] keydown:', e.key, 'activeElement=', document.activeElement?.tagName);
-    }
+  scene.onDisposeObservable.add(() => {
+    detachInput();
+    detachFocus();
   });
-  scene.onDisposeObservable.add(detachInput);
 
   // Simple paddle-centering tween gate (kept in visuals)
   const paddleAnim = createPaddleAnimator(scene, left.mesh, right.mesh);

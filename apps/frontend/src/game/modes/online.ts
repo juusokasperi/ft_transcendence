@@ -9,6 +9,7 @@ import { applyFrameEvents } from '@pong/render';
 import { computeBounds } from '@pong/render';
 import { detectEnteredServe, onEnteredServe } from '@pong/render';
 import { mapStateForPlayerRows } from '@pong/render';
+import { attachLocalInput } from '@pong/render';
 
 import { readIntent } from '@pong/render';
 import { blockInputFor } from '@pong/render';
@@ -19,6 +20,8 @@ import type { GameState } from '@pong/game-logic';
 import type { FrameEvents } from '@pong/shared';
 import { SERVE_SELECT_TOTAL_MS } from '@pong/shared';
 import { clamp01 } from '@pong/shared';
+
+import { setupCanvasFocus } from '../utils/canvasFocus';
 
 // --- Net placeholders (wire your transport here) -----------------------------------
 type OnlineClient = {
@@ -108,7 +111,7 @@ export function createOnlineApp(
   canvas: HTMLCanvasElement,
   cfg: { serverUrl: string; matchId: string; seat: PlayerSeat },
 ): PongInstance {
-  canvas.tabIndex = 1;
+  canvas.tabIndex = 0;
   console.log('[OnlineGame] Canvas tabIndex set to', canvas.tabIndex);
 
   // Engine/scene/world (identical to local)
@@ -124,6 +127,16 @@ export function createOnlineApp(
   // HUD
   const hud = createScoreboard();
   hud.attachToCanvas(canvas);
+
+// Input
+  const detachInput = attachLocalInput(canvas);
+  const detachFocus = setupCanvasFocus(canvas);
+
+  scene.onDisposeObservable.add(() => {
+    detachInput();
+    detachFocus();
+  });
+
 
   // Names (you'll likely get these from the lobby/room)
   const names = { east: 'Magenta', west: 'Green' } as const;
