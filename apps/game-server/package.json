@@ -1,0 +1,26 @@
+{
+  "name": "@app/game-server",
+  "version": "1.0.0",
+  "description": "",
+  "license": "ISC",
+  "author": "",
+  "type": "module",
+  "private": true,
+  "engines": {
+    "node": ">=22.19.0"
+  },
+  "main": "dist/index.js",
+  "scripts": {
+    "dev": "tsx --tsconfig ./tsconfig.json --watch index.ts",
+    "check-format": "pnpm -F ft_transcendence check-format",
+    "fix-format": "pnpm -F ft_transcendence fix-format",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "typecheck:watch": "tsc -p tsconfig.json --noEmit --watch",
+    "start": "node dist/index.js"
+  },
+  "dependencies": {
+    "uuid": "^13.0.0",
+    "ws": "^8.18.3",
+    "dotenv": "^17.2.2"
+  }
+}
