@@ -2,16 +2,16 @@ import db from '../client.ts';
 import type { GameWithPlayers, PublicUser } from '../../types/types.ts';
 import type { GameDb, GamePlayerDb } from '../../types/dbtypes.ts';
 
-function addGameHelper(team1Score: number, team2Score: number): number | null {
+function addGameHelper(team1Score: number, team2Score: number, tournamentId?: string, tournamentStage?: string): number | null {
   try {
     const result = db
       .prepare(
         `
-			INSERT INTO Games (team_1_score, team_2_score)
-			VALUES (?, ?)
+			INSERT INTO Games (team_1_score, team_2_score, tournament_id, tournament_stage)
+			VALUES (?, ?, ?, ?)
 			`,
       )
-      .run(team1Score, team2Score);
+      .run(team1Score, team2Score, tournamentId || null, tournamentStage || null);
     return result.lastInsertRowid as number;
   } catch (error) {
     return null;
@@ -39,18 +39,30 @@ export function addGame(
   team2Score: number,
   team1Player: string,
   team2Player: string,
+  team1Points: number,
+  team2Points: number,
+  tournamentId?: number,
+  tournamentStage?: string,
 ): number | null;
 export function addGame(
   team1Score: number,
   team2Score: number,
   team1Players: string[],
   team2Players: string[],
+  team1Points: number,
+  team2Points: number,
+  tournamentId?: number,
+  tournamentStage?: string,
 ): number | null;
 export function addGame(
   team1Score: number,
   team2Score: number,
   team1: string | string[],
   team2: string | string[],
+  team1Points: number,
+  team2Points: number,
+  tournamentId?: number,
+  tournamentStage?: string,
 ): number | null {
   const transaction = db.transaction(() => {
     const gameId = addGameHelper(team1Score, team2Score);

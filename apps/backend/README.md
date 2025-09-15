@@ -65,8 +65,8 @@ Uses `better-sqlite3` to interact with the SQLite database. Migrations are handl
 | Field        | Type | Key     | Nullable | Etc                             |
 | ------------ | ---- | ------- | -------- | ------------------------------- |
 | id           | INT  | Primary | No       | Autoincrement                   |
-| team_1_score | INT  |         | No       | On user delete, delete this row |
-| team_2_score | INT  |         | No       | On user delete, delete this row |
+| team_1_score | INT  |         | No       |                                 |
+| team_2_score | INT  |         | No       |                                 |
 | created_at   | DATE |         | No       |                                 |
 
 ### GamePlayers

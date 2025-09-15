@@ -65,7 +65,7 @@ services:
   # 3) Backend (Fastify + tsx watch)
   backend:
     image: node:22-bookworm
-    user: "${HOST_UID:-1000}:${HOST_GID:-1000}"
+    #user: "${HOST_UID:-1000}:${HOST_GID:-1000}"
     init: true
     working_dir: /work/apps/backend
     env_file:

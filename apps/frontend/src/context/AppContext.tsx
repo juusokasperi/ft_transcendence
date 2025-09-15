@@ -54,7 +54,9 @@ export const AppProvider: React.FC<React.PropsWithChildren> = ({ children }) => 
   };
 
   const logout = async () => {
-    await axios.post('/api/logout');
+    try {
+      await axios.post('/api/logout');
+    } catch (err) {}
     setUser(null);
     navigate('/');
   };
