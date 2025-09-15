@@ -1,0 +1,82 @@
+{
+  "title": "Node.js & SQLite Metrics",
+  "panels": [
+    {
+      "type": "stat",
+      "title": "Memory (RSS) megabytes",
+      "gridPos": {
+        "h": 4,
+        "w": 5,
+        "x": 0,
+        "y": 0
+      },
+      "targets": [
+        {
+          "expr": "process_resident_memory_bytes{job=\"node-backend\"} / 1024 / 1024"
+        }
+      ]
+    },
+    {
+      "type": "stat",
+      "title": "Event Loop Lag",
+      "gridPos": {
+        "h": 6,
+        "w": 8,
+        "x": 5,
+        "y": 0
+      },
+      "targets": [
+        {
+          "expr": "nodejs_eventloop_lag_seconds"
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "HTTP Request Latency (p95)",
+      "gridPos": {
+        "h": 4,
+        "w": 5,
+        "x": 0,
+        "y": 4
+      },
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket[5m])) by (le))"
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "SQLite Query Duration (p95)",
+      "gridPos": {
+        "h": 7,
+        "w": 8,
+        "x": 5,
+        "y": 6
+      },
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.95, sum(rate(sqlite_query_duration_seconds_bucket[5m])) by (le, operation))"
+        }
+      ]
+    },
+    {
+      "type": "stat",
+      "title": "SQLite Query Errors",
+      "gridPos": {
+        "h": 3,
+        "w": 5,
+        "x": 0,
+        "y": 8
+      },
+      "targets": [
+        {
+          "expr": "sum(rate(sqlite_query_errors_total[5m])) or vector(0)"
+        }
+      ]
+    }
+  ],
+  "schemaVersion": 36,
+  "version": 1
+}

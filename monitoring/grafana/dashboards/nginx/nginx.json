@@ -21,6 +21,10 @@
     {
       "type": "graph",
       "title": "Accepted vs Handled Connections",
+      "lines": true,
+      "points": false,
+      "linewidth": 2,
+      "fill": 1,
       "targets": [
         {
           "expr": "rate(nginx_connections_accepted[5m])",
@@ -36,6 +40,10 @@
     {
       "type": "graph",
       "title": "Requests Rate",
+      "lines": true,
+      "points": false,
+      "linewidth": 2,
+      "fill": 1,
       "targets": [
         {
           "expr": "rate(nginx_http_requests_total[5m])",
@@ -47,6 +55,10 @@
     {
       "type": "graph",
       "title": "Connection States",
+      "lines": true,
+      "points": false,
+      "linewidth": 2,
+      "fill": 1,
       "targets": [
         {
           "expr": "nginx_connections_reading",

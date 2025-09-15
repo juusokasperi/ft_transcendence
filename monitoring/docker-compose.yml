@@ -40,6 +40,8 @@ services:
       - ./grafana/dashboards/nginx:/etc/grafana/dashboards/nginx
       - ./grafana/dashboards-cadvisor.yaml:/etc/grafana/provisioning/dashboards/dashboards-cadvisor.yaml
       - ./grafana/dashboards/cadvisor:/etc/grafana/dashboards/cadvisor
+      - ./grafana/dashboards-node-sqlite.yaml:/etc/grafana/provisioning/dashboards/node-sqlite.yaml
+      - ./grafana/dashboards/node-sqlite/:/etc/grafana/dashboards/node-sqlite
 
     networks:
       - devnet
