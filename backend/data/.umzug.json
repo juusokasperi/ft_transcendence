@@ -1,0 +1,10 @@
+[
+  "001-create-users.ts",
+  "002-create-friends.ts",
+  "003-create-games.ts",
+  "004-create-gameplayers.ts",
+  "005-create-pending-users.ts",
+  "006-create-password-resets.ts",
+  "007-create-users-delete.ts",
+  "008-create-user-settings.ts"
+]

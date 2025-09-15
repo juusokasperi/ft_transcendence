@@ -22,7 +22,7 @@ function resolveAvatarUrl(avatar: string | undefined | null, axiosBase?: string)
 }
 
 const Profile: React.FC = () => {
-  const { axios, user, setUser, logout } = useAppContext();
+  const { axios, user, setUser, logout, navigate } = useAppContext();
 
   const [image, setImage] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string>(PLACEHOLDER);
@@ -153,9 +153,7 @@ const Profile: React.FC = () => {
     if (!window.confirm('Are you sure you want to delete your account?')) return;
     try {
       await axios.delete(`/api/users/me`);
-      toast.success('Account deleted');
-      await logout();
-      // redirect or logout logic here
+      toast.success('Confirmation email sent');
     } catch (err: any) {
       toast.error(err.response?.data?.message || 'Delete failed');
     }
