@@ -60,7 +60,7 @@ export function normalizeCredentials(req: FastifyRequest, res: FastifyReply, don
 export function gameAuthPreHandler(req: FastifyRequest, res: FastifyReply, done: Function): void {
   const authHeader = req.headers.authorization;
   let token: string | undefined;
-  if (authHeader && authHeader.toLowerCase().startsWith('bearer ')) {
+  if (authHeader && authHeader.toLowerCase().startsWith('bearer '))
     token = authHeader.split(' ')[1];
 
   if (!token) {
