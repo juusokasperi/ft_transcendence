@@ -1,9 +1,9 @@
 apiVersion: 1
 
 providers:
-  - name: "node-sqlite-dashboards"
+  - name: 'node-sqlite-dashboards'
     orgId: 1
-    folder: "Node-Sqlite"
+    folder: 'Node-Sqlite'
     type: file
     disableDeletion: false
     editable: true
