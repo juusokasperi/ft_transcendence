@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { createMatchmakingClient, type MatchmakingMessage } from '../../services/matchmaking';
 import type { PlayerSeat } from '@pong/render';
+import { useLayoutEffect } from 'react';
 
 const OnlineGame: React.FC = () => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -17,6 +18,7 @@ const OnlineGame: React.FC = () => {
   const [matchId, setMatchId] = useState('');
   const [seat, setSeat] = useState<PlayerSeat>('P1');
   const [joinLobbyId, setJoinLobbyId] = useState('');
+  const [ready, setReady] = useState(false);
 
   useEffect(() => {
     const client = createMatchmakingClient((msg: MatchmakingMessage) => {
@@ -41,6 +43,23 @@ const OnlineGame: React.FC = () => {
     clientRef.current = client;
     return () => client.socket.close();
   }, []);
+
+  // Auto-focus canvas when starting/playing
+  useLayoutEffect(() => {
+  if ((status !== 'starting' && status !== 'playing') || !canvasRef.current) return;
+  requestAnimationFrame(() => canvasRef.current?.focus({ preventScroll: true }));
+}, [status]);
+
+  // Hide global navbar while playing (via body class)
+  useEffect(() => {
+    const cls = 'pong-playing';
+    if (status === 'playing' || status === 'starting') {
+      document.body.classList.add(cls);
+    } else {
+      document.body.classList.remove(cls);
+    }
+    return () => document.body.classList.remove(cls);
+  }, [status]);
 
   useEffect(() => {
     if (status === 'playing') return;
@@ -72,8 +91,10 @@ const OnlineGame: React.FC = () => {
 
   const handleCreateLobby = () => clientRef.current?.createLobby();
   const handleReady = () => {
-    console.log('Ready clicked, lobbyId=', lobbyId);
-    lobbyId && clientRef.current?.setReady(lobbyId, true);
+    if (lobbyId) {
+      clientRef.current?.setReady(lobbyId, true);
+      setReady(true);
+    }
   };
   const handleJoinLobby = () => {
     if (!joinLobbyId) return;
@@ -82,39 +103,112 @@ const OnlineGame: React.FC = () => {
     setJoinLobbyId('');
   };
 
+  // NEW: same playing container as LocalGame (for both 'starting' and 'playing')
+  const handleQuit = () => {
+    appRef.current?.destroy();
+    appRef.current = null;
+    setStatus('idle');
+  };
+
+  if (status === 'starting' || status === 'playing') {
+    return (
+      <div className="relative h-screen w-full bg-black">
+        <canvas ref={canvasRef} className="block h-full w-full" tabIndex={0} autoFocus />
+        <button
+          type="button"
+          onClick={handleQuit}
+          className="game-quit-button absolute right-5 top-5"
+          aria-label="Quit game"
+        >
+          Quit
+          <span aria-hidden className="game-quit-hover-text">Quit</span>
+        </button>
+      </div>
+    );
+  }
+
+  // Lobby view (unchanged logic; just presentation)
   return (
-    <div className="mt-30 flex flex-col items-center space-y-4 p-4">
-      {status !== 'playing' && (
-        <div className="space-y-2 text-center">
-          <p>Client: {clientId || '...'}</p>
-          {lobbyId ? (
-            <>
-              <p>Lobby: {lobbyId}</p>
-              <button onClick={handleReady} className="rounded border px-4 py-2">
-                Click me if you are Ready
-              </button>
-            </>
-          ) : (
-            <>
-              <button onClick={handleCreateLobby} className="rounded border px-4 py-2">
-                Create Lobby
-              </button>
-              <div className="mt-2 space-x-2">
-                <input
-                  value={joinLobbyId}
-                  onChange={(e) => setJoinLobbyId(e.target.value)}
-                  placeholder="Lobby ID"
-                  className="rounded border px-2 py-1"
-                />
-                <button onClick={handleJoinLobby} className="rounded border px-4 py-2">
-                  Join Lobby
+    <div className="relative min-h-screen w-full overflow-hidden bg-black">
+      <video
+        autoPlay
+        loop
+        muted
+        playsInline
+        className="pointer-events-none absolute inset-0 z-0 h-full w-full object-cover opacity-60"
+      >
+        <source src="/src/assets/gif.mp4" type="video/mp4" />
+      </video>
+      <div className="absolute inset-0 z-0 bg-black/60" />
+      <div className="relative z-10 mx-auto flex min-h-screen max-w-7xl flex-col items-center justify-center gap-6 p-4 text-white">
+        <div className="w-full max-w-xl rounded-2xl border border-white/10 bg-white/5 p-6 shadow-2xl backdrop-blur">
+          <div className="mb-4 flex items-center justify-between">
+            <h1 className="text-2xl font-bold tracking-wide">Online Game</h1>
+            <span
+              className={`rounded-full px-3 py-1 text-sm ${
+                status === 'connecting'
+                  ? 'bg-yellow-500/20 text-yellow-300'
+                  : status === 'lobby'
+                  ? 'bg-purple-500/20 text-purple-300'
+                  : 'bg-emerald-500/20 text-emerald-300'
+              }`}
+            >
+              {status}
+            </span>
+          </div>
+
+          <div className="space-y-2 text-sm text-white/80">
+            <p>
+              <span className="text-white/60">Client:</span>{' '}
+              <span className="font-mono">{clientId || '...'}</span>
+            </p>
+
+            {lobbyId ? (
+              <div className="mt-2 space-y-3">
+                <p>
+                  <span className="text-white/60">Lobby:</span>{' '}
+                  <span className="font-mono">{lobbyId}</span>
+                </p>
+                <button
+                  onClick={handleReady}
+                  disabled={ready}
+                  className={
+                    ready
+                      ? "w-full rounded-lg border-2 border-green-400 px-4 py-2 font-semibold text-green-300 bg-green-900/80 cursor-default"
+                      : "w-full rounded-lg border-2 border-emerald-400 px-4 py-2 font-semibold text-emerald-300 transition hover:bg-emerald-400 hover:text-black"
+                  }
+                >
+                  {ready ? "Ready! ✅" : "I’m Ready ✅"}
                 </button>
               </div>
-            </>
-          )}
+            ) : (
+              <div className="mt-2 space-y-3">
+                <button
+                  onClick={handleCreateLobby}
+                  className="w-full rounded-lg border-2 border-pink-500 px-4 py-2 font-semibold text-pink-400 transition hover:bg-pink-500 hover:text-black"
+                >
+                  Create Lobby
+                </button>
+
+                <div className="flex items-center gap-2">
+                  <input
+                    value={joinLobbyId}
+                    onChange={(e) => setJoinLobbyId(e.target.value)}
+                    placeholder="Lobby ID"
+                    className="flex-1 rounded-lg border border-white/20 bg-black/40 px-3 py-2 font-mono outline-none placeholder:text-white/40 focus:border-white/40"
+                  />
+                  <button
+                    onClick={handleJoinLobby}
+                    className="rounded-lg border-2 border-blue-400 px-4 py-2 font-semibold text-blue-300 transition hover:bg-blue-400 hover:text-black"
+                  >
+                    Join
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
-      )}
-      <canvas ref={canvasRef} className="h-[600px] w-[800px]" />
+      </div>
     </div>
   );
 };
