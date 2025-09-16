@@ -107,7 +107,19 @@ const LocalGame: React.FC = () => {
   // Ensure the canvas has keyboard focus whenever play begins
   useLayoutEffect(() => {
     if (!isPlaying || !canvasRef.current) return;
+    // Focus on next paint to avoid any race with layout/reflow
     requestAnimationFrame(() => canvasRef.current?.focus({ preventScroll: true }));
+  }, [isPlaying]);
+
+  // Hide global navbar while playing (via body class)
+  useEffect(() => {
+    const cls = 'pong-playing';
+    if (isPlaying) {
+      document.body.classList.add(cls);
+    } else {
+      document.body.classList.remove(cls);
+    }
+    return () => document.body.classList.remove(cls);
   }, [isPlaying]);
 
   // Button handlers
@@ -125,12 +137,17 @@ const LocalGame: React.FC = () => {
   if (isPlaying) {
     return (
       <div className="relative h-screen w-full bg-black">
-        <canvas ref={canvasRef} className="block h-full w-full" tabIndex={0} />
+        <canvas ref={canvasRef} className="block h-full w-full" tabIndex={0} autoFocus />
         <button
+          type="button"
           onClick={handleQuit}
-          className="absolute right-4 top-4 rounded bg-white/10 px-4 py-2 text-sm font-semibold text-white backdrop-blur hover:bg-white/20"
+          className="game-quit-button absolute right-5 top-5"
+          aria-label="Quit game"
         >
           Quit
+          <span aria-hidden className="game-quit-hover-text">
+            Quit
+          </span>
         </button>
       </div>
     );

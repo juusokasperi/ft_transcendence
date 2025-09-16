@@ -4,3 +4,8 @@
   --color-primary: #2363eb;
   --color-secondary: #fbbf24;
 }
+
+/* Hide navbar during gameplay (toggled by LocalGame via body class) */
+body.pong-playing [data-app-navbar] {
+  display: none !important;
+}

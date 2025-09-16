@@ -35,8 +35,6 @@ interface PongInstance {
 }
 
 export function createLocalApp(canvas: HTMLCanvasElement): PongInstance {
-  canvas.tabIndex = 0;
-
   // Engine/scene/world
   const { engine, engineDisposable } = createEngine(canvas);
   const world = createWorld(engine);
@@ -112,14 +110,6 @@ export function createLocalApp(canvas: HTMLCanvasElement): PongInstance {
 
   // Input
   const detachInput = attachLocalInput(canvas);
-
-  // Ensure the canvas receives keyboard input immediately
-  canvas.focus({ preventScroll: true });
-  window.addEventListener('keydown', (e) => {
-    if (['z', 'w', 's', 'ArrowUp', 'ArrowDown'].includes(e.key)) {
-      console.log('[LocalGame] keydown:', e.key, 'activeElement=', document.activeElement?.tagName);
-    }
-  });
   scene.onDisposeObservable.add(detachInput);
 
   // Simple paddle-centering tween gate (kept in visuals)
