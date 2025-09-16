@@ -21,6 +21,8 @@ import type { FrameEvents } from '@pong/shared';
 import { SERVE_SELECT_TOTAL_MS } from '@pong/shared';
 import { clamp01 } from '@pong/shared';
 
+import { wsUrl } from '../../utils/url';
+
 // --- Net placeholders (wire your transport here) -----------------------------------
 type OnlineClient = {
   mySeat: PlayerSeat; // "P1" | "P2"
@@ -38,7 +40,7 @@ async function connectOnline(cfg: {
 }): Promise<OnlineClient> {
   const { serverUrl, matchId, seat } = cfg;
   console.log('[OnlineGame] Connecting to server:', serverUrl, 'matchId:', matchId, 'seat:', seat);
-  const gameWs = new WebSocket(`${serverUrl}/${matchId}?seat=${seat}`);
+  const gameWs = new WebSocket(wsUrl(`/game-server/${serverUrl}/${matchId}?seat=${seat}`));
 
   return await new Promise<OnlineClient>((resolve, reject) => {
     gameWs.addEventListener('error', (err) => {

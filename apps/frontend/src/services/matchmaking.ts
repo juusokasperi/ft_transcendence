@@ -14,9 +14,10 @@ export type MatchmakingMessage =
       seat: 'P1' | 'P2';
     };
 
+import { wsUrl } from '../utils/url';
+
 export function createMatchmakingClient(onMessage: (msg: MatchmakingMessage) => void) {
-  const url = import.meta.env.VITE_MATCHMAKING_URL as string;
-  const socket = new WebSocket(url);
+  const socket = new WebSocket(wsUrl('/matchmaking'));
   socket.addEventListener('message', (ev) => {
     try {
       onMessage(JSON.parse(ev.data) as MatchmakingMessage);
