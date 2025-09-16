@@ -21,7 +21,6 @@ import type { FrameEvents } from '@pong/shared';
 import { SERVE_SELECT_TOTAL_MS } from '@pong/shared';
 import { clamp01 } from '@pong/shared';
 
-
 // --- Net placeholders (wire your transport here) -----------------------------------
 type OnlineClient = {
   mySeat: PlayerSeat; // "P1" | "P2"
@@ -110,7 +109,6 @@ export function createOnlineApp(
   canvas: HTMLCanvasElement,
   cfg: { serverUrl: string; matchId: string; seat: PlayerSeat },
 ): PongInstance {
-
   // Engine/scene/world (identical to local)
   const { engine, engineDisposable } = createEngine(canvas);
   const world = createWorld(engine);
@@ -128,7 +126,6 @@ export function createOnlineApp(
   // Input
   const detachInput = attachLocalInput(canvas);
   scene.onDisposeObservable.add(detachInput);
-
 
   // Names (you'll likely get these from the lobby/room)
   const names = { east: 'Magenta', west: 'Green' } as const;

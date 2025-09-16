@@ -29,7 +29,6 @@ import { deriveSeed32 } from '@pong/shared';
 import { nextLocalMatchSeed } from '@pong/render';
 import { disposeWorld } from '@pong/render';
 
-
 interface PongInstance {
   start(): void;
   destroy(): void;

@@ -46,9 +46,9 @@ const OnlineGame: React.FC = () => {
 
   // Auto-focus canvas when starting/playing
   useLayoutEffect(() => {
-  if ((status !== 'starting' && status !== 'playing') || !canvasRef.current) return;
-  requestAnimationFrame(() => canvasRef.current?.focus({ preventScroll: true }));
-}, [status]);
+    if ((status !== 'starting' && status !== 'playing') || !canvasRef.current) return;
+    requestAnimationFrame(() => canvasRef.current?.focus({ preventScroll: true }));
+  }, [status]);
 
   // Hide global navbar while playing (via body class)
   useEffect(() => {
@@ -121,7 +121,9 @@ const OnlineGame: React.FC = () => {
           aria-label="Quit game"
         >
           Quit
-          <span aria-hidden className="game-quit-hover-text">Quit</span>
+          <span aria-hidden className="game-quit-hover-text">
+            Quit
+          </span>
         </button>
       </div>
     );
@@ -149,8 +151,8 @@ const OnlineGame: React.FC = () => {
                 status === 'connecting'
                   ? 'bg-yellow-500/20 text-yellow-300'
                   : status === 'lobby'
-                  ? 'bg-purple-500/20 text-purple-300'
-                  : 'bg-emerald-500/20 text-emerald-300'
+                    ? 'bg-purple-500/20 text-purple-300'
+                    : 'bg-emerald-500/20 text-emerald-300'
               }`}
             >
               {status}
@@ -174,11 +176,11 @@ const OnlineGame: React.FC = () => {
                   disabled={ready}
                   className={
                     ready
-                      ? "w-full rounded-lg border-2 border-green-400 px-4 py-2 font-semibold text-green-300 bg-green-900/80 cursor-default"
-                      : "w-full rounded-lg border-2 border-emerald-400 px-4 py-2 font-semibold text-emerald-300 transition hover:bg-emerald-400 hover:text-black"
+                      ? 'w-full cursor-default rounded-lg border-2 border-green-400 bg-green-900/80 px-4 py-2 font-semibold text-green-300'
+                      : 'w-full rounded-lg border-2 border-emerald-400 px-4 py-2 font-semibold text-emerald-300 transition hover:bg-emerald-400 hover:text-black'
                   }
                 >
-                  {ready ? "Ready! ✅" : "I’m Ready ✅"}
+                  {ready ? 'Ready! ✅' : 'I’m Ready ✅'}
                 </button>
               </div>
             ) : (
