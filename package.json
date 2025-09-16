@@ -62,5 +62,8 @@
     "@babylonjs/gui": "8.27.0",
     "@babylonjs/loaders": "8.27.0",
     "@babylonjs/materials": "8.27.0"
+  },
+  "dependencies": {
+    "react-icons": "^5.5.0"
   }
 }

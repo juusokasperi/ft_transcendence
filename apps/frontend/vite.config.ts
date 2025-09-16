@@ -14,5 +14,8 @@ export default defineConfig({
   },
   cacheDir: './.vite',
   plugins: [react(), tailwindcss(), tsconfigPaths({ projects: ['./tsconfig.json'] })],
+   optimizeDeps: {
+    include: ['react-icons/fi'], 
+  },
   test: { globals: true, environment: 'jsdom' },
 });

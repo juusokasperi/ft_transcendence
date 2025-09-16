@@ -14,7 +14,7 @@ const Layout: React.FC = () => {
   }, [user]);
 
   return (
-    <div className="flex h-screen flex-col">
+    <div className="flex h-screen flex-col ">
       <Navbar />
       <div className="flex h-full">
         <Sidebar />
