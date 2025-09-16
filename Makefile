@@ -127,6 +127,8 @@ fclean:
 	-$(MAKE) builder-prune
 	@echo ">> Removing builder '$(BUILDER)'"
 	-$(MAKE) builder-rm
+	@echo ">> Removing Buildx BuildKit image if unused"
+	- docker image rm -f moby/buildkit:buildx-stable-1 || true
 
 re: fclean up
 
