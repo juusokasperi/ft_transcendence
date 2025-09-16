@@ -78,11 +78,13 @@ elk-detached:
 
 mon:
 	$(ensure_dirs)
-	docker compose -p $(NAME) $(ROOT_COMPOSE) $(ENV_ROOT) --profile monitoring up --build
+	$(ensure_builder)
+	docker compose -p $(NAME)  --profile monitoring up --build
 
 mon-detached:
 	$(ensure_dirs)
-	docker compose -p $(NAME) $(ROOT_COMPOSE) $(ENV_ROOT) --profile monitoring up --build -d
+	$(ensure_builder)
+	docker compose -p $(NAME)  --profile monitoring up --build -d
 
 down:
 	@echo ">> Stopping & removing default stack (volumes, local images, orphans)"
