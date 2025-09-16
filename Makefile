@@ -119,8 +119,10 @@ clean:
 fclean:
 	@echo ">> FCLEAN: clean + prune build cache + remove builder"
 	-$(MAKE) clean
-	@echo ">> Removing base images: node:22-bookworm and nginx:1.27 (incl. -alpine)"
-	- docker image rm -f node:22-bookworm nginx:1.27 nginx:1.27-alpine || true
+	@echo ">> Removing images referenced by compose (default profile)"
+	- docker compose -p $(NAME) $(ROOT_COMPOSE) $(ENV_ROOT) config --images | sort -u | xargs -r docker image rm -f
+	@echo ">> Removing images referenced by compose (elk profile)"
+	- docker compose -p $(NAME) $(ROOT_COMPOSE) $(ENV_ROOT) --profile elk config --images | sort -u | xargs -r docker image rm -f
 	@echo ">> Pruning build cache for builder '$(BUILDER)'"
 	-$(MAKE) builder-prune
 	@echo ">> Removing builder '$(BUILDER)'"
