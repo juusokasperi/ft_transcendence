@@ -10,6 +10,10 @@ import { computeBounds } from '@pong/render';
 import { detectEnteredServe, onEnteredServe } from '@pong/render';
 import { mapStateForPlayerRows } from '@pong/render';
 import { attachLocalInput } from '@pong/render';
+import { createBounces } from '@pong/render';
+import { createPaddleAnimator } from '@pong/render';
+import { toggleControlsMirrored } from '@pong/render';
+import { incHide, decHide } from '@pong/render';
 
 import { readIntent } from '@pong/render';
 import { blockInputFor } from '@pong/render';
@@ -143,13 +147,42 @@ export function createOnlineApp(
     camera: world.camera,
   });
 
+  // Visual bounce helper — deterministic per match (visual-only)
+  function hash32(s: string): number {
+    // FNV-1a 32-bit hash (deterministic enough for seed)
+    let h = 0x811c9dc5 >>> 0;
+    for (let i = 0; i < s.length; i++) {
+      h ^= s.charCodeAt(i);
+      h = Math.imul(h, 0x01000193) >>> 0;
+    }
+    return h >>> 0;
+  }
+  const matchSeed = hash32(cfg.matchId);
+  const Bounces = createBounces(
+    ball.mesh,
+    table.tableTop.position.y,
+    bounds.ballRadius,
+    bounds.halfLengthX,
+    left.mesh,
+    right.mesh,
+    matchSeed,
+  );
+
+  // Paddle centering tween for serve cues and swaps
+  const paddleAnim = createPaddleAnimator(scene, left.mesh, right.mesh);
+
+  // Local render clamp to match table and paddle geometry
+  const paddleMaxZ = bounds.halfWidthZ - bounds.paddleHalfDepthZ;
+  const clampPaddleZ = (z: number) => Math.max(-paddleMaxZ, Math.min(paddleMaxZ, z));
+
   // --- Net state -------------------------------------------------------------------
   let net!: OnlineClient;
   let mySeat: PlayerSeat = 'P1'; // set after connect()
   let oppAxis = 0; // last known opponent axis
   let latest: GameState | null = null; // latest server snapshot
-  let lastEvents: FrameEvents = {}; // events paired with latest snapshot
+  const eventQueue: FrameEvents[] = []; // buffer to avoid dropping events between frames
   let prevPhase: GameState['phase'] | null = null;
+  let didBootFX = false;
 
   // Simple (optional) rows mirroring knob if you choose to flip per-game
   // NOTE: With server-authoritative flow, you can toggle this via messages.
@@ -184,38 +217,50 @@ export function createOnlineApp(
         const ballX = hasPrev ? lerp(ref.ball.x, snap.ball.x, alpha) : snap.ball.x;
         const ballVX = ((snap.ball.x - ref.ball.x) / Math.max(1, currT - prevT)) * 1000;
 
-        // Ball Y via the same visual bounce helper you use locally
-        // (optional — you can also drive Y directly from server if you send it)
-        const BOUNCE_Y = (() => {
-          // ultra-tiny stateless parabola over X; or keep at table height
-          return 0; // keep simple; or plug your existing createBounces if desired
-        })();
+        // Ball Y via the same visual bounce helper used locally
+        const ballY = Bounces.update(ballX, ballVX);
 
         ball.mesh.position.set(
           ballX,
-          BOUNCE_Y,
+          ballY,
           hasPrev ? lerp(ref.ball.z, snap.ball.z, alpha) : snap.ball.z,
         );
 
-        // Paddles (authoritative from server)
-        left.mesh.position.z = hasPrev
-          ? lerp(ref.paddles.P1.z, snap.paddles.P1.z, alpha)
-          : snap.paddles.P1.z;
-        right.mesh.position.z = hasPrev
-          ? lerp(ref.paddles.P2.z, snap.paddles.P2.z, alpha)
-          : snap.paddles.P2.z;
+        // Paddles (authoritative from server) — clamp to local render bounds
+        if (!paddleAnim.isAnimating()) {
+          const p1z = hasPrev
+            ? lerp(ref.paddles.P1.z, snap.paddles.P1.z, alpha)
+            : snap.paddles.P1.z;
+          const p2z = hasPrev
+            ? lerp(ref.paddles.P2.z, snap.paddles.P2.z, alpha)
+            : snap.paddles.P2.z;
+          left.mesh.position.z = clampPaddleZ(p1z);
+          right.mesh.position.z = clampPaddleZ(p2z);
+        }
 
-        // 3) HUD (player-pinned if you decide to mirror rows)
+        // 3) HUD (player-pinned)
         const stateForHUD = mapStateForPlayerRows(snap, rowsMirrored);
-        updateHUD(hud, stateForHUD, names /* optional match snapshot here */);
+        const bestOf = snap.params.bestOf | 0;
+        const finishedGames = (snap.games.east | 0) + (snap.games.west | 0);
+        const currentGameIndex = Math.min(
+          bestOf || 1,
+          finishedGames + (snap.phase === 'matchOver' ? 0 : 1),
+        );
+        updateHUD(hud, stateForHUD, names, {
+          bestOf: bestOf || 1,
+          currentGameIndex,
+          gamesHistory: [], // server does not send history; show current/live only
+        });
       }
 
-      // 4) FX from last frame’s server events
-      if (lastEvents) {
+      // 4) Drain FX events queued from snapshots (avoid dropping on mismatch rates)
+      if (eventQueue.length) {
         const y = ball.mesh.position.y;
-        applyFrameEvents(fx, lastEvents, y);
-        // clear or keep — depends on how often server sends them; tiny shell: clear
-        lastEvents = {};
+        // apply all pending events this frame (they are cheap)
+        while (eventQueue.length) {
+          const ev = eventQueue.shift();
+          if (ev) applyFrameEvents(fx, ev, y);
+        }
       }
     },
   });
@@ -236,24 +281,42 @@ export function createOnlineApp(
 
     net.onSnapshot((s, ev) => {
       //console.log('[OnlineGame] Received snapshot. Phase:', s.phase);
+      if (!didBootFX) {
+        didBootFX = true;
+        incHide(ball.mesh);
+        incHide(ball.mesh);
+        // Schedule initial visual serve bounce based on current server
+        const dir = s.server === 'east' ? -1 : 1;
+        Bounces.scheduleServe(dir);
+        void fx.serveSelection(s.server).then(() => {
+          decHide(ball.mesh);
+          decHide(ball.mesh);
+        });
+      }
       // Phase transition hook → serve cues
       if (prevPhase && s.phase !== prevPhase) {
         const entered = detectEnteredServe(prevPhase, s.phase);
         if (entered) {
           onEnteredServe(entered, {
             ballMesh: ball.mesh,
-            // If you decide to use createBounces here, pass it; tiny shell omits for brevity.
-            Bounces: {
-              scheduleServe: () => {},
-              update: () => 0,
-              clear: () => {},
-            } as any,
-            paddleAnim: { cue: () => 0 },
+            Bounces,
+            paddleAnim,
             blockInputFor,
           });
         }
       }
       prevPhase = s.phase;
+
+      // Respond to server signaled side swaps (if present in events)
+      const anyEv = ev as any;
+      if (anyEv && anyEv.swapSidesNow) {
+        toggleControlsMirrored();
+        const m = left.mesh.material;
+        left.mesh.material = right.mesh.material;
+        right.mesh.material = m;
+        rowsMirrored = !rowsMirrored;
+        paddleAnim.cue(180);
+      }
 
       // Snapshot ring for tiny interpolation
       prevSnap = latest ?? s;
@@ -261,8 +324,12 @@ export function createOnlineApp(
       prevT = currT;
       currT = performance.now() + 60; // small buffer; tune to your tick + net jitter
 
-      // FX events piggybacked with this snapshot
-      lastEvents = ev || {};
+      // Queue FX events from this snapshot; avoid overwriting if multiple snapshots arrive
+      if (ev && (ev.wallHit || ev.explode)) {
+        // cap queue size to prevent unbounded growth under extreme lag
+        if (eventQueue.length > 8) eventQueue.splice(0, eventQueue.length - 8);
+        eventQueue.push(ev);
+      }
     });
 
     loop.start();
