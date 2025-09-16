@@ -1,12 +1,12 @@
-import fastify from "fastify";
-import cors from "@fastify/cors";
-import fastifyMultipart from "@fastify/multipart";
-import fastifyStatic from "@fastify/static";
-import swagger from "@fastify/swagger";
-import swaggerUi from "@fastify/swagger-ui";
-import cookie from "@fastify/cookie";
-import "./metrics/sqlite-patch.ts";
-import googleSign from "./routes/googleSign.ts";
+import fastify from 'fastify';
+import cors from '@fastify/cors';
+import fastifyMultipart from '@fastify/multipart';
+import fastifyStatic from '@fastify/static';
+import swagger from '@fastify/swagger';
+import swaggerUi from '@fastify/swagger-ui';
+import cookie from '@fastify/cookie';
+import './metrics/sqlite-patch.ts';
+import googleSign from './routes/googleSign.ts';
 import {
   UPLOAD_DIR,
   BACKEND_HOST,
@@ -34,7 +34,7 @@ const app = fastify({
   },
 });
 
-import { registerMetrics } from "./metrics/fastify-metrics.ts";
+import { registerMetrics } from './metrics/fastify-metrics.ts';
 registerMetrics(app);
 
 app.setErrorHandler(prettierErrorMessages);
@@ -46,12 +46,12 @@ await app.register(googleSign);
 await app.register(cors, {
   origin: (origin, cb) => {
     // Allow direct FE and Nginx FE
-    const allowed = [FRONTEND_URL, "http://localhost:" + NGINX_PORT];
+    const allowed = [FRONTEND_URL, 'http://localhost:' + NGINX_PORT];
     if (!origin || allowed.includes(origin)) return cb(null, true);
     return cb(null, false);
   },
   credentials: true,
-  methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
 });
 
 app.register(fastifyMultipart, {
@@ -63,10 +63,10 @@ app.register(fastifyMultipart, {
 
 app.register(fastifyStatic, {
   root: UPLOAD_DIR,
-  prefix: "/uploads/",
+  prefix: '/uploads/',
 }); // Serving the avatar images to frontend via http://<backend-url>/uploads/<filename>
 
-app.get("/health", async () => ({ status: "ok" }));
+app.get('/health', async () => ({ status: 'ok' }));
 
 await runMigrations();
 
@@ -79,7 +79,7 @@ app.register(signupRoutes, { prefix: '/api/signup' });
 app.register(resetPasswordRoutes, { prefix: '/api/reset-password' });
 
 await app.register(swaggerUi, {
-  routePrefix: "/docs",
+  routePrefix: '/docs',
 });
 await app.ready();
 app.swagger();
