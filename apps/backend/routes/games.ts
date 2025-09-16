@@ -3,15 +3,14 @@ import db from '../db/client.ts';
 import { getUserStats, updateUserRanking } from '../db/queries/users.ts';
 import { addGame } from '../db/queries/games.ts';
 import { gameAuthPreHandler } from '../hooks/auth.ts';
+import { addGameSchema } from '../schemas/gamesSchemas.ts';
 
 /*
 The service calling this route must include a jwt token with GAME_SECRET
 
 Req body must contain:
-Team 1 Players:
-{ player1Id: string; player2Id?: string; }
-Team 2 Players:
-{ player1Id: string; player2Id?: string; }
+Team 1 Players: string[]
+Team 2 Players: string[]
 Team 1 Score
 Team 2 Score
 Optional tournamentI and tournamentStage
@@ -20,12 +19,13 @@ Left for later implementation;
 We could add a simple Tournaments table, that contains at least id and createdBy
 */
 
+// Different stages of tournament can affect ELO rating more
 function getTournamentMultiplier(tournamentStage?: string): number {
   if (!tournamentStage) return 1.0;
 
   // Add stuff here, so the awarded points can be different based on the tournament stage
   const multipliers: Record<string, number> = {
-    'quartefinal': 1.15,
+    'quarterfinal': 1.15,
     'semifinal': 1.25,
     'final': 1.5,
   };
@@ -53,12 +53,13 @@ function calculateEloChange(
 
   return Math.round(K * (actualScore - expectedScore));
 };
+
 export async function gamesRoutes(app: FastifyInstance) {
   app.post(
     '/',
   {
-    //schema: gamesSchema,
-    //preHandler: [gameAuthPreHandler]
+    schema: addGameSchema,
+    preHandler: [gameAuthPreHandler]
   },
   async (req: FastifyRequest, res: FastifyReply) => {
     const transaction = db.transaction(() => {
@@ -74,7 +75,7 @@ export async function gamesRoutes(app: FastifyInstance) {
       const team1Stats = team1Players.map(id => getUserStats(id));
       const team2Stats = team2Players.map(id => getUserStats(id));
       if (team1Stats.length !== team1Players.length || team2Stats.length !== team2Players.length)
-        throw new Error('One or more players not found in database.');
+        throw new Error('One or more players not found in database');
 
       const team1AvgElo = team1Stats.reduce((sum, stats) => sum + (stats!.ranking), 0) / team1Stats.length;
       const team2AvgElo = team2Stats.reduce((sum, stats) => sum + (stats!.ranking), 0) / team2Stats.length;
@@ -119,7 +120,7 @@ export async function gamesRoutes(app: FastifyInstance) {
 
     try {
         const result = transaction();
-        return res.status(200).send({ message: 'Game succesfully added to database.', ...result });
+        return res.status(200).send({ message: 'Game successfully added to database', ...result });
     } catch (error) {
       console.error('Transaction failed:', error);
       return res.status(500).send({
