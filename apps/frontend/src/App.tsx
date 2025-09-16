@@ -10,6 +10,7 @@ import Friends from './pages/Friends';
 import Confirmation from './pages/Confirmation';
 import PingPong from './pages/PingPong/PingPong';
 import LocalGame from './pages/PingPong/LocalGame';
+import OnlineGame from './pages/PingPong/OnlineGame';
 
 function App() {
   return (
@@ -23,6 +24,7 @@ function App() {
         <Route path={'/login'} element={<Login />} />
         <Route path={'/ping-pong'} element={<PingPong />} />
         <Route path={'/ping-pong/local'} element={<LocalGame />} />
+        <Route path={'/ping-pong/online'} element={<OnlineGame />} />
         <Route path={'/confirm/:confirmationToken'} element={<Confirmation />} />
         <Route path={'/profile'} element={<Layout />}>
           <Route index element={<Profile />} />

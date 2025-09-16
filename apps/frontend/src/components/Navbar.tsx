@@ -5,7 +5,10 @@ const Navbar = () => {
   const { user, logout } = useAppContext();
 
   return (
-    <nav className="bg-white/3 absolute left-0 top-0 z-50 flex w-full items-center justify-between border-b border-white/10 px-6 py-4 text-white backdrop-blur-md">
+    <nav
+      data-app-navbar
+      className="bg-white/3 absolute left-0 top-0 z-50 flex w-full items-center justify-between border-b border-white/10 px-6 py-4 text-white backdrop-blur-md"
+    >
       {/* Brand */}
       <div className="bg-gradient-to-r from-indigo-400 to-purple-500 bg-clip-text text-2xl font-extrabold text-transparent drop-shadow-lg">
         <Link to="/">
