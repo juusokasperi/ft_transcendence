@@ -10,7 +10,7 @@
 
   const origGetContext = canvasProto.getContext as typeof HTMLCanvasElement.prototype.getContext;
 
-  canvasProto.getContext = function patchedGetContext(type: string, options?: any) {
+  canvasProto.getContext = function patchedGetContext(this: HTMLCanvasElement, type: string, options?: any) {
     const ctx = origGetContext.call(this, type, options) as
       | WebGLRenderingContext
       | WebGL2RenderingContext
