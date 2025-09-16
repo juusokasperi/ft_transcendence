@@ -29,7 +29,6 @@ import { deriveSeed32 } from '@pong/shared';
 import { nextLocalMatchSeed } from '@pong/render';
 import { disposeWorld } from '@pong/render';
 
-import { setupCanvasFocus } from '../utils/canvasFocus';
 
 interface PongInstance {
   start(): void;

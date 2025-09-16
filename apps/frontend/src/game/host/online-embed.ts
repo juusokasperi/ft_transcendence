@@ -1,5 +1,6 @@
 import '@pong/render/ui/tailwind.css';
 import '@pong/render/register';
+import './gl-shim';
 import type { PlayerSeat } from '@pong/render';
 
 import { createPongApp } from '../index';
