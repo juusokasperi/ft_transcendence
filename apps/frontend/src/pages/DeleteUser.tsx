@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { useAppContext } from '../context/AppContext';
@@ -15,7 +14,7 @@ const DeleteUser = () => {
       try {
         console.log(confirmationToken);
         await axios.post(`/api/users/me/confirm-delete/${confirmationToken}`, {
-          token: confirmationToken
+          token: confirmationToken,
         });
 
         setStatus('success');

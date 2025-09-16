@@ -20,8 +20,7 @@ const Sidebar: React.FC = () => {
     <>
       {/* Mobile Hamburger Button */}
       <button
-        className=" fixed top-16 left-6 z-50 flex h-8 w-8 items-center justify-center rounded bg-purple-800 text-white md:hidden"
-
+        className="fixed left-6 top-16 z-50 flex h-8 w-8 items-center justify-center rounded bg-purple-800 text-white md:hidden"
         onClick={() => setIsOpen(!isOpen)}
       >
         {isOpen ? <FiX size={24} /> : <FiMenu size={24} />}
@@ -29,7 +28,7 @@ const Sidebar: React.FC = () => {
 
       {/* Sidebar */}
       <div
-        className={`fixed top-0 left-0 z-40 h-full w-64 flex-col border-r border-gray-300 bg-white pt-28 text-base transition-transform duration-300 md:relative md:translate-x-0 ${
+        className={`fixed left-0 top-0 z-40 h-full w-64 flex-col border-r border-gray-300 bg-white pt-28 text-base transition-transform duration-300 md:relative md:translate-x-0 ${
           isOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
