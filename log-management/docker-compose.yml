@@ -1,3 +1,5 @@
+name: ft-transcendence-dev
+
 volumes:
   elk_certs:
     driver: local

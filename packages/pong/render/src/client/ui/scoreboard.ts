@@ -33,62 +33,33 @@ function createEl<K extends keyof HTMLElementTagNameMap>(
  */
 export function createScoreboard(): DomScoreboardAPI {
   const existingRoot = document.getElementById('pong-hud-root') as HTMLDivElement | null;
-  const root = existingRoot ?? createEl('div', 'pointer-events-none fixed inset-0 z-50');
+  const root = existingRoot ?? createEl('div', 'pong-hud-root');
+  if (!existingRoot) root.id = 'pong-hud-root';
   if (!existingRoot) document.body.appendChild(root);
 
   // Overlay that tracks the canvas rect
-  const overlay = createEl('div', 'pointer-events-none absolute inset-0');
+  const overlay = createEl('div', 'pong-hud-overlay');
   root.appendChild(overlay);
 
   // ===== OUTER WRAP: 2-column grid
   // Left column width must hug content → max-content (this removes the “full-width bar” effect)
-  const wrap = createEl('div', 'relative mx-auto mt-3 grid items-center gap-x-3 w-fit');
+  const wrap = createEl('div', 'pong-hud-wrap');
   // Explicitly define columns: [max-content | auto]
   wrap.style.gridTemplateColumns = 'max-content auto';
   overlay.appendChild(wrap);
 
   // ===== LEFT NAMES PANEL (GLASS ONLY — NO GRADIENT)
-  const panel = createEl(
-    'div',
-    [
-      'row-span-2',
-      'rounded-xl',
-      'border border-white/12',
-      'bg-slate-900/60 backdrop-blur-md',
-      'px-2 py-1', // PANEL_PAD_X = 8px
-      'shadow-[0_8px_24px_rgba(0,0,0,0.38)]',
-    ].join(' '),
-  );
+  const panel = createEl('div', 'pong-hud-panel');
   wrap.appendChild(panel);
 
   // One name row inside panel
   function makeNameRow() {
-    const row = createEl('div', 'grid items-center gap-x-2 h-10');
+    const row = createEl('div', 'pong-hud-name-row');
     row.style.gridTemplateColumns = '18px max-content';
 
-    const orb = createEl(
-      'div',
-      [
-        'w-[14px] h-[14px] rounded-full',
-        'border border-white/20',
-        'bg-white/12',
-        'shadow-[0_0_0_1px_rgba(255,255,255,.06)]',
-      ].join(' '),
-    );
+    const orb = createEl('div', 'pong-hud-orb');
 
-    const name = createEl(
-      'div',
-      [
-        'whitespace-nowrap', // keep one line
-        'px-[6px]',
-        'text-[24px]',
-        'md:text-[26px]',
-        'leading-[1.05]',
-        'font-semibold text-slate-100 select-none',
-        // intentionally no overflow clamp: panel expands to longest name
-      ].join(' '),
-      '-',
-    );
+    const name = createEl('div', 'pong-hud-name', '-');
 
     row.append(orb, name);
     return { row, name, orb };
@@ -102,10 +73,7 @@ export function createScoreboard(): DomScoreboardAPI {
   panel.appendChild(names.east.row);
 
   // cyan divider
-  const divider = createEl(
-    'div',
-    'my-1 h-[3px] rounded-full bg-gradient-to-r from-cyan-300/80 via-sky-400/80 to-cyan-300/80 shadow-[0_0_12px_rgba(56,189,248,.35)]',
-  );
+  const divider = createEl('div', 'pong-hud-divider');
   panel.appendChild(divider);
   panel.appendChild(names.west.row);
 
@@ -116,26 +84,13 @@ export function createScoreboard(): DomScoreboardAPI {
   applyNameColumns();
 
   // ===== RIGHT COLUMN: score boxes aligned with each row
-  const rightTop = createEl('div', 'h-10 flex items-center gap-1 justify-start');
-  const rightBottom = createEl('div', 'h-10 flex items-center gap-1 justify-start');
+  const rightTop = createEl('div', 'pong-hud-right-row');
+  const rightBottom = createEl('div', 'pong-hud-right-row');
   wrap.appendChild(rightTop);
   wrap.appendChild(rightBottom);
 
   // Deuce pill (centered under the scoreboard)
-  const deuce = createEl(
-    'div',
-    [
-      'col-span-2',
-      'justify-self-center',
-      'mt-1',
-      'px-2 py-[2px] rounded-md',
-      'bg-white/10 text-white/90',
-      'text-[11px] tracking-wider font-semibold uppercase',
-      'border border-white/15 shadow-[0_6px_16px_rgba(0,0,0,.25)]',
-      'transition-opacity',
-    ].join(' '),
-    'Deuce',
-  );
+  const deuce = createEl('div', 'pong-hud-deuce', 'Deuce');
   deuce.style.opacity = '0';
   wrap.appendChild(deuce);
 
@@ -148,35 +103,13 @@ export function createScoreboard(): DomScoreboardAPI {
 
   // boxes
   function makeBox() {
-    return createEl(
-      'div',
-      [
-        'w-9 h-9',
-        'rounded-md border border-white/10',
-        'grid place-items-center',
-        'bg-white/5 text-white/90',
-        'text-[13px] font-extrabold tabular-nums select-none',
-      ].join(' '),
-    );
+    return createEl('div', 'pong-hud-box');
   }
   function decorateWinner(el: HTMLElement) {
-    el.classList.add(
-      'ring-1',
-      'ring-cyan-300/70',
-      'text-[16px]',
-      'shadow-[0_0_0_1px_rgba(56,189,248,.35),0_0_18px_rgba(56,189,248,.25)]',
-      'bg-white/10',
-    );
+    el.classList.add('pong-hud-box-winner');
   }
   function decorateCurrent(el: HTMLElement) {
-    el.classList.add(
-      'ring-1',
-      'ring-white/30',
-      'shadow-[inset_0_0_0_1px_rgba(255,255,255,.05)]',
-      'text-[24px]',
-      'md:text-[26px]',
-      'leading-[0.95]',
-    );
+    el.classList.add('pong-hud-box-current');
   }
 
   function renderBoxesRow(
@@ -220,19 +153,13 @@ export function createScoreboard(): DomScoreboardAPI {
     if (currentBoxEl.east) {
       const el = currentBoxEl.east;
       if (el.textContent !== String(lastPoints.east)) {
-        el.classList.remove('score-flip');
-        void el.offsetWidth;
         el.textContent = String(lastPoints.east);
-        el.classList.add('score-flip');
       }
     }
     if (currentBoxEl.west) {
       const el = currentBoxEl.west;
       if (el.textContent !== String(lastPoints.west)) {
-        el.classList.remove('score-flip');
-        void el.offsetWidth;
         el.textContent = String(lastPoints.west);
-        el.classList.add('score-flip');
       }
     }
   };
@@ -245,19 +172,8 @@ export function createScoreboard(): DomScoreboardAPI {
     const on = names[active].orb;
     const off = names[passive].orb;
 
-    on.classList.add(
-      'bg-cyan-300',
-      'shadow-[0_0_10px_rgba(56,189,248,.85),0_0_2px_rgba(56,189,248,.9)]',
-      'border-cyan-300/70',
-    );
-    on.classList.remove('bg-white/12', 'border-white/20');
-
-    off.classList.remove(
-      'bg-cyan-300',
-      'shadow-[0_0_10px_rgba(56,189,248,.85),0_0_2px_rgba(56,189,248,.9)]',
-      'border-cyan-300/70',
-    );
-    off.classList.add('bg-white/12', 'border-white/20');
+    on.classList.add('pong-hud-orb-active');
+    off.classList.remove('pong-hud-orb-active');
   };
 
   const setDeuce = (flag: boolean) => {
