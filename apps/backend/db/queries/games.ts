@@ -2,7 +2,7 @@ import db from '../client.ts';
 import type { GameWithPlayers, PublicUser } from '../../types/types.ts';
 import type { GameDb, GamePlayerDb } from '../../types/dbtypes.ts';
 
-function addGameHelper(team1Score: number, team2Score: number, tournamentId?: string, tournamentStage?: string): number | null {
+function addGameHelper(team1Score: number, team2Score: number, tournamentId?: number, tournamentStage?: string): number | null {
   try {
     const result = db
       .prepare(
@@ -18,16 +18,16 @@ function addGameHelper(team1Score: number, team2Score: number, tournamentId?: st
   }
 }
 
-function addGamePlayerHelper(gameId: number, uuid: string, team: number): number | null {
+function addGamePlayerHelper(gameId: number, uuid: string, team: number, pointsAwarded: number): number | null {
   try {
     const result = db
       .prepare(
         `
-			INSERT INTO GamePlayers (game_id, user_uuid, team_number)
-			VALUES (?, ?, ?)
+			INSERT INTO GamePlayers (game_id, user_uuid, team_number, points_awarded)
+			VALUES (?, ?, ?, ?)
 			`,
       )
-      .run(gameId, uuid, team);
+      .run(gameId, uuid, team, pointsAwarded);
     return result.lastInsertRowid as number;
   } catch (error) {
     return null;
@@ -65,18 +65,23 @@ export function addGame(
   tournamentStage?: string,
 ): number | null {
   const transaction = db.transaction(() => {
-    const gameId = addGameHelper(team1Score, team2Score);
+    let gameId;
+    if (tournamentId && tournamentStage)
+      gameId = addGameHelper(team1Score, team2Score, tournamentId, tournamentStage);
+    else
+      gameId = addGameHelper(team1Score, team2Score);
+
     if (!gameId) throw new Error('Failed to create game');
 
     const team1Players = Array.isArray(team1) ? team1 : [team1];
     const team2Players = Array.isArray(team2) ? team2 : [team2];
 
     for (const playerId of team1Players) {
-      const result = addGamePlayerHelper(gameId, playerId, 1);
+      const result = addGamePlayerHelper(gameId, playerId, 1, team1Points);
       if (!result) throw new Error(`Failed to add team 1 player: ${playerId}`);
     }
     for (const playerId of team2Players) {
-      const result = addGamePlayerHelper(gameId, playerId, 2);
+      const result = addGamePlayerHelper(gameId, playerId, 2, team2Points);
       if (!result) throw new Error(`Failed to add team 2 player: ${playerId}`);
     }
 

@@ -1,6 +1,6 @@
 import jwt from 'jsonwebtoken';
 import type { FastifyReply, FastifyRequest } from 'fastify';
-import { SECRET } from '../utils/config.ts';
+import { SECRET, GAME_SECRET } from '../utils/config.ts';
 
 // Checks that the request came with an authorization (for protected routes)
 // and that the token is valid.
@@ -53,4 +53,24 @@ export function normalizeCredentials(req: FastifyRequest, res: FastifyReply, don
   normalize('currentPassword');
   normalize('email');
   done();
+}
+
+// Checks that the game adding request came with an authorization (for protected routes)
+// and that the token is valid.
+export function gameAuthPreHandler(req: FastifyRequest, res: FastifyReply, done: Function): void {
+  const authHeader = req.headers.authorization;
+  let token: string | undefined;
+  if (authHeader && authHeader.toLowerCase().startsWith('bearer ')) {
+    token = authHeader.split(' ')[1];
+
+  if (!token) {
+    res.status(401).send({ message: 'Missing game authorization token' });
+    return;
+  }
+  try {
+    const payload = jwt.verify(token, GAME_SECRET); // (optionally: as any as JWTPayload)
+    done();
+  } catch {
+    res.status(401).send({ message: 'Invalid or expired game service token' });
+  }
 }

@@ -9,6 +9,7 @@ dotenv.config();
 const REQUIRED = [
   'FRONTEND_URL',
   'SECRET',
+  'GAME_SECRET',
   'DATABASE_PATH',
   'BACKEND_HOST',
   'BACKEND_PORT',
@@ -38,6 +39,7 @@ export const DATABASE_PATH = DB_PATH;
 export const BACKEND_PORT = Number(process.env.BACKEND_PORT!);
 export const BACKEND_HOST = process.env.BACKEND_HOST as string;
 export const SECRET = process.env.SECRET as string;
+export const GAME_SECRET = process.env.GAME_SECRET as string;
 export const FRONTEND_URL = process.env.FRONTEND_URL as string;
 export const NGINX_PORT = process.env.NGINX_PORT as string;
 

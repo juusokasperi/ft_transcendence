@@ -408,3 +408,12 @@ export function updateUserSettings(
     return false;
   }
 }
+
+export function updateUserRanking(uuid: string, newRanking: number): Boolean {
+  const res = db.prepare(`
+    UPDATE Users
+    SET ranking = ?
+    WHERE uuid = ?
+    `).run(newRanking, uuid);
+  return res.changes === 1;
+}
