@@ -139,10 +139,10 @@ services:
       deps:
         condition: service_completed_successfully
     networks: [devnet]
-    #logging: # needed for logstash (ELK stack) #Ask Leon about this
-      #driver: gelf
-      #options:
-        #gelf-address: udp://localhost:12201
+    logging: # needed for logstash (ELK stack) #Ask Leon about this
+      driver: gelf
+      options:
+        gelf-address: udp://localhost:12201
 
 # 6) Game server (WebSocket server)
   game-server:
@@ -166,10 +166,10 @@ services:
       deps:
         condition: service_completed_successfully
     networks: [devnet]
-    #logging: # needed for logstash (ELK stack) #Ask Leon about this
-      #driver: gelf
-      #options:
-        #gelf-address: udp://localhost:12201
+    logging: # needed for logstash (ELK stack) #Ask Leon about this
+      driver: gelf
+      options:
+        gelf-address: udp://localhost:12201
 
 
 
