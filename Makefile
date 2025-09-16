@@ -48,7 +48,7 @@ endef
 # ========================
 #  Orchestration
 # ========================
-.PHONY: all up detached elk elk-detached down down-elk clean prune-label nuke check-leftovers fclean re stop restart restart-elk restart-% builder-init builder-use builder-prune builder-rm check-leftovers-global overview-docker
+.PHONY: all up detached elk elk-detached down down-elk clean nuke check-leftovers fclean re stop restart restart-elk restart-% builder-init builder-use builder-prune builder-rm check-leftovers-global overview-docker
 all: up
 
 up:
@@ -98,8 +98,6 @@ clean:
 	- docker volume ls  -q  --filter "label=com.docker.compose.project=$(NAME)" | xargs -r docker volume rm
 	@echo ">> Removing images labeled to this project"
 	- docker image ls   -q  --filter "label=com.docker.compose.project=$(NAME)" | xargs -r docker rmi -f
-	@echo ">> Pruning UNUSED resources with this project label"
-	-$(MAKE) prune-label
 	@echo ">> Removing workspace artifacts via helper image ($(CLEAN_HELPER_IMG))"
 	@docker run --rm -v "$(CURDIR)":/work -w /work $(CLEAN_HELPER_IMG) \
 	  sh -c "\
@@ -196,12 +194,6 @@ builder-rm:
 # ========================
 #  Project-scoped prunes & checks
 # ========================
-prune-label:
-	@echo ">> docker *prune (containers/images/networks/volumes) — scoped by project label"
-	- docker container prune -f --filter "label=com.docker.compose.project=$(NAME)"
-	- docker image     prune -f --filter "label=com.docker.compose.project=$(NAME)"
-	- docker network   prune -f --filter "label=com.docker.compose.project=$(NAME)"
-	- docker volume    prune -f --filter "label=com.docker.compose.project=$(NAME)"
 
 nuke:
 	@if [ "$(CONFIRM)" != "1" ]; then \
@@ -242,7 +234,6 @@ help:
 	@echo "  make clean                # Project-scoped cleanup (containers, networks, volumes, images, package store, app data)"
 	@echo "  make fclean               # 'clean' + prune builder cache + remove builder"
 	@echo "  make re                   # fclean + up"
-	@echo "  make prune-label          # Prune UNUSED resources with this project's label"
 	@echo "  make nuke CONFIRM=1       # GLOBAL prune of ALL UNUSED Docker data (+builder cache)"
 	@echo "  overview-docker           # Show ALL Docker resources on this machine"
 	@echo ""
