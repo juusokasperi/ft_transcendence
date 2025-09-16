@@ -37,7 +37,7 @@ jobs:
       - name: Install dependencies (workspace)
         run: pnpm install --frozen-lockfile
 
-      - name: Typecheck (all packages)
+      - name: Syntax Check (all packages)
         run: pnpm run check-format
 
       - name: Comment on PR if failed
