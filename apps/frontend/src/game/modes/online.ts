@@ -40,7 +40,7 @@ async function connectOnline(cfg: {
 }): Promise<OnlineClient> {
   const { serverUrl, matchId, seat } = cfg;
   console.log('[OnlineGame] Connecting to server:', serverUrl, 'matchId:', matchId, 'seat:', seat);
-  const gameWs = new WebSocket(wsUrl(`/game-server/${serverUrl}/${matchId}?seat=${seat}`));
+  const gameWs = new WebSocket(wsUrl(`/game-server/${matchId}?seat=${seat}`));
 
   return await new Promise<OnlineClient>((resolve, reject) => {
     gameWs.addEventListener('error', (err) => {
