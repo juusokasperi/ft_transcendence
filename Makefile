@@ -10,6 +10,8 @@ ROOT_COMPOSE     = -f docker-compose.yml
 
 # Buildx (per-project builder)
 BUILDER ?= $(NAME)-builder
+BUILDKIT_BASE_IMG ?= moby/buildkit:buildx-stable-1
+BUILDER_IMAGE    ?= $(NAME)-buildkit:latest
 
 # Env file passed to docker compose (keep secrets out of the Makefile)
 ENV_ROOT         = --env-file .env
@@ -32,8 +34,13 @@ endef
 define ensure_builder
 	@echo ">> Using buildx builder '$(BUILDER)'"
 	@if ! docker buildx inspect $(BUILDER) >/dev/null 2>&1; then \
-		echo ">> Creating buildx builder '$(BUILDER)'"; \
-		docker buildx create --name $(BUILDER) --driver docker-container >/dev/null; \
+		echo ">> Preparing BuildKit image '$(BUILDER_IMAGE)' from '$(BUILDKIT_BASE_IMG)'"; \
+		if ! docker image inspect $(BUILDER_IMAGE) >/dev/null 2>&1; then \
+			docker image pull $(BUILDKIT_BASE_IMG) >/dev/null; \
+			docker image tag  $(BUILDKIT_BASE_IMG) $(BUILDER_IMAGE); \
+		fi; \
+		echo ">> Creating buildx builder '$(BUILDER)' (image=$(BUILDER_IMAGE))"; \
+		docker buildx create --name $(BUILDER) --driver docker-container --driver-opt image=$(BUILDER_IMAGE) >/dev/null; \
 	fi
 	@docker buildx use $(BUILDER)
 endef
@@ -119,10 +126,20 @@ clean:
 fclean:
 	@echo ">> FCLEAN: clean + prune build cache + remove builder"
 	-$(MAKE) clean
+	@echo ">> Removing images referenced by compose (default profile)"
+	- docker compose -p $(NAME) $(ROOT_COMPOSE) $(ENV_ROOT) config --images | sort -u | xargs -r docker image rm -f
+	@echo ">> Removing images referenced by compose (elk profile)"
+	- docker compose -p $(NAME) $(ROOT_COMPOSE) $(ENV_ROOT) --profile elk config --images | sort -u | xargs -r docker image rm -f
 	@echo ">> Pruning build cache for builder '$(BUILDER)'"
 	-$(MAKE) builder-prune
 	@echo ">> Removing builder '$(BUILDER)'"
 	-$(MAKE) builder-rm
+	@echo ">> Removing leftover BuildKit cache volumes for '$(BUILDER)'"
+	- docker volume ls -q --filter "name=buildx_buildkit_$(BUILDER)" | xargs -r docker volume rm || true
+	@echo ">> Removing project-scoped BuildKit image '$(BUILDER_IMAGE)'"
+	- docker image rm -f $(BUILDER_IMAGE) || true
+	@echo ">> (Optional) Removing upstream BuildKit base if unused: $(BUILDKIT_BASE_IMG)"
+	- docker image rm -f $(BUILDKIT_BASE_IMG) || true
 
 re: fclean up
 
@@ -154,9 +171,14 @@ restart-%:
 builder-init:
 	@echo ">> Ensuring buildx builder '$(BUILDER)' exists and is selected"
 	@if docker buildx inspect $(BUILDER) >/dev/null 2>&1; then \
-		echo ">> Builder '$(BUILDER)' already exists."; \
+			echo ">> Builder '$(BUILDER)' already exists."; \
 	else \
-		docker buildx create --name $(BUILDER) --driver docker-container --use; \
+			echo ">> Preparing BuildKit image '$(BUILDER_IMAGE)' from '$(BUILDKIT_BASE_IMG)'"; \
+			if ! docker image inspect $(BUILDER_IMAGE) >/dev/null 2>&1; then \
+					docker image pull $(BUILDKIT_BASE_IMG) >/dev/null; \
+					docker image tag  $(BUILDKIT_BASE_IMG) $(BUILDER_IMAGE); \
+			fi; \
+			docker buildx create --name $(BUILDER) --driver docker-container --driver-opt image=$(BUILDER_IMAGE) --use; \
 	fi
 
 builder-use:
