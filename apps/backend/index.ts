@@ -1,3 +1,4 @@
+import './metrics/sqlite-patch.ts';
 import fastify from 'fastify';
 import cors from '@fastify/cors';
 import fastifyMultipart from '@fastify/multipart';
@@ -5,7 +6,6 @@ import fastifyStatic from '@fastify/static';
 import swagger from '@fastify/swagger';
 import swaggerUi from '@fastify/swagger-ui';
 import cookie from '@fastify/cookie';
-import './metrics/sqlite-patch.ts';
 import googleSign from './routes/googleSign.ts';
 import {
   UPLOAD_DIR,
