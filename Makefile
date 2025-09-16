@@ -119,6 +119,8 @@ clean:
 fclean:
 	@echo ">> FCLEAN: clean + prune build cache + remove builder"
 	-$(MAKE) clean
+	@echo ">> Removing base images: node:22-bookworm and nginx:1.27 (incl. -alpine)"
+	- docker image rm -f node:22-bookworm nginx:1.27 nginx:1.27-alpine || true
 	@echo ">> Pruning build cache for builder '$(BUILDER)'"
 	-$(MAKE) builder-prune
 	@echo ">> Removing builder '$(BUILDER)'"
