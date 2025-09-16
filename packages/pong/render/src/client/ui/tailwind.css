@@ -1,1 +1,95 @@
 @import 'tailwindcss';
+
+@layer components {
+  /* Root + overlay positioning */
+  .pong-hud-root {
+    @apply pointer-events-none fixed inset-0 z-[1000];
+  }
+  .pong-hud-overlay {
+    @apply pointer-events-none absolute inset-0;
+  }
+
+  /* Structure */
+  .pong-hud-wrap {
+    @apply relative mx-auto mt-3 grid w-fit items-center gap-x-3;
+  }
+  .pong-hud-panel {
+    @apply border-white/12 row-span-2 rounded-xl border bg-slate-900/60 px-2 py-1 shadow-[0_8px_24px_rgba(0,0,0,0.38)] backdrop-blur-md;
+  }
+  .pong-hud-name-row {
+    @apply grid h-10 items-center gap-x-2;
+  }
+  .pong-hud-orb {
+    @apply bg-white/12 h-[14px] w-[14px] rounded-full border border-white/20 shadow-[0_0_0_1px_rgba(255,255,255,.06)];
+  }
+  .pong-hud-orb-active {
+    @apply border-cyan-300/70 bg-cyan-300 shadow-[0_0_10px_rgba(56,189,248,.85),0_0_2px_rgba(56,189,248,.9)];
+  }
+  .pong-hud-name {
+    @apply select-none whitespace-nowrap px-[6px] text-[24px] font-semibold leading-[1.05] text-slate-100 md:text-[26px];
+  }
+  .pong-hud-divider {
+    @apply my-1 h-[3px] rounded-full bg-gradient-to-r from-cyan-300/80 via-sky-400/80 to-cyan-300/80 shadow-[0_0_12px_rgba(56,189,248,.35)];
+  }
+  .pong-hud-right-row {
+    @apply flex h-10 items-center justify-start gap-1;
+  }
+  .pong-hud-deuce {
+    @apply col-span-2 mt-1 justify-self-center rounded-md border border-white/15 bg-white/10 px-2 py-[2px] text-[11px] font-semibold uppercase tracking-wider text-white/90 shadow-[0_6px_16px_rgba(0,0,0,.25)] transition-opacity;
+  }
+
+  /* Score boxes */
+  .pong-hud-box {
+    @apply grid h-9 w-9 select-none place-items-center rounded-md border border-white/10 bg-white/5 text-[13px] font-extrabold tabular-nums text-white/90;
+  }
+  .pong-hud-box-winner {
+    @apply bg-white/10 text-[16px] shadow-[0_0_0_1px_rgba(56,189,248,.35),0_0_18px_rgba(56,189,248,.25)] ring-1 ring-cyan-300/70;
+  }
+  .pong-hud-box-current {
+    @apply text-[24px] leading-[0.95] shadow-[inset_0_0_0_1px_rgba(255,255,255,.05)] ring-1 ring-white/30 md:text-[26px];
+  }
+
+  /* Game Quit Button (Uiverse-inspired outline hover) */
+  .game-quit-button {
+    /* reset */
+    margin: 1;
+    height: auto;
+    background: transparent;
+    padding: 0;
+    border: none;
+    cursor: pointer;
+
+    /* custom props */
+    --text-stroke-color: rgba(255, 255, 255, 0.6);
+    --animation-color: #d6271b;
+    --fs-size: 1.5em;
+
+    /* typography/appearance */
+    letter-spacing: 3px;
+    text-decoration: none;
+    font-size: var(--fs-size);
+    font-family: Arial, sans-serif;
+    position: relative;
+    text-transform: uppercase;
+    color: transparent;
+    -webkit-text-stroke: 1px var(--text-stroke-color);
+  }
+  .game-quit-hover-text {
+    position: absolute;
+    box-sizing: border-box;
+    color: var(--animation-color);
+    width: 0%;
+    inset: 0 0 0 0;
+    border-right: var(--border-right) solid var(--animation-color);
+    overflow: hidden;
+    transition: width 0.5s ease;
+    -webkit-text-stroke: 1px var(--animation-color);
+  }
+
+  .game-quit-button:hover .game-quit-hover-text {
+    width: 100%;
+    filter: drop-shadow(0 0 23px var(--animation-color));
+  }
+}
+
+/* score flip animation removed */
