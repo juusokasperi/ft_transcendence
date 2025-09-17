@@ -29,6 +29,8 @@ export interface GameDb {
   team_1_score: number;
   team_2_score: number;
   created_at: string;
+  tournament_id: number | null;
+  tournament_stage: string | null;
 }
 
 export interface GamePlayerDb {
@@ -38,6 +40,21 @@ export interface GamePlayerDb {
   avatar: string | null;
   ranking: number | null;
   created_at: string | null;
+}
+
+export interface GameWithPlayersForUserDb {
+  game_id: number;
+  team_1_score: number;
+  team_2_score: number;
+  tournament_id: number | null;
+  tournament_stage: string | null;
+  game_created_at: string;
+  team_number: number;
+  uuid: string;
+  username: string;
+  avatar: string | null;
+  ranking: number;
+  user_created_at: string;
 }
 
 export interface PublicUserDb {

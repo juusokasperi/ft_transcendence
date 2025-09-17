@@ -1,9 +1,14 @@
 import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
+import type { UserStats } from '../types/types.ts';
 import db from '../db/client.ts';
 import { getUserStats, updateUserRanking } from '../db/queries/users.ts';
-import { addGame } from '../db/queries/games.ts';
-import { gameAuthPreHandler } from '../hooks/auth.ts';
-import { addGameSchema } from '../schemas/gamesSchemas.ts';
+import { addGame, getGamesWithPlayersForUser, getGameWithPlayers } from '../db/queries/games.ts';
+import { authPreHandler, gameAuthPreHandler, tokenUuidCheck } from '../hooks/auth.ts';
+import {
+  addGameSchema,
+  getGameSchema,
+  getMyGamesSchema,
+} from '../schemas/gamesSchemas.ts';
 
 /*
 The service calling this route must include a jwt token with GAME_SECRET
@@ -50,6 +55,20 @@ function calculateEloChange(
   else actualScore = 0.5;
 
   return Math.round(K * (actualScore - expectedScore));
+}
+
+function updateTeamRanking(players: string[], stats: (UserStats | null)[], points: number): void {
+  for (let i = 0; i < players.length; ++i) {
+    const playerId = players[i];
+    if (!playerId) throw new Error(`Player at index ${i} is undefined`);
+
+    const playerStats = stats[i];
+    if (!playerStats) throw new Error(`Stats for player at index ${i} is null`);
+
+    const newRanking = playerStats.ranking + points;
+    if (!updateUserRanking(playerId, newRanking))
+      throw new Error(`Failed to update ranking for player ${players[i]}`);
+  }
 }
 
 export async function gamesRoutes(app: FastifyInstance) {
@@ -123,18 +142,8 @@ export async function gamesRoutes(app: FastifyInstance) {
           tournamentStage,
         );
         if (!gameId) throw new Error('Failed to create game');
-        for (let i = 0; i < team1Players.length; ++i) {
-          const newRanking = team1Stats[i]!.ranking + team1Points;
-          if (!updateUserRanking(team1Players[i], newRanking))
-            throw new Error(`Failed to update ranking for player ${team1Players[i]}`);
-        }
-
-        for (let i = 0; i < team2Players.length; ++i) {
-          const newRanking = team2Stats[i]!.ranking + team2Points;
-          if (!updateUserRanking(team2Players[i], newRanking))
-            throw new Error(`Failed to update ranking for player ${team2Players[i]}`);
-        }
-
+        updateTeamRanking(team1Players, team1Stats, team1Points);
+        updateTeamRanking(team2Players, team2Stats, team2Points);
         return {
           gameId,
           eloChanges: { team1: team1Points, team2: team2Points },
@@ -150,6 +159,48 @@ export async function gamesRoutes(app: FastifyInstance) {
           message: 'Failed to add game results to database',
           error: error instanceof Error ? error.message : 'Unknown error',
         });
+      }
+    },
+  );
+
+  app.get(
+    '/:gameId',
+    {
+      schema: getGameSchema,
+      preHandler: [authPreHandler],
+    },
+    async (req: FastifyRequest, res: FastifyReply) => {
+      try {
+        const { gameId } = req.params as { gameId: number };
+        const result = getGameWithPlayers(gameId);
+        if (!result) {
+          res.status(404).send({ message: 'Game ID not found' });
+          return;
+        }
+        return res.status(200).send(result);
+      } catch (error) {
+        console.error('GET /games/:gameId failed:', error);
+        return res.status(500).send({ message: 'Failed to get game data from DB' });
+      }
+    },
+  );
+
+  app.get(
+    '/',
+    {
+      schema: getMyGamesSchema,
+      preHandler: [authPreHandler, tokenUuidCheck],
+    },
+    async (req: FastifyRequest, res: FastifyReply) => {
+      try {
+        const uuid = req.user!.uuid; // set by authPreHandler
+        const { count, offset } = req.query as { count?: number; offset?: number };
+        let results;
+        results = getGamesWithPlayersForUser(uuid, count, offset);
+        return res.status(200).send(results);
+      } catch (error) {
+        console.error('GET /games failed:', error);
+        return res.status(500).send({ message: 'Failed to fetch game data for user' });
       }
     },
   );

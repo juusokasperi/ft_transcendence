@@ -38,6 +38,8 @@ import {
   getSettingsSchema,
   updateSettingsSchema,
 } from '../schemas/userSchemas.ts';
+import { getUserGamesSchema } from '../schemas/gamesSchemas.ts';
+import { getGamesWithPlayersForUser } from '../db/queries/games.ts';
 
 /*
 	TO DO:
@@ -332,6 +334,25 @@ export async function userRoutes(app: FastifyInstance) {
         res.status(200).send(settings);
       } catch (err) {
         res.status(500).send({ message: 'Failed to update user profile settings.' });
+      }
+    },
+  );
+
+  app.get(
+    '/:uuid/games',
+    {
+      schema: getUserGamesSchema,
+      preHandler: [authPreHandler, tokenUuidCheck],
+    },
+    async (req: FastifyRequest, res: FastifyReply) => {
+      try {
+        const { uuid } = req.params as { uuid: string };
+        const { count, offset } = req.query as { count?: number; offset?: number };
+        const results = getGamesWithPlayersForUser(uuid, count, offset);
+        return res.status(200).send(results);
+      } catch (error) {
+        console.error('GET /games failed:', error);
+        return res.status(500).send({ message: 'Failed to fetch game data for user' });
       }
     },
   );

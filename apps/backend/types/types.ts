@@ -54,6 +54,8 @@ export interface GameWithPlayers {
     team2: (PublicUser | null)[];
   };
   playedAt: string;
+  tournamentId: number | null;
+  tournamentStage: string | null;
 }
 
 export interface UserSettings {

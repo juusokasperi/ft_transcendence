@@ -1,6 +1,6 @@
 import db from '../client.ts';
 import type { GameWithPlayers, PublicUser } from '../../types/types.ts';
-import type { GameDb, GamePlayerDb } from '../../types/dbtypes.ts';
+import type { GameDb, GamePlayerDb, GameWithPlayersForUserDb } from '../../types/dbtypes.ts';
 
 function addGameHelper(
   team1Score: number,
@@ -162,8 +162,110 @@ export function getGameWithPlayers(gameId: number): GameWithPlayers | null {
         team2: team2Players,
       },
       playedAt: game.created_at,
+      tournamentId: game.tournament_id,
+      tournamentStage: game.tournament_stage,
     };
   } catch (error) {
     return null;
+  }
+}
+
+export function getGamesWithPlayersForUser(
+  uuid: string,
+  count?: number,
+  offset?: number,
+): GameWithPlayers[] {
+  try {
+    if (count && count <= 0) return [];
+    const params: any[] = [uuid];
+    if (count) params.push(count);
+    if (offset) params.push(offset);
+
+    const rows = db
+      .prepare(
+        `
+      WITH UserGames AS (
+        SELECT g.id, g.team_1_score, g.team_2_score, g.created_at, g.tournament_id, g.tournament_stage
+        FROM Games g
+        INNER JOIN GamePlayers gp ON gp.game_id = g.id
+        WHERE gp.user_uuid = ?
+        ORDER BY g.created_at DESC
+        ${count ? 'LIMIT ?' : ''}
+        ${offset ? 'OFFSET ?' : ''}
+      )
+      SELECT
+        ug.id as game_id,
+        ug.team_1_score,
+        ug.team_2_score,
+        ug.created_at as game_created_at,
+        gp.team_number,
+        u.uuid,
+        u.username,
+        u.avatar,
+        u.ranking,
+        u.created_at as user_created_at
+      FROM UserGames ug
+      INNER JOIN GamePlayers gp ON gp.game_id = ug.id
+      LEFT JOIN Users u ON gp.user_uuid = u.uuid
+      ORDER BY ug.created_at DESC, gp.team_number, gp.id
+      `,
+      )
+      .all(...params) as GameWithPlayersForUserDb[];
+    const gamesMap = new Map<number, GameWithPlayers & { userTeam: number | null }>();
+
+    for (const row of rows) {
+      if (!gamesMap.has(row.game_id)) {
+        gamesMap.set(row.game_id, {
+          id: row.game_id,
+          team1Score: row.team_1_score,
+          team2Score: row.team_2_score,
+          players: { team1: [], team2: [] },
+          playedAt: row.game_created_at,
+          tournamentId: row.tournament_id,
+          tournamentStage: row.tournament_stage,
+          userTeam: null,
+        });
+      }
+      const game = gamesMap.get(row.game_id)!;
+      const player =
+        row.uuid != null
+          ? {
+              uuid: row.uuid,
+              username: row.username,
+              avatar: row.avatar,
+              ranking: row.ranking,
+              createdAt: row.user_created_at,
+            }
+          : null;
+      if (row.uuid === uuid) (game as any).userTeam = row.team_number;
+      if (row.team_number === 1) {
+        game.players.team1.push(player);
+      } else if (row.team_number === 2) {
+        game.players.team2.push(player);
+      }
+    }
+
+    return Array.from(gamesMap.values()).map((game) => {
+      if (game.userTeam === 2) {
+        return {
+          id: game.id,
+          team1Score: game.team2Score,
+          team2Score: game.team1Score,
+          players: {
+            team1: game.players.team2,
+            team2: game.players.team1,
+          },
+          playedAt: game.playedAt,
+          tournamentId: game.tournamentId,
+          tournamentStage: game.tournamentStage,
+        };
+      }
+
+      const { userTeam, ...gameWithoutUserTeam } = game;
+      return gameWithoutUserTeam;
+    });
+  } catch (error) {
+    console.error('Error fetching games for user:', error);
+    return [];
   }
 }
