@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAppContext } from '../context/AppContext';
 import toast from 'react-hot-toast';
 import { AxiosError } from 'axios';
+import { resolveAvatarUrl } from '../utils/avatarUrl';
 
 interface FriendRequest {
   username: string;
@@ -14,7 +15,6 @@ type Friend = {
 };
 
 const Friends: React.FC = () => {
-  const baseURL = import.meta.env.VITE_BACKEND_URL;
   const [activeTab, setActiveTab] = useState<'all' | 'online' | 'offline' | 'pending' | 'add'>(
     'online',
   );
@@ -51,7 +51,7 @@ const Friends: React.FC = () => {
 
       const friendsWithAvatar = res.data.map((f) => ({
         ...f,
-        avatar: f.avatar ? `${baseURL}/uploads/${f.avatar}` : '/src/assets/react.svg',
+        avatar: resolveAvatarUrl(f.avatar, axios.defaults.baseURL),
       }));
 
       // Removed debug logging of avatar URLs
