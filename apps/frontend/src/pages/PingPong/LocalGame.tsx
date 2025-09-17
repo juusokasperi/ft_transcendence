@@ -6,6 +6,7 @@ type AccessibilitySettings = {
 };
 
 type PlayerSettings = {
+  name: string;
   paddleColor: string;
 };
 
@@ -16,8 +17,8 @@ type UserSettings = {
 };
 
 const defaultSettings: UserSettings = {
-  player1: { paddleColor: '#795fecff' },
-  player2: { paddleColor: '#ff0000' },
+  player1: { name: 'Player 1', paddleColor: '#795fecff' },
+  player2: { name: 'Player 2', paddleColor: '#ff0000' },
   accessibility: { colorBlindMode: 'none', photoSensitiveMode: 'none' },
 };
 
@@ -36,9 +37,11 @@ const LocalGame: React.FC = () => {
         const parsed = JSON.parse(saved);
         setSettings({
           player1: {
+            name: parsed.player1?.name || defaultSettings.player1.name,
             paddleColor: parsed.player1?.paddleColor || defaultSettings.player1.paddleColor,
           },
           player2: {
+            name: parsed.player2?.name || defaultSettings.player2.name,
             paddleColor: parsed.player2?.paddleColor || defaultSettings.player2.paddleColor,
           },
           accessibility: {
@@ -176,12 +179,22 @@ const LocalGame: React.FC = () => {
           {/* Player 1 Settings */}
           <div className="space-y-4 rounded-lg border-2 border-blue-400 p-4">
             <h2 className="text-2xl font-semibold text-blue-400">Player 1</h2>
+            <label className="block font-semibold">Name</label>
+            <input
+              type="text"
+              value={settings.player1.name}
+              onChange={(e) =>
+                setSettings({ ...settings, player1: { ...settings.player1, name: e.target.value } })
+              }
+              className="w-64 rounded border border-white/20 bg-black/40 px-3 py-2 outline-none placeholder:text-white/40 focus:border-white/40"
+              placeholder="Player 1"
+            />
             <label className="block font-semibold">Paddle Color</label>
             <input
               type="color"
               value={settings.player1.paddleColor}
               onChange={(e) =>
-                setSettings({ ...settings, player1: { paddleColor: e.target.value } })
+                setSettings({ ...settings, player1: { ...settings.player1, paddleColor: e.target.value } })
               }
               className="h-10 w-20 cursor-pointer"
             />
@@ -190,12 +203,22 @@ const LocalGame: React.FC = () => {
           {/* Player 2 Settings */}
           <div className="space-y-4 rounded-lg border-2 border-red-400 p-4">
             <h2 className="text-2xl font-semibold text-red-400">Player 2</h2>
+            <label className="block font-semibold">Name</label>
+            <input
+              type="text"
+              value={settings.player2.name}
+              onChange={(e) =>
+                setSettings({ ...settings, player2: { ...settings.player2, name: e.target.value } })
+              }
+              className="w-64 rounded border border-white/20 bg-black/40 px-3 py-2 outline-none placeholder:text-white/40 focus:border-white/40"
+              placeholder="Player 2"
+            />
             <label className="block font-semibold">Paddle Color</label>
             <input
               type="color"
               value={settings.player2.paddleColor}
               onChange={(e) =>
-                setSettings({ ...settings, player2: { paddleColor: e.target.value } })
+                setSettings({ ...settings, player2: { ...settings.player2, paddleColor: e.target.value } })
               }
               className="h-10 w-20 cursor-pointer"
             />
