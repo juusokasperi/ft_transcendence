@@ -66,7 +66,7 @@ export function createScoreboard(): DomScoreboardAPI {
   }
 
   type NamesRow = { row: HTMLDivElement; name: HTMLDivElement; orb: HTMLDivElement };
-  const names: Record<TableEnd, NamesRow> = {
+  const names: { east: NamesRow; west: NamesRow } = {
     east: makeNameRow(),
     west: makeNameRow(),
   };
@@ -167,10 +167,8 @@ export function createScoreboard(): DomScoreboardAPI {
   // Blue serve orb (no box glow around row)
   const setServer = (end: TableEnd) => {
     const active = end; // "east" | "west"
-    const passive = end === 'east' ? 'west' : 'east';
-
-    const on = names[active].orb;
-    const off = names[passive].orb;
+    const on = active === 'east' ? names.east.orb : names.west.orb;
+    const off = active === 'east' ? names.west.orb : names.east.orb;
 
     on.classList.add('pong-hud-orb-active');
     off.classList.remove('pong-hud-orb-active');

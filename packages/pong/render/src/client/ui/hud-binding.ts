@@ -2,7 +2,7 @@ import type { GameState } from '@pong/game-logic';
 import type { DomScoreboardAPI } from './scoreboard';
 import type { TableEnd } from '@pong/shared';
 
-export type NamesByEnd = Record<TableEnd, string>;
+export type NamesByEnd = { east: string; west: string };
 
 // Minimal shape we need from the match snapshot
 export type MatchSnapshotForHUD = {

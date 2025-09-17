@@ -13,6 +13,7 @@ import { computeBounds } from '@pong/render';
 import { detectEnteredServe, onEnteredServe } from '@pong/render';
 import { applyFrameEvents } from '@pong/render';
 import { mapStateForPlayerRows, mapHistoryForPlayers } from '@pong/render';
+import { setPaddleColors } from '@pong/render';
 
 import {
   type GameState,
@@ -24,17 +25,18 @@ import {
   tableTennisRules,
 } from '@pong/game-logic';
 
-import { pickInitialServer, SERVE_SELECT_TOTAL_MS } from '@pong/shared';
-import { deriveSeed32 } from '@pong/shared';
-import { nextLocalMatchSeed } from '@pong/render';
+import { pickInitialServer, SERVE_SELECT_TOTAL_MS, randomSeed32 } from '@pong/shared';
 import { disposeWorld } from '@pong/render';
+import type { Preferences } from './preferences';
+import { applyPreferences, hexToRgb } from './preferences';
 
 interface PongInstance {
   start(): void;
   destroy(): void;
+  updatePreferences(p: Preferences): void;
 }
 
-export function createLocalApp(canvas: HTMLCanvasElement): PongInstance {
+export function createLocalApp(canvas: HTMLCanvasElement, preferences?: Preferences): PongInstance {
   // Engine/scene/world
   const { engine, engineDisposable } = createEngine(canvas);
   const world = createWorld(engine);
@@ -49,8 +51,31 @@ export function createLocalApp(canvas: HTMLCanvasElement): PongInstance {
   const hud = createScoreboard();
   hud.attachToCanvas(canvas);
 
-  // Player display names (local defaults)
-  const names = { east: 'Magenta', west: 'Green' } as const;
+  // Track actual side swaps to know when the players have crossed (for HUD row mapping)
+  let rowsMirrored = false;
+
+  // Player display names (player-row pinned)
+  let names: { east: string; west: string } = { east: ' ', west: ' ' };
+
+  // Apply initial preferences if provided
+  applyPreferences(preferences, {
+    setNames: (n) => (names = n),
+    leftMaterial: left.mesh.material,
+    rightMaterial: right.mesh.material,
+    rowsMirrored,
+  });
+
+  // Keep global palette in sync for FX (e.g., serve selection) that read Colors.
+  // Compute effective left/right tints based on current side mapping.
+  if (preferences) {
+    const c1 = hexToRgb(preferences.player1.paddleColor);
+    const c2 = hexToRgb(preferences.player2.paddleColor);
+    if (c1 && c2) {
+      const leftRGB = rowsMirrored ? c2 : c1;
+      const rightRGB = rowsMirrored ? c1 : c2;
+      setPaddleColors(leftRGB, rightRGB);
+    }
+  }
 
   // Bounds once (render → headless)
   const { bounds } = computeBounds(world);
@@ -75,20 +100,7 @@ export function createLocalApp(canvas: HTMLCanvasElement): PongInstance {
     },
   });
 
-  // === Deterministic per-match seed (depends on rules + table size) ===
-  const rulesetCrc = deriveSeed32(
-    RULES.game.targetScore,
-    RULES.game.winBy,
-    RULES.game.servesPerTurn,
-    RULES.game.deuceServesPerTurn,
-    RULES.match.bestOf,
-    RULES.match.switchEndsEachGame ? 1 : 0,
-    RULES.match.decidingGameMidSwapAtPoints ?? 0,
-    RULES.match.alternateInitialServerEachGame ? 1 : 0,
-  );
-  const tableW = bounds.halfLengthX * 2;
-  const tableH = bounds.halfWidthZ * 2;
-  const matchSeed = nextLocalMatchSeed(rulesetCrc, tableW, tableH);
+  const matchSeed = randomSeed32();
   const initialServer = pickInitialServer(matchSeed);
 
   // Visual bounce helper — seeded per match (deterministic variety; visual-only)
@@ -115,9 +127,6 @@ export function createLocalApp(canvas: HTMLCanvasElement): PongInstance {
   // Simple paddle-centering tween gate (kept in visuals)
   const paddleAnim = createPaddleAnimator(scene, left.mesh, right.mesh);
 
-  // Track actual side swaps to know when the players have crossed (for HUD row mapping)
-  let rowsMirrored = false;
-
   // Intro gate (wall-clock ms until which logic is gated)
   let introUntil = 0;
 
@@ -130,9 +139,7 @@ export function createLocalApp(canvas: HTMLCanvasElement): PongInstance {
 
       // 1) Input → paddles
       const intent = readIntent();
-      //console.log('[LocalGame] Intent:', intent, 'Before step:', state.paddles);
       state = stepPaddles(state, intent, dt);
-      //console.log('[LocalGame] After step:', state.paddles);
 
       // 2) Physics/flow
       const prevPhase = state.phase;
@@ -153,6 +160,25 @@ export function createLocalApp(canvas: HTMLCanvasElement): PongInstance {
 
         // HUD mapping parity
         rowsMirrored = !rowsMirrored;
+
+        // Re-apply preferences so player colors continue to follow players
+        applyPreferences(preferences, {
+          setNames: (n) => (names = n),
+          leftMaterial: left.mesh.material,
+          rightMaterial: right.mesh.material,
+          rowsMirrored,
+        });
+
+        // Update palette too, so future FX created after swaps stay accurate
+        if (preferences) {
+          const c1 = hexToRgb(preferences.player1.paddleColor);
+          const c2 = hexToRgb(preferences.player2.paddleColor);
+          if (c1 && c2) {
+            const leftRGB = rowsMirrored ? c2 : c1;
+            const rightRGB = rowsMirrored ? c1 : c2;
+            setPaddleColors(leftRGB, rightRGB);
+          }
+        }
 
         // crossover cue
         paddleAnim.cue(180);
@@ -208,11 +234,6 @@ export function createLocalApp(canvas: HTMLCanvasElement): PongInstance {
   return {
     start() {
       //console.log('[LocalGame] start() called');
-      //canvas.focus();
-      //console.log('[LocalGame] Canvas focused:', document.activeElement === canvas);
-      /*       if (document.activeElement !== canvas) {
-        console.warn('[LocalGame] Canvas is not focused. Keyboard controls will not work until you click inside the game area.');
-      } */
       // Pre-roll: run serve selection FX, gate input, then arm opening serve.
       void import('@pong/render').then(({ incHide }) => {
         incHide(ball.mesh);
@@ -237,5 +258,14 @@ export function createLocalApp(canvas: HTMLCanvasElement): PongInstance {
       });
     },
     destroy,
+    updatePreferences(p: Preferences) {
+      preferences = p;
+      applyPreferences(p, {
+        setNames: (n) => (names = n),
+        leftMaterial: left.mesh.material,
+        rightMaterial: right.mesh.material,
+        rowsMirrored,
+      });
+    },
   };
 }

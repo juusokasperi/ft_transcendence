@@ -14,11 +14,11 @@ export function createMatchController(
   let game = addRulesToState(createInitialState(bounds, initialServer), rules);
   let currentGameIndex = 1;
 
-  const gamesWonByEnd = { east: 0, west: 0 };
+  const gamesWonByEnd: Record<TableEnd, number> = { east: 0, west: 0 };
 
   // New: count by player identity. Define P1 as the player who starts the match on EAST.
   let p1AtEastNow = true; // flips whenever we swap sides
-  const gamesWonByPlayer = { P1: 0, P2: 0 };
+  const gamesWonByPlayer: Record<'P1' | 'P2', number> = { P1: 0, P2: 0 };
 
   let matchWinner: TableEnd | undefined;
   let endsFlippedThisGame = false;
@@ -128,11 +128,12 @@ export function createMatchController(
       }
 
       // Keep old end-based counters for reference (not used to decide match)
-      gamesWonByEnd[game.gameWinner]++;
+      const winnerEnd = game.gameWinner as TableEnd; // narrow for strict index access
+      gamesWonByEnd[winnerEnd] = (gamesWonByEnd[winnerEnd] ?? 0) + 1;
 
       // ✅ Player-centric win counting
-      const winnerPlayer = endToPlayer(game.gameWinner);
-      gamesWonByPlayer[winnerPlayer]++;
+      const winnerPlayer = endToPlayer(winnerEnd);
+      gamesWonByPlayer[winnerPlayer] = (gamesWonByPlayer[winnerPlayer] ?? 0) + 1;
 
       events.gameOver = {
         winner: game.gameWinner,
