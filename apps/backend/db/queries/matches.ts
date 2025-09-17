@@ -9,7 +9,6 @@ function addMatchHelper(
   tournamentStage?: string,
 ): number | null {
   try {
-    console.log('addMatchHelper args:', team1Score, team2Score, tournamentId, tournamentStage);
     const result = db
       .prepare(
         `
