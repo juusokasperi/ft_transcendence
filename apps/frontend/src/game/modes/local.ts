@@ -24,9 +24,8 @@ import {
   tableTennisRules,
 } from '@pong/game-logic';
 
-import { pickInitialServer, SERVE_SELECT_TOTAL_MS } from '@pong/shared';
+import { pickInitialServer, SERVE_SELECT_TOTAL_MS, randomSeed32 } from '@pong/shared';
 import { deriveSeed32 } from '@pong/shared';
-import { nextLocalMatchSeed } from '@pong/render';
 import { disposeWorld } from '@pong/render';
 import type { Preferences } from './preferences';
 import { applyPreferences } from './preferences';
@@ -93,7 +92,7 @@ export function createLocalApp(canvas: HTMLCanvasElement, preferences?: Preferen
   );
   const tableW = bounds.halfLengthX * 2;
   const tableH = bounds.halfWidthZ * 2;
-  const matchSeed = nextLocalMatchSeed(rulesetCrc, tableW, tableH);
+  const matchSeed = randomSeed32();
   const initialServer = pickInitialServer(matchSeed);
 
   // Visual bounce helper — seeded per match (deterministic variety; visual-only)

@@ -9,6 +9,7 @@ export {
   XorShift32,
   deriveSeed32,
   pickInitialServer,
+  randomSeed32,
   type MatchSeed,
 } from './utils/random';
 export { type Disposable } from './utils/disposable';

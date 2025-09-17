@@ -66,3 +66,29 @@ export function deriveSeed32(...parts: readonly number[]): number {
 export function pickInitialServer(seed: MatchSeed): TableEnd {
   return (seed & 1) === 0 ? 'east' : 'west';
 }
+
+/**
+ * Generate a 32-bit random seed using the most secure source available.
+ * - Prefers `crypto.getRandomValues` in browsers and Node 19+.
+ * - Falls back to a mixed seed from time and Math.random if crypto is unavailable.
+ */
+export function randomSeed32(): number {
+  try {
+    // Browser / modern Node
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const g: any = globalThis as any;
+    if (g?.crypto?.getRandomValues) {
+      const buf = new Uint32Array(1);
+      g.crypto.getRandomValues(buf);
+      return buf[0]! >>> 0;
+    }
+  } catch {
+    // ignore and fall through to fallback
+  }
+
+  // Fallback: mix available clocks and Math.random into a 32-bit seed
+  const nowMs = Date.now() | 0;
+  const perfUs = Math.floor(((globalThis as any)?.performance?.now?.() ?? 0) * 1000) | 0;
+  const rnd = Math.floor(Math.random() * 0xffffffff) >>> 0;
+  return deriveSeed32(nowMs, perfUs, rnd);
+}
