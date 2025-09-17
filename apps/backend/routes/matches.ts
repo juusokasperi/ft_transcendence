@@ -10,20 +10,6 @@ import {
 import { authPreHandler, gameAuthPreHandler, tokenUuidCheck } from '../hooks/auth.ts';
 import { addMatchSchema, getMatchSchema, getMyMatchesSchema } from '../schemas/matchSchemas.ts';
 
-/*
-The service calling this route must include a jwt token with GAME_SECRET
-
-Req body must contain:
-Team 1 Players: string[]
-Team 2 Players: string[]
-Team 1 Score
-Team 2 Score
-Optional tournamentI and tournamentStage
-
-Left for later implementation;
-We could add a simple Tournaments table, that contains at least id and createdBy
-*/
-
 // Different stages of tournament can affect ELO rating more
 function getTournamentMultiplier(tournamentStage?: string): number {
   if (!tournamentStage) return 1.0;
