@@ -20,7 +20,7 @@ ENV_ROOT         = --env-file .env
 CLEAN_HELPER_IMG ?= alpine:3.19
 
 # Known services (for helper targets)
-SERVICES         = deps frontend backend nginx elastic_cert_setup elasticsearch kibana kibana-post logstash
+SERVICES         = deps frontend backend nginx elastic_cert_setup elasticsearch kibana kibana-post logstash game-server matchmaking
 
 # Ensure required bind-mount directories exist
 define ensure_dirs
