@@ -22,9 +22,10 @@ function resolveAvatarUrl(avatar: string | undefined | null, axiosBase?: string)
 }
 
 const Profile: React.FC = () => {
-  const { axios, user, setUser, logout } = useAppContext();
+  const { axios, user, setUser, logout, navigate } = useAppContext();
 
   const [image, setImage] = useState<File | null>(null);
+  const [error, setError] = useState<string | null>(null);
   const [imagePreview, setImagePreview] = useState<string>(PLACEHOLDER);
   const [username, setUsername] = useState<string>('');
   const [newPassword, setNewPasswords] = useState<PasswordState>({
@@ -32,6 +33,39 @@ const Profile: React.FC = () => {
     newPassword: '',
     confirmPassword: '',
   });
+  const usernameRegex = /^(?!-)([a-zA-Z0-9-]+)(?<!-)$/;
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  const passwordRegex =
+    /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()\-=+[\]{};:|,<.>/?`]).{12,}$/;
+
+  // Validation helpers
+  const getUsernameValidation = () => {
+    if (!username) return { state: '', msg: '' };
+    if (usernameRegex.test(username)) return { state: 'valid', msg: '' };
+    return {
+      state: 'invalid',
+      msg: 'Username may only contain letters, numbers, and dashes, and cannot start or end with a dash.',
+    };
+  };
+
+  const getPasswordValidation = () => {
+    if (!newPassword) return { state: '', msg: '' };
+
+    if (newPassword.newPassword.length < 12) {
+      return {
+        state: 'weak',
+        msg: 'Password is too short (minimum 12 characters required).',
+      };
+    }
+
+    if (!passwordRegex.test(newPassword.newPassword)) {
+      return {
+        state: 'invalid',
+        msg: 'Password must have uppercase, lowercase, a digit, and a special character.',
+      };
+    }
+    return { state: 'valid', msg: '' };
+  };
 
   const [loading, setLoading] = useState<boolean>(false);
 
@@ -55,6 +89,12 @@ const Profile: React.FC = () => {
   const handleUsernameChange = async () => {
     try {
       if (!username) return;
+
+      const userVal = getUsernameValidation();
+      if (userVal.state !== 'valid') {
+        setError(userVal.msg);
+        return;
+      }
       const res = await axios.patch('/api/users/me', {
         newUsername: username,
       });
@@ -87,8 +127,18 @@ const Profile: React.FC = () => {
 
   const handlePasswordChange = async () => {
     try {
-      if (!newPassword.newPassword || !newPassword.currentPassword || !newPassword.confirmPassword)
+      if (!newPassword.newPassword || !newPassword.currentPassword) return;
+
+      const passVal = getPasswordValidation();
+      if (passVal.state !== 'valid') {
+        setError(passVal.msg);
         return;
+      }
+      if (newPassword.newPassword !== newPassword.confirmPassword) {
+        setError('New password and confirmation do not match');
+        return;
+      }
+
       await axios.patch('/api/users/me/password', {
         newPassword: newPassword.newPassword,
         currentPassword: newPassword.currentPassword,
@@ -153,9 +203,7 @@ const Profile: React.FC = () => {
     if (!window.confirm('Are you sure you want to delete your account?')) return;
     try {
       await axios.delete(`/api/users/me`);
-      toast.success('Account deleted');
-      await logout();
-      // redirect or logout logic here
+      toast.success('Confirmation email sent');
     } catch (err: any) {
       toast.error(err.response?.data?.message || 'Delete failed');
     }
@@ -187,6 +235,7 @@ const Profile: React.FC = () => {
             className="w-full rounded border p-2"
           />
         </div>
+        {error && <p className="text-red-500">{error}</p>}
 
         {/* Nickname */}
         <div>
