@@ -94,7 +94,8 @@ export async function gamesRoutes(app: FastifyInstance) {
 
         const team1Stats = team1Players.map((id) => getUserStats(id));
         const team2Stats = team2Players.map((id) => getUserStats(id));
-        if (team1Stats.length !== team1Players.length || team2Stats.length !== team2Players.length)
+        const hasNullStats = [...team1Stats, ...team2Stats].some(stat => stat === null);
+        if (hasNullStats)
           throw new Error('One or more players not found in database');
 
         const team1AvgElo =
