@@ -53,4 +53,3 @@ updateUserSettings(uuidBob, { paddle_color: '#BB00FF', color_blind_mode: 2 });
 const tenMinutesAgo = new Date(Date.now() - 10 * 60 * 1000);
 updateLastSeen(uuidJoe, tenMinutesAgo);
 updateLastSeen(uuidBob, tenMinutesAgo);
-
