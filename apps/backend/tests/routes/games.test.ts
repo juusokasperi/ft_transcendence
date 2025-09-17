@@ -21,7 +21,7 @@ vi.mock('../../db/queries/users.ts', () => {
   return {
     getUserStats: vi.fn(),
     updateUserRanking: vi.fn(),
-    getGamesWithPlayersForUser: vi.fn()
+    getGamesWithPlayersForUser: vi.fn(),
   };
 });
 
@@ -30,7 +30,7 @@ vi.mock('../../db/queries/games.ts', () => {
     addGame: vi.fn(),
     addGameHelper: vi.fn(),
     addGamePlayerHelper: vi.fn(),
-    getGamesWithPlayersForUser: vi.fn()
+    getGamesWithPlayersForUser: vi.fn(),
   };
 });
 
@@ -143,8 +143,7 @@ describe('POST /api/games', () => {
       .mockReturnValueOnce({ uuid: 'uuid-2', ranking: 2200 });
 
     (gamesQueries.addGame as unknown as Mock).mockReturnValueOnce(123);
-    (usersQueries.updateUserRanking as unknown as Mock)
-      .mockReturnValue(true);
+    (usersQueries.updateUserRanking as unknown as Mock).mockReturnValue(true);
 
     const gameToken = makeGameToken();
     const res = await app.inject({
@@ -178,14 +177,8 @@ describe('POST /api/games', () => {
     const eloChanges = responseData.eloChanges;
     expect(eloChanges.team1).toBeGreaterThan(0);
     expect(eloChanges.team2).toBeLessThan(0);
-    expect(usersQueries.updateUserRanking).toHaveBeenCalledWith(
-      'uuid-1',
-      800 + eloChanges.team1
-    );
-    expect(usersQueries.updateUserRanking).toHaveBeenCalledWith(
-      'uuid-2',
-      2200 + eloChanges.team2
-    );
+    expect(usersQueries.updateUserRanking).toHaveBeenCalledWith('uuid-1', 800 + eloChanges.team1);
+    expect(usersQueries.updateUserRanking).toHaveBeenCalledWith('uuid-2', 2200 + eloChanges.team2);
   });
 });
 
@@ -228,9 +221,7 @@ describe('GET /api/games', () => {
     expect(res.json().message).toMatch(/Invalid or expired token/i);
   });
 
-  it(
-  '200 returns array of { id, team1Score, team2Score, players, playedAt, tournamentId, tournamentStage }',
-  async () => {
+  it('200 returns array of { id, team1Score, team2Score, players, playedAt, tournamentId, tournamentStage }', async () => {
     (gamesQueries.getGamesWithPlayersForUser as unknown as Mock).mockReturnValueOnce([
       {
         id: 1,
@@ -243,8 +234,8 @@ describe('GET /api/games', () => {
               username: 'Joe',
               avatar: 'avatar1.png',
               ranking: 1000,
-              createdAt: '2024-01-01T00:00:00Z'
-            }
+              createdAt: '2024-01-01T00:00:00Z',
+            },
           ],
           team2: [
             {
@@ -252,13 +243,13 @@ describe('GET /api/games', () => {
               username: 'Bob',
               avatar: 'avatar2.png',
               ranking: 1800,
-              createdAt: '2024-01-03T12:30:00Z'
-            }
-          ]
+              createdAt: '2024-01-03T12:30:00Z',
+            },
+          ],
         },
         playedAt: '2024-01-15T10:30:00Z',
         tournamentId: null,
-        tournamentStage: null
+        tournamentStage: null,
       },
       {
         id: 2,
@@ -271,8 +262,8 @@ describe('GET /api/games', () => {
               username: 'Joe',
               avatar: 'avatar1.png',
               ranking: 1000,
-              createdAt: '2024-01-01T00:00:00Z'
-            }
+              createdAt: '2024-01-01T00:00:00Z',
+            },
           ],
           team2: [
             {
@@ -280,13 +271,13 @@ describe('GET /api/games', () => {
               username: 'Alice',
               avatar: null,
               ranking: 900,
-              createdAt: '2024-01-05T12:30:00Z'
-            }
-          ]
+              createdAt: '2024-01-05T12:30:00Z',
+            },
+          ],
         },
         playedAt: '2024-01-20T10:30:00Z',
         tournamentId: 1,
-        tournamentStage: 'final'
+        tournamentStage: 'final',
       },
     ]);
 
@@ -308,11 +299,11 @@ describe('GET /api/games', () => {
       team2Score: expect.any(Number),
       players: {
         team1: expect.any(Array),
-        team2: expect.any(Array)
+        team2: expect.any(Array),
       },
       playedAt: expect.any(String),
       tournamentId: null,
-      tournamentStage: null
+      tournamentStage: null,
     });
 
     expect(responseData[0].players.team1[0]).toEqual({
@@ -320,12 +311,16 @@ describe('GET /api/games', () => {
       username: expect.any(String),
       avatar: expect.any(String),
       ranking: expect.any(Number),
-      createdAt: expect.any(String)
+      createdAt: expect.any(String),
     });
 
     expect(responseData[1].tournamentId).toBe(1);
     expect(responseData[1].tournamentStage).toBe('final');
-    expect(gamesQueries.getGamesWithPlayersForUser).toHaveBeenCalledWith('uuid-1', undefined, undefined);
+    expect(gamesQueries.getGamesWithPlayersForUser).toHaveBeenCalledWith(
+      'uuid-1',
+      undefined,
+      undefined,
+    );
   });
 });
 
@@ -370,9 +365,7 @@ describe('GET /api/users/:uuid/games', () => {
     expect(res.json().message).toMatch(/Invalid or expired token/i);
   });
 
-  it(
-  '200 returns array of { id, team1Score, team2Score, players, playedAt, tournamentId, tournamentStage }',
-  async () => {
+  it('200 returns array of { id, team1Score, team2Score, players, playedAt, tournamentId, tournamentStage }', async () => {
     const validUuid = '123e4567-e89b-12d3-a456-426614174000';
     (gamesQueries.getGamesWithPlayersForUser as unknown as Mock).mockReturnValueOnce([
       {
@@ -386,8 +379,8 @@ describe('GET /api/users/:uuid/games', () => {
               username: 'Joe',
               avatar: 'avatar1.png',
               ranking: 1000,
-              createdAt: '2024-01-01T00:00:00Z'
-            }
+              createdAt: '2024-01-01T00:00:00Z',
+            },
           ],
           team2: [
             {
@@ -395,13 +388,13 @@ describe('GET /api/users/:uuid/games', () => {
               username: 'Bob',
               avatar: 'avatar2.png',
               ranking: 1800,
-              createdAt: '2024-01-03T12:30:00Z'
-            }
-          ]
+              createdAt: '2024-01-03T12:30:00Z',
+            },
+          ],
         },
         playedAt: '2024-01-15T10:30:00Z',
         tournamentId: null,
-        tournamentStage: null
+        tournamentStage: null,
       },
       {
         id: 2,
@@ -414,8 +407,8 @@ describe('GET /api/users/:uuid/games', () => {
               username: 'Joe',
               avatar: 'avatar1.png',
               ranking: 1000,
-              createdAt: '2024-01-01T00:00:00Z'
-            }
+              createdAt: '2024-01-01T00:00:00Z',
+            },
           ],
           team2: [
             {
@@ -423,13 +416,13 @@ describe('GET /api/users/:uuid/games', () => {
               username: 'Alice',
               avatar: null,
               ranking: 900,
-              createdAt: '2024-01-05T12:30:00Z'
-            }
-          ]
+              createdAt: '2024-01-05T12:30:00Z',
+            },
+          ],
         },
         playedAt: '2024-01-20T10:30:00Z',
         tournamentId: 1,
-        tournamentStage: 'final'
+        tournamentStage: 'final',
       },
     ]);
 
@@ -451,11 +444,11 @@ describe('GET /api/users/:uuid/games', () => {
       team2Score: expect.any(Number),
       players: {
         team1: expect.any(Array),
-        team2: expect.any(Array)
+        team2: expect.any(Array),
       },
       playedAt: expect.any(String),
       tournamentId: null,
-      tournamentStage: null
+      tournamentStage: null,
     });
 
     expect(responseData[0].players.team1[0]).toEqual({
@@ -463,11 +456,15 @@ describe('GET /api/users/:uuid/games', () => {
       username: expect.any(String),
       avatar: expect.any(String),
       ranking: expect.any(Number),
-      createdAt: expect.any(String)
+      createdAt: expect.any(String),
     });
 
     expect(responseData[1].tournamentId).toBe(1);
     expect(responseData[1].tournamentStage).toBe('final');
-    expect(gamesQueries.getGamesWithPlayersForUser).toHaveBeenCalledWith(validUuid, undefined, undefined);
+    expect(gamesQueries.getGamesWithPlayersForUser).toHaveBeenCalledWith(
+      validUuid,
+      undefined,
+      undefined,
+    );
   });
 });

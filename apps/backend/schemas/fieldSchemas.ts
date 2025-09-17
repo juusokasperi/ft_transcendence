@@ -76,10 +76,7 @@ export const TeamSchema = {
 };
 
 export const TournamentIDSchema = {
-  anyOf: [
-    { type: 'integer', minimum: 0 },
-    { type: 'null' }
-  ],
+  anyOf: [{ type: 'integer', minimum: 0 }, { type: 'null' }],
   description: 'Optional tournament ID',
 };
 
@@ -89,7 +86,7 @@ export const TournamentStageSchema = {
       type: 'string',
       enum: ['quarterfinal', 'semifinal', 'final'],
     },
-    { type: 'null' }
+    { type: 'null' },
   ],
   description: 'Tournament stage',
 };
