@@ -91,9 +91,6 @@ const LocalGame: React.FC = () => {
           player2: settings.player2,
         });
         appRef.current = app;
-        // Ensure keyboard input is captured without requiring a click
-        //requestAnimationFrame(() => canvasRef.current?.focus({ preventScroll: true }));
-        //console.log('[LocalGame] Pong booted:', app);
       } catch (e) {
         console.error('[LocalGame] Failed to start Pong', e);
         setIsPlaying(false);
@@ -130,7 +127,6 @@ const LocalGame: React.FC = () => {
 
   // Button handlers
   const handlePlay = () => {
-    // TODO: plumb `settings` into your render layer when exposed
     //console.log('[LocalGame] Play button clicked. Settings:', settings);
     setIsPlaying(true);
   };
@@ -197,7 +193,10 @@ const LocalGame: React.FC = () => {
               type="color"
               value={settings.player1.paddleColor}
               onChange={(e) =>
-                setSettings({ ...settings, player1: { ...settings.player1, paddleColor: e.target.value } })
+                setSettings({
+                  ...settings,
+                  player1: { ...settings.player1, paddleColor: e.target.value },
+                })
               }
               className="h-10 w-20 cursor-pointer"
             />
@@ -221,7 +220,10 @@ const LocalGame: React.FC = () => {
               type="color"
               value={settings.player2.paddleColor}
               onChange={(e) =>
-                setSettings({ ...settings, player2: { ...settings.player2, paddleColor: e.target.value } })
+                setSettings({
+                  ...settings,
+                  player2: { ...settings.player2, paddleColor: e.target.value },
+                })
               }
               className="h-10 w-20 cursor-pointer"
             />

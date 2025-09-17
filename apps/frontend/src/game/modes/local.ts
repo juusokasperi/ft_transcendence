@@ -26,7 +26,6 @@ import {
 } from '@pong/game-logic';
 
 import { pickInitialServer, SERVE_SELECT_TOTAL_MS, randomSeed32 } from '@pong/shared';
-import { deriveSeed32 } from '@pong/shared';
 import { disposeWorld } from '@pong/render';
 import type { Preferences } from './preferences';
 import { applyPreferences, hexToRgb } from './preferences';
@@ -36,8 +35,6 @@ interface PongInstance {
   destroy(): void;
   updatePreferences(p: Preferences): void;
 }
-
-// moved to ./utils
 
 export function createLocalApp(canvas: HTMLCanvasElement, preferences?: Preferences): PongInstance {
   // Engine/scene/world
@@ -142,9 +139,7 @@ export function createLocalApp(canvas: HTMLCanvasElement, preferences?: Preferen
 
       // 1) Input → paddles
       const intent = readIntent();
-      //console.log('[LocalGame] Intent:', intent, 'Before step:', state.paddles);
       state = stepPaddles(state, intent, dt);
-      //console.log('[LocalGame] After step:', state.paddles);
 
       // 2) Physics/flow
       const prevPhase = state.phase;
@@ -239,11 +234,6 @@ export function createLocalApp(canvas: HTMLCanvasElement, preferences?: Preferen
   return {
     start() {
       //console.log('[LocalGame] start() called');
-      //canvas.focus();
-      //console.log('[LocalGame] Canvas focused:', document.activeElement === canvas);
-      /*       if (document.activeElement !== canvas) {
-        console.warn('[LocalGame] Canvas is not focused. Keyboard controls will not work until you click inside the game area.');
-      } */
       // Pre-roll: run serve selection FX, gate input, then arm opening serve.
       void import('@pong/render').then(({ incHide }) => {
         incHide(ball.mesh);
