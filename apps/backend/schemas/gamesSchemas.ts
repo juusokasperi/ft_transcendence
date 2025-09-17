@@ -11,14 +11,14 @@ export const addGameSchema = {
         items: { type: 'string' },
         minItems: 1,
         maxItems: 2,
-        description: 'Array of player UUIDs for team 1'
+        description: 'Array of player UUIDs for team 1',
       },
       team2Players: {
         type: 'array',
         items: { type: 'string' },
         minItems: 1,
         maxItems: 2,
-        description: 'Array of player UUIDs for team 2'
+        description: 'Array of player UUIDs for team 2',
       },
       team1Score: {
         type: 'integer',
@@ -33,15 +33,15 @@ export const addGameSchema = {
       tournamentId: {
         type: 'integer',
         minimum: 1,
-        description: 'Optional tournament ID'
+        description: 'Optional tournament ID',
       },
       tournamentStage: {
         type: 'string',
-        enum: ['quarterfinal', 'semifinal', 'final' ], // Add what is needed..
+        enum: ['quarterfinal', 'semifinal', 'final'], // Add what is needed..
         description: 'Tournament stage',
       },
     },
-    additionalProperties: false
+    additionalProperties: false,
   },
   response: {
     200: {
@@ -53,11 +53,17 @@ export const addGameSchema = {
           type: 'object',
           properties: {
             team1: { type: 'number' },
-            team2: { type: 'number'},
+            team2: { type: 'number' },
           },
         },
       },
     },
-    500: ErrorResponseSchema,
+    500: {
+      type: 'object',
+      properties: {
+        message: { type: 'string' },
+        error: { type: 'string' },
+      },
+    },
   },
 };

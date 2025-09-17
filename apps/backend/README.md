@@ -62,12 +62,12 @@ Uses `better-sqlite3` to interact with the SQLite database. Migrations are handl
 
 ### Games
 
-| Field        | Type | Key     | Nullable | Etc                             |
-| ------------ | ---- | ------- | -------- | ------------------------------- |
-| id           | INT  | Primary | No       | Autoincrement                   |
-| team_1_score | INT  |         | No       |                                 |
-| team_2_score | INT  |         | No       |                                 |
-| created_at   | DATE |         | No       |                                 |
+| Field        | Type | Key     | Nullable | Etc           |
+| ------------ | ---- | ------- | -------- | ------------- |
+| id           | INT  | Primary | No       | Autoincrement |
+| team_1_score | INT  |         | No       |               |
+| team_2_score | INT  |         | No       |               |
+| created_at   | DATE |         | No       |               |
 
 ### GamePlayers
 

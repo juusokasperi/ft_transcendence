@@ -2,7 +2,12 @@ import db from '../client.ts';
 import type { GameWithPlayers, PublicUser } from '../../types/types.ts';
 import type { GameDb, GamePlayerDb } from '../../types/dbtypes.ts';
 
-function addGameHelper(team1Score: number, team2Score: number, tournamentId?: number, tournamentStage?: string): number | null {
+function addGameHelper(
+  team1Score: number,
+  team2Score: number,
+  tournamentId?: number,
+  tournamentStage?: string,
+): number | null {
   try {
     const result = db
       .prepare(
@@ -18,7 +23,12 @@ function addGameHelper(team1Score: number, team2Score: number, tournamentId?: nu
   }
 }
 
-function addGamePlayerHelper(gameId: number, uuid: string, team: number, pointsAwarded: number): number | null {
+function addGamePlayerHelper(
+  gameId: number,
+  uuid: string,
+  team: number,
+  pointsAwarded: number,
+): number | null {
   try {
     const result = db
       .prepare(
@@ -68,8 +78,7 @@ export function addGame(
     let gameId;
     if (tournamentId && tournamentStage)
       gameId = addGameHelper(team1Score, team2Score, tournamentId, tournamentStage);
-    else
-      gameId = addGameHelper(team1Score, team2Score);
+    else gameId = addGameHelper(team1Score, team2Score);
 
     if (!gameId) throw new Error('Failed to create game');
 

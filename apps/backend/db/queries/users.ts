@@ -410,10 +410,14 @@ export function updateUserSettings(
 }
 
 export function updateUserRanking(uuid: string, newRanking: number): Boolean {
-  const res = db.prepare(`
+  const res = db
+    .prepare(
+      `
     UPDATE Users
     SET ranking = ?
     WHERE uuid = ?
-    `).run(newRanking, uuid);
+    `,
+    )
+    .run(newRanking, uuid);
   return res.changes === 1;
 }

@@ -31,10 +31,10 @@ respondToFriendReq(uuidWil, uuidJoe, true);
 // Bob wants to befriend Wil, but Wil has not responded
 addFriend(uuidBob, uuidWil);
 // Create a few games
-addGame(11, 5, uuidBob, uuidJoe);
-addGame(11, 0, uuidBob, uuidJoe);
-addGame(10, 12, uuidWil, uuidBob);
-addGame(1, 11, uuidJoe, uuidWil);
+addGame(11, 5, uuidBob, uuidJoe, 30, -10);
+addGame(11, 0, uuidBob, uuidJoe, 10, -5);
+addGame(10, 12, uuidWil, uuidBob, -2, 8);
+addGame(1, 11, uuidJoe, uuidWil, 0, 10);
 // Change UserProfileSettings for Joe and Bob
 updateUserSettings(uuidJoe, {
   paddle_color: '#FF0000',

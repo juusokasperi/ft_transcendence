@@ -43,7 +43,10 @@ function buildApp() {
 }
 
 const GAME_SECRET = 'testsecret';
-const makeToken = () => jwt.sign({ service: 'game-node', iat: Math.floor(Date.now() / 1000) }, GAME_SECRET, { expiresIn: '1h' });
+const makeToken = () =>
+  jwt.sign({ service: 'game-node', iat: Math.floor(Date.now() / 1000) }, GAME_SECRET, {
+    expiresIn: '1h',
+  });
 
 describe('POST /api/games', () => {
   const app = buildApp();
@@ -69,11 +72,11 @@ describe('POST /api/games', () => {
         'content-type': 'application/json',
       },
       body: {
-        team1Players: ["uuid-1"],
-        team2Players: ["uuid-2"],
+        team1Players: ['uuid-1'],
+        team2Players: ['uuid-2'],
         team1Score: 11,
-        team2Score: 5
-      }
+        team2Score: 5,
+      },
     });
     expect(res.statusCode).toBe(401);
     expect(res.json().message).toMatch(/Missing game authorization token/i);
@@ -85,11 +88,11 @@ describe('POST /api/games', () => {
       url: '/api/games',
       headers: { authorization: `Bearer invalid-token` },
       body: {
-        team1Players: ["uuid-1"],
-        team2Players: ["uuid-2"],
+        team1Players: ['uuid-1'],
+        team2Players: ['uuid-2'],
         team1Score: 11,
-        team2Score: 5
-      }
+        team2Score: 5,
+      },
     });
     expect(res.statusCode).toBe(401);
     expect(res.json().message).toMatch(/Invalid or expired game service token/i);
@@ -100,17 +103,17 @@ describe('POST /api/games', () => {
     const token = makeToken();
 
     const body = {
-      team1Players: ["uuid-1"],
-      team2Players: ["uuid-2"],
+      team1Players: ['uuid-1'],
+      team2Players: ['uuid-2'],
       team1Score: 11,
-      team2Score: 5
+      team2Score: 5,
     };
 
     const res = await app.inject({
       method: 'POST',
       url: '/api/games',
       headers: { authorization: `Bearer ${token}` },
-      body
+      body,
     });
 
     expect(res.statusCode).toBe(500);
@@ -133,11 +136,11 @@ describe('POST /api/games', () => {
       url: '/api/games',
       headers: { authorization: `Bearer ${token}` },
       body: {
-        team1Players: ["uuid-1"],
-        team2Players: ["uuid-2"],
+        team1Players: ['uuid-1'],
+        team2Players: ['uuid-2'],
         team1Score: 11,
-        team2Score: 5
-      }
+        team2Score: 5,
+      },
     });
 
     expect(res.statusCode).toBe(200);
@@ -146,7 +149,7 @@ describe('POST /api/games', () => {
       gameId: 123,
       eloChanges: {
         team1: expect.any(Number),
-        team2: expect.any(Number)
+        team2: expect.any(Number),
       },
     });
     expect(usersQueries.getUserStats).toHaveBeenCalledTimes(2);
