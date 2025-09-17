@@ -14,7 +14,7 @@ export default defineConfig(({ mode }) => {
     /^ws/,
     'http',
   );
-  const gameTarget = (env.VITE_GAME_WS_PROXY_TARGET || 'ws://game-server:55555').replace(
+  const gameTarget = (env.VITE_GAME_WS_PROXY_TARGET || 'ws://game-server:55553').replace(
     /^ws/,
     'http',
   );

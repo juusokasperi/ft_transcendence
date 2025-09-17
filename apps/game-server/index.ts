@@ -13,7 +13,7 @@ import type { FrameEvents } from '@pong/shared';
 
 dotenv.config();
 
-const PORT = Number(process.env.GAME_SERVER_PORT || 55555);
+const PORT = Number(process.env.GAME_SERVER_PORT || 55553);
 
 interface Player {
   socket: WebSocket;
