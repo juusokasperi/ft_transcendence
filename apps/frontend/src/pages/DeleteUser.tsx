@@ -18,8 +18,6 @@ const DeleteUser = () => {
         });
 
         setStatus('success');
-
-        // Redirect after a short delay
         setUser(null);
         setTimeout(() => navigate('/'), 1500);
       } catch (err) {

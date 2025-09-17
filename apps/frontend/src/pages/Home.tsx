@@ -45,11 +45,6 @@ const games = [
 ];
 
 const Hero: React.FC = () => {
-  const { user, setUser } = useAppContext();
-
-  if (!user) {
-    setUser(null);
-  }
   return (
     <motion.div
       className="flex min-h-screen flex-col items-center justify-start overflow-auto bg-gradient-to-br from-gray-900 via-indigo-950 to-black px-4 pt-24 text-white sm:px-6 sm:pt-20 md:px-16 md:pt-24 lg:px-24 xl:px-32"
