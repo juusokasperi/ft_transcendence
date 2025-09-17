@@ -135,7 +135,7 @@ export function createInitialState(
     bounds,
     params: {
       paddleSpeed: 2.2,
-      ballSpeed: 1.5,
+      ballSpeed: 1.8, // don't set from 1.41 to 1.59
       zEnglish: 0.75,
       restitutionWall: 1.0,
       targetScore,
