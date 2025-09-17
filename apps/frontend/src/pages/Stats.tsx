@@ -165,7 +165,7 @@ const Stats: React.FC = () => {
               return (
                 <div key={game.id} className="p-6 hover:bg-gray-50">
                   <div className="mb-4 flex items-start justify-between">
-                   <div className="flex items-center space-x-4">
+                    <div className="flex items-center space-x-4">
                       <div className="text-lg font-bold text-gray-800">Game #{game.id}</div>
                       {game.tournamentStage && (
                         <span className="rounded-full bg-purple-100 px-3 py-1 text-sm font-medium text-purple-800">
@@ -183,18 +183,19 @@ const Stats: React.FC = () => {
                     {/* Score */}
                     <div className="flex items-center justify-center">
                       <div className="text-center">
-                      <div className={`text-3xl font-bold ${colorClass}`}>
-                        {game.team1Score} - {game.team2Score}
+                        <div className={`text-3xl font-bold ${colorClass}`}>
+                          {game.team1Score} - {game.team2Score}
+                        </div>
+                        <div className="text-sm text-gray-500">Final Score</div>
                       </div>
-                      <div className="text-sm text-gray-500">Final Score</div>
                     </div>
-                  </div>
 
-                  {/* Team 2 */}
-                  <div>{renderTeam(game.players.team2, 'Team 2')}</div>
+                    {/* Team 2 */}
+                    <div>{renderTeam(game.players.team2, 'Team 2')}</div>
+                  </div>
                 </div>
-              </div>
-            )})}
+              );
+            })}
 
             {hasMore && !loading && (
               <div className="border-t p-6 text-center">

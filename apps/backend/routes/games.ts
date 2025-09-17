@@ -4,11 +4,7 @@ import db from '../db/client.ts';
 import { getUserStats, updateUserRanking } from '../db/queries/users.ts';
 import { addGame, getGamesWithPlayersForUser, getGameWithPlayers } from '../db/queries/games.ts';
 import { authPreHandler, gameAuthPreHandler, tokenUuidCheck } from '../hooks/auth.ts';
-import {
-  addGameSchema,
-  getGameSchema,
-  getMyGamesSchema,
-} from '../schemas/gamesSchemas.ts';
+import { addGameSchema, getGameSchema, getMyGamesSchema } from '../schemas/gamesSchemas.ts';
 
 /*
 The service calling this route must include a jwt token with GAME_SECRET
