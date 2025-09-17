@@ -65,14 +65,15 @@ export function patchBetterSqlite() {
 
   // Wrap Database.prototype.prepare
   const origPrepare = Database.prototype.prepare;
+
   (Database.prototype as any).prepare = function (
     this: BetterSqliteDatabase,
     sql: string,
     ...args: any[]
-  ) {
+  ): Statement {
     const op = getSqlOp(sql);
     try {
-      return origPrepare.call(this, sql, ...(args as any));
+      return (origPrepare as any).call(this, sql, ...args);
     } catch (err: any) {
       queryErrors.inc({ operation: op });
       throw err;

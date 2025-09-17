@@ -1,9 +1,14 @@
 import fastifyMetrics from 'fastify-metrics';
-import type { FastifyInstance } from 'fastify';
+import type { FastifyInstance, FastifyPluginAsync } from 'fastify';
 
-export const registerMetrics = (app: FastifyInstance) => {
-  app.register(fastifyMetrics, {
-    endpoint: '/metrics', // Prometheus scrape endpoint
-    defaultMetrics: { enabled: true },
-  });
+const metricsOptions = {
+  endpoint: '/metrics',
+  defaultMetrics: { enabled: true },
+};
+
+export const registerMetrics = (app: FastifyInstance): void => {
+  app.register(
+    fastifyMetrics as unknown as FastifyPluginAsync<typeof metricsOptions>,
+    metricsOptions,
+  );
 };
