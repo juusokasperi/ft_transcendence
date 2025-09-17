@@ -157,6 +157,25 @@ describe('User Functions', () => {
     expect(userStats!.username).toBe('Bob');
   });
 
+  it('updateUserRanking updates the ranking field', async() => {
+    const { addUser, getUserStats, updateUserRanking } = await import ('../../../db/queries/users.ts');
+    const playerId = 'uuid-1';
+    const user = addUser(playerId, 'Joe', 'hashPass', 'test@mail.com');
+    expect(user).toBeTruthy();
+
+    let userStats = getUserStats(playerId);
+    expect(userStats).toBeTruthy();
+    expect(userStats!.username).toBe('Joe');
+    expect(userStats!.ranking).toBe(1000);
+
+    const updateRanking = updateUserRanking(playerId, 1030);
+    expect(updateRanking).toBeTruthy();
+
+    userStats = getUserStats(playerId);
+    expect(userStats).toBeTruthy();
+    expect(userStats!.ranking).toBe(1030);
+  })
+
   it('createUserFromGoogle inserts a user and maps fields', async () => {
     const { createUserFromGoogle, getUserByGoogleId } = await import(
       '../../../db/queries/users.ts'

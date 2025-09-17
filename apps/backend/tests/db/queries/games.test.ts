@@ -27,7 +27,7 @@ describe('Game Functions', () => {
     addUser(player1Id, 'Joe', 'hashPass', 'test@mail.com');
     addUser(player2Id, 'Bob', 'hashPass', 'test1@mail.com');
 
-    const gameId = addGame(21, 15, player1Id, player2Id);
+    const gameId = addGame(21, 15, player1Id, player2Id, 5, 10);
     expect(gameId).toBeTruthy();
     expect(typeof gameId).toBe('number');
 
@@ -56,7 +56,7 @@ describe('Game Functions', () => {
     const team1 = [player1Id, player2Id];
     const team2 = [player3Id, player4Id];
 
-    const gameId = addGame(21, 15, team1, team2);
+    const gameId = addGame(21, 15, team1, team2, 5, 10);
     expect(gameId).toBeTruthy();
     expect(typeof gameId).toBe('number');
 
@@ -75,7 +75,7 @@ describe('Game Functions', () => {
   it('Transaction rollback, if Game/GamePlayer fails, nothing goes to database', async () => {
     const { addGame } = await import('../../../db/queries/games.ts');
 
-    const gameId = addGame(21, 15, 'invalid-uuid', 'invalid-uuid-2');
+    const gameId = addGame(21, 15, 'invalid-uuid', 'invalid-uuid-2', 11, 5);
     expect(gameId).toBeNull();
 
     const games = testDb.prepare('SELECT COUNT(*) as count from Games').get() as {
