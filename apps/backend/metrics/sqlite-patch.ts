@@ -1,4 +1,5 @@
 import Database from 'better-sqlite3';
+type BetterSqliteDatabase = InstanceType<typeof Database>;
 import type { Statement } from 'better-sqlite3'; // Type-only import
 import { Histogram, Counter } from 'prom-client';
 
@@ -53,8 +54,7 @@ export function patchBetterSqlite() {
         const result = origFn.apply(this, args);
         queryTotal.inc({ operation: op });
         return result;
-      } catch (err) {
-        console.error('Incrementing queryErrors for operation', op, err.message);
+      } catch (err: any) {
         queryErrors.inc({ operation: op });
         throw err;
       } finally {
@@ -65,11 +65,15 @@ export function patchBetterSqlite() {
 
   // Wrap Database.prototype.prepare
   const origPrepare = Database.prototype.prepare;
-  Database.prototype.prepare = function (this: Database, sql: string, ...args: any[]) {
+  (Database.prototype as any).prepare = function (
+    this: BetterSqliteDatabase,
+    sql: string,
+    ...args: any[]
+  ) {
     const op = getSqlOp(sql);
     try {
-      return origPrepare.call(this, sql, ...args);
-    } catch (err) {
+      return origPrepare.call(this, sql, ...(args as any));
+    } catch (err: any) {
       queryErrors.inc({ operation: op });
       throw err;
     }
