@@ -15,7 +15,7 @@
 
 #### Node, including SQLite
 
-- fastify-metrics for Node,js 
+- fastify-metrics for Node,js
 - prom-client directly, to wrap database calls and get SQL query metrics
 
 #### Container resource usage
