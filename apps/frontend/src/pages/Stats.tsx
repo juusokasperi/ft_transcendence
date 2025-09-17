@@ -96,6 +96,25 @@ const Stats: React.FC = () => {
     </div>
   );
 
+  const getGameResult = (game: Game) => {
+    if (game.team1Score > game.team2Score) return 'win';
+    if (game.team1Score < game.team2Score) return 'loss';
+    return 'draw';
+  };
+
+  const getResultColor = (result: 'win' | 'loss' | 'draw') => {
+    switch (result) {
+      case 'win':
+        return 'text-green-600';
+      case 'loss':
+        return 'text-red-600';
+      case 'draw':
+        return 'text-yellow-600';
+      default:
+        return 'text-gray-800';
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex h-64 items-center justify-center">
@@ -139,28 +158,32 @@ const Stats: React.FC = () => {
 
         {games.length > 0 ? (
           <div className="divide-y divide-gray-200">
-            {games.map((game) => (
-              <div key={game.id} className="p-6 hover:bg-gray-50">
-                <div className="mb-4 flex items-start justify-between">
-                  <div className="flex items-center space-x-4">
-                    <div className="text-lg font-bold text-gray-800">Game #{game.id}</div>
-                    {game.tournamentStage && (
-                      <span className="rounded-full bg-purple-100 px-3 py-1 text-sm font-medium text-purple-800">
-                        {game.tournamentStage}
-                      </span>
-                    )}
+            {games.map((game) => {
+              const result = getGameResult(game);
+              const colorClass = getResultColor(result);
+
+              return (
+                <div key={game.id} className="p-6 hover:bg-gray-50">
+                  <div className="mb-4 flex items-start justify-between">
+                   <div className="flex items-center space-x-4">
+                      <div className="text-lg font-bold text-gray-800">Game #{game.id}</div>
+                      {game.tournamentStage && (
+                        <span className="rounded-full bg-purple-100 px-3 py-1 text-sm font-medium text-purple-800">
+                          {game.tournamentStage}
+                        </span>
+                      )}
+                    </div>
+                    <div className="text-sm text-gray-500">{formatDate(game.playedAt)}</div>
                   </div>
-                  <div className="text-sm text-gray-500">{formatDate(game.playedAt)}</div>
-                </div>
 
-                <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
-                  {/* Team 1 */}
-                  <div>{renderTeam(game.players.team1, 'Team 1')}</div>
+                  <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
+                    {/* Team 1 */}
+                    <div>{renderTeam(game.players.team1, 'Team 1')}</div>
 
-                  {/* Score */}
-                  <div className="flex items-center justify-center">
-                    <div className="text-center">
-                      <div className="text-3xl font-bold text-gray-800">
+                    {/* Score */}
+                    <div className="flex items-center justify-center">
+                      <div className="text-center">
+                      <div className={`text-3xl font-bold ${colorClass}`}>
                         {game.team1Score} - {game.team2Score}
                       </div>
                       <div className="text-sm text-gray-500">Final Score</div>
@@ -171,7 +194,7 @@ const Stats: React.FC = () => {
                   <div>{renderTeam(game.players.team2, 'Team 2')}</div>
                 </div>
               </div>
-            ))}
+            )})}
 
             {hasMore && !loading && (
               <div className="border-t p-6 text-center">
