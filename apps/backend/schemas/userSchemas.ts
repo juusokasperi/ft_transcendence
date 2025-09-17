@@ -85,8 +85,8 @@ export const userDeleteConfirmSchema = {
     properties: {
       token: {
         type: 'string',
-        minLength: 32,
-        maxLength: 32,
+        minLength: 64,
+        maxLength: 64,
         pattern: '^[a-f0-9]+$',
         description: 'User deletion token from email',
       },
