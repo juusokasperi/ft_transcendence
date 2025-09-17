@@ -67,6 +67,12 @@ export type GameState = {
   gameWinner?: TableEnd;
   matchWinner?: TableEnd;
 
+  /** Current player occupancy by table end. */
+  playerAtEnd: { east: 'P1' | 'P2'; west: 'P1' | 'P2' };
+
+  /** Player-pinned running points for the current game. */
+  pointsByPlayer: { P1: number; P2: number };
+
   bounds: {
     halfLengthX: number; // table half-length along X
     halfWidthZ: number; // table half-width along Z
@@ -100,6 +106,7 @@ export type GameState = {
 export function createInitialState(
   bounds: GameState['bounds'],
   initialServer: TableEnd,
+  p1AtEast: boolean = true,
 ): GameState {
   // ——— Table-tennis defaults ———
   const targetScore = 11;
@@ -117,6 +124,7 @@ export function createInitialState(
     ball: { x: 0, z: 0, vx: 0, vz: 0 },
 
     points: { east: 0, west: 0 },
+    pointsByPlayer: { P1: 0, P2: 0 },
     games: { east: 0, west: 0 },
 
     phase: initialServer === 'east' ? 'serveEast' : 'serveWest',
@@ -127,7 +135,7 @@ export function createInitialState(
     bounds,
     params: {
       paddleSpeed: 2.2,
-      ballSpeed: 1.8,
+      ballSpeed: 10,
       zEnglish: 0.75,
       restitutionWall: 1.0,
       targetScore,
@@ -138,5 +146,6 @@ export function createInitialState(
       bestOf,
       targetGames,
     },
+    playerAtEnd: p1AtEast ? { east: 'P1', west: 'P2' } : { east: 'P2', west: 'P1' },
   };
 }

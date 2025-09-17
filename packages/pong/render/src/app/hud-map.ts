@@ -8,26 +8,26 @@ export function mapStateForPlayerRows(s: GameState, flipped: boolean): GameState
   const swappedServer = (s.server === 'east' ? 'west' : 'east') as TableEnd;
   return {
     ...s,
-    points: { east: s.points.west, west: s.points.east },
+    // Player-pinned totals for top/bottom rows
+    points: { east: s.pointsByPlayer.P1, west: s.pointsByPlayer.P2 },
     server: swappedServer,
   };
 }
 
 /** Normalize finished games so each row always refers to the same player. */
+/**
+ * Map finished-game history for HUD rows.
+ *
+ * Pass-through today: the game controller already records history in player
+ * space (top row = P1, bottom row = P2), so no transformation is required.
+ *
+ * Keep this adapter as a stable extension point for future needs, e.g.:
+ * - Accept end-based history from a server and normalize to players.
+ * - Add derived stats (diff, deuce flags, streaks, aggregates).
+ * - Apply spectator flips or per-view customizations.
+ */
 export function mapHistoryForPlayers(
   history: GameHistoryEntry[] | undefined,
-  switchEndsEachGame: boolean,
 ): GameHistoryEntry[] {
-  const list = history ?? [];
-  if (!switchEndsEachGame) return list;
-  return list.map((g) =>
-    g.gameIndex % 2 === 0
-      ? {
-          gameIndex: g.gameIndex,
-          east: g.west,
-          west: g.east,
-          winner: (g.winner === 'east' ? 'west' : 'east') as TableEnd,
-        }
-      : g,
-  );
+  return history ?? [];
 }

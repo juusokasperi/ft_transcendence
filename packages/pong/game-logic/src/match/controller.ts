@@ -83,7 +83,13 @@ export function createMatchController(
         game.points.west >= rules.match.decidingGameMidSwapAtPoints)
     ) {
       midSwapDoneThisGame = true;
-      p1AtEastNow = !p1AtEastNow; // ⟵ keep player↔end mapping correct
+      // Swap player occupancy in game state and mirror controller flag
+      const swapped = {
+        east: game.playerAtEnd.west,
+        west: game.playerAtEnd.east,
+      } as const;
+      game = { ...game, playerAtEnd: swapped };
+      p1AtEastNow = !p1AtEastNow; // keep controller mapping consistent
       events.swapSidesNow = true;
     }
 
@@ -100,7 +106,7 @@ export function createMatchController(
 
       if (rules.match.switchEndsEachGame) {
         endsFlippedThisGame = true;
-        p1AtEastNow = !p1AtEastNow; // ⟵ sides actually swap at game start
+        p1AtEastNow = !p1AtEastNow; // sides actually swap at game start
         events.swapSidesNow = true;
       }
 
@@ -109,7 +115,9 @@ export function createMatchController(
         : initialServerThisGame;
       initialServerThisGame = nextInitialServer;
 
-      const fresh = addRulesToState(createInitialState(game.bounds, nextInitialServer), rules);
+      // Fresh state with correct player occupancy for the new game
+      const freshBase = createInitialState(game.bounds, nextInitialServer, p1AtEastNow);
+      const fresh = addRulesToState(freshBase, rules);
       game = serveFrom(nextInitialServer, fresh);
 
       return { state: game, events };
@@ -119,11 +127,12 @@ export function createMatchController(
     if (game.phase === 'gameOver' && game.gameWinner) {
       // Record immutable history once
       if (!gamesHistory.some((g) => g.gameIndex === currentGameIndex)) {
+        // Record immutable history in PLAYER space (east row = P1, west row = P2)
         gamesHistory.push({
           gameIndex: currentGameIndex,
-          east: game.points.east,
-          west: game.points.west,
-          winner: game.gameWinner,
+          east: game.pointsByPlayer.P1,
+          west: game.pointsByPlayer.P2,
+          winner: game.pointsByPlayer.P1 >= game.pointsByPlayer.P2 ? 'east' : 'west',
         });
       }
 

@@ -198,7 +198,7 @@ export function createLocalApp(canvas: HTMLCanvasElement, preferences?: Preferen
       // 5) HUD (player-pinned)
       const snap = match.getSnapshot();
       const stateForHUD = mapStateForPlayerRows(state, rowsMirrored);
-      const historyForHUD = mapHistoryForPlayers(snap.gamesHistory, RULES.match.switchEndsEachGame);
+      const historyForHUD = mapHistoryForPlayers(snap.gamesHistory);
       updateHUD(hud, stateForHUD, names, {
         bestOf: snap.bestOf,
         currentGameIndex: snap.currentGameIndex,

@@ -3,23 +3,17 @@ import type { TableEnd } from '@pong/shared';
 
 /** Points-level win (single game): targetScore with winBy margin. */
 export function hasGameWinner(s: GameState): TableEnd | null {
-  const { east, west } = s.points;
   const { targetScore, winBy } = s.params;
-  const diff = east - west;
-
-  let winner: TableEnd | null = null;
-
-  if (east >= targetScore || west >= targetScore) {
-    if (Math.abs(diff) >= winBy) {
-      if (diff > 0) {
-        winner = 'east';
-      } else {
-        winner = 'west';
-      }
-    }
+  const p1 = s.pointsByPlayer.P1 | 0;
+  const p2 = s.pointsByPlayer.P2 | 0;
+  const diff = p1 - p2;
+  if ((p1 >= targetScore || p2 >= targetScore) && Math.abs(diff) >= winBy) {
+    const winnerPlayer = diff > 0 ? 'P1' : 'P2';
+    // Map back to current table end
+    if (s.playerAtEnd.east === winnerPlayer) return 'east';
+    return 'west';
   }
-
-  return winner;
+  return null;
 }
 
 /**
