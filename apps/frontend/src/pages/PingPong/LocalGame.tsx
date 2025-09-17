@@ -86,7 +86,10 @@ const LocalGame: React.FC = () => {
           return;
         }
         //console.log('[LocalGame] bootstrapPong loaded, booting...');
-        const app = await bootstrapPong(canvasRef.current!);
+        const app = await bootstrapPong(canvasRef.current!, {
+          player1: settings.player1,
+          player2: settings.player2,
+        });
         appRef.current = app;
         // Ensure keyboard input is captured without requiring a click
         //requestAnimationFrame(() => canvasRef.current?.focus({ preventScroll: true }));

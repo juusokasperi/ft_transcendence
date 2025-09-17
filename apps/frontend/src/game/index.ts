@@ -2,17 +2,23 @@
 export type AppMode = 'local' | 'online' | 'tournament';
 import type { PlayerSeat } from '@pong/render';
 
+export type Preferences = {
+  player1: { name: string; paddleColor: string };
+  player2: { name: string; paddleColor: string };
+};
+
 export type CreateAppOptions = {
   mode: AppMode;
   canvas: HTMLCanvasElement;
   net?: { serverUrl: string; matchId: string; seat: PlayerSeat };
+  preferences?: Preferences;
 };
 
 // Narrow public surface; only orchestrates the right mode.
-export async function createPongApp({ mode, canvas, net }: CreateAppOptions) {
+export async function createPongApp({ mode, canvas, net, preferences }: CreateAppOptions) {
   if (mode === 'local') {
     const { createLocalApp } = await import('./modes/local');
-    return createLocalApp(canvas);
+    return createLocalApp(canvas, preferences);
   }
 
   if (mode === 'online') {
