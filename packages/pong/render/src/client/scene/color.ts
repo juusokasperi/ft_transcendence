@@ -37,3 +37,19 @@ export const Colors = {
     specularNone: Color3.Black(),
   },
 } as const;
+
+/**
+ * Update the palette's paddle colors at runtime.
+ * Accepts either Color3 instances or plain RGB objects in 0..1 range.
+ * This mutates the existing Color3 instances so any later readers
+ * of `Colors.paddleLeft/Right` see the updated values.
+ */
+export function setPaddleColors(
+  left: Color3 | { r: number; g: number; b: number },
+  right: Color3 | { r: number; g: number; b: number },
+): void {
+  const l = left instanceof Color3 ? left : new Color3(left.r, left.g, left.b);
+  const r = right instanceof Color3 ? right : new Color3(right.r, right.g, right.b);
+  Colors.paddleLeft.set(l.r, l.g, l.b);
+  Colors.paddleRight.set(r.r, r.g, r.b);
+}

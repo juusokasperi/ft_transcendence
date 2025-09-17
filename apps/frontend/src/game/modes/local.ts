@@ -13,6 +13,7 @@ import { computeBounds } from '@pong/render';
 import { detectEnteredServe, onEnteredServe } from '@pong/render';
 import { applyFrameEvents } from '@pong/render';
 import { mapStateForPlayerRows, mapHistoryForPlayers } from '@pong/render';
+import { setPaddleColors } from '@pong/render';
 
 import {
   type GameState,
@@ -28,7 +29,7 @@ import { pickInitialServer, SERVE_SELECT_TOTAL_MS, randomSeed32 } from '@pong/sh
 import { deriveSeed32 } from '@pong/shared';
 import { disposeWorld } from '@pong/render';
 import type { Preferences } from './preferences';
-import { applyPreferences } from './preferences';
+import { applyPreferences, hexToRgb } from './preferences';
 
 interface PongInstance {
   start(): void;
@@ -53,8 +54,31 @@ export function createLocalApp(canvas: HTMLCanvasElement, preferences?: Preferen
   const hud = createScoreboard();
   hud.attachToCanvas(canvas);
 
+  // Track actual side swaps to know when the players have crossed (for HUD row mapping)
+  let rowsMirrored = false;
+
   // Player display names (player-row pinned)
-  let names: { east: string; west: string } = { east: 'Magenta', west: 'Green' };
+  let names: { east: string; west: string } = { east: ' ', west: ' ' };
+
+  // Apply initial preferences if provided
+  applyPreferences(preferences, {
+    setNames: (n) => (names = n),
+    leftMaterial: left.mesh.material,
+    rightMaterial: right.mesh.material,
+    rowsMirrored,
+  });
+
+  // Keep global palette in sync for FX (e.g., serve selection) that read Colors.
+  // Compute effective left/right tints based on current side mapping.
+  if (preferences) {
+    const c1 = hexToRgb(preferences.player1.paddleColor);
+    const c2 = hexToRgb(preferences.player2.paddleColor);
+    if (c1 && c2) {
+      const leftRGB = rowsMirrored ? c2 : c1;
+      const rightRGB = rowsMirrored ? c1 : c2;
+      setPaddleColors(leftRGB, rightRGB);
+    }
+  }
 
   // Bounds once (render → headless)
   const { bounds } = computeBounds(world);
@@ -79,19 +103,6 @@ export function createLocalApp(canvas: HTMLCanvasElement, preferences?: Preferen
     },
   });
 
-  // === Deterministic per-match seed (depends on rules + table size) ===
-  const rulesetCrc = deriveSeed32(
-    RULES.game.targetScore,
-    RULES.game.winBy,
-    RULES.game.servesPerTurn,
-    RULES.game.deuceServesPerTurn,
-    RULES.match.bestOf,
-    RULES.match.switchEndsEachGame ? 1 : 0,
-    RULES.match.decidingGameMidSwapAtPoints ?? 0,
-    RULES.match.alternateInitialServerEachGame ? 1 : 0,
-  );
-  const tableW = bounds.halfLengthX * 2;
-  const tableH = bounds.halfWidthZ * 2;
   const matchSeed = randomSeed32();
   const initialServer = pickInitialServer(matchSeed);
 
@@ -118,9 +129,6 @@ export function createLocalApp(canvas: HTMLCanvasElement, preferences?: Preferen
 
   // Simple paddle-centering tween gate (kept in visuals)
   const paddleAnim = createPaddleAnimator(scene, left.mesh, right.mesh);
-
-  // Track actual side swaps to know when the players have crossed (for HUD row mapping)
-  let rowsMirrored = false;
 
   // Intro gate (wall-clock ms until which logic is gated)
   let introUntil = 0;
@@ -166,6 +174,17 @@ export function createLocalApp(canvas: HTMLCanvasElement, preferences?: Preferen
           rowsMirrored,
         });
 
+        // Update palette too, so future FX created after swaps stay accurate
+        if (preferences) {
+          const c1 = hexToRgb(preferences.player1.paddleColor);
+          const c2 = hexToRgb(preferences.player2.paddleColor);
+          if (c1 && c2) {
+            const leftRGB = rowsMirrored ? c2 : c1;
+            const rightRGB = rowsMirrored ? c1 : c2;
+            setPaddleColors(leftRGB, rightRGB);
+          }
+        }
+
         // crossover cue
         paddleAnim.cue(180);
       }
@@ -204,14 +223,6 @@ export function createLocalApp(canvas: HTMLCanvasElement, preferences?: Preferen
     },
   });
   //console.log('[LocalGame] Lifecycle created:', loop);
-
-  // Apply initial preferences if provided
-  applyPreferences(preferences, {
-    setNames: (n) => (names = n),
-    leftMaterial: left.mesh.material,
-    rightMaterial: right.mesh.material,
-    rowsMirrored,
-  });
 
   const destroy = () => {
     //console.log('[LocalGame] Destroy called');
