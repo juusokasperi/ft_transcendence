@@ -55,7 +55,7 @@ export function normalizeCredentials(req: FastifyRequest, res: FastifyReply, don
   done();
 }
 
-// Checks that the game adding request came with an authorization (for protected routes)
+// Checks that the match adding request came with an authorization (for protected routes)
 // and that the token is valid.
 export function gameAuthPreHandler(req: FastifyRequest, res: FastifyReply, done: Function): void {
   const authHeader = req.headers.authorization;

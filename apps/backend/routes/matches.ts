@@ -2,9 +2,13 @@ import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import type { UserStats } from '../types/types.ts';
 import db from '../db/client.ts';
 import { getUserStats, updateUserRanking } from '../db/queries/users.ts';
-import { addGame, getGamesWithPlayersForUser, getGameWithPlayers } from '../db/queries/games.ts';
+import {
+  addMatch,
+  getMatchesWithPlayersForUser,
+  getMatchWithPlayers,
+} from '../db/queries/matches.ts';
 import { authPreHandler, gameAuthPreHandler, tokenUuidCheck } from '../hooks/auth.ts';
-import { addGameSchema, getGameSchema, getMyGamesSchema } from '../schemas/gamesSchemas.ts';
+import { addMatchSchema, getMatchSchema, getMyMatchesSchema } from '../schemas/matchSchemas.ts';
 
 /*
 The service calling this route must include a jwt token with GAME_SECRET
@@ -36,7 +40,7 @@ function getTournamentMultiplier(tournamentStage?: string): number {
 function calculateEloChange(
   playerElo: number,
   opponentElo: number,
-  gameResult: 'win' | 'loss' | 'draw',
+  matchResult: 'win' | 'loss' | 'draw',
   tournamentStage?: string,
 ): number {
   const baseK = 32;
@@ -45,9 +49,8 @@ function calculateEloChange(
 
   const expectedScore = 1 / (1 + Math.pow(10, (opponentElo - playerElo) / 400));
   let actualScore: number;
-  if (gameResult === 'win') actualScore = 1;
-  else if (gameResult === 'loss')
-    actualScore = 0; // For Draw
+  if (matchResult === 'win') actualScore = 1;
+  else if (matchResult === 'loss') actualScore = 0;
   else actualScore = 0.5;
 
   return Math.round(K * (actualScore - expectedScore));
@@ -67,11 +70,11 @@ function updateTeamRanking(players: string[], stats: (UserStats | null)[], point
   }
 }
 
-export async function gamesRoutes(app: FastifyInstance) {
+export async function matchRoutes(app: FastifyInstance) {
   app.post(
     '/',
     {
-      schema: addGameSchema,
+      schema: addMatchSchema,
       preHandler: [gameAuthPreHandler],
     },
     async (req: FastifyRequest, res: FastifyReply) => {
@@ -127,7 +130,7 @@ export async function gamesRoutes(app: FastifyInstance) {
           tournamentStage,
         );
 
-        const gameId = addGame(
+        const matchId = addMatch(
           team1Score,
           team2Score,
           team1Players,
@@ -137,22 +140,22 @@ export async function gamesRoutes(app: FastifyInstance) {
           tournamentId,
           tournamentStage,
         );
-        if (!gameId) throw new Error('Failed to create game');
+        if (!matchId) throw new Error('Failed to create match');
         updateTeamRanking(team1Players, team1Stats, team1Points);
         updateTeamRanking(team2Players, team2Stats, team2Points);
         return {
-          gameId,
+          matchId,
           eloChanges: { team1: team1Points, team2: team2Points },
         };
       });
 
       try {
         const result = transaction();
-        return res.status(200).send({ message: 'Game successfully added to database', ...result });
+        return res.status(200).send({ message: 'Match successfully added to database', ...result });
       } catch (error) {
         console.error('Transaction failed:', error);
         return res.status(500).send({
-          message: 'Failed to add game results to database',
+          message: 'Failed to add match results to database',
           error: error instanceof Error ? error.message : 'Unknown error',
         });
       }
@@ -160,23 +163,23 @@ export async function gamesRoutes(app: FastifyInstance) {
   );
 
   app.get(
-    '/:gameId',
+    '/:matchId',
     {
-      schema: getGameSchema,
+      schema: getMatchSchema,
       preHandler: [authPreHandler],
     },
     async (req: FastifyRequest, res: FastifyReply) => {
       try {
-        const { gameId } = req.params as { gameId: number };
-        const result = getGameWithPlayers(gameId);
+        const { matchId } = req.params as { matchId: number };
+        const result = getMatchWithPlayers(matchId);
         if (!result) {
-          res.status(404).send({ message: 'Game ID not found' });
+          res.status(404).send({ message: 'Match ID not found' });
           return;
         }
         return res.status(200).send(result);
       } catch (error) {
-        console.error('GET /games/:gameId failed:', error);
-        return res.status(500).send({ message: 'Failed to get game data from DB' });
+        console.error('GET /matches/:matchId failed:', error);
+        return res.status(500).send({ message: 'Failed to get match data from DB' });
       }
     },
   );
@@ -184,7 +187,7 @@ export async function gamesRoutes(app: FastifyInstance) {
   app.get(
     '/',
     {
-      schema: getMyGamesSchema,
+      schema: getMyMatchesSchema,
       preHandler: [authPreHandler, tokenUuidCheck],
     },
     async (req: FastifyRequest, res: FastifyReply) => {
@@ -192,11 +195,11 @@ export async function gamesRoutes(app: FastifyInstance) {
         const uuid = req.user!.uuid; // set by authPreHandler
         const { count, offset } = req.query as { count?: number; offset?: number };
         let results;
-        results = getGamesWithPlayersForUser(uuid, count, offset);
+        results = getMatchesWithPlayersForUser(uuid, count, offset);
         return res.status(200).send(results);
       } catch (error) {
-        console.error('GET /games failed:', error);
-        return res.status(500).send({ message: 'Failed to fetch game data for user' });
+        console.error('GET /matches failed:', error);
+        return res.status(500).send({ message: 'Failed to fetch match data for user' });
       }
     },
   );

@@ -20,11 +20,11 @@ export interface UserStatsDb {
   created_at: string;
   wins: number;
   losses: number;
-  total_games: number;
+  total_matches: number;
   online: boolean;
 }
 
-export interface GameDb {
+export interface MatchDb {
   id: number;
   team_1_score: number;
   team_2_score: number;
@@ -33,7 +33,7 @@ export interface GameDb {
   tournament_stage: string | null;
 }
 
-export interface GamePlayerDb {
+export interface MatchPlayerDb {
   team_number: number;
   uuid: string | null;
   username: string | null;
@@ -42,13 +42,13 @@ export interface GamePlayerDb {
   created_at: string | null;
 }
 
-export interface GameWithPlayersForUserDb {
-  game_id: number;
+export interface MatchWithPlayersForUserDb {
+  match_id: number;
   team_1_score: number;
   team_2_score: number;
   tournament_id: number | null;
   tournament_stage: string | null;
-  game_created_at: string;
+  match_created_at: string;
   team_number: number;
   uuid: string;
   username: string;

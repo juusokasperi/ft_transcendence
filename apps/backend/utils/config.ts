@@ -59,7 +59,7 @@ export const swaggerConfig: SwaggerOptions = {
     ],
     tags: [
       { name: 'User', description: 'User related endpoints' },
-      { name: 'Game', description: 'Game related endpoints' },
+      { name: 'Match', description: 'Match related endpoints' },
       { name: 'Auth', description: 'Authentication related endpoints' },
       { name: 'Friends', description: 'Friends related endpoints' },
     ],

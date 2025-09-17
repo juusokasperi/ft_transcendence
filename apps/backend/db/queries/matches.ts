@@ -1,30 +1,31 @@
 import db from '../client.ts';
-import type { GameWithPlayers, PublicUser } from '../../types/types.ts';
-import type { GameDb, GamePlayerDb, GameWithPlayersForUserDb } from '../../types/dbtypes.ts';
+import type { MatchWithPlayers, PublicUser } from '../../types/types.ts';
+import type { MatchDb, MatchPlayerDb, MatchWithPlayersForUserDb } from '../../types/dbtypes.ts';
 
-function addGameHelper(
+function addMatchHelper(
   team1Score: number,
   team2Score: number,
   tournamentId?: number,
   tournamentStage?: string,
 ): number | null {
   try {
+    console.log('addMatchHelper args:', team1Score, team2Score, tournamentId, tournamentStage);
     const result = db
       .prepare(
         `
-			INSERT INTO Games (team_1_score, team_2_score, tournament_id, tournament_stage)
+			INSERT INTO Matches (team_1_score, team_2_score, tournament_id, tournament_stage)
 			VALUES (?, ?, ?, ?)
 			`,
       )
-      .run(team1Score, team2Score, tournamentId || null, tournamentStage || null);
+      .run(team1Score, team2Score, tournamentId ?? null, tournamentStage ?? null);
     return result.lastInsertRowid as number;
   } catch (error) {
     return null;
   }
 }
 
-function addGamePlayerHelper(
-  gameId: number,
+function addMatchPlayerHelper(
+  matchId: number,
   uuid: string,
   team: number,
   pointsAwarded: number,
@@ -33,18 +34,18 @@ function addGamePlayerHelper(
     const result = db
       .prepare(
         `
-			INSERT INTO GamePlayers (game_id, user_uuid, team_number, points_awarded)
+			INSERT INTO MatchPlayers (match_id, user_uuid, team_number, points_awarded)
 			VALUES (?, ?, ?, ?)
 			`,
       )
-      .run(gameId, uuid, team, pointsAwarded);
+      .run(matchId, uuid, team, pointsAwarded);
     return result.lastInsertRowid as number;
   } catch (error) {
     return null;
   }
 }
 
-export function addGame(
+export function addMatch(
   team1Score: number,
   team2Score: number,
   team1Player: string,
@@ -54,7 +55,7 @@ export function addGame(
   tournamentId?: number,
   tournamentStage?: string,
 ): number | null;
-export function addGame(
+export function addMatch(
   team1Score: number,
   team2Score: number,
   team1Players: string[],
@@ -64,7 +65,7 @@ export function addGame(
   tournamentId?: number,
   tournamentStage?: string,
 ): number | null;
-export function addGame(
+export function addMatch(
   team1Score: number,
   team2Score: number,
   team1: string | string[],
@@ -75,26 +76,26 @@ export function addGame(
   tournamentStage?: string,
 ): number | null {
   const transaction = db.transaction(() => {
-    let gameId;
-    if (tournamentId && tournamentStage)
-      gameId = addGameHelper(team1Score, team2Score, tournamentId, tournamentStage);
-    else gameId = addGameHelper(team1Score, team2Score);
+    let matchId;
+    if (tournamentId !== undefined && tournamentStage !== undefined)
+      matchId = addMatchHelper(team1Score, team2Score, tournamentId, tournamentStage);
+    else matchId = addMatchHelper(team1Score, team2Score);
 
-    if (!gameId) throw new Error('Failed to create game');
+    if (!matchId) throw new Error('Failed to create match');
 
     const team1Players = Array.isArray(team1) ? team1 : [team1];
     const team2Players = Array.isArray(team2) ? team2 : [team2];
 
     for (const playerId of team1Players) {
-      const result = addGamePlayerHelper(gameId, playerId, 1, team1Points);
+      const result = addMatchPlayerHelper(matchId, playerId, 1, team1Points);
       if (!result) throw new Error(`Failed to add team 1 player: ${playerId}`);
     }
     for (const playerId of team2Players) {
-      const result = addGamePlayerHelper(gameId, playerId, 2, team2Points);
+      const result = addMatchPlayerHelper(matchId, playerId, 2, team2Points);
       if (!result) throw new Error(`Failed to add team 2 player: ${playerId}`);
     }
 
-    return gameId;
+    return matchId;
   });
 
   try {
@@ -104,27 +105,27 @@ export function addGame(
   }
 }
 
-export function getGameWithPlayers(gameId: number): GameWithPlayers | null {
+export function getMatchWithPlayers(matchId: number): MatchWithPlayers | null {
   try {
-    const game = db.prepare(`SELECT * FROM Games where id = ?`).get(gameId) as GameDb | null;
-    if (!game) return null;
+    const match = db.prepare(`SELECT * FROM Matches where id = ?`).get(matchId) as MatchDb | null;
+    if (!match) return null;
     const players = db
       .prepare(
         `
 			SELECT
-				gp.team_number,
+				mp.team_number,
 				u.uuid,
 				u.username,
 				u.avatar,
 				u.ranking,
 				u.created_at
-			FROM GamePlayers gp
-			LEFT JOIN Users u on gp.user_uuid = u.uuid
-			WHERE gp.game_id = ?
-			ORDER BY gp.team_number, gp.id
+			FROM MatchPlayers mp
+			LEFT JOIN Users u on mp.user_uuid = u.uuid
+			WHERE mp.match_id = ?
+			ORDER BY mp.team_number, mp.id
 			`,
       )
-      .all(gameId) as GamePlayerDb[];
+      .all(matchId) as MatchPlayerDb[];
 
     const team1Players = players
       .filter((player) => player.team_number === 1)
@@ -154,27 +155,27 @@ export function getGameWithPlayers(gameId: number): GameWithPlayers | null {
       ) as (PublicUser | null)[];
 
     return {
-      id: game.id,
-      team1Score: game.team_1_score,
-      team2Score: game.team_2_score,
+      id: match.id,
+      team1Score: match.team_1_score,
+      team2Score: match.team_2_score,
       players: {
         team1: team1Players,
         team2: team2Players,
       },
-      playedAt: game.created_at,
-      tournamentId: game.tournament_id,
-      tournamentStage: game.tournament_stage,
+      playedAt: match.created_at,
+      tournamentId: match.tournament_id,
+      tournamentStage: match.tournament_stage,
     };
   } catch (error) {
     return null;
   }
 }
 
-export function getGamesWithPlayersForUser(
+export function getMatchesWithPlayersForUser(
   uuid: string,
   count?: number,
   offset?: number,
-): GameWithPlayers[] {
+): MatchWithPlayers[] {
   try {
     if (count && count <= 0) return [];
     const params: any[] = [uuid];
@@ -184,49 +185,51 @@ export function getGamesWithPlayersForUser(
     const rows = db
       .prepare(
         `
-      WITH UserGames AS (
-        SELECT g.id, g.team_1_score, g.team_2_score, g.created_at, g.tournament_id, g.tournament_stage
-        FROM Games g
-        INNER JOIN GamePlayers gp ON gp.game_id = g.id
-        WHERE gp.user_uuid = ?
-        ORDER BY g.created_at DESC
+      WITH UserMatches AS (
+        SELECT m.id, m.team_1_score, m.team_2_score, m.created_at, m.tournament_id, m.tournament_stage
+        FROM Matches m
+        INNER JOIN MatchPlayers mp ON mp.match_id = m.id
+        WHERE mp.user_uuid = ?
+        ORDER BY m.created_at DESC
         ${count ? 'LIMIT ?' : ''}
         ${offset ? 'OFFSET ?' : ''}
       )
       SELECT
-        ug.id as game_id,
-        ug.team_1_score,
-        ug.team_2_score,
-        ug.created_at as game_created_at,
-        gp.team_number,
+        um.id as match_id,
+        um.team_1_score,
+        um.team_2_score,
+        um.created_at as match_created_at,
+        um.tournament_id,
+        um.tournament_stage,
+        mp.team_number,
         u.uuid,
         u.username,
         u.avatar,
         u.ranking,
         u.created_at as user_created_at
-      FROM UserGames ug
-      INNER JOIN GamePlayers gp ON gp.game_id = ug.id
-      LEFT JOIN Users u ON gp.user_uuid = u.uuid
-      ORDER BY ug.created_at DESC, gp.team_number, gp.id
+      FROM UserMatches um
+      INNER JOIN MatchPlayers mp ON mp.match_id = um.id
+      LEFT JOIN Users u ON mp.user_uuid = u.uuid
+      ORDER BY um.created_at DESC, mp.team_number, mp.id
       `,
       )
-      .all(...params) as GameWithPlayersForUserDb[];
-    const gamesMap = new Map<number, GameWithPlayers & { userTeam: number | null }>();
+      .all(...params) as MatchWithPlayersForUserDb[];
+    const matchesMap = new Map<number, MatchWithPlayers & { userTeam: number | null }>();
 
     for (const row of rows) {
-      if (!gamesMap.has(row.game_id)) {
-        gamesMap.set(row.game_id, {
-          id: row.game_id,
+      if (!matchesMap.has(row.match_id)) {
+        matchesMap.set(row.match_id, {
+          id: row.match_id,
           team1Score: row.team_1_score,
           team2Score: row.team_2_score,
           players: { team1: [], team2: [] },
-          playedAt: row.game_created_at,
-          tournamentId: row.tournament_id,
-          tournamentStage: row.tournament_stage,
+          playedAt: row.match_created_at,
+          tournamentId: row.tournament_id ?? null,
+          tournamentStage: row.tournament_stage ?? null,
           userTeam: null,
         });
       }
-      const game = gamesMap.get(row.game_id)!;
+      const match = matchesMap.get(row.match_id)!;
       const player =
         row.uuid != null
           ? {
@@ -237,35 +240,35 @@ export function getGamesWithPlayersForUser(
               createdAt: row.user_created_at,
             }
           : null;
-      if (row.uuid === uuid) (game as any).userTeam = row.team_number;
+      if (row.uuid === uuid) (match as any).userTeam = row.team_number;
       if (row.team_number === 1) {
-        game.players.team1.push(player);
+        match.players.team1.push(player);
       } else if (row.team_number === 2) {
-        game.players.team2.push(player);
+        match.players.team2.push(player);
       }
     }
 
-    return Array.from(gamesMap.values()).map((game) => {
-      if (game.userTeam === 2) {
+    return Array.from(matchesMap.values()).map((match) => {
+      if (match.userTeam === 2) {
         return {
-          id: game.id,
-          team1Score: game.team2Score,
-          team2Score: game.team1Score,
+          id: match.id,
+          team1Score: match.team2Score,
+          team2Score: match.team1Score,
           players: {
-            team1: game.players.team2,
-            team2: game.players.team1,
+            team1: match.players.team2,
+            team2: match.players.team1,
           },
-          playedAt: game.playedAt,
-          tournamentId: game.tournamentId,
-          tournamentStage: game.tournamentStage,
+          playedAt: match.playedAt,
+          tournamentId: match.tournamentId,
+          tournamentStage: match.tournamentStage,
         };
       }
 
-      const { userTeam, ...gameWithoutUserTeam } = game;
-      return gameWithoutUserTeam;
+      const { userTeam, ...matchWithoutUserTeam } = match;
+      return matchWithoutUserTeam;
     });
   } catch (error) {
-    console.error('Error fetching games for user:', error);
+    console.error('Error fetching matches for user:', error);
     return [];
   }
 }

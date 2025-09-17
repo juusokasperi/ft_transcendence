@@ -21,30 +21,30 @@ vi.mock('../../db/queries/users.ts', () => {
   return {
     getUserStats: vi.fn(),
     updateUserRanking: vi.fn(),
-    getGamesWithPlayersForUser: vi.fn(),
+    getMatchesWithPlayersForUser: vi.fn(),
   };
 });
 
-vi.mock('../../db/queries/games.ts', () => {
+vi.mock('../../db/queries/matches.ts', () => {
   return {
-    addGame: vi.fn(),
-    addGameHelper: vi.fn(),
-    addGamePlayerHelper: vi.fn(),
-    getGamesWithPlayersForUser: vi.fn(),
+    addMatch: vi.fn(),
+    addMatchHelper: vi.fn(),
+    addMatchPlayerHelper: vi.fn(),
+    getMatchesWithPlayersForUser: vi.fn(),
   };
 });
 
 // 3) Now import modules that use those mocks
 import * as usersQueries from '../../db/queries/users.ts';
-import * as gamesQueries from '../../db/queries/games.ts';
-import { gamesRoutes } from '../../routes/games.ts';
+import * as matchesQueries from '../../db/queries/matches.ts';
+import { matchRoutes } from '../../routes/matches.ts';
 import { userRoutes } from '../../routes/users.ts';
 import jwt from 'jsonwebtoken';
 
 function buildApp() {
   const app = fastify({ logger: false });
   app.register(cookie);
-  app.register(gamesRoutes, { prefix: '/api/games' });
+  app.register(matchRoutes, { prefix: '/api/matches' });
   app.register(userRoutes, { prefix: '/api/users' });
   return app;
 }
@@ -59,10 +59,10 @@ const makeGameToken = () =>
 const makeUserToken = (uuid: string) => jwt.sign({ uuid }, SECRET, { expiresIn: '1h' });
 
 /*
-  POST /api/games/
+  POST /api/matches/
 */
 
-describe('POST /api/games', () => {
+describe('POST /api/matches', () => {
   const app = buildApp();
 
   beforeAll(async () => {
@@ -81,7 +81,7 @@ describe('POST /api/games', () => {
   it('401 when token is missing', async () => {
     const res = await app.inject({
       method: 'POST',
-      url: '/api/games',
+      url: '/api/matches',
       headers: {
         'content-type': 'application/json',
       },
@@ -99,7 +99,7 @@ describe('POST /api/games', () => {
   it('401 when token is invalid', async () => {
     const res = await app.inject({
       method: 'POST',
-      url: '/api/games',
+      url: '/api/matches',
       headers: { authorization: `Bearer invalid-token` },
       body: {
         team1Players: ['uuid-1'],
@@ -127,28 +127,28 @@ describe('POST /api/games', () => {
 
     const res = await app.inject({
       method: 'POST',
-      url: '/api/games',
+      url: '/api/matches',
       headers: { authorization: `Bearer ${gameToken}` },
       body,
     });
 
     expect(res.statusCode).toBe(500);
-    expect(res.json().message).toMatch(/Failed to add game results to database/i);
+    expect(res.json().message).toMatch(/Failed to add match results to database/i);
     expect(res.json().error).toMatch(/One or more players not found in database/i);
   });
 
-  it('200 returns { message, gameId, eloChanges: { team1, team2 } }', async () => {
+  it('200 returns { message, matchId, eloChanges: { team1, team2 } }', async () => {
     (usersQueries.getUserStats as unknown as Mock)
       .mockReturnValueOnce({ uuid: 'uuid-1', ranking: 800 })
       .mockReturnValueOnce({ uuid: 'uuid-2', ranking: 2200 });
 
-    (gamesQueries.addGame as unknown as Mock).mockReturnValueOnce(123);
+    (matchesQueries.addMatch as unknown as Mock).mockReturnValueOnce(123);
     (usersQueries.updateUserRanking as unknown as Mock).mockReturnValue(true);
 
     const gameToken = makeGameToken();
     const res = await app.inject({
       method: 'POST',
-      url: '/api/games',
+      url: '/api/matches',
       headers: { authorization: `Bearer ${gameToken}` },
       body: {
         team1Players: ['uuid-1'],
@@ -161,8 +161,8 @@ describe('POST /api/games', () => {
     expect(res.statusCode).toBe(200);
     const responseData = res.json();
     expect(responseData).toEqual({
-      message: 'Game successfully added to database',
-      gameId: 123,
+      message: 'Match successfully added to database',
+      matchId: 123,
       eloChanges: {
         team1: expect.any(Number),
         team2: expect.any(Number),
@@ -171,7 +171,7 @@ describe('POST /api/games', () => {
     expect(usersQueries.getUserStats).toHaveBeenCalledTimes(2);
     expect(usersQueries.getUserStats).toHaveBeenCalledWith('uuid-1');
     expect(usersQueries.getUserStats).toHaveBeenCalledWith('uuid-2');
-    expect(gamesQueries.addGame).toHaveBeenCalledTimes(1);
+    expect(matchesQueries.addMatch).toHaveBeenCalledTimes(1);
     expect(usersQueries.updateUserRanking).toHaveBeenCalledTimes(2);
 
     const eloChanges = responseData.eloChanges;
@@ -183,10 +183,10 @@ describe('POST /api/games', () => {
 });
 
 /*
-  GET /api/games
+  GET /api/matches
 */
 
-describe('GET /api/games', () => {
+describe('GET /api/matches', () => {
   const app = buildApp();
 
   beforeAll(async () => {
@@ -205,7 +205,7 @@ describe('GET /api/games', () => {
   it('401 when token is missing', async () => {
     const res = await app.inject({
       method: 'GET',
-      url: '/api/games',
+      url: '/api/matches',
     });
     expect(res.statusCode).toBe(401);
     expect(res.json().message).toMatch(/Missing or invalid token/i);
@@ -214,7 +214,7 @@ describe('GET /api/games', () => {
   it('401 when token is invalid', async () => {
     const res = await app.inject({
       method: 'GET',
-      url: '/api/games',
+      url: '/api/matches',
       headers: { cookie: `token=not-a-valid-jwt` },
     });
     expect(res.statusCode).toBe(401);
@@ -222,7 +222,7 @@ describe('GET /api/games', () => {
   });
 
   it('200 returns array of { id, team1Score, team2Score, players, playedAt, tournamentId, tournamentStage }', async () => {
-    (gamesQueries.getGamesWithPlayersForUser as unknown as Mock).mockReturnValueOnce([
+    (matchesQueries.getMatchesWithPlayersForUser as unknown as Mock).mockReturnValueOnce([
       {
         id: 1,
         team1Score: 11,
@@ -284,7 +284,7 @@ describe('GET /api/games', () => {
     const userToken = makeUserToken('uuid-1');
     const res = await app.inject({
       method: 'GET',
-      url: '/api/games',
+      url: '/api/matches',
       headers: { authorization: `Bearer ${userToken}` },
     });
 
@@ -316,7 +316,7 @@ describe('GET /api/games', () => {
 
     expect(responseData[1].tournamentId).toBe(1);
     expect(responseData[1].tournamentStage).toBe('final');
-    expect(gamesQueries.getGamesWithPlayersForUser).toHaveBeenCalledWith(
+    expect(matchesQueries.getMatchesWithPlayersForUser).toHaveBeenCalledWith(
       'uuid-1',
       undefined,
       undefined,
@@ -325,10 +325,10 @@ describe('GET /api/games', () => {
 });
 
 /*
-  GET /api/users/:uuid/games
+  GET /api/users/:uuid/matches
 */
 
-describe('GET /api/users/:uuid/games', () => {
+describe('GET /api/users/:uuid/matches', () => {
   const app = buildApp();
 
   beforeAll(async () => {
@@ -348,7 +348,7 @@ describe('GET /api/users/:uuid/games', () => {
     const validUuid = '123e4567-e89b-12d3-a456-426614174000';
     const res = await app.inject({
       method: 'GET',
-      url: `/api/users/${validUuid}/games`,
+      url: `/api/users/${validUuid}/matches`,
     });
     expect(res.statusCode).toBe(401);
     expect(res.json().message).toMatch(/Missing or invalid token/i);
@@ -358,7 +358,7 @@ describe('GET /api/users/:uuid/games', () => {
     const validUuid = '123e4567-e89b-12d3-a456-426614174000';
     const res = await app.inject({
       method: 'GET',
-      url: `/api/users/${validUuid}/games`,
+      url: `/api/users/${validUuid}/matches`,
       headers: { cookie: `token=not-a-valid-jwt` },
     });
     expect(res.statusCode).toBe(401);
@@ -367,7 +367,7 @@ describe('GET /api/users/:uuid/games', () => {
 
   it('200 returns array of { id, team1Score, team2Score, players, playedAt, tournamentId, tournamentStage }', async () => {
     const validUuid = '123e4567-e89b-12d3-a456-426614174000';
-    (gamesQueries.getGamesWithPlayersForUser as unknown as Mock).mockReturnValueOnce([
+    (matchesQueries.getMatchesWithPlayersForUser as unknown as Mock).mockReturnValueOnce([
       {
         id: 1,
         team1Score: 11,
@@ -429,7 +429,7 @@ describe('GET /api/users/:uuid/games', () => {
     const userToken = makeUserToken('uuid-1');
     const res = await app.inject({
       method: 'GET',
-      url: `/api/users/${validUuid}/games`,
+      url: `/api/users/${validUuid}/matches`,
       headers: { authorization: `Bearer ${userToken}` },
     });
 
@@ -461,7 +461,7 @@ describe('GET /api/users/:uuid/games', () => {
 
     expect(responseData[1].tournamentId).toBe(1);
     expect(responseData[1].tournamentStage).toBe('final');
-    expect(gamesQueries.getGamesWithPlayersForUser).toHaveBeenCalledWith(
+    expect(matchesQueries.getMatchesWithPlayersForUser).toHaveBeenCalledWith(
       validUuid,
       undefined,
       undefined,

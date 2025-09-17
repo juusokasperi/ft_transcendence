@@ -76,7 +76,7 @@ export const TeamSchema = {
 };
 
 export const TournamentIDSchema = {
-  anyOf: [{ type: 'integer', minimum: 0 }, { type: 'null' }],
+  anyOf: [{ type: 'number', minimum: 0 }, { type: 'null' }],
   description: 'Optional tournament ID',
 };
 
@@ -91,7 +91,7 @@ export const TournamentStageSchema = {
   description: 'Tournament stage',
 };
 
-export const GameSchema = {
+export const MatchSchema = {
   type: 'object',
   properties: {
     id: { type: 'number', minimum: 0 },

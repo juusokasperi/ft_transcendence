@@ -17,7 +17,6 @@ Uses `better-sqlite3` to interact with the SQLite database. Migrations are handl
 ## Routes
 
 - To do at least;
-  - Game routes.
   - Two factor auth routes.
 
 - Swagger generates documentation when server is running, at `http://localhost:{backend_port}/docs`
@@ -60,7 +59,7 @@ Uses `better-sqlite3` to interact with the SQLite database. Migrations are handl
   - Cannot befriend oneself - friend_1_uuid != friend_2_uuid
 - Unique_friendship index makes sure that an entry where the user uuids are (A,B) is treated the same as (B,A), so a friendship cannot be in the table twice.
 
-### Games
+### Matches
 
 | Field            | Type | Key     | Nullable | Etc                      |
 | ---------------- | ---- | ------- | -------- | ------------------------ |
@@ -71,15 +70,15 @@ Uses `better-sqlite3` to interact with the SQLite database. Migrations are handl
 | tournament_stage | ENUM |         | Yes      | Null when not tournament |
 | created_at       | DATE |         | No       |                          |
 
-### GamePlayers
+### MatchPlayers
 
-| Field          | Type | Key     | Nullable | Etc                             |
-| -------------- | ---- | ------- | -------- | ------------------------------- |
-| id             | INT  | Primary | No       | Autoincrement                   |
-| game_id        | INT  | Foreign | No       | On game delete, delete this row |
-| user_uuid      | TEXT | Foreign | No       | On user delete, set NULL        |
-| team_number    | DATE |         | No       | Must be 1 or 2                  |
-| points_awarded | INT  |         | No       |                                 |
+| Field          | Type | Key     | Nullable | Etc                              |
+| -------------- | ---- | ------- | -------- | -------------------------------- |
+| id             | INT  | Primary | No       | Autoincrement                    |
+| match_id       | INT  | Foreign | No       | On match delete, delete this row |
+| user_uuid      | TEXT | Foreign | No       | On user delete, set NULL         |
+| team_number    | DATE |         | No       | Must be 1 or 2                   |
+| points_awarded | INT  |         | No       |                                  |
 
 ### PendingUsers
 

@@ -38,8 +38,8 @@ import {
   getSettingsSchema,
   updateSettingsSchema,
 } from '../schemas/userSchemas.ts';
-import { getUserGamesSchema } from '../schemas/gamesSchemas.ts';
-import { getGamesWithPlayersForUser } from '../db/queries/games.ts';
+import { getUserMatchesSchema } from '../schemas/matchSchemas.ts';
+import { getMatchesWithPlayersForUser } from '../db/queries/matches.ts';
 
 /*
 	TO DO:
@@ -339,20 +339,20 @@ export async function userRoutes(app: FastifyInstance) {
   );
 
   app.get(
-    '/:uuid/games',
+    '/:uuid/matches',
     {
-      schema: getUserGamesSchema,
+      schema: getUserMatchesSchema,
       preHandler: [authPreHandler, tokenUuidCheck],
     },
     async (req: FastifyRequest, res: FastifyReply) => {
       try {
         const { uuid } = req.params as { uuid: string };
         const { count, offset } = req.query as { count?: number; offset?: number };
-        const results = getGamesWithPlayersForUser(uuid, count, offset);
+        const results = getMatchesWithPlayersForUser(uuid, count, offset);
         return res.status(200).send(results);
       } catch (error) {
-        console.error('GET /games failed:', error);
-        return res.status(500).send({ message: 'Failed to fetch game data for user' });
+        console.error('GET /matches failed:', error);
+        return res.status(500).send({ message: 'Failed to fetch match data for user' });
       }
     },
   );
