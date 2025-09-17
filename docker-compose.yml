@@ -81,6 +81,7 @@ services:
       CHOKIDAR_USEPOLLING: "true"
       COREPACK_ENABLE_DOWNLOAD_PROMPT: "0"
       COREPACK_HOME: /tmp/corepack
+      ENABLE_SQLITE_METRICS: ${ENABLE_SQLITE_METRICS:-false}
     command: bash -lc "corepack pnpm dev"
     depends_on:
       deps:

@@ -1,4 +1,6 @@
-import './metrics/sqlite-patch.ts';
+import { register } from 'prom-client';
+import { initSqliteMetrics } from './metrics/sqlite-patch.ts';
+import { registerMetrics } from './metrics/fastify-metrics.ts';
 import fastify from 'fastify';
 import cors from '@fastify/cors';
 import fastifyMultipart from '@fastify/multipart';
@@ -34,8 +36,13 @@ const app = fastify({
   },
 });
 
-import { registerMetrics } from './metrics/fastify-metrics.ts';
 registerMetrics(app);
+register.setDefaultLabels({
+  service: 'api',
+  env: process.env.NODE_ENV ?? 'dev',
+  version: process.env.GIT_SHA ?? 'dev',
+});
+if (process.env.ENABLE_SQLITE_METRICS === 'true') initSqliteMetrics();
 
 app.setErrorHandler(prettierErrorMessages);
 
