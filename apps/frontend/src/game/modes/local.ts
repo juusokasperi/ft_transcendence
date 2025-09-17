@@ -3,6 +3,7 @@ import { createEngine } from '@pong/render';
 import { createLifecycle } from '@pong/render';
 import { createWorld } from '@pong/render';
 import { attachLocalInput, readIntent, toggleControlsMirrored, blockInputFor } from '@pong/render';
+import { setBindingProfile } from '@pong/render';
 import { createBounces } from '@pong/render';
 import { FXManager } from '@pong/render';
 import { createScoreboard } from '@pong/render';
@@ -121,6 +122,7 @@ export function createLocalApp(canvas: HTMLCanvasElement, preferences?: Preferen
   let state: GameState = createInitialState(bounds, initialServer);
 
   // Input
+  setBindingProfile('local');
   const detachInput = attachLocalInput(canvas);
   scene.onDisposeObservable.add(detachInput);
 

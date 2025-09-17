@@ -10,6 +10,7 @@ import { computeBounds } from '@pong/render';
 import { detectEnteredServe, onEnteredServe } from '@pong/render';
 import { mapStateForPlayerRows } from '@pong/render';
 import { attachLocalInput } from '@pong/render';
+import { setBindingProfile } from '@pong/render';
 import { createBounces } from '@pong/render';
 import { createPaddleAnimator } from '@pong/render';
 import { toggleControlsMirrored } from '@pong/render';
@@ -130,6 +131,7 @@ export function createOnlineApp(
   hud.attachToCanvas(canvas);
 
   // Input
+  setBindingProfile('online');
   const detachInput = attachLocalInput(canvas);
   scene.onDisposeObservable.add(detachInput);
 

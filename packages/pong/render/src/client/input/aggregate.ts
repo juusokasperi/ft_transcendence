@@ -1,10 +1,11 @@
 import type { InputIntent } from '@pong/shared';
 import { ZeroIntent } from '@pong/shared';
-import { attachKeyboard, readKeyboardAxes } from './keyboard';
+import { attachKeyboard, readKeyboardAxes, setBindingProfile } from './keyboard';
 import { attachTouchZones, readTouchAxes } from './touch-zones';
 import { blockInputFor, isInputBlocked } from './block';
 
 export { blockInputFor, isInputBlocked };
+export { setBindingProfile };
 
 export type Detach = () => void;
 

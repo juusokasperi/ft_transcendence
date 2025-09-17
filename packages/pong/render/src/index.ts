@@ -15,6 +15,7 @@ export {
   readIntent,
   toggleControlsMirrored,
   blockInputFor,
+  setBindingProfile,
 } from './client/input/aggregate';
 
 // ── FX / Visuals ───────────────────────────────────────────────────────────────

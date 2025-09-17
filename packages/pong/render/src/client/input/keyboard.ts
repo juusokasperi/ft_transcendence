@@ -1,3 +1,5 @@
+import { axesFromKeys, setBindingProfile } from './bindings';
+
 const keys = new Set<string>();
 
 type KeyboardDetach = () => void;
@@ -28,15 +30,9 @@ export function readKeyboardAxes(): {
   leftAxisKey: number;
   rightAxisKey: number;
 } {
-  const clamp1 = (v: number) => (v > 0 ? 1 : v < 0 ? -1 : 0);
-
-  // Use KeyW/KeyS so the same physical keys work on QWERTY, AZERTY, etc.
-  const leftKey = (keys.has('KeyW') ? 1 : 0) + (keys.has('KeyS') ? -1 : 0);
-
-  const rightKey = (keys.has('ArrowUp') ? 1 : 0) + (keys.has('ArrowDown') ? -1 : 0);
-
-  return {
-    leftAxisKey: clamp1(leftKey),
-    rightAxisKey: clamp1(rightKey),
-  };
+  return axesFromKeys(keys);
 }
+
+// Re-export for convenience so higher layers can switch profiles without
+// reaching into bindings.ts directly.
+export { setBindingProfile };
