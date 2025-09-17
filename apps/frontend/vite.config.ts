@@ -36,6 +36,9 @@ export default defineConfig(({ mode }) => {
     },
     cacheDir: './.vite',
     plugins: [react(), tailwindcss(), tsconfigPaths({ projects: ['./tsconfig.json'] })],
+    optimizeDeps: {
+      include: ['react-icons/fi'],
+    },
     test: { globals: true, environment: 'jsdom' },
   };
 });

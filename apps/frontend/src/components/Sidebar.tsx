@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { NavLink } from 'react-router-dom';
+import { FiMenu, FiX } from 'react-icons/fi';
 
 interface SideBarLink {
   name: string;
@@ -13,25 +14,51 @@ const sideBarLinks: SideBarLink[] = [
 ];
 
 const Sidebar: React.FC = () => {
+  const [isOpen, setIsOpen] = useState(false);
+
   return (
-    <div className="mt-20 flex h-full w-12 flex-col border-r border-gray-300 pt-3 text-base transition-all duration-300 md:w-64">
-      {sideBarLinks.map((item, index) => (
-        <NavLink
-          to={item.path}
-          key={index}
-          end
-          className={({ isActive }) =>
-            `flex items-center gap-3 px-4 py-3 md:px-8 ${
-              isActive
-                ? 'border-r-4 border-blue-600 bg-blue-600/10 text-blue-600 md:border-r-[6px]'
-                : 'border-white text-gray-700 hover:bg-gray-100/90'
-            }`
-          }
-        >
-          <p className="hidden text-center md:block">{item.name}</p>
-        </NavLink>
-      ))}
-    </div>
+    <>
+      {/* Mobile Hamburger Button */}
+      <button
+        className="fixed left-6 top-16 z-50 flex h-8 w-8 items-center justify-center rounded bg-purple-800 text-white md:hidden"
+        onClick={() => setIsOpen(!isOpen)}
+      >
+        {isOpen ? <FiX size={24} /> : <FiMenu size={24} />}
+      </button>
+
+      {/* Sidebar */}
+      <div
+        className={`fixed left-0 top-0 z-40 h-full w-64 flex-col border-r border-gray-300 bg-white pt-28 text-base transition-transform duration-300 md:relative md:translate-x-0 ${
+          isOpen ? 'translate-x-0' : '-translate-x-full'
+        }`}
+      >
+        {sideBarLinks.map((item, index) => (
+          <NavLink
+            to={item.path}
+            key={index}
+            end
+            className={({ isActive }) =>
+              `flex items-center gap-3 px-4 py-3 md:px-8 ${
+                isActive
+                  ? 'border-r-4 border-blue-600 bg-blue-600/10 text-blue-600 md:border-r-[6px]'
+                  : 'border-white text-gray-700 hover:bg-gray-100/90'
+              }`
+            }
+            onClick={() => setIsOpen(false)} // close menu on mobile after click
+          >
+            <p className="text-center">{item.name}</p>
+          </NavLink>
+        ))}
+      </div>
+
+      {/* Overlay for mobile */}
+      {isOpen && (
+        <div
+          className="fixed inset-0 z-30 bg-black/40 md:hidden"
+          onClick={() => setIsOpen(false)}
+        />
+      )}
+    </>
   );
 };
 
