@@ -28,7 +28,8 @@ import { pickInitialServer, SERVE_SELECT_TOTAL_MS } from '@pong/shared';
 import { deriveSeed32 } from '@pong/shared';
 import { nextLocalMatchSeed } from '@pong/render';
 import { disposeWorld } from '@pong/render';
-import type { Preferences } from '../index';
+import type { Preferences } from './preferences';
+import { applyPreferences } from './preferences';
 
 interface PongInstance {
   start(): void;
@@ -36,30 +37,7 @@ interface PongInstance {
   updatePreferences(p: Preferences): void;
 }
 
-function hexToRgb(hex: string): { r: number; g: number; b: number } | null {
-  const m = /^#([0-9a-fA-F]{6})([0-9a-fA-F]{2})?$/.exec(hex);
-  if (!m) return null;
-  const rgb = m[1]!;
-  const r = parseInt(rgb.slice(0, 2), 16) / 255;
-  const g = parseInt(rgb.slice(2, 4), 16) / 255;
-  const b = parseInt(rgb.slice(4, 6), 16) / 255;
-  return { r, g, b };
-}
-
-function setGlassTint(mat: unknown, rgb: { r: number; g: number; b: number }) {
-  const m: any = mat as any;
-  // PBR path
-  if (m?.subSurface?.tintColor?.set) {
-    m.subSurface.tintColor.set(rgb.r, rgb.g, rgb.b);
-    if (m.albedoColor?.set) m.albedoColor.set(1, 1, 1);
-    return;
-  }
-  // Standard material path
-  if (m?.diffuseColor?.set) {
-    m.diffuseColor.set(rgb.r, rgb.g, rgb.b);
-    return;
-  }
-}
+// moved to ./utils
 
 export function createLocalApp(canvas: HTMLCanvasElement, preferences?: Preferences): PongInstance {
   // Engine/scene/world
@@ -182,7 +160,12 @@ export function createLocalApp(canvas: HTMLCanvasElement, preferences?: Preferen
         rowsMirrored = !rowsMirrored;
 
         // Re-apply preferences so player colors continue to follow players
-        applyPreferences(preferences);
+        applyPreferences(preferences, {
+          setNames: (n) => (names = n),
+          leftMaterial: left.mesh.material,
+          rightMaterial: right.mesh.material,
+          rowsMirrored,
+        });
 
         // crossover cue
         paddleAnim.cue(180);
@@ -224,34 +207,12 @@ export function createLocalApp(canvas: HTMLCanvasElement, preferences?: Preferen
   //console.log('[LocalGame] Lifecycle created:', loop);
 
   // Apply initial preferences if provided
-  const applyPreferences = (p?: Preferences) => {
-    if (!p) return;
-    // Update player names: east = P1 (top row), west = P2 (bottom row)
-    names = { east: p.player1.name, west: p.player2.name };
-
-    const c1 = hexToRgb(p.player1.paddleColor);
-    const c2 = hexToRgb(p.player2.paddleColor);
-    if (c1 && c2) {
-      // Temporarily unfreeze to allow updates
-      (left.mesh.material as any)?.unfreeze?.();
-      (right.mesh.material as any)?.unfreeze?.();
-
-      if (!rowsMirrored) {
-        setGlassTint(left.mesh.material, c1);
-        setGlassTint(right.mesh.material, c2);
-      } else {
-        // players have crossed; colors should follow players
-        setGlassTint(left.mesh.material, c2);
-        setGlassTint(right.mesh.material, c1);
-      }
-
-      // Re-freeze for performance
-      (left.mesh.material as any)?.freeze?.();
-      (right.mesh.material as any)?.freeze?.();
-    }
-  };
-
-  applyPreferences(preferences);
+  applyPreferences(preferences, {
+    setNames: (n) => (names = n),
+    leftMaterial: left.mesh.material,
+    rightMaterial: right.mesh.material,
+    rowsMirrored,
+  });
 
   const destroy = () => {
     //console.log('[LocalGame] Destroy called');
@@ -299,7 +260,12 @@ export function createLocalApp(canvas: HTMLCanvasElement, preferences?: Preferen
     destroy,
     updatePreferences(p: Preferences) {
       preferences = p;
-      applyPreferences(p);
+      applyPreferences(p, {
+        setNames: (n) => (names = n),
+        leftMaterial: left.mesh.material,
+        rightMaterial: right.mesh.material,
+        rowsMirrored,
+      });
     },
   };
 }

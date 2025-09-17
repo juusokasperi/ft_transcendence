@@ -1,11 +1,8 @@
 // src/app/index.ts
 export type AppMode = 'local' | 'online' | 'tournament';
 import type { PlayerSeat } from '@pong/render';
-
-export type Preferences = {
-  player1: { name: string; paddleColor: string };
-  player2: { name: string; paddleColor: string };
-};
+import type { Preferences } from './modes/preferences';
+export type { Preferences } from './modes/preferences';
 
 export type CreateAppOptions = {
   mode: AppMode;
