@@ -15,8 +15,8 @@
 
 #### Node, including SQLite
 
-- easier with fastify-metrics OR
-- prom-client directly, could also wrap database calls for more data...
+- fastify-metrics for Node,js 
+- prom-client directly, to wrap database calls and get SQL query metrics
 
 #### Container resource usage
 
@@ -29,4 +29,4 @@
 
 ### Grafana
 
-- TODO: add premade dashboards
+- Premade dashboards are provisioned and available in the left side under 'Dashboards'
