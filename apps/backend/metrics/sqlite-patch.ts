@@ -1,4 +1,5 @@
-import Database, { Statement } from 'better-sqlite3';
+import Database from 'better-sqlite3';
+import type { Statement, Database as DatabaseType } from 'better-sqlite3';
 import { Histogram, Counter } from 'prom-client';
 
 const PATCH_FLAG = Symbol.for('sqlite.metrics.patched');
@@ -25,19 +26,19 @@ export const queryErrors = new Counter({
 
 // --- Patch Function ---
 export function initSqliteMetrics(): void {
-  const proto = Database.prototype as typeof Database & { [PATCH_FLAG]?: boolean };
+  const proto = Database.prototype as DatabaseType & { [PATCH_FLAG]?: boolean };
   if (proto[PATCH_FLAG]) return; // idempotent
   proto[PATCH_FLAG] = true;
 
   const getSqlOp = (sql: string): string => sql.trim().split(/\s+/)[0]?.toUpperCase() || 'UNKNOWN';
 
   const originalPrepare = proto.prepare;
-  proto.prepare = function (this: Database, sql: string, ...args: any[]) {
-    const operation = getSqlOp(sql);
-    const stmt = originalPrepare.call(this, sql, ...args);
 
+  proto.prepare = function (this: DatabaseType, sql: string) {
+    const operation = getSqlOp(sql);
+    const stmt = originalPrepare.call(this, sql);
     return wrapStatement(stmt, operation);
-  };
+  } as typeof proto.prepare;
 }
 
 // --- Statement Wrapper ---
@@ -48,7 +49,7 @@ function wrapStatement(stmt: Statement, operation: string): Statement {
   methods.forEach((method) => {
     const original = stmt[method] as (...args: any[]) => any;
 
-    wrapped[method] = function (...args: any[]) {
+    (wrapped[method] as typeof original) = function (...args: any[]) {
       const end = queryDuration.startTimer({ operation });
       try {
         const result = original.apply(stmt, args);
@@ -62,6 +63,5 @@ function wrapStatement(stmt: Statement, operation: string): Statement {
       }
     };
   });
-
   return wrapped;
 }
