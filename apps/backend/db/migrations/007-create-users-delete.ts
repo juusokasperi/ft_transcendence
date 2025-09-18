@@ -11,7 +11,7 @@ export async function up(db: Database) {
 	FOREIGN KEY (user_uuid) REFERENCES Users(uuid) ON DELETE CASCADE
 	);`);
 
-  db.exec(`CREATE INDEX idx_delete_tokens ON UsersForDelete(confirmation_token)`);
+  db.exec(`CREATE INDEX IF NOT EXISTS idx_delete_tokens ON UsersForDelete(confirmation_token)`);
 }
 
 export async function down(db: Database) {

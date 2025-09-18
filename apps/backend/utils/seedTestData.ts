@@ -1,10 +1,15 @@
 import './config.ts';
 import { runMigrations } from '../db/migrations.ts';
-import { addUser, updateUserSettings, updateLastSeen } from '../db/queries/users.ts';
+import {
+  addUser,
+  updateUserSettings,
+  updateLastSeen,
+  getUserByUsername,
+} from '../db/queries/users.ts';
 import { v4 as uuidv4 } from 'uuid';
 import bcrypt from 'bcrypt';
 import { addFriend, respondToFriendReq } from '../db/queries/friends.ts';
-import { addGame } from '../db/queries/games.ts';
+import { addMatch } from '../db/queries/matches.ts';
 import { createSettings } from '../db/queries/unconfirmedUsers.ts';
 
 // Run migrations first
@@ -30,11 +35,12 @@ addFriend(uuidJoe, uuidWil);
 respondToFriendReq(uuidWil, uuidJoe, true);
 // Bob wants to befriend Wil, but Wil has not responded
 addFriend(uuidBob, uuidWil);
-// Create a few games
-addGame(11, 5, uuidBob, uuidJoe);
-addGame(11, 0, uuidBob, uuidJoe);
-addGame(10, 12, uuidWil, uuidBob);
-addGame(1, 11, uuidJoe, uuidWil);
+// Create a few matches
+addMatch(11, 5, uuidBob, uuidJoe, 30, -10);
+addMatch(11, 0, uuidBob, uuidJoe, 10, -5);
+addMatch(10, 12, uuidWil, uuidBob, -2, 8);
+addMatch(1, 11, uuidJoe, uuidWil, 0, 10);
+addMatch(8, 11, uuidJoe, uuidWil, 5, 10, 1, 'final');
 // Change UserProfileSettings for Joe and Bob
 updateUserSettings(uuidJoe, {
   paddle_color: '#FF0000',

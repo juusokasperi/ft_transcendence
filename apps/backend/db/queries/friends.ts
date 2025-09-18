@@ -8,15 +8,15 @@ export function getFriends(user1Uuid: string): UserStats[] {
       .prepare(
         `
 		SELECT
-			u.username, u.uuid, u.email, u.avatar, u.ranking, u.created_at,
-			COUNT(g.id) as total_games,
+			u.username, u.uuid, u.avatar, u.ranking, u.created_at,
+			COUNT(m.id) as total_matches,
 			COUNT(CASE
-				WHEN (gp.team_number = 1 AND g.team_1_score > g.team_2_score)
-				  OR (gp.team_number = 2 AND g.team_2_score > g.team_1_score)
+				WHEN (mp.team_number = 1 AND m.team_1_score > m.team_2_score)
+				  OR (mp.team_number = 2 AND m.team_2_score > m.team_1_score)
 				THEN 1 END) as wins,
 			COUNT(CASE
-				WHEN (gp.team_number = 1 AND g.team_1_score < g.team_2_score)
-				  OR (gp.team_number = 2 AND g.team_2_score < g.team_1_score)
+				WHEN (mp.team_number = 1 AND m.team_1_score < m.team_2_score)
+				  OR (mp.team_number = 2 AND m.team_2_score < m.team_1_score)
 				THEN 1 END) as losses,
 			CASE
 				WHEN u.last_seen >= datetime('now', '-5 minutes') THEN 1
@@ -29,8 +29,8 @@ export function getFriends(user1Uuid: string): UserStats[] {
 						THEN f.friend_2_uuid
 					ELSE f.friend_1_uuid
 				END)
-			LEFT JOIN GamePlayers gp on u.uuid = gp.user_uuid
-			LEFT JOIN Games g on gp.game_id = g.id
+			LEFT JOIN MatchPlayers mp on u.uuid = mp.user_uuid
+			LEFT JOIN Matches m on mp.match_id = m.id
 			WHERE (f.friend_1_uuid = ? OR f.friend_2_uuid = ?) AND f.accepted = true
 			GROUP BY u.uuid
 		`,
@@ -40,13 +40,12 @@ export function getFriends(user1Uuid: string): UserStats[] {
     return results.map((dbUser) => ({
       username: dbUser.username,
       uuid: dbUser.uuid,
-      email: dbUser.email,
       avatar: dbUser.avatar,
       ranking: dbUser.ranking,
       createdAt: dbUser.created_at,
       wins: dbUser.wins,
       losses: dbUser.losses,
-      totalGames: dbUser.total_games,
+      totalMatches: dbUser.total_matches,
       online: !!dbUser.online,
     }));
   } catch (error) {

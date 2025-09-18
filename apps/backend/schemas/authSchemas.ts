@@ -13,15 +13,11 @@ import {
 
 const SignupBodySchema = {
   type: 'object',
-  required: ['username', 'email'],
+  required: ['username', 'email', 'password'],
   properties: {
     username: UsernameSchema,
     email: EmailSchema,
     password: PassSchema,
-    googleAuth: {
-      type: 'string',
-      description: 'Google auth token (optional)',
-    },
   },
   additionalProperties: false,
 };

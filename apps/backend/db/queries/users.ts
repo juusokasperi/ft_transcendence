@@ -11,7 +11,7 @@ export function getUserByUuid(uuid: string): User | undefined {
     username: user.username,
     email: user.email,
     passwordHash: user.password_hash,
-    tfa: user.tfa,
+    tfa: !!user.tfa,
     avatar: user.avatar,
     ranking: user.ranking,
     createdAt: user.created_at,
@@ -29,7 +29,7 @@ export function getUserByUsernameOrEmail(username: string, email: string): User 
     username: user.username,
     email: user.email,
     passwordHash: user.password_hash,
-    tfa: user.tfa,
+    tfa: !!user.tfa,
     avatar: user.avatar,
     ranking: user.ranking,
     createdAt: user.created_at,
@@ -45,7 +45,7 @@ export function getUserByUsername(username: string): User | undefined {
     username: user.username,
     email: user.email,
     passwordHash: user.password_hash,
-    tfa: user.tfa,
+    tfa: !!user.tfa,
     avatar: user.avatar,
     ranking: user.ranking,
     createdAt: user.created_at,
@@ -61,7 +61,7 @@ export function getUserByEmail(email: string): User | undefined {
     username: user.username,
     email: user.email,
     passwordHash: user.password_hash,
-    tfa: user.tfa,
+    tfa: !!user.tfa,
     avatar: user.avatar,
     ranking: user.ranking,
     createdAt: user.created_at,
@@ -77,7 +77,7 @@ export function getUserByGoogleId(googleId: string): User | undefined {
     username: user.username,
     email: user.email,
     passwordHash: user.password_hash,
-    tfa: user.tfa,
+    tfa: !!user.tfa,
     avatar: user.avatar,
     ranking: user.ranking,
     createdAt: user.created_at,
@@ -95,7 +95,7 @@ export function getUser(identifier: string): User | undefined {
     username: user.username,
     email: user.email,
     passwordHash: user.password_hash,
-    tfa: user.tfa,
+    tfa: !!user.tfa,
     avatar: user.avatar,
     ranking: user.ranking,
     createdAt: user.created_at,
@@ -284,23 +284,23 @@ export function getUserStats(uuid: string): UserStats | null;
 export function getUserStats(uuid?: string): UserStats[] | UserStats | null {
   const baseQuery = `
 		SELECT
-			u.username, u.uuid, u.email, u.avatar, u.ranking, u.created_at, u.last_seen,
-			COUNT(g.id) as total_games,
+			u.username, u.uuid, u.avatar, u.ranking, u.created_at, u.last_seen,
+			COUNT(m.id) as total_matches,
 			COUNT(CASE
-				WHEN (gp.team_number = 1 AND g.team_1_score > g.team_2_score)
-				  OR (gp.team_number = 2 AND g.team_2_score > g.team_1_score)
+				WHEN (mp.team_number = 1 AND m.team_1_score > m.team_2_score)
+				  OR (mp.team_number = 2 AND m.team_2_score > m.team_1_score)
 				THEN 1 END) as wins,
 			COUNT(CASE
-				WHEN (gp.team_number = 1 AND g.team_1_score < g.team_2_score)
-				  OR (gp.team_number = 2 AND g.team_2_score < g.team_1_score)
+				WHEN (mp.team_number = 1 AND m.team_1_score < m.team_2_score)
+				  OR (mp.team_number = 2 AND m.team_2_score < m.team_1_score)
 				THEN 1 END) as losses,
 			CASE
 				WHEN u.last_seen >= datetime('now', '-5 minutes') THEN 1
 				ELSE 0
 			END as online
 			FROM Users u
-			LEFT JOIN GamePlayers gp on u.uuid = gp.user_uuid
-			LEFT JOIN Games g on gp.game_id = g.id
+			LEFT JOIN MatchPlayers mp on u.uuid = mp.user_uuid
+			LEFT JOIN Matches m on mp.match_id = m.id
 	`;
 
   // If uuid, get single user stats
@@ -324,7 +324,7 @@ export function getUserStats(uuid?: string): UserStats[] | UserStats | null {
       createdAt: result.created_at,
       wins: result.wins,
       losses: result.losses,
-      totalGames: result.total_games,
+      totalMatches: result.total_matches,
       online: !!result.online,
     } as UserStats;
   }
@@ -348,7 +348,7 @@ export function getUserStats(uuid?: string): UserStats[] | UserStats | null {
     createdAt: dbUser.created_at,
     wins: dbUser.wins,
     losses: dbUser.losses,
-    totalGames: dbUser.total_games,
+    totalMatches: dbUser.total_matches,
     online: !!dbUser.online,
   })) as UserStats[];
 }
@@ -407,4 +407,17 @@ export function updateUserSettings(
   } catch (error) {
     return false;
   }
+}
+
+export function updateUserRanking(uuid: string, newRanking: number): Boolean {
+  const res = db
+    .prepare(
+      `
+    UPDATE Users
+    SET ranking = ?
+    WHERE uuid = ?
+    `,
+    )
+    .run(newRanking, uuid);
+  return res.changes === 1;
 }

@@ -19,6 +19,7 @@ import { loginRoutes } from './routes/login.ts';
 import { logoutRoutes } from './routes/logout.ts';
 import { signupRoutes } from './routes/signup.ts';
 import { friendsRoutes } from './routes/friends.ts';
+import { matchRoutes } from './routes/matches.ts';
 import { resetPasswordRoutes } from './routes/resetPassword.ts';
 import { runMigrations } from './db/migrations.ts';
 import { prettierErrorMessages } from './utils/errorHandler.ts';
@@ -67,6 +68,7 @@ await runMigrations();
 
 app.register(userRoutes, { prefix: '/api/users' });
 app.register(friendsRoutes, { prefix: '/api/friends' });
+app.register(matchRoutes, { prefix: '/api/matches' });
 app.register(loginRoutes, { prefix: '/api/login' });
 app.register(logoutRoutes, { prefix: '/api/logout' });
 app.register(signupRoutes, { prefix: '/api/signup' });

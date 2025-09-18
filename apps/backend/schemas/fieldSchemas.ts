@@ -58,3 +58,56 @@ export const AvatarSchema = {
   anyOf: [{ type: 'string' }, { type: 'null' }],
   description: 'User avatar filename',
 };
+
+export const TeamSchema = {
+  type: 'array',
+  nullable: true,
+  items: {
+    type: 'object',
+    properties: {
+      uuid: UuidSchema,
+      username: UsernameSchema,
+      avatar: AvatarSchema,
+      ranking: { type: 'number', minimum: 0 },
+      createdAt: { type: 'string', format: 'date-time' },
+    },
+    required: ['uuid', 'username', 'ranking', 'createdAt'],
+  },
+};
+
+export const TournamentIDSchema = {
+  anyOf: [{ type: 'number', minimum: 0 }, { type: 'null' }],
+  description: 'Optional tournament ID',
+};
+
+export const TournamentStageSchema = {
+  anyOf: [
+    {
+      type: 'string',
+      enum: ['quarterfinal', 'semifinal', 'final'],
+    },
+    { type: 'null' },
+  ],
+  description: 'Tournament stage',
+};
+
+export const MatchSchema = {
+  type: 'object',
+  properties: {
+    id: { type: 'number', minimum: 0 },
+    team1Score: { type: 'number', minimum: 0 },
+    team2Score: { type: 'number', minimum: 0 },
+    players: {
+      type: 'object',
+      properties: {
+        team1: TeamSchema,
+        team2: TeamSchema,
+      },
+      required: ['team1', 'team2'],
+    },
+    playedAt: { type: 'string', format: 'date-time' },
+    tournamentId: TournamentIDSchema,
+    tournamentStage: TournamentStageSchema,
+  },
+  required: ['id', 'team1Score', 'team2Score', 'players', 'playedAt'],
+};
