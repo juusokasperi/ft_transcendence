@@ -8,6 +8,7 @@ export type DomScoreboardAPI = {
   setPlayerNames: (eastName: string, westName: string) => void;
   setGames: (history: GameHistoryEntry[], bestOf: number, currentGameIndex?: number) => void;
   attachToCanvas: (canvas: HTMLCanvasElement) => void;
+  attachToElement: (el: HTMLElement) => void;
   dispose: () => void;
 };
 
@@ -224,13 +225,14 @@ export function createScoreboard(): DomScoreboardAPI {
     deuce.style.top = p.top + 6 + 'px';
   };
 
-  const attachToCanvas = (canvas: HTMLCanvasElement) => {
-    boundCanvas = canvas;
+  const attachToElement = (el: HTMLElement) => {
+    boundCanvas = el as unknown as HTMLCanvasElement;
     scheduleSync();
     if (ro) ro.disconnect();
     ro = new ResizeObserver(() => scheduleSync());
-    ro.observe(canvas);
+    ro.observe(el);
   };
+  const attachToCanvas = (canvas: HTMLCanvasElement) => attachToElement(canvas);
 
   // Coalesced listeners
   window.addEventListener('resize', scheduleSync);
@@ -259,6 +261,7 @@ export function createScoreboard(): DomScoreboardAPI {
     setPlayerNames,
     setGames,
     attachToCanvas,
+    attachToElement,
     dispose,
   };
 }

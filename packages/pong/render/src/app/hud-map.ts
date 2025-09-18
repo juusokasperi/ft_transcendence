@@ -26,8 +26,6 @@ export function mapStateForPlayerRows(s: GameState, flipped: boolean): GameState
  * - Add derived stats (diff, deuce flags, streaks, aggregates).
  * - Apply spectator flips or per-view customizations.
  */
-export function mapHistoryForPlayers(
-  history: GameHistoryEntry[] | undefined,
-): GameHistoryEntry[] {
+export function mapHistoryForPlayers(history: GameHistoryEntry[] | undefined): GameHistoryEntry[] {
   return history ?? [];
 }

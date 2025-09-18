@@ -48,9 +48,11 @@ export function axesFromKeys(keys: Set<string>): { leftAxisKey: number; rightAxi
   }
 
   // local
-  const left = (anyPressed(keys, currentBindings.P1Up) ? 1 : 0) +
+  const left =
+    (anyPressed(keys, currentBindings.P1Up) ? 1 : 0) +
     (anyPressed(keys, currentBindings.P1Down) ? -1 : 0);
-  const right = (anyPressed(keys, currentBindings.P2Up) ? 1 : 0) +
+  const right =
+    (anyPressed(keys, currentBindings.P2Up) ? 1 : 0) +
     (anyPressed(keys, currentBindings.P2Down) ? -1 : 0);
   return { leftAxisKey: clamp1(left), rightAxisKey: clamp1(right) };
 }
@@ -58,4 +60,3 @@ export function axesFromKeys(keys: Set<string>): { leftAxisKey: number; rightAxi
 export function getActiveBindingProfile(): BindingProfile {
   return currentProfile;
 }
-

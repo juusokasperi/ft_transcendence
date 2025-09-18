@@ -91,15 +91,8 @@ export function createLocalApp(canvas: HTMLCanvasElement, preferences?: Preferen
     camera: world.camera,
   });
 
-  // Ruleset + match controller config
-  const RULES = tableTennisRules({
-    match: {
-      bestOf: 5,
-      switchEndsEachGame: true,
-      decidingGameMidSwapAtPoints: 5,
-      alternateInitialServerEachGame: true,
-    },
-  });
+  // Ruleset + match controller config (allow overrides from preferences)
+  const RULES = tableTennisRules(preferences?.rules);
 
   const matchSeed = randomSeed32();
   const initialServer = pickInitialServer(matchSeed);
