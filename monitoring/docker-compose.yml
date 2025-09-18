@@ -68,14 +68,16 @@ services:
     entrypoint: ['sh', '/setup.sh']
 
   # How much cAdvisor can do really depends how much privileges you have
-  # on the host. Enabling too many things will fill the logs with spam.
+  # on the host. Enabling too many things will fill the logs with spam and
+  # eat the CPU.
   cadvisor:
     image: gcr.io/cadvisor/cadvisor:v0.52.0
     profiles:
       - monitoring
     command:
-      - '--disable_metrics=disk,percpu,network,memory,referenced_memory'
-    # privileged: true
+      - '--disable_metrics=accelerator,cpu_topology,disk,network,memory,memory_numa,tcp,udp,percpu,sched,process,hugetlb,referenced_memory,resctrl,cpuset,advtcp'
+      - '--docker_only=true'
+      - '--housekeeping_interval=30s'
     ports:
       - '8090:8080'
     volumes:
@@ -83,9 +85,5 @@ services:
       - '/var/run:/var/run:ro'
       - '/sys:/sys:ro'
       - '/var/lib/docker/:/var/lib/docker:ro'
-      # - "/proc:/host/proc:ro"
-      # - "/dev/disk/:/dev/disk:ro"
-    # devices:
-    #   - "/dev/kmsg:/dev/kmsg"
     networks:
       - devnet
