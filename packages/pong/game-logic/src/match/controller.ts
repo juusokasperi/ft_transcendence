@@ -35,17 +35,19 @@ export function createMatchController(
   }> = [];
 
   function addRulesToState(s: GameState, r: Ruleset): GameState {
+    const deuceAt = r.game.deuceAt ?? r.game.targetScore - 1;
+    const params: GameState['params'] = {
+      ...s.params,
+      targetScore: r.game.targetScore,
+      winBy: r.game.winBy,
+      servesPerTurn: r.game.servesPerTurn,
+      deuceServesPerTurn: r.game.deuceServesPerTurn,
+      deuceAt,
+    };
     return {
       ...s,
       serviceTurnsLeft: r.game.servesPerTurn,
-      params: {
-        ...s.params,
-        targetScore: r.game.targetScore,
-        winBy: r.game.winBy,
-        servesPerTurn: r.game.servesPerTurn,
-        deuceServesPerTurn: r.game.deuceServesPerTurn,
-        deuceAt: r.game.deuceAt!, // resolved
-      } as any,
+      params,
     };
   }
 
