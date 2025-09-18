@@ -110,6 +110,24 @@ const OnlineGame: React.FC = () => {
     setStatus('idle');
   };
 
+  // End-of-match handling: listen for in-canvas event and exit back to lobby
+  useEffect(() => {
+    if ((status !== 'starting' && status !== 'playing') || !canvasRef.current) return;
+    const canvas = canvasRef.current;
+    let timer: number | null = null;
+    const onMatchOver = () => {
+      // Small delay to let the final FX/hud play out, then quit
+      timer = window.setTimeout(() => {
+        handleQuit();
+      }, 3000);
+    };
+    canvas.addEventListener('pong:matchOver', onMatchOver as EventListener);
+    return () => {
+      canvas.removeEventListener('pong:matchOver', onMatchOver as EventListener);
+      if (timer !== null) clearTimeout(timer);
+    };
+  }, [status]);
+
   if (status === 'starting' || status === 'playing') {
     return (
       <div className="relative h-screen w-full bg-black">
