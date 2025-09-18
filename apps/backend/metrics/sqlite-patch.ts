@@ -8,20 +8,20 @@ const PATCH_FLAG = Symbol.for('sqlite.metrics.patched');
 export const queryDuration = new Histogram({
   name: 'sqlite_query_duration_seconds',
   help: 'Time spent on SQLite queries',
-  labelNames: ['operation'],
+  labelNames: ['operation', 'phase'] as const,
   buckets: [0.001, 0.005, 0.01, 0.05, 0.1, 0.5, 1, 2],
 });
 
 export const queryTotal = new Counter({
   name: 'sqlite_query_total',
   help: 'Total SQLite queries executed',
-  labelNames: ['operation'],
+  labelNames: ['operation', 'phase'] as const,
 });
 
 export const queryErrors = new Counter({
   name: 'sqlite_query_errors_total',
   help: 'Number of SQLite query errors',
-  labelNames: ['operation'],
+  labelNames: ['operation', 'phase'] as const,
 });
 
 // --- Patch Function ---
@@ -36,8 +36,18 @@ export function initSqliteMetrics(): void {
 
   proto.prepare = function (this: DatabaseType, sql: string) {
     const operation = getSqlOp(sql);
-    const stmt = originalPrepare.call(this, sql);
-    return wrapStatement(stmt, operation);
+    const end = queryDuration.startTimer({ operation, phase: 'prepare' });
+
+    try {
+      const stmt = originalPrepare.call(this, sql); // may throw
+      queryTotal.inc({ operation, phase: 'prepare' });
+      return wrapStatement(stmt, operation);
+    } catch (err) {
+      queryErrors.inc({ operation, phase: 'prepare' });
+      throw err;
+    } finally {
+      end();
+    }
   } as typeof proto.prepare;
 }
 
@@ -47,21 +57,23 @@ function wrapStatement(stmt: Statement, operation: string): Statement {
   const wrapped = Object.create(stmt) as Statement;
 
   methods.forEach((method) => {
-    const original = stmt[method] as (...args: any[]) => any;
+    const original = stmt[method] as (...args: unknown[]) => unknown;
 
-    (wrapped[method] as typeof original) = function (...args: any[]) {
-      const end = queryDuration.startTimer({ operation });
+    (wrapped[method] as typeof original) = function (...args: unknown[]) {
+      const end = queryDuration.startTimer({ operation, phase: 'execute' });
+
       try {
         const result = original.apply(stmt, args);
-        queryTotal.inc({ operation });
+        queryTotal.inc({ operation, phase: 'execute' });
         return result;
       } catch (err) {
-        queryErrors.inc({ operation });
+        queryErrors.inc({ operation, phase: 'execute' });
         throw err;
       } finally {
         end();
       }
     };
   });
+
   return wrapped;
 }

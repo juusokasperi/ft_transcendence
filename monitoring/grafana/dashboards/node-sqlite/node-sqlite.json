@@ -394,7 +394,7 @@
       "targets": [
         {
           "editorMode": "code",
-          "expr": "rate(sqlite_query_duration_seconds_sum[5m])",
+          "expr": "sum(rate(sqlite_query_duration_seconds_sum[5m])) by (operation)",
           "legendFormat": "{{operation}}",
           "range": true,
           "refId": "A"
@@ -493,12 +493,12 @@
           "disableTextWrap": false,
           "editorMode": "code",
           "exemplar": false,
-          "expr": "sqlite_query_errors_total or vector(0)",
+          "expr": "rate(sqlite_query_errors_total[5m]) or vector(0)",
           "format": "time_series",
           "fullMetaSearch": false,
           "includeNullMetadata": false,
           "instant": false,
-          "legendFormat": "{{operation}}",
+          "legendFormat": "{{operation}} - {{phase}}",
           "range": true,
           "refId": "A",
           "useBackend": false
