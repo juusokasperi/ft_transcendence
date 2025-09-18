@@ -257,7 +257,7 @@ const LocalGame: React.FC = () => {
   // Settings view or post-match view
   if (!postMatch) {
     return (
-      <div className="relative h-screen w-full overflow-hidden">
+      <div className="relative min-h-screen w-full overflow-auto">
         {/* Video Background */}
         <video
           autoPlay
@@ -270,7 +270,7 @@ const LocalGame: React.FC = () => {
         </video>
 
         {/* Overlay Content */}
-        <div className="relative z-10 flex min-h-screen flex-col items-center justify-center space-y-6 bg-black/60 text-white">
+        <div className="relative z-10 flex min-h-screen flex-col items-center justify-center space-y-6 bg-black/60 pt-24 text-white">
 
           {/* Unified card container */}
           <div className="w-full max-w-4xl space-y-6 rounded-xl border border-white/20 bg-black/40 p-6 backdrop-blur">
@@ -686,7 +686,7 @@ const LocalGame: React.FC = () => {
   const winnerName = postMatch.winner === 'east' ? eastName : westName;
 
   return (
-    <div className="relative h-screen w-full overflow-hidden">
+    <div className="relative min-h-screen w-full overflow-auto">
       {/* Video Background */}
       <video
         autoPlay
@@ -699,7 +699,7 @@ const LocalGame: React.FC = () => {
       </video>
 
       {/* Results Overlay */}
-      <div className="relative z-10 flex min-h-screen flex-col items-center justify-center space-y-6 bg-black/70 p-6 text-white">
+      <div className="relative z-10 flex min-h-screen flex-col items-center justify-center space-y-6 bg-black/70 p-6 pt-24 text-white">
         <h1 className="text-4xl font-bold">Match Results</h1>
 
         {/* Reused HUD scoreboard anchored to this container */}
