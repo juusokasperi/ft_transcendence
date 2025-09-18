@@ -36,6 +36,7 @@ export function createMatchController(
 
   function addRulesToState(s: GameState, r: Ruleset): GameState {
     const deuceAt = r.game.deuceAt ?? r.game.targetScore - 1;
+    const targetGames = Math.ceil(r.match.bestOf / 2);
     const params: GameState['params'] = {
       ...s.params,
       targetScore: r.game.targetScore,
@@ -43,6 +44,9 @@ export function createMatchController(
       servesPerTurn: r.game.servesPerTurn,
       deuceServesPerTurn: r.game.deuceServesPerTurn,
       deuceAt,
+      // Keep match params in sync with rules as well
+      bestOf: r.match.bestOf,
+      targetGames,
     };
     return {
       ...s,
