@@ -153,7 +153,7 @@ const LocalGame: React.FC = () => {
       // Lazy-load Babylon + host adapter only when starting the game
       //console.log('[LocalGame] Attempting to lazy-load Pong...');
       try {
-        const { bootstrapPong } = await import('../../game/host/dom-embed');
+        const { bootstrapPong } = await import('../../games/pong/host/dom-embed');
         if (cancelled) {
           //console.log('[LocalGame] Cancelled before bootstrap.');
           return;
@@ -166,11 +166,11 @@ const LocalGame: React.FC = () => {
           rules: settings.rules,
         });
         appRef.current = app;
-        
+
         // If AI is enabled, start bot controlling Player 2
         if (aiEnabled && canvasRef.current && (app as any).observe) {
           try {
-            const { BotController } = await import('../../game/ai/bot-controller');
+            const { BotController } = await import('../../games/pong/ai/bot-controller');
             const bot = new BotController(canvasRef.current!, 'P2', (app as any).observe, 'normal');
             bot.start();
             botRef.current = bot;

@@ -26,7 +26,7 @@ import type { FrameEvents, MatchSnapshot } from '@pong/shared';
 import { SERVE_SELECT_TOTAL_MS } from '@pong/shared';
 import { clamp01 } from '@pong/shared';
 
-import { wsUrl } from '../../utils/url';
+import { wsUrl } from '../../../utils/url';
 
 // --- Net placeholders (wire your transport here) -----------------------------------
 type OnlineClient = {

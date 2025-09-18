@@ -68,7 +68,7 @@ const OnlineGame: React.FC = () => {
     let cancelled = false;
     (async () => {
       try {
-        const { bootstrapOnlinePong } = await import('../../game/host/online-embed');
+        const { bootstrapOnlinePong } = await import('../../games/pong/host/online-embed');
         if (cancelled) return;
         const app = await bootstrapOnlinePong(canvasRef.current!, {
           serverUrl,
