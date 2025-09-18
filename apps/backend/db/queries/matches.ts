@@ -1,5 +1,5 @@
 import db from '../client.ts';
-import type { MatchWithPlayers, PublicUser } from '../../types/types.ts';
+import type { MatchWithPlayers, PublicUser, PublicUserWithPoints } from '../../types/types.ts';
 import type { MatchDb, MatchPlayerDb, MatchWithPlayersForUserDb } from '../../types/dbtypes.ts';
 
 function addMatchHelper(
@@ -113,6 +113,7 @@ export function getMatchWithPlayers(matchId: number): MatchWithPlayers | null {
         `
 			SELECT
 				mp.team_number,
+        mp.points_awarded,
 				u.uuid,
 				u.username,
 				u.avatar,
@@ -136,9 +137,10 @@ export function getMatchWithPlayers(matchId: number): MatchWithPlayers | null {
               avatar: player.avatar,
               ranking: player.ranking,
               createdAt: player.created_at,
+              pointsAwarded: player.points_awarded,
             }
           : null,
-      ) as (PublicUser | null)[];
+      ) as (PublicUserWithPoints | null)[];
     const team2Players = players
       .filter((player) => player.team_number === 2)
       .map((player) =>
@@ -149,9 +151,10 @@ export function getMatchWithPlayers(matchId: number): MatchWithPlayers | null {
               avatar: player.avatar,
               ranking: player.ranking,
               createdAt: player.created_at,
+              pointsAwarded: player.points_awarded,
             }
           : null,
-      ) as (PublicUser | null)[];
+      ) as (PublicUserWithPoints | null)[];
 
     return {
       id: match.id,
@@ -205,6 +208,7 @@ export function getMatchesWithPlayersForUser(
         um.tournament_id,
         um.tournament_stage,
         mp.team_number,
+        mp.points_awarded,
         u.uuid,
         u.username,
         u.avatar,
@@ -241,6 +245,7 @@ export function getMatchesWithPlayersForUser(
               avatar: row.avatar,
               ranking: row.ranking!,
               createdAt: row.user_created_at!,
+              pointsAwarded: row.points_awarded!,
             }
           : null;
       if (row.uuid === uuid) (match as any).userTeam = row.team_number;
