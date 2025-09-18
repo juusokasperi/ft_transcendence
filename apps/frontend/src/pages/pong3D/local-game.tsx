@@ -25,8 +25,8 @@ type UserSettings = {
 };
 
 const defaultSettings: UserSettings = {
-  player1: { name: 'Player 1', paddleColor: '#795fecff' },
-  player2: { name: 'Player 2', paddleColor: '#ff0000' },
+  player1: { name: 'Player 1', paddleColor: '#00ff66' }, // Green (from palette)
+  player2: { name: 'Player 2', paddleColor: '#bf5fff' }, // Violet (from palette)
   accessibility: { colorBlindMode: 'none', photoSensitiveMode: 'none' },
   rules: {
     game: {
@@ -242,7 +242,7 @@ const LocalGame: React.FC = () => {
         <button
           type="button"
           onClick={handleQuit}
-          className="game-quit-button absolute right-5 top-5"
+          className="game-quit-button absolute right-5 top-5 cursor-pointer"
           aria-label="Quit game"
         >
           Quit
@@ -274,11 +274,14 @@ const LocalGame: React.FC = () => {
 
           {/* Unified card container */}
           <div className="w-full max-w-4xl space-y-6 rounded-xl border border-white/20 bg-black/40 p-6 backdrop-blur">
-            <h2 className="text-3xl font-bold">Local Game Settings</h2>
+            <h2 className="text-center text-3xl font-bold">Local Game Settings</h2>
+            
             {/* Player Settings Row */}
             <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
               {/* Player 1 Settings */}
-              <div className="space-y-4">
+              <div className="flex flex-col items-center space-y-4 text-center rounded-md border border-white/10 p-4">
+                <h3 className="text-xl font-semibold">Player 1</h3>
+                <label className="block w-full text-center text-sm font-semibold md:text-base">Choose player name</label>
                 <input
                   type="text"
                   value={settings.player1.name}
@@ -288,11 +291,11 @@ const LocalGame: React.FC = () => {
                       player1: { ...settings.player1, name: e.target.value },
                     })
                   }
-                  className="w-64 rounded border border-white/20 bg-black/40 px-3 py-2 outline-none placeholder:text-white/40 focus:border-white/40"
+                  className="w-64 rounded border border-white/20 bg-black/40 px-3 py-2 text-base outline-none placeholder:text-white/40 focus:border-white/40"
                   placeholder="Player 1"
                 />
-                <label className="block font-semibold">Paddle Color</label>
-                <div className="flex flex-wrap gap-2">
+                <label className="block w-full text-center text-sm font-semibold md:text-base">Choose a paddle color</label>
+                <div className="flex flex-wrap justify-center gap-2">
                   {[
                     { name: 'Red', hex: '#ff3b3b' },
                     { name: 'Orange', hex: '#ff8c1a' },
@@ -316,12 +319,14 @@ const LocalGame: React.FC = () => {
                             player1: { ...settings.player1, paddleColor: c.hex },
                           })
                         }
-                        className={
-                          'h-8 w-8 rounded-full border-2 transition ' +
+                      className={
+                          'h-8 w-8 rounded-full border-2 transition cursor-pointer ' +
                           (selected
                             ? 'scale-110 border-white'
                             : 'border-white/30 hover:border-white/60')
                         }
+                        
+                        
                         style={{ backgroundColor: c.hex }}
                       />
                     );
@@ -330,7 +335,9 @@ const LocalGame: React.FC = () => {
               </div>
 
               {/* Player 2 Settings */}
-              <div className="space-y-4">
+              <div className="flex flex-col items-center space-y-4 text-center rounded-md border border-white/10 p-4">
+                <h3 className="text-xl font-semibold">Player 2</h3>
+                <label className="block w-full text-center text-sm font-semibold md:text-base">Choose a player name</label>
                 <input
                   type="text"
                   value={settings.player2.name}
@@ -340,11 +347,11 @@ const LocalGame: React.FC = () => {
                       player2: { ...settings.player2, name: e.target.value },
                     })
                   }
-                  className="w-64 rounded border border-white/20 bg-black/40 px-3 py-2 outline-none placeholder:text-white/40 focus:border-white/40"
+                  className="w-64 rounded border border-white/20 bg-black/40 px-3 py-2 text-base outline-none placeholder:text-white/40 focus:border-white/40"
                   placeholder="Player 2"
                 />
-                <label className="block font-semibold">Paddle Color</label>
-                <div className="flex flex-wrap gap-2">
+                <label className="block w-full text-center text-sm font-semibold md:text-base">Choose a paddle color</label>
+                <div className="flex flex-wrap justify-center gap-2">
                   {[
                     { name: 'Red', hex: '#ff3b3b' },
                     { name: 'Orange', hex: '#ff8c1a' },
@@ -368,12 +375,14 @@ const LocalGame: React.FC = () => {
                             player2: { ...settings.player2, paddleColor: c.hex },
                           })
                         }
-                        className={
-                          'h-8 w-8 rounded-full border-2 transition ' +
+                      className={
+                          'h-8 w-8 rounded-full border-2 transition cursor-pointer ' +
                           (selected
                             ? 'scale-110 border-white'
                             : 'border-white/30 hover:border-white/60')
                         }
+                        
+                        
                         style={{ backgroundColor: c.hex }}
                       />
                     );
@@ -384,11 +393,11 @@ const LocalGame: React.FC = () => {
 
             {/* Match Rules */}
             <div className="rounded-md border border-white/10 p-4">
-              <button
-                type="button"
-                onClick={() => setRulesOpen((v) => !v)}
-                className="flex w-full items-center justify-between"
-              >
+            <button
+              type="button"
+              onClick={() => setRulesOpen((v) => !v)}
+              className="flex w-full items-center justify-between cursor-pointer"
+            >
                 <span className="text-2xl font-semibold text-yellow-400">Match Rules</span>
                 <span className="text-2xl leading-none text-yellow-400">
                   {rulesOpen ? '−' : '+'}
@@ -588,12 +597,12 @@ const LocalGame: React.FC = () => {
             </div>
 
             {/* Accessibility (Global) */}
-            <div className="rounded-md border border-white/10 p-4">
-              <button
-                type="button"
-                onClick={() => setAccessOpen((v) => !v)}
-                className="flex w-full items-center justify-between"
-              >
+          <div className="rounded-md border border-white/10 p-4">
+            <button
+              type="button"
+              onClick={() => setAccessOpen((v) => !v)}
+              className="flex w-full items-center justify-between cursor-pointer"
+            >
                 <span className="text-2xl font-semibold text-green-400">Accessibility</span>
                 <span className="text-2xl leading-none text-green-400">
                   {accessOpen ? '−' : '+'}
@@ -651,28 +660,30 @@ const LocalGame: React.FC = () => {
             </div>
 
             {/* Buttons */}
-            <div className="flex flex-wrap gap-4">
-              <button
-                onClick={saveSettings}
-                className="rounded border border-green-400 px-6 py-2 text-green-400 transition hover:bg-green-400 hover:text-black"
-              >
-                Save as Default
-              </button>
-              <button
-                onClick={resetSettings}
-                className="rounded border border-red-400 px-6 py-2 text-red-400 transition hover:bg-red-400 hover:text-black"
-              >
-                Reset to Default
-              </button>
-            </div>
+          <div className="flex flex-wrap justify-center gap-4">
+            <button
+              onClick={saveSettings}
+              className="rounded border border-green-400 px-6 py-2 text-green-400 transition hover:bg-green-400 hover:text-black cursor-pointer"
+            >
+              Save as Default
+            </button>
+            <button
+              onClick={resetSettings}
+              className="rounded border border-red-400 px-6 py-2 text-red-400 transition hover:bg-red-400 hover:text-black cursor-pointer"
+            >
+              Reset to Default
+            </button>
+          </div>
 
             {/* Play button */}
+          <div className="flex justify-center">
             <button
               onClick={handlePlay}
-              className="rounded-lg border-2 border-pink-500 px-12 py-4 text-2xl font-bold text-pink-500 shadow-lg transition hover:bg-pink-500 hover:text-black"
+              className="rounded-lg border-2 border-pink-500 px-12 py-4 text-2xl font-bold text-pink-500 shadow-lg transition hover:bg-pink-500 hover:text-black cursor-pointer"
             >
               Play 🚀
             </button>
+          </div>
           </div>
           {/* end card */}
         </div>
