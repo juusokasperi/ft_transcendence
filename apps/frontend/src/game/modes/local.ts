@@ -132,6 +132,11 @@ export function createLocalApp(canvas: HTMLCanvasElement, preferences?: Preferen
   // Intro gate (wall-clock ms until which logic is gated)
   let introUntil = 0;
 
+  // HUD diff cache for match boxes
+  let lastBestOf = 0;
+  let lastCurrentGameIndex = 0;
+  let lastHistoryRef: ReturnType<typeof mapHistoryForPlayers> | null = null;
+
   // Fixed-step lifecycle (simulation cadence is set here)
   const loop = createLifecycle(engine, scene, {
     logicHz: 60,
@@ -150,6 +155,24 @@ export function createLocalApp(canvas: HTMLCanvasElement, preferences?: Preferen
       // 3) Match controller (scoring/game flow/swap sides)
       const mc = match.afterPhysicsStep(stepped.next);
       state = mc.state;
+
+      // Emit lightweight DOM event so host UI can react without tight coupling.
+      // Fires exactly once per match.
+      if (mc.events.matchOver) {
+        const { winner } = mc.events.matchOver;
+        const snap = match.getSnapshot();
+        const historyForHUD = mapHistoryForPlayers(snap.gamesHistory);
+        canvas.dispatchEvent(
+          new CustomEvent('pong:matchOver', {
+            detail: {
+              winner,
+              bestOf: snap.bestOf,
+              gamesHistory: historyForHUD,
+              names,
+            },
+          }),
+        );
+      }
 
       if (mc.events.swapSidesNow) {
         // controls follow player
@@ -201,11 +224,29 @@ export function createLocalApp(canvas: HTMLCanvasElement, preferences?: Preferen
       const snap = match.getSnapshot();
       const stateForHUD = mapStateForPlayerRows(state, rowsMirrored);
       const historyForHUD = mapHistoryForPlayers(snap.gamesHistory);
-      updateHUD(hud, stateForHUD, names, {
-        bestOf: snap.bestOf,
-        currentGameIndex: snap.currentGameIndex,
-        gamesHistory: historyForHUD,
-      });
+      const changed =
+        snap.bestOf !== lastBestOf ||
+        snap.currentGameIndex !== lastCurrentGameIndex ||
+        historyForHUD !== lastHistoryRef;
+
+      updateHUD(
+        hud,
+        stateForHUD,
+        names,
+        changed
+          ? {
+              bestOf: snap.bestOf,
+              currentGameIndex: snap.currentGameIndex,
+              gamesHistory: historyForHUD,
+            }
+          : undefined,
+      );
+
+      if (changed) {
+        lastBestOf = snap.bestOf;
+        lastCurrentGameIndex = snap.currentGameIndex;
+        lastHistoryRef = historyForHUD;
+      }
 
       // 6) Visual bounce Y + project meshes
       const ballY = Bounces.update(state.ball.x, state.ball.vx);

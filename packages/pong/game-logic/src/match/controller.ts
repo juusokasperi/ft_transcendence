@@ -3,8 +3,9 @@ import { createInitialState } from '../model/state';
 import { serveFrom } from '../systems/flow/service';
 import { PAUSE_BETWEEN_GAMES_MS, PAUSE_MATCH_OVER_MS } from '../constants';
 import type { TableEnd } from '@pong/shared';
-import type { Ruleset } from '@pong/shared';
+import type { Ruleset, MatchSnapshot } from '@pong/shared';
 import { sideOpposite } from '@pong/shared';
+import type { GameHistoryEntry } from '@pong/shared';
 
 export function createMatchController(
   bounds: GameState['bounds'],
@@ -48,16 +49,20 @@ export function createMatchController(
     };
   }
 
-  function snapshot() {
+  // Cache to avoid cloning history every tick when unchanged
+  let lastSnapHistoryRef: GameHistoryEntry[] = [];
+  let lastSnapHistoryLen = 0;
+
+  function snapshot(): MatchSnapshot {
+    // Only clone history when it actually changes length (i.e., end of a game)
+    if (gamesHistory.length !== lastSnapHistoryLen) {
+      lastSnapHistoryRef = [...gamesHistory];
+      lastSnapHistoryLen = gamesHistory.length;
+    }
     return {
       bestOf: rules.match.bestOf,
       currentGameIndex,
-      gamesWon: { ...gamesWonByEnd },
-      matchWinner,
-      endsFlippedThisGame,
-      midSwapDoneThisGame,
-      initialServerThisGame,
-      gamesHistory: [...gamesHistory],
+      gamesHistory: lastSnapHistoryRef,
     };
   }
 
@@ -164,6 +169,7 @@ export function createMatchController(
         game = {
           ...game,
           phase: 'matchOver',
+          matchWinner,
           tMatchOverMs: PAUSE_MATCH_OVER_MS,
         };
         return { state: game, events };

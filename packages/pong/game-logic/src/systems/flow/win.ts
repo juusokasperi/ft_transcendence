@@ -20,19 +20,5 @@ export function hasGameWinner(s: GameState): TableEnd | null {
  * Match-level win (best-of-N): first to ceil(N/2) games.
  * Pass in your running match games counters and the match best-of.
  */
-export function hasMatchWinner(
-  gamesWon: { east: number; west: number },
-  bestOf: number,
-): TableEnd | null {
-  const need = Math.ceil(bestOf / 2);
-
-  if (gamesWon.east >= need || gamesWon.west >= need) {
-    if (gamesWon.east > gamesWon.west) {
-      return 'east';
-    } else {
-      return 'west';
-    }
-  }
-
-  return null;
-}
+// Note: match-level win calculation is handled by the match controller
+// using player-centric counting to remain robust across side swaps.
