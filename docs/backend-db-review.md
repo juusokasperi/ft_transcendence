@@ -25,7 +25,9 @@ const offsetClause = includeOffset ? 'OFFSET ?' : '';
 if (includeLimit) params.push(count as number);
 if (includeOffset) params.push(offset as number);
 
-const rows = db.prepare(`
+const rows = db
+  .prepare(
+    `
   WITH UserMatches AS (
     SELECT ...
     WHERE mp.user_uuid = ?
@@ -34,7 +36,9 @@ const rows = db.prepare(`
     ${offsetClause}
   )
   SELECT ...
-`).all(...params);
+`,
+  )
+  .all(...params);
 ```
 
 ## 2) Types vs LEFT JOIN nullability
@@ -54,10 +58,10 @@ export interface MatchWithPlayersForUserDb {
   tournament_stage: string | null;
   match_created_at: string;
   team_number: number;
-  uuid: string | null;            // was string
-  username: string | null;        // was string
+  uuid: string | null; // was string
+  username: string | null; // was string
   avatar: string | null;
-  ranking: number | null;         // was number
+  ranking: number | null; // was number
   user_created_at: string | null; // was string
 }
 ```
@@ -77,6 +81,7 @@ If your business rule is that match player user fields must always be present, c
   - Schema option: enforce `MatchPlayers.user_uuid` as `NOT NULL` and use `ON DELETE RESTRICT` on the FK to prevent deleting users that are referenced by matches. This preserves history but blocks hard deletes.
 
   Example query change:
+
   ```sql
   SELECT ...
   FROM MatchPlayers mp
@@ -90,6 +95,7 @@ If your business rule is that match player user fields must always be present, c
   - Update queries to filter out soft‑deleted users where needed, but retain joins for historical data. User fields stay present and non‑null.
 
   Migration sketch:
+
   ```sql
   ALTER TABLE Users ADD COLUMN deleted_at DATETIME;
   -- On delete action: set deleted_at instead of removing the row
@@ -100,23 +106,28 @@ If your business rule is that match player user fields must always be present, c
   - Then build responses from these snapshot columns, not from `Users`. This keeps historical records immutable and non‑null even if the user is later removed or changes their profile.
 
   Schema and insert sketch:
+
   ```sql
   -- Migration: add snapshot columns
   ALTER TABLE MatchPlayers ADD COLUMN username_at_match TEXT NOT NULL;
   ALTER TABLE MatchPlayers ADD COLUMN avatar_at_match TEXT;
   ALTER TABLE MatchPlayers ADD COLUMN ranking_at_match INTEGER;
   ```
+
   ```ts
   // When inserting a MatchPlayers row
   const u = db.prepare('SELECT username, avatar, ranking FROM Users WHERE uuid = ?').get(uuid);
-  db.prepare(`
+  db.prepare(
+    `
     INSERT INTO MatchPlayers (match_id, user_uuid, team_number, points_awarded,
                               username_at_match, avatar_at_match, ranking_at_match)
     VALUES (?, ?, ?, ?, ?, ?, ?)
-  `).run(matchId, uuid, team, points, u.username, u.avatar, u.ranking);
+  `,
+  ).run(matchId, uuid, team, points, u.username, u.avatar, u.ranking);
   ```
 
 Trade‑offs
+
 - INNER JOIN + RESTRICT preserves non‑null types but prevents hard deletion of users with history.
 - Soft delete keeps history and types non‑null, at the cost of more logic and storage.
 - Snapshot denormalization is robust for historical rendering and decouples from current user state, at the cost of duplicated data and write‑time complexity.
@@ -161,7 +172,7 @@ return {
 
 Options:
 
-1) Declare migration irreversible:
+1. Declare migration irreversible:
 
 ```ts
 export async function down() {
@@ -169,7 +180,7 @@ export async function down() {
 }
 ```
 
-2) Rebuild pattern (compatible with older SQLite): create a temp table without the new columns, copy data, drop and rename. Example: https://sqlite.org/lang_altertable.html#making_other_kinds_of_table_schema_changes
+2. Rebuild pattern (compatible with older SQLite): create a temp table without the new columns, copy data, drop and rename. Example: https://sqlite.org/lang_altertable.html#making_other_kinds_of_table_schema_changes
 
 ### 4.2) Index creation lacks IF NOT EXISTS
 
