@@ -7,6 +7,7 @@ import Layout from './pages/Layout';
 import Profile from './pages/Profile';
 import { Toaster } from 'react-hot-toast';
 import Friends from './pages/Friends';
+import Stats from './pages/Stats';
 import Confirmation from './pages/Confirmation';
 import PingPong from './pages/pong3D/pong-homepage';
 import LocalGame from './pages/pong3D/local-game';
@@ -30,6 +31,7 @@ function App() {
         <Route path={'/delete-user/:confirmationToken'} element={<DeleteUser />} />
         <Route path={'/profile'} element={<Layout />}>
           <Route index element={<Profile />} />
+          <Route path={'/profile/stats'} element={<Stats />} />
           <Route path={'/profile/friends'} element={<Friends />} />
         </Route>
       </Routes>

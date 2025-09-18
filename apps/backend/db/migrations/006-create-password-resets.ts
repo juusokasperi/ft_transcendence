@@ -11,7 +11,7 @@ export async function up(db: Database) {
 	FOREIGN KEY (user_uuid) REFERENCES Users(uuid) ON DELETE CASCADE
 	);`);
 
-  db.exec(`CREATE INDEX idx_password_resets ON PasswordResets(reset_token)`);
+  db.exec(`CREATE INDEX IF NOT EXISTS idx_password_resets ON PasswordResets(reset_token)`);
 }
 
 export async function down(db: Database) {

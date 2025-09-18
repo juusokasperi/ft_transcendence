@@ -27,20 +27,13 @@ export async function signupRoutes(app: FastifyInstance) {
     async (req: FastifyRequest, res: FastifyReply) => {
       try {
         deleteExpiredUsers();
-        const { username, password, email, googleAuth } = req.body as {
+        const { username, password, email } = req.body as {
           username: string;
           password: string | undefined;
           email: string;
-          googleAuth: string | undefined;
         };
         if (checkUserExists(username, email))
           return res.status(400).send({ message: 'Username or email already taken' });
-        if (googleAuth) {
-          // do google auth stuff,
-          // user gets inserted straight to users without first to pending
-          // probably needs to call a different function than addUser?
-          // like addUserGoogle( that takes in google auth number instead of pass)
-        }
         if (!password) return res.status(400).send({ message: 'Missing password field' });
 
         const passwordHash = await bcrypt.hash(password, 10);

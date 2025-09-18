@@ -38,6 +38,8 @@ import {
   getSettingsSchema,
   updateSettingsSchema,
 } from '../schemas/userSchemas.ts';
+import { getUserMatchesSchema } from '../schemas/matchSchemas.ts';
+import { getMatchesWithPlayersForUser } from '../db/queries/matches.ts';
 
 /*
 	TO DO:
@@ -332,6 +334,25 @@ export async function userRoutes(app: FastifyInstance) {
         res.status(200).send(settings);
       } catch (err) {
         res.status(500).send({ message: 'Failed to update user profile settings.' });
+      }
+    },
+  );
+
+  app.get(
+    '/:uuid/matches',
+    {
+      schema: getUserMatchesSchema,
+      preHandler: [authPreHandler, tokenUuidCheck],
+    },
+    async (req: FastifyRequest, res: FastifyReply) => {
+      try {
+        const { uuid } = req.params as { uuid: string };
+        const { count, offset } = req.query as { count?: number; offset?: number };
+        const results = getMatchesWithPlayersForUser(uuid, count, offset);
+        return res.status(200).send(results);
+      } catch (error) {
+        console.error('GET /matches failed:', error);
+        return res.status(500).send({ message: 'Failed to fetch match data for user' });
       }
     },
   );

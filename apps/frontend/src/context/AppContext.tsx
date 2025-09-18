@@ -5,7 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import { useUser } from '../hooks/useUser';
 import type { User } from '../types';
 
-axios.defaults.baseURL = import.meta.env.VITE_BACKEND_URL;
+axios.defaults.baseURL = import.meta.env.VITE_DEV_API_PROXY_TARGET;
 axios.defaults.withCredentials = true;
 
 type Ctx = {
@@ -54,7 +54,9 @@ export const AppProvider: React.FC<React.PropsWithChildren> = ({ children }) => 
   };
 
   const logout = async () => {
-    await axios.post('/api/logout');
+    try {
+      await axios.post('/api/logout');
+    } catch (err) {}
     setUser(null);
     navigate('/');
   };

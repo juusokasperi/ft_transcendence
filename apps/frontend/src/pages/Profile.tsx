@@ -3,22 +3,12 @@ import type { ChangeEvent } from 'react';
 import { useAppContext } from '../context/AppContext';
 import toast from 'react-hot-toast';
 import type { AxiosError } from 'axios';
+import { PLACEHOLDER, resolveAvatarUrl } from '../utils/avatarUrl';
 
 interface PasswordState {
   currentPassword: string;
   newPassword: string;
   confirmPassword: string;
-}
-
-const PLACEHOLDER = 'src/assets/react.svg'; // put any existing asset/public file
-
-// Turn whatever is in user.avatar into a usable URL for <img src>
-function resolveAvatarUrl(avatar: string | undefined | null, axiosBase?: string): string {
-  if (!avatar) return PLACEHOLDER;
-  if (/^https?:\/\//i.test(avatar)) return avatar; // external (e.g. Google)
-  const base = (axiosBase || '').replace(/\/+$/, ''); // strip trailing /
-  const filename = avatar.replace(/^\/?uploads\//, ''); // avoid double /uploads
-  return `${base}/uploads/${filename}`;
 }
 
 const Profile: React.FC = () => {

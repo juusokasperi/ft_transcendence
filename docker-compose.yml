@@ -155,7 +155,7 @@ services:
       PNPM_STORE_DIR: /pnpm/store
       CHOKIDAR_USEPOLLING: "true"
     ports:
-      - "${GAME_SERVER_PORT:-55555}:55555"
+      - "${GAME_SERVER_PORT:-55553}:55553"
     volumes:
       - .:/work:cached
       - pnpm-store:/pnpm/store

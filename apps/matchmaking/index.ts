@@ -18,7 +18,7 @@ interface Lobby {
 }
 
 const PORT = Number(process.env.MATCHMAKING_PORT || 4242);
-const GAME_SERVER_URL = process.env.GAME_SERVER_URL || 'ws://localhost:55555';
+const GAME_SERVER_URL = process.env.GAME_SERVER_URL || 'ws://localhost:55553';
 const LOBBY_TTL_MS = 5 * 60 * 1000; // 5 minutes. We need a timeout to avoid stale lobbies.
 
 const wss = new WebSocketServer({ port: PORT });

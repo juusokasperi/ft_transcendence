@@ -33,7 +33,7 @@ export interface UserStats {
   createdAt: string;
   wins: number;
   losses: number;
-  totalGames: number;
+  totalMatches: number;
   online: boolean;
 }
 
@@ -45,7 +45,7 @@ export interface PublicUser {
   createdAt: string;
 }
 
-export interface GameWithPlayers {
+export interface MatchWithPlayers {
   id: number;
   team1Score: number;
   team2Score: number;
@@ -54,6 +54,8 @@ export interface GameWithPlayers {
     team2: (PublicUser | null)[];
   };
   playedAt: string;
+  tournamentId: number | null;
+  tournamentStage: string | null;
 }
 
 export interface UserSettings {
