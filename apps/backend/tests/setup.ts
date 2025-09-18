@@ -6,6 +6,8 @@ import { v4 as uuidv4 } from 'uuid';
 export async function createTestDb(): Promise<Database.Database> {
   const migrationFile = `./tests/.migrations-${uuidv4()}`;
   const testDb = new Database(':memory:');
+  // Enforce foreign keys in tests as well
+  testDb.pragma('foreign_keys = ON');
   testDb.pragma('journal_mode = WAL');
 
   const testUmzug = createUmzug(testDb, migrationFile);
