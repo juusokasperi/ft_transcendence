@@ -11,7 +11,7 @@ export function getUserByUuid(uuid: string): User | undefined {
     username: user.username,
     email: user.email,
     passwordHash: user.password_hash,
-    tfa: user.tfa,
+    tfa: !!user.tfa,
     avatar: user.avatar,
     ranking: user.ranking,
     createdAt: user.created_at,
@@ -29,7 +29,7 @@ export function getUserByUsernameOrEmail(username: string, email: string): User 
     username: user.username,
     email: user.email,
     passwordHash: user.password_hash,
-    tfa: user.tfa,
+    tfa: !!user.tfa,
     avatar: user.avatar,
     ranking: user.ranking,
     createdAt: user.created_at,
@@ -45,7 +45,7 @@ export function getUserByUsername(username: string): User | undefined {
     username: user.username,
     email: user.email,
     passwordHash: user.password_hash,
-    tfa: user.tfa,
+    tfa: !!user.tfa,
     avatar: user.avatar,
     ranking: user.ranking,
     createdAt: user.created_at,
@@ -61,7 +61,7 @@ export function getUserByEmail(email: string): User | undefined {
     username: user.username,
     email: user.email,
     passwordHash: user.password_hash,
-    tfa: user.tfa,
+    tfa: !!user.tfa,
     avatar: user.avatar,
     ranking: user.ranking,
     createdAt: user.created_at,
@@ -77,7 +77,7 @@ export function getUserByGoogleId(googleId: string): User | undefined {
     username: user.username,
     email: user.email,
     passwordHash: user.password_hash,
-    tfa: user.tfa,
+    tfa: !!user.tfa,
     avatar: user.avatar,
     ranking: user.ranking,
     createdAt: user.created_at,
@@ -95,7 +95,7 @@ export function getUser(identifier: string): User | undefined {
     username: user.username,
     email: user.email,
     passwordHash: user.password_hash,
-    tfa: user.tfa,
+    tfa: !!user.tfa,
     avatar: user.avatar,
     ranking: user.ranking,
     createdAt: user.created_at,
@@ -284,7 +284,7 @@ export function getUserStats(uuid: string): UserStats | null;
 export function getUserStats(uuid?: string): UserStats[] | UserStats | null {
   const baseQuery = `
 		SELECT
-			u.username, u.uuid, u.email, u.avatar, u.ranking, u.created_at, u.last_seen,
+			u.username, u.uuid, u.avatar, u.ranking, u.created_at, u.last_seen,
 			COUNT(m.id) as total_matches,
 			COUNT(CASE
 				WHEN (mp.team_number = 1 AND m.team_1_score > m.team_2_score)
