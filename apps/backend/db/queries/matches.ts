@@ -178,8 +178,12 @@ export function getMatchesWithPlayersForUser(
   try {
     if (count && count <= 0) return [];
     const params: any[] = [uuid];
-    if (count) params.push(count);
-    if (offset) params.push(offset);
+    const includeLimit = typeof count === 'number' && count > 0;
+    const includeOffset = typeof offset === 'number' && offset > 0;
+    const limitClause = includeLimit ? 'LIMIT ?' : includeOffset ? 'LIMIT -1' : '';
+    const offsetClause = includeOffset ? 'OFFSET ?' : '';
+    if (includeLimit) params.push(count as number);
+    if (includeOffset) params.push(offset as number);
 
     const rows = db
       .prepare(
@@ -190,8 +194,8 @@ export function getMatchesWithPlayersForUser(
         INNER JOIN MatchPlayers mp ON mp.match_id = m.id
         WHERE mp.user_uuid = ?
         ORDER BY m.created_at DESC
-        ${count ? 'LIMIT ?' : ''}
-        ${offset ? 'OFFSET ?' : ''}
+        ${limitClause}
+        ${offsetClause}
       )
       SELECT
         um.id as match_id,
@@ -233,10 +237,10 @@ export function getMatchesWithPlayersForUser(
         row.uuid != null
           ? {
               uuid: row.uuid,
-              username: row.username,
+              username: row.username!,
               avatar: row.avatar,
-              ranking: row.ranking,
-              createdAt: row.user_created_at,
+              ranking: row.ranking!,
+              createdAt: row.user_created_at!,
             }
           : null;
       if (row.uuid === uuid) (match as any).userTeam = row.team_number;

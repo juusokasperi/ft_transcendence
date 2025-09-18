@@ -6,6 +6,8 @@ export async function up(db: Database) {
 	id INTEGER PRIMARY KEY AUTOINCREMENT,
 	team_1_score INTEGER NOT NULL,
 	team_2_score INTEGER NOT NULL,
+  tournament_id INTEGER,
+  tournament_stage TEXT,
 	created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 	);`);
 }

@@ -3,7 +3,7 @@ export interface UserDb {
   username: string;
   email: string;
   password_hash: string | null;
-  tfa: boolean;
+  tfa: number;
   avatar: string | null;
   ranking: number;
   created_at: string;
@@ -14,14 +14,13 @@ export interface UserDb {
 export interface UserStatsDb {
   username: string;
   uuid: string;
-  email: string | null;
   avatar: string | null;
   ranking: number;
   created_at: string;
   wins: number;
   losses: number;
   total_matches: number;
-  online: boolean;
+  online: number;
 }
 
 export interface MatchDb {
@@ -50,11 +49,11 @@ export interface MatchWithPlayersForUserDb {
   tournament_stage: string | null;
   match_created_at: string;
   team_number: number;
-  uuid: string;
-  username: string;
+  uuid: string | null;
+  username: string | null;
   avatar: string | null;
-  ranking: number;
-  user_created_at: string;
+  ranking: number | null;
+  user_created_at: string | null;
 }
 
 export interface PublicUserDb {

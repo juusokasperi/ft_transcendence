@@ -8,7 +8,7 @@ export function getFriends(user1Uuid: string): UserStats[] {
       .prepare(
         `
 		SELECT
-			u.username, u.uuid, u.email, u.avatar, u.ranking, u.created_at,
+			u.username, u.uuid, u.avatar, u.ranking, u.created_at,
 			COUNT(m.id) as total_matches,
 			COUNT(CASE
 				WHEN (mp.team_number = 1 AND m.team_1_score > m.team_2_score)
@@ -40,7 +40,6 @@ export function getFriends(user1Uuid: string): UserStats[] {
     return results.map((dbUser) => ({
       username: dbUser.username,
       uuid: dbUser.uuid,
-      email: dbUser.email,
       avatar: dbUser.avatar,
       ranking: dbUser.ranking,
       createdAt: dbUser.created_at,
