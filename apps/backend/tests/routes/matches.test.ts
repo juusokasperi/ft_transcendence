@@ -5,7 +5,7 @@ import cookie from '@fastify/cookie';
 
 // 1) Mock config BEFORE importing app code (safe: no external refs)
 vi.mock('../../utils/config.ts', () => ({
-  GAME_SECRET: 'testsecret',
+  MATCH_SECRET: 'testsecret',
   SECRET: 'testsecret',
   DATABASE_PATH: ':memory:',
 }));
@@ -49,11 +49,11 @@ function buildApp() {
   return app;
 }
 
-const GAME_SECRET = 'testsecret';
+const MATCH_SECRET = 'testsecret';
 const SECRET = 'testsecret';
 
-const makeGameToken = () =>
-  jwt.sign({ service: 'game-node', iat: Math.floor(Date.now() / 1000) }, GAME_SECRET, {
+const makeMatchToken = () =>
+  jwt.sign({ service: 'game-node', iat: Math.floor(Date.now() / 1000) }, MATCH_SECRET, {
     expiresIn: '1h',
   });
 const makeUserToken = (uuid: string) => jwt.sign({ uuid }, SECRET, { expiresIn: '1h' });
@@ -93,7 +93,7 @@ describe('POST /api/matches', () => {
       },
     });
     expect(res.statusCode).toBe(401);
-    expect(res.json().message).toMatch(/Missing game authorization token/i);
+    expect(res.json().message).toMatch(/Missing match authorization token/i);
   });
 
   it('401 when token is invalid', async () => {
@@ -109,14 +109,14 @@ describe('POST /api/matches', () => {
       },
     });
     expect(res.statusCode).toBe(401);
-    expect(res.json().message).toMatch(/Invalid or expired game service token/i);
+    expect(res.json().message).toMatch(/Invalid or expired match service token/i);
   });
 
   it('500 when user not found', async () => {
     (usersQueries.getUserStats as unknown as Mock)
       .mockReturnValueOnce({ uuid: 'uuid-1', ranking: 1000 })
       .mockReturnValueOnce(null);
-    const gameToken = makeGameToken();
+    const matchToken = makeMatchToken();
 
     const body = {
       team1Players: ['uuid-1'],
@@ -128,7 +128,7 @@ describe('POST /api/matches', () => {
     const res = await app.inject({
       method: 'POST',
       url: '/api/matches',
-      headers: { authorization: `Bearer ${gameToken}` },
+      headers: { authorization: `Bearer ${matchToken}` },
       body,
     });
 
@@ -145,11 +145,11 @@ describe('POST /api/matches', () => {
     (matchesQueries.addMatch as unknown as Mock).mockReturnValueOnce(123);
     (usersQueries.updateUserRanking as unknown as Mock).mockReturnValue(true);
 
-    const gameToken = makeGameToken();
+    const matchToken = makeMatchToken();
     const res = await app.inject({
       method: 'POST',
       url: '/api/matches',
-      headers: { authorization: `Bearer ${gameToken}` },
+      headers: { authorization: `Bearer ${matchToken}` },
       body: {
         team1Players: ['uuid-1'],
         team2Players: ['uuid-2'],

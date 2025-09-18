@@ -3,7 +3,7 @@ import fs from 'fs';
 import path from 'path';
 
 /*
-	Seeds a secret to backend .env and (TODO) to game server .env
+	Seeds a secret to backend .env and (TODO) to match server .env
 	Seeds a JWT secret to backend .env
 */
 
@@ -24,4 +24,4 @@ const updateEnvFile = (filePath: string, key: string, value: string) => {
 };
 
 updateEnvFile(backendEnvPath, 'SECRET', jwtSecret);
-//updateEnvFile(gameServerEnvPath, 'GAME_SECRET', jwtSecret);
+//updateEnvFile(gameServerEnvPath, 'MATCH_SECRET', jwtSecret);

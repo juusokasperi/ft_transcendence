@@ -7,7 +7,7 @@ import {
   getMatchesWithPlayersForUser,
   getMatchWithPlayers,
 } from '../db/queries/matches.ts';
-import { authPreHandler, gameAuthPreHandler, tokenUuidCheck } from '../hooks/auth.ts';
+import { authPreHandler, matchAuthPreHandler, tokenUuidCheck } from '../hooks/auth.ts';
 import { addMatchSchema, getMatchSchema, getMyMatchesSchema } from '../schemas/matchSchemas.ts';
 
 // Different stages of tournament can affect ELO rating more
@@ -61,7 +61,7 @@ export async function matchRoutes(app: FastifyInstance) {
     '/',
     {
       schema: addMatchSchema,
-      preHandler: [gameAuthPreHandler],
+      preHandler: [matchAuthPreHandler],
     },
     async (req: FastifyRequest, res: FastifyReply) => {
       const transaction = db.transaction(() => {
