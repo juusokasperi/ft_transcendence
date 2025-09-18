@@ -9,7 +9,8 @@ export function handleSteps(
   state: GameState,
   dt: number,
 ): { next: GameState; events: FrameEvents } {
-  let s = state;
+  // Start from a shallow copy to avoid accidental mutations of the input state
+  let s = { ...state };
   const events: FrameEvents = {};
 
   // Game-over is a hard stop for physics; match controller will advance flow.
