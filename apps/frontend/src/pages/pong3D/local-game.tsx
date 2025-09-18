@@ -49,6 +49,7 @@ const LocalGame: React.FC = () => {
   const navigate = useNavigate();
   const [settings, setSettings] = useState<UserSettings>(defaultSettings);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [aiEnabled, setAiEnabled] = useState(false); // Player 2 as AI
   const [postMatch, setPostMatch] = useState<{
     winner: 'east' | 'west';
     bestOf: number;
@@ -71,7 +72,8 @@ const LocalGame: React.FC = () => {
   }, [postMatch, isPlaying]);
 
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
-  const appRef = useRef<{ destroy(): void } | null>(null);
+  const appRef = useRef<{ destroy(): void; observe?: () => any } | null>(null);
+  const botRef = useRef<{ stop(): void } | null>(null);
 
   const STORAGE_KEY = 'pong_local_settings_v1';
 
@@ -164,6 +166,18 @@ const LocalGame: React.FC = () => {
           rules: settings.rules,
         });
         appRef.current = app;
+        
+        // If AI is enabled, start bot controlling Player 2
+        if (aiEnabled && canvasRef.current && (app as any).observe) {
+          try {
+            const { BotController } = await import('../../game/ai/bot-controller');
+            const bot = new BotController(canvasRef.current!, 'P2', (app as any).observe, 'normal');
+            bot.start();
+            botRef.current = bot;
+          } catch (e) {
+            console.error('[LocalGame] Failed to start AI bot', e);
+          }
+        }
       } catch (e) {
         console.error('[LocalGame] Failed to start Pong', e);
         setIsPlaying(false);
@@ -172,6 +186,10 @@ const LocalGame: React.FC = () => {
 
     return () => {
       cancelled = true;
+      if (botRef.current) {
+        botRef.current.stop();
+        botRef.current = null;
+      }
       if (appRef.current) {
         //console.log('[LocalGame] Destroying Pong app...');
         appRef.current.destroy();
@@ -660,6 +678,18 @@ const LocalGame: React.FC = () => {
                   </div>
                 </div>
               )}
+            </div>
+
+            {/* AI Toggle */}
+            <div className="flex justify-center pb-2">
+              <label className="flex items-center gap-2 text-white/90">
+                <input
+                  type="checkbox"
+                  checked={aiEnabled}
+                  onChange={(e) => setAiEnabled(e.target.checked)}
+                />
+                <span>Play vs AI (Player 2)</span>
+              </label>
             </div>
 
             {/* Buttons */}

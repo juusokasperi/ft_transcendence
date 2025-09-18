@@ -35,6 +35,18 @@ interface PongInstance {
   start(): void;
   destroy(): void;
   updatePreferences(p: Preferences): void;
+  /** Read-only snapshot for AI planning (1 Hz sensor). */
+  observe(): {
+    ball: { x: number; z: number; vx: number; vz: number };
+    paddles: { P1: { z: number }; P2: { z: number } };
+    bounds: {
+      leftPaddleX: number;
+      rightPaddleX: number;
+      halfWidthZ: number;
+      ballRadius: number;
+    };
+    params: { paddleSpeed: number; restitutionWall: number };
+  };
 }
 
 export function createLocalApp(canvas: HTMLCanvasElement, preferences?: Preferences): PongInstance {
@@ -302,6 +314,23 @@ export function createLocalApp(canvas: HTMLCanvasElement, preferences?: Preferen
         rightMaterial: right.mesh.material,
         rowsMirrored,
       });
+    },
+    observe() {
+      // Provide a minimal, read-only snapshot for AI planning.
+      return {
+        ball: { x: state.ball.x, z: state.ball.z, vx: state.ball.vx, vz: state.ball.vz },
+        paddles: { P1: { z: state.paddles.P1.z }, P2: { z: state.paddles.P2.z } },
+        bounds: {
+          leftPaddleX: state.bounds.leftPaddleX,
+          rightPaddleX: state.bounds.rightPaddleX,
+          halfWidthZ: state.bounds.halfWidthZ,
+          ballRadius: state.bounds.ballRadius,
+        },
+        params: {
+          paddleSpeed: state.params.paddleSpeed,
+          restitutionWall: state.params.restitutionWall,
+        },
+      };
     },
   };
 }
