@@ -8,6 +8,8 @@ volumes:
   render_node_modules: {}
   matchmaking_node_modules: {}
   game_server_node_modules: {}
+  chat_node_modules: {}
+
 
 networks:
   devnet:
@@ -170,6 +172,34 @@ services:
       driver: gelf
       options:
         gelf-address: udp://localhost:12201
+
+  # 7) Chat service (WebSocket server)
+  chat-service:
+    image: node:22-bookworm
+    init: true
+    working_dir: /work/apps/chat
+    env_file:
+      - .env
+    environment:
+      PNPM_STORE_DIR: /pnpm/store
+      CHOKIDAR_USEPOLLING: "true"
+    ports:
+      - "${CHAT_PORT:-6262}:6262"
+    volumes:
+      - .:/work:cached
+      - pnpm-store:/pnpm/store
+      - node_modules:/work/node_modules:ro
+      - chat_node_modules:/work/apps/chat/node_modules:ro
+    command: bash -lc "corepack enable && corepack prepare pnpm@9.12.3 --activate && pnpm dev"
+    depends_on:
+      deps:
+        condition: service_completed_successfully
+    networks: [devnet]
+    logging:
+      driver: gelf
+      options:
+        gelf-address: udp://localhost:12201
+
 
 
 

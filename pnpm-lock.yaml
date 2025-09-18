@@ -139,6 +139,22 @@ importers:
         specifier: ^10.0.0
         version: 10.0.0
 
+  apps/chat:
+    dependencies:
+      uuid:
+        specifier: ^9.0.0
+        version: 9.0.1
+      ws:
+        specifier: ^8.17.0
+        version: 8.18.3
+    devDependencies:
+      tsx:
+        specifier: ^4.0.0
+        version: 4.20.5
+      typescript:
+        specifier: ^5.5.0
+        version: 5.9.2
+
   apps/frontend:
     dependencies:
       '@clerk/clerk-react':
