@@ -235,6 +235,7 @@ describe('GET /api/matches', () => {
               avatar: 'avatar1.png',
               ranking: 1000,
               createdAt: '2024-01-01T00:00:00Z',
+              pointsAwarded: 10,
             },
           ],
           team2: [
@@ -244,6 +245,7 @@ describe('GET /api/matches', () => {
               avatar: 'avatar2.png',
               ranking: 1800,
               createdAt: '2024-01-03T12:30:00Z',
+              pointsAwarded: 5,
             },
           ],
         },
@@ -263,6 +265,7 @@ describe('GET /api/matches', () => {
               avatar: 'avatar1.png',
               ranking: 1000,
               createdAt: '2024-01-01T00:00:00Z',
+              pointsAwarded: 3,
             },
           ],
           team2: [
@@ -272,6 +275,7 @@ describe('GET /api/matches', () => {
               avatar: null,
               ranking: 900,
               createdAt: '2024-01-05T12:30:00Z',
+              pointsAwarded: -5,
             },
           ],
         },
@@ -312,6 +316,7 @@ describe('GET /api/matches', () => {
       avatar: expect.any(String),
       ranking: expect.any(Number),
       createdAt: expect.any(String),
+      pointsAwarded: expect.any(Number),
     });
 
     expect(responseData[1].tournamentId).toBe(1);
@@ -380,6 +385,7 @@ describe('GET /api/users/:uuid/matches', () => {
               avatar: 'avatar1.png',
               ranking: 1000,
               createdAt: '2024-01-01T00:00:00Z',
+              pointsAwarded: 25,
             },
           ],
           team2: [
@@ -389,6 +395,7 @@ describe('GET /api/users/:uuid/matches', () => {
               avatar: 'avatar2.png',
               ranking: 1800,
               createdAt: '2024-01-03T12:30:00Z',
+              pointsAwarded: -25,
             },
           ],
         },
@@ -408,6 +415,7 @@ describe('GET /api/users/:uuid/matches', () => {
               avatar: 'avatar1.png',
               ranking: 1000,
               createdAt: '2024-01-01T00:00:00Z',
+              pointsAwarded: 30,
             },
           ],
           team2: [
@@ -417,6 +425,7 @@ describe('GET /api/users/:uuid/matches', () => {
               avatar: null,
               ranking: 900,
               createdAt: '2024-01-05T12:30:00Z',
+              pointsAwarded: -30,
             },
           ],
         },
@@ -457,6 +466,7 @@ describe('GET /api/users/:uuid/matches', () => {
       avatar: expect.any(String),
       ranking: expect.any(Number),
       createdAt: expect.any(String),
+      pointsAwarded: expect.any(Number),
     });
 
     expect(responseData[1].tournamentId).toBe(1);
