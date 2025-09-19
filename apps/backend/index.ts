@@ -1,6 +1,5 @@
 import { register } from 'prom-client';
 import { initSqliteMetrics } from './metrics/sqlite-patch.ts';
-if (process.env.ENABLE_SQLITE_METRICS === 'true') initSqliteMetrics();
 import { registerMetrics } from './metrics/fastify-metrics.ts';
 import fastify from 'fastify';
 import cors from '@fastify/cors';
@@ -16,6 +15,7 @@ import {
   BACKEND_PORT,
   FRONTEND_URL,
   NGINX_PORT,
+  ENABLE_SQLITE_METRICS,
   swaggerConfig,
 } from './utils/config.ts';
 import { userRoutes } from './routes/users.ts';
@@ -29,6 +29,8 @@ import { resetPasswordRoutes } from './routes/resetPassword.ts';
 import { runMigrations } from './db/migrations.ts';
 import { prettierErrorMessages } from './utils/errorHandler.ts';
 import './types/types.ts';
+
+if (ENABLE_SQLITE_METRICS === 'true') initSqliteMetrics();
 
 const app = fastify({
   logger: true,

@@ -42,6 +42,7 @@ export const SECRET = process.env.SECRET as string;
 export const MATCH_SECRET = process.env.MATCH_SECRET as string;
 export const FRONTEND_URL = process.env.FRONTEND_URL as string;
 export const NGINX_PORT = process.env.NGINX_PORT as string;
+export const ENABLE_SQLITE_METRICS = process.env.ENABLE_SQLITE_METRICS as string;
 
 // Export Swagger config
 export const swaggerConfig: SwaggerOptions = {
