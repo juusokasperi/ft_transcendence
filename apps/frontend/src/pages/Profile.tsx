@@ -4,6 +4,7 @@ import { useAppContext } from '../context/AppContext';
 import toast from 'react-hot-toast';
 import type { AxiosError } from 'axios';
 import { PLACEHOLDER, resolveAvatarUrl } from '../utils/avatarUrl';
+import TwoFactorSettings from '../components/TwoFactorSettings';
 
 interface PasswordState {
   currentPassword: string;
@@ -105,6 +106,7 @@ const Profile: React.FC = () => {
               wins: res.data.wins ?? 0,
               losses: res.data.losses ?? 0,
               createdAt: res.data.createdAt ?? '',
+              tfaEnabled: Boolean(res.data.tfa ?? res.data.tfaEnabled ?? false),
             },
       );
       toast.success('Account username changed');
@@ -175,6 +177,7 @@ const Profile: React.FC = () => {
                 wins: res.data.wins ?? 0,
                 losses: res.data.losses ?? 0,
                 createdAt: res.data.createdAt ?? '',
+                tfaEnabled: Boolean(res.data.tfa ?? res.data.tfaEnabled ?? false),
               },
         );
         setImagePreview(resolveAvatarUrl(res.data.avatar, axios.defaults.baseURL));
@@ -200,7 +203,8 @@ const Profile: React.FC = () => {
   };
 
   return (
-    <div className="mx-auto mt-12 max-w-md rounded bg-white p-6 shadow">
+    <div className="mx-auto mt-12 flex max-w-3xl flex-col gap-6">
+      <div className="rounded bg-white p-6 shadow">
       <h2 className="mb-6 text-2xl font-bold">Profile</h2>
       <form className="space-y-4">
         {/* Profile Image */}
@@ -298,6 +302,8 @@ const Profile: React.FC = () => {
           </button>
         </div>
       </form>
+      </div>
+      <TwoFactorSettings axios={axios} user={user} setUser={setUser} />
     </div>
   );
 };
