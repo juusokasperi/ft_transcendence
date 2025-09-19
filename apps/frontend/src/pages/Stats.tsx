@@ -204,7 +204,6 @@ const Stats: React.FC = () => {
                         <div className={`text-3xl font-bold ${colorClass}`}>
                           {match.team1Score} - {match.team2Score}
                         </div>
-                        <div className="text-sm text-gray-500">Final Score</div>
                       </div>
                     </div>
 
