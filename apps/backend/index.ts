@@ -1,3 +1,6 @@
+import { register } from 'prom-client';
+import { initSqliteMetrics } from './metrics/sqlite-patch.ts';
+import { registerMetrics } from './metrics/fastify-metrics.ts';
 import fastify from 'fastify';
 import cors from '@fastify/cors';
 import fastifyMultipart from '@fastify/multipart';
@@ -12,6 +15,7 @@ import {
   BACKEND_PORT,
   FRONTEND_URL,
   NGINX_PORT,
+  ENABLE_SQLITE_METRICS,
   swaggerConfig,
 } from './utils/config.ts';
 import { userRoutes } from './routes/users.ts';
@@ -20,10 +24,13 @@ import { logoutRoutes } from './routes/logout.ts';
 import { signupRoutes } from './routes/signup.ts';
 import { friendsRoutes } from './routes/friends.ts';
 import { matchRoutes } from './routes/matches.ts';
+import { debugRoutes } from './routes/debug.ts';
 import { resetPasswordRoutes } from './routes/resetPassword.ts';
 import { runMigrations } from './db/migrations.ts';
 import { prettierErrorMessages } from './utils/errorHandler.ts';
 import './types/types.ts';
+
+if (ENABLE_SQLITE_METRICS === 'true') initSqliteMetrics();
 
 const app = fastify({
   logger: true,
@@ -32,6 +39,14 @@ const app = fastify({
     customOptions: { allErrors: true, removeAdditional: true },
   },
 });
+
+register.setDefaultLabels({
+  service: 'api',
+  env: process.env.NODE_ENV ?? 'dev',
+  version: process.env.GIT_SHA ?? 'dev',
+});
+
+registerMetrics(app);
 
 app.setErrorHandler(prettierErrorMessages);
 
@@ -73,6 +88,7 @@ app.register(loginRoutes, { prefix: '/api/login' });
 app.register(logoutRoutes, { prefix: '/api/logout' });
 app.register(signupRoutes, { prefix: '/api/signup' });
 app.register(resetPasswordRoutes, { prefix: '/api/reset-password' });
+app.register(debugRoutes, { prefix: '/debug' });
 
 await app.register(swaggerUi, {
   routePrefix: '/docs',

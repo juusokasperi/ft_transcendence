@@ -81,6 +81,7 @@ services:
       CHOKIDAR_USEPOLLING: "true"
       COREPACK_ENABLE_DOWNLOAD_PROMPT: "0"
       COREPACK_HOME: /tmp/corepack
+      ENABLE_SQLITE_METRICS: ${ENABLE_SQLITE_METRICS:-false}
     command: bash -lc "corepack pnpm dev"
     depends_on:
       deps:
@@ -172,7 +173,8 @@ services:
         gelf-address: udp://localhost:12201
 
 
-
 include:
-# stuff in this file will only run with --profile elk
+  # stuff in this file will only run with `--profile elk`
   - log-management/docker-compose.yml
+  # stuff in this file will only run with `--profile monitoring`
+  - monitoring/docker-compose.yml
