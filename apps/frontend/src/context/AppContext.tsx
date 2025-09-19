@@ -24,35 +24,32 @@ export const AppProvider: React.FC<React.PropsWithChildren> = ({ children }) => 
   const navigate = useNavigate();
   const { user, setUser } = useUser();
 
+  const buildUser = (payload: unknown): User => {
+    const source = (payload ?? {}) as Record<string, unknown>;
+    return {
+      username: String(source.username ?? ''),
+      uuid: String(source.uuid ?? ''),
+      avatar: (source.avatar as string | null) ?? null,
+      id: Number(source.id ?? 0),
+      email: String(source.email ?? ''),
+      wins: Number(source.wins ?? 0),
+      losses: Number(source.losses ?? 0),
+      createdAt: String(source.createdAt ?? ''),
+      tfaEnabled: Boolean(source.tfa ?? source.tfaEnabled ?? false),
+    };
+  };
+
   useEffect(() => {
     axios
       .get('/api/users/me')
-      .then(({ data }) =>
-        setUser({
-          username: data.username,
-          uuid: data.uuid,
-          avatar: data.avatar ?? null,
-          id: data.id ?? 0,
-          email: data.email ?? '',
-          wins: data.wins ?? 0,
-          losses: data.losses ?? 0,
-          createdAt: data.createdAt ?? '',
-        }),
-      )
+      .then(({ data }) => {
+        setUser(buildUser(data));
+      })
       .catch(() => {});
   }, []);
 
   const login = (data: User) => {
-    setUser({
-      username: data.username,
-      uuid: data.uuid,
-      avatar: data.avatar ?? null,
-      id: data.id ?? 0,
-      email: data.email ?? '',
-      wins: data.wins ?? 0,
-      losses: data.losses ?? 0,
-      createdAt: data.createdAt ?? '',
-    });
+    setUser(buildUser(data));
   };
 
   const logout = async () => {
