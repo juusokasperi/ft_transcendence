@@ -125,9 +125,10 @@ export class BotController {
 
     // Determine approach and plane params for my seat
     const approaching = this.seat === 'P2' ? o.ball.vx > 0 : o.ball.vx < 0;
-    const planeX = this.seat === 'P2'
-      ? o.bounds.rightPaddleX - o.bounds.ballRadius
-      : o.bounds.leftPaddleX + o.bounds.ballRadius;
+    const planeX =
+      this.seat === 'P2'
+        ? o.bounds.rightPaddleX - o.bounds.ballRadius
+        : o.bounds.leftPaddleX + o.bounds.ballRadius;
 
     let targetZ = 0;
     if (approaching) {
@@ -138,13 +139,7 @@ export class BotController {
       const cap: Record<BotDifficulty, number> = { easy: 0.6, normal: 1.1, hard: 1.6 };
       const T = Math.min(timeToPlane, cap[this.difficulty]);
 
-      targetZ = predictInterceptZ(
-        o.ball.z,
-        o.ball.vz,
-        T,
-        zMax,
-        o.params.restitutionWall,
-      );
+      targetZ = predictInterceptZ(o.ball.z, o.ball.vz, T, zMax, o.params.restitutionWall);
 
       targetZ += this.aimJitter();
       // Clamp target inside bounds to avoid chasing outside
@@ -166,4 +161,3 @@ export class BotController {
     this.holdTimer = window.setTimeout(() => this.release(), Math.max(0, tHoldSec * 1000));
   }
 }
-

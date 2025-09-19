@@ -276,7 +276,8 @@ const LocalGame: React.FC = () => {
           },
           rules: {
             game: {
-              targetScore: parsed.rules?.game?.targetScore ?? defaultSettings.rules.game.targetScore,
+              targetScore:
+                parsed.rules?.game?.targetScore ?? defaultSettings.rules.game.targetScore,
               winBy: parsed.rules?.game?.winBy ?? defaultSettings.rules.game.winBy,
               servesPerTurn:
                 parsed.rules?.game?.servesPerTurn ?? defaultSettings.rules.game.servesPerTurn,
