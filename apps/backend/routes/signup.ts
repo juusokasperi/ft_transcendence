@@ -84,7 +84,7 @@ export async function signupRoutes(app: FastifyInstance) {
           maxAge: 60 * 60 * 4,
         });
 
-        res.status(200).send({ user: { username, uuid, avatar: null } });
+        res.status(200).send({ user: { username, uuid, avatar: null, tfa: false } });
       } catch (error) {
         res.status(500).send({ message: 'Failed validating user e-mail.' });
       }

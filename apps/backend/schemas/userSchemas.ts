@@ -15,6 +15,28 @@ import {
   PhotoSensitiveSchema,
 } from './fieldSchemas.ts';
 
+const TwoFactorSetupResponseSchema = {
+  type: 'object',
+  required: ['secret', 'otpauthUrl'],
+  properties: {
+    secret: { type: 'string' },
+    otpauthUrl: { type: 'string' },
+  },
+};
+
+const TwoFactorConfirmBodySchema = {
+  type: 'object',
+  required: ['code'],
+  properties: {
+    code: {
+      type: 'string',
+      minLength: 3,
+      maxLength: 10,
+    },
+  },
+  additionalProperties: false,
+};
+
 export const getAllUsersSchema = {
   tags: ['User'],
   summary: 'Get all users from database',
@@ -56,6 +78,7 @@ export const getMeSchema = {
         username: UsernameSchema,
         uuid: UuidSchema,
         avatar: { anyOf: [{ type: 'string' }, { type: 'null' }] },
+        tfa: { type: 'boolean' },
       },
     },
     401: ErrorResponseSchema,
@@ -194,6 +217,43 @@ export const updateSettingsSchema = {
   response: {
     200: SettingsSchema,
     400: ValidationErrorResponseSchema,
+    500: ErrorResponseSchema,
+  },
+};
+
+export const twoFactorSetupSchema = {
+  tags: ['User'],
+  summary: 'Start two-factor authentication setup',
+  security: [{ bearerAuth: [] }],
+  response: {
+    200: TwoFactorSetupResponseSchema,
+    400: ErrorResponseSchema,
+    401: ErrorResponseSchema,
+    500: ErrorResponseSchema,
+  },
+};
+
+export const twoFactorConfirmSchema = {
+  tags: ['User'],
+  summary: 'Confirm two-factor authentication and enable it',
+  security: [{ bearerAuth: [] }],
+  body: TwoFactorConfirmBodySchema,
+  response: {
+    200: SuccessResponseSchema,
+    400: ValidationErrorResponseSchema,
+    401: ErrorResponseSchema,
+    500: ErrorResponseSchema,
+  },
+};
+
+export const twoFactorDisableSchema = {
+  tags: ['User'],
+  summary: 'Disable two-factor authentication for the current user',
+  security: [{ bearerAuth: [] }],
+  response: {
+    200: SuccessResponseSchema,
+    400: ErrorResponseSchema,
+    401: ErrorResponseSchema,
     500: ErrorResponseSchema,
   },
 };

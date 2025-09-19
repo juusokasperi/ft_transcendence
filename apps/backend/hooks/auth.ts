@@ -53,6 +53,7 @@ export function normalizeCredentials(req: FastifyRequest, res: FastifyReply, don
   normalize('newPassword');
   normalize('currentPassword');
   normalize('email');
+  normalize('code');
   done();
 }
 

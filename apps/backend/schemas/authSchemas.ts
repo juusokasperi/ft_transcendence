@@ -32,6 +32,25 @@ const LoginBodySchema = {
   additionalProperties: false,
 };
 
+const LoginTwoFactorBodySchema = {
+  type: 'object',
+  required: ['token', 'code'],
+  properties: {
+    token: {
+      type: 'string',
+      minLength: 10,
+      description: 'Temporary JWT issued after first step of login',
+    },
+    code: {
+      type: 'string',
+      minLength: 3,
+      maxLength: 10,
+      description: 'One-time code from authenticator app',
+    },
+  },
+  additionalProperties: false,
+};
+
 const ResetPassBodySchema = {
   type: 'object',
   required: ['newPassword'],
@@ -82,19 +101,60 @@ export const loginSchema = {
   body: LoginBodySchema,
   response: {
     200: {
+      oneOf: [
+        {
+          type: 'object',
+          required: ['user'],
+          properties: {
+            user: {
+              type: 'object',
+              properties: {
+                username: UsernameSchema,
+                uuid: UuidSchema,
+                avatar: AvatarSchema,
+                tfa: { type: 'boolean' },
+              },
+            },
+          },
+        },
+        {
+          type: 'object',
+          required: ['twoFactorRequired', 'pendingToken'],
+          properties: {
+            twoFactorRequired: { const: true },
+            pendingToken: { type: 'string' },
+            method: { type: 'string' },
+          },
+        },
+      ],
+    },
+    400: ValidationErrorResponseSchema,
+    500: ErrorResponseSchema,
+  },
+};
+
+export const loginTwoFactorSchema = {
+  tags: ['Auth'],
+  summary: 'Completes login by verifying the 2FA code and issuing JWT',
+  body: LoginTwoFactorBodySchema,
+  response: {
+    200: {
       type: 'object',
+      required: ['user'],
       properties: {
         user: {
           type: 'object',
           properties: {
             username: UsernameSchema,
-            uuid: UuidSchema, // might not be needed on frontend. Check.
+            uuid: UuidSchema,
             avatar: AvatarSchema,
+            tfa: { type: 'boolean' },
           },
         },
       },
     },
     400: ValidationErrorResponseSchema,
+    401: ErrorResponseSchema,
     500: ErrorResponseSchema,
   },
 };
