@@ -1,10 +1,9 @@
 import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { getUserByEmail, updateLastSeen } from '../db/queries/users.ts';
 import bcrypt from 'bcrypt';
-import { SECRET } from '../utils/config.ts';
-import jwt from 'jsonwebtoken';
 import { normalizeCredentials } from '../hooks/auth.ts';
 import { loginSchema } from '../schemas/authSchemas.ts';
+import { signAccessToken } from '../utils/jwt.ts';
 
 // TODO:
 // Extra checks and route for 2FA
@@ -30,7 +29,7 @@ export async function loginRoutes(app: FastifyInstance) {
           uuid: userInDb.uuid,
         };
 
-        const token = jwt.sign(userForToken, SECRET, { expiresIn: '4h' });
+        const token = signAccessToken(userForToken);
         // Does the front need UUID anymore?
         res.setCookie('token', token, {
           httpOnly: true,

@@ -9,8 +9,7 @@ import {
 } from '../db/queries/unconfirmedUsers.ts';
 import bcrypt from 'bcrypt';
 import crypto from 'crypto';
-import { SECRET } from '../utils/config.ts';
-import jwt from 'jsonwebtoken';
+import { signAccessToken } from '../utils/jwt.ts';
 import { v4 as uuidv4 } from 'uuid';
 import { sendConfirmationEmail } from '../utils/nodemailer/index.ts';
 import { normalizeCredentials } from '../hooks/auth.ts';
@@ -74,7 +73,7 @@ export async function signupRoutes(app: FastifyInstance) {
 
         const username = user.username;
         const userForToken = { username, uuid };
-        const jwtoken = jwt.sign(userForToken, SECRET, { expiresIn: '4h' });
+        const jwtoken = signAccessToken(userForToken);
 
         // Does the front need UUID anymore?
         res.setCookie('token', jwtoken, {

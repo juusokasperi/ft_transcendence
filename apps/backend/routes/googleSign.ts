@@ -1,9 +1,8 @@
 import type { FastifyInstance } from 'fastify';
 import type { FastifyRequest } from 'fastify';
-import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
 import db from '../db/client.ts';
-import { SECRET } from '../utils/config.ts';
+import { signAccessToken } from '../utils/jwt.ts';
 import {
   getUserByGoogleId,
   createUserFromGoogle,
@@ -172,9 +171,7 @@ export default async function googleSign(app: FastifyInstance) {
     }
 
     // 3) Issue JWT in HttpOnly cookie
-    const appToken = jwt.sign({ username: user.username, uuid: user.uuid }, SECRET, {
-      expiresIn: '4h',
-    });
+    const appToken = signAccessToken({ username: user.username, uuid: user.uuid });
     // Set JS-readable cookies so your SPA behaves the same as normal login:
     reply.setCookie('token', appToken, {
       httpOnly: true,

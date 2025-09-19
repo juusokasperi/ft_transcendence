@@ -1,6 +1,7 @@
 import jwt from 'jsonwebtoken';
 import type { FastifyReply, FastifyRequest } from 'fastify';
-import { SECRET, MATCH_SECRET } from '../utils/config.ts';
+import { MATCH_SECRET } from '../utils/config.ts';
+import { verifyAccessToken } from '../utils/jwt.ts';
 
 // Checks that the request came with an authorization (for protected routes)
 // and that the token is valid.
@@ -17,7 +18,7 @@ export function authPreHandler(req: FastifyRequest, res: FastifyReply, done: Fun
     return;
   }
   try {
-    const payload = jwt.verify(token, SECRET); // (optionally: as any as JWTPayload)
+    const payload = verifyAccessToken(token);
     req.user = payload as any; // keep minimal; or type-narrow with your JWTPayload
     done();
   } catch {
