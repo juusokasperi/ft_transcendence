@@ -5,7 +5,9 @@ import { useNavigate } from 'react-router-dom';
 import { useUser } from '../hooks/useUser';
 import type { User } from '../types';
 
-axios.defaults.baseURL = import.meta.env.VITE_DEV_API_PROXY_TARGET;
+// The baseURL is intentionally not set here because the frontend and backend are served from the same origin during development and production.
+// If you need to proxy API requests to a different backend, uncomment the line below and set VITE_DEV_API_PROXY_TARGET in your environment.
+//axios.defaults.baseURL = import.meta.env.VITE_DEV_API_PROXY_TARGET;
 axios.defaults.withCredentials = true;
 
 type Ctx = {
