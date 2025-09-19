@@ -75,7 +75,7 @@ services:
     profiles:
       - monitoring
     command:
-      - '--disable_metrics=accelerator,cpu_topology,disk,network,memory,memory_numa,tcp,udp,percpu,sched,process,hugetlb,referenced_memory,resctrl,cpuset,advtcp'
+      - '--disable_metrics=cpu_topology,disk,network,memory,memory_numa,tcp,udp,percpu,sched,process,hugetlb,referenced_memory,resctrl,cpuset,advtcp'
       - '--docker_only=true'
       - '--housekeeping_interval=30s'
     ports:
