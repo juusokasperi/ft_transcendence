@@ -40,12 +40,13 @@ const app = fastify({
   },
 });
 
-registerMetrics(app);
 register.setDefaultLabels({
   service: 'api',
   env: process.env.NODE_ENV ?? 'dev',
   version: process.env.GIT_SHA ?? 'dev',
 });
+
+registerMetrics(app);
 
 app.setErrorHandler(prettierErrorMessages);
 
