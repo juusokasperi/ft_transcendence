@@ -128,6 +128,9 @@ const LocalGame: React.FC = () => {
       } catch {
         setSettings(defaultSettings);
       }
+    } else {
+      // No persisted defaults → ensure in-memory defaults are applied on visit
+      setSettings(defaultSettings);
     }
   }, []);
 
@@ -250,6 +253,58 @@ const LocalGame: React.FC = () => {
   const handleQuit = () => {
     //console.log('[LocalGame] Quit button clicked.');
     setIsPlaying(false);
+    // Revert any unsaved changes back to saved defaults (or built-in defaults)
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        setSettings({
+          player1: {
+            name: parsed.player1?.name || defaultSettings.player1.name,
+            paddleColor: parsed.player1?.paddleColor || defaultSettings.player1.paddleColor,
+          },
+          player2: {
+            name: parsed.player2?.name || defaultSettings.player2.name,
+            paddleColor: parsed.player2?.paddleColor || defaultSettings.player2.paddleColor,
+          },
+          accessibility: {
+            colorBlindMode:
+              parsed.accessibility?.colorBlindMode || defaultSettings.accessibility.colorBlindMode,
+            photoSensitiveMode:
+              parsed.accessibility?.photoSensitiveMode ||
+              defaultSettings.accessibility.photoSensitiveMode,
+          },
+          rules: {
+            game: {
+              targetScore: parsed.rules?.game?.targetScore ?? defaultSettings.rules.game.targetScore,
+              winBy: parsed.rules?.game?.winBy ?? defaultSettings.rules.game.winBy,
+              servesPerTurn:
+                parsed.rules?.game?.servesPerTurn ?? defaultSettings.rules.game.servesPerTurn,
+              deuceServesPerTurn:
+                parsed.rules?.game?.deuceServesPerTurn ??
+                defaultSettings.rules.game.deuceServesPerTurn,
+              deuceAt: parsed.rules?.game?.deuceAt ?? defaultSettings.rules.game.deuceAt,
+            },
+            match: {
+              bestOf: parsed.rules?.match?.bestOf ?? defaultSettings.rules.match.bestOf,
+              switchEndsEachGame:
+                parsed.rules?.match?.switchEndsEachGame ??
+                defaultSettings.rules.match.switchEndsEachGame,
+              decidingGameMidSwapAtPoints:
+                parsed.rules?.match?.decidingGameMidSwapAtPoints ??
+                defaultSettings.rules.match.decidingGameMidSwapAtPoints,
+              alternateInitialServerEachGame:
+                parsed.rules?.match?.alternateInitialServerEachGame ??
+                defaultSettings.rules.match.alternateInitialServerEachGame,
+            },
+          },
+        });
+      } else {
+        setSettings(defaultSettings);
+      }
+    } catch {
+      setSettings(defaultSettings);
+    }
   };
 
   // Playing view: fullscreen canvas + Quit

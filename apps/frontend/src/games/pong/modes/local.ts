@@ -18,7 +18,6 @@ import { setPaddleColors } from '@pong/render';
 
 import {
   type GameState,
-  createInitialState,
   stepPaddles,
   handleSteps,
   serveFrom,
@@ -123,8 +122,8 @@ export function createLocalApp(canvas: HTMLCanvasElement, preferences?: Preferen
   // Match controller
   const match = createMatchController(bounds, RULES, initialServer);
 
-  // Headless state (boot aligned to chosen initial server)
-  let state: GameState = createInitialState(bounds, initialServer);
+  // Headless state aligned to match controller (ensures rules overrides apply from game 1)
+  let state: GameState = match.getGame();
 
   // Input
   setBindingProfile('local');
