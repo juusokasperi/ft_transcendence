@@ -205,103 +205,103 @@ const Profile: React.FC = () => {
   return (
     <div className="mx-auto mt-12 flex max-w-3xl flex-col gap-6">
       <div className="rounded bg-white p-6 shadow">
-      <h2 className="mb-6 text-2xl font-bold">Profile</h2>
-      <form className="space-y-4">
-        {/* Profile Image */}
-        <div>
-          <label className="mb-2 ml-3 block font-medium">Avatar</label>
+        <h2 className="mb-6 text-2xl font-bold">Profile</h2>
+        <form className="space-y-4">
+          {/* Profile Image */}
+          <div>
+            <label className="mb-2 ml-3 block font-medium">Avatar</label>
 
-          {imagePreview && (
-            <img
-              key={imagePreview}
-              src={imagePreview}
-              alt="Profile"
-              className="mb-2 h-24 w-24 rounded-full object-cover"
-              onError={(e) => {
-                (e.currentTarget as HTMLImageElement).src = PLACEHOLDER;
-              }}
+            {imagePreview && (
+              <img
+                key={imagePreview}
+                src={imagePreview}
+                alt="Profile"
+                className="mb-2 h-24 w-24 rounded-full object-cover"
+                onError={(e) => {
+                  (e.currentTarget as HTMLImageElement).src = PLACEHOLDER;
+                }}
+              />
+            )}
+            <input
+              type="file"
+              accept="image/*"
+              onChange={handleImageChange}
+              className="w-full rounded border p-2"
             />
-          )}
-          <input
-            type="file"
-            accept="image/*"
-            onChange={handleImageChange}
-            className="w-full rounded border p-2"
-          />
-        </div>
-        {error && <p className="text-red-500">{error}</p>}
+          </div>
+          {error && <p className="text-red-500">{error}</p>}
 
-        {/* Nickname */}
-        <div>
-          <label className="mb-2 block font-medium">Change Username</label>
-          <input
-            type="text"
-            value={username}
-            placeholder={user?.username}
-            onChange={(e) => setUsername(e.target.value)}
-            className="w-full rounded border p-2"
-          />
-        </div>
+          {/* Nickname */}
+          <div>
+            <label className="mb-2 block font-medium">Change Username</label>
+            <input
+              type="text"
+              value={username}
+              placeholder={user?.username}
+              onChange={(e) => setUsername(e.target.value)}
+              className="w-full rounded border p-2"
+            />
+          </div>
 
-        {/* Password */}
-        <div>
-          <label className="mb-2 block font-medium">Current Password</label>
-          <input
-            type="password"
-            value={newPassword.currentPassword}
-            onChange={(e) =>
-              setNewPasswords({
-                ...newPassword,
-                currentPassword: e.target.value,
-              })
-            }
-            className="w-full rounded border p-2"
-          />
-        </div>
-        <div>
-          <label className="mb-2 block font-medium">New Password</label>
-          <input
-            type="password"
-            value={newPassword.newPassword}
-            onChange={(e) => setNewPasswords({ ...newPassword, newPassword: e.target.value })}
-            className="w-full rounded border p-2"
-          />
-        </div>
-        <div>
-          <label className="mb-2 block font-medium">Confirm New Password</label>
-          <input
-            type="password"
-            value={newPassword.confirmPassword}
-            onChange={(e) =>
-              setNewPasswords({
-                ...newPassword,
-                confirmPassword: e.target.value,
-              })
-            }
-            className="w-full rounded border p-2"
-          />
-        </div>
+          {/* Password */}
+          <div>
+            <label className="mb-2 block font-medium">Current Password</label>
+            <input
+              type="password"
+              value={newPassword.currentPassword}
+              onChange={(e) =>
+                setNewPasswords({
+                  ...newPassword,
+                  currentPassword: e.target.value,
+                })
+              }
+              className="w-full rounded border p-2"
+            />
+          </div>
+          <div>
+            <label className="mb-2 block font-medium">New Password</label>
+            <input
+              type="password"
+              value={newPassword.newPassword}
+              onChange={(e) => setNewPasswords({ ...newPassword, newPassword: e.target.value })}
+              className="w-full rounded border p-2"
+            />
+          </div>
+          <div>
+            <label className="mb-2 block font-medium">Confirm New Password</label>
+            <input
+              type="password"
+              value={newPassword.confirmPassword}
+              onChange={(e) =>
+                setNewPasswords({
+                  ...newPassword,
+                  confirmPassword: e.target.value,
+                })
+              }
+              className="w-full rounded border p-2"
+            />
+          </div>
 
-        {/* Buttons */}
-        <div className="flex items-center justify-between">
-          <button
-            type="submit"
-            onClick={handleUpdate}
-            disabled={loading}
-            className="rounded bg-blue-500 px-4 py-2 text-white hover:bg-blue-600 disabled:opacity-50"
-          >
-            {loading ? 'Updating...' : 'Update Profile'}
-          </button>
+          {/* Buttons */}
+          <div className="flex items-center justify-between">
+            <button
+              type="submit"
+              onClick={handleUpdate}
+              disabled={loading}
+              className="rounded bg-blue-500 px-4 py-2 text-white hover:bg-blue-600 disabled:opacity-50"
+            >
+              {loading ? 'Updating...' : 'Update Profile'}
+            </button>
 
-          <button
-            type="button"
-            onClick={handleDelete}
-            className="rounded bg-red-500 px-4 py-2 text-white hover:bg-red-600"
-          >
-            Delete Account
-          </button>
-        </div>
-      </form>
+            <button
+              type="button"
+              onClick={handleDelete}
+              className="rounded bg-red-500 px-4 py-2 text-white hover:bg-red-600"
+            >
+              Delete Account
+            </button>
+          </div>
+        </form>
       </div>
       <TwoFactorSettings axios={axios} user={user} setUser={setUser} />
     </div>

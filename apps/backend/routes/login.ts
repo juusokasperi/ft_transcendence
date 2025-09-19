@@ -92,7 +92,6 @@ export async function loginRoutes(app: FastifyInstance) {
         }
 
         const isValid = verifyTotpToken(user.tfaSecret, code);
-        console.log('2FA login attempt', { code, isValid });
         if (!isValid) {
           res.status(400).send({ message: 'Invalid authentication code' });
           return;

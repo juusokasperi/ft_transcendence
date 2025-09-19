@@ -263,7 +263,6 @@ export async function userRoutes(app: FastifyInstance) {
           return res.status(400).send({ message: 'No pending two-factor setup found' });
 
         const valid = verifyTotpToken(user.tfaSecret, code);
-        console.log('Code:', code, 'Valid:', valid);
         if (!valid) return res.status(400).send({ message: 'Invalid authentication code' });
 
         const completed = completeTwoFactorEnrollment(uuid);

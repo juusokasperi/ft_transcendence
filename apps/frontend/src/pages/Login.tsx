@@ -47,7 +47,10 @@ const Login: React.FC = () => {
           losses: payload.losses ?? 0,
           createdAt: payload.createdAt ?? '',
           tfaEnabled: Boolean(
-            (payload as any).tfa ?? payload.tfaEnabled ?? (payload as any).twoFactorEnabled ?? false,
+            (payload as any).tfa ??
+              payload.tfaEnabled ??
+              (payload as any).twoFactorEnabled ??
+              false,
           ),
         };
         login(normalized);

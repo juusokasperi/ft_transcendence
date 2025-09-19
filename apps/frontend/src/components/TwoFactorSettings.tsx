@@ -52,7 +52,9 @@ const TwoFactorSettings: React.FC<TwoFactorSettingsProps> = ({ axios, user, setU
       toast.success('2FA setup started. Scan the QR code.');
     } catch (err: any) {
       const axiosErr = err as AxiosError<{ message?: string }>;
-      toast.error(String(axiosErr?.response?.data?.message || err?.message || 'Failed to start setup'));
+      toast.error(
+        String(axiosErr?.response?.data?.message || err?.message || 'Failed to start setup'),
+      );
     } finally {
       setIsLoading(false);
     }
@@ -75,7 +77,9 @@ const TwoFactorSettings: React.FC<TwoFactorSettingsProps> = ({ axios, user, setU
       setVerificationCode('');
     } catch (err: any) {
       const axiosErr = err as AxiosError<{ message?: string }>;
-      toast.error(String(axiosErr?.response?.data?.message || err?.message || 'Failed to confirm code'));
+      toast.error(
+        String(axiosErr?.response?.data?.message || err?.message || 'Failed to confirm code'),
+      );
     } finally {
       setIsConfirming(false);
     }
@@ -93,7 +97,9 @@ const TwoFactorSettings: React.FC<TwoFactorSettingsProps> = ({ axios, user, setU
       toast.success('Two-factor authentication disabled');
     } catch (err: any) {
       const axiosErr = err as AxiosError<{ message?: string }>;
-      toast.error(String(axiosErr?.response?.data?.message || err?.message || 'Failed to disable 2FA'));
+      toast.error(
+        String(axiosErr?.response?.data?.message || err?.message || 'Failed to disable 2FA'),
+      );
     } finally {
       setIsLoading(false);
     }
@@ -157,7 +163,8 @@ const TwoFactorSettings: React.FC<TwoFactorSettingsProps> = ({ axios, user, setU
           <div className="space-y-4 border-t border-gray-100 pt-4">
             <div>
               <p className="text-sm text-gray-700">
-                1. Scan this QR-code with Google Authenticator, 1Password, Authy or another authenticator app.
+                1. Scan this QR-code with Google Authenticator, 1Password, Authy or another
+                authenticator app.
               </p>
               {qrDataUrl ? (
                 <img src={qrDataUrl} alt="2FA QR code" className="mt-3 h-40 w-40" />
