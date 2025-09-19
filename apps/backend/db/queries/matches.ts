@@ -321,4 +321,4 @@ export function getMatchesWithPlayersForUser(
     console.error('Error fetching matches for user:', error);
     return [];
   }
-}
+};

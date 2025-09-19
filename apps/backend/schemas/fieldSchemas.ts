@@ -59,6 +59,31 @@ export const AvatarSchema = {
   description: 'User avatar filename',
 };
 
+const BaseStatsProperties = {
+    pointsScored: { type: 'number', minimum: 0 },
+    pointsConceded: { type: 'number', minimum: 0 },
+    gamesWon: { type: 'number', minimum: 0 },
+    gamesLost: { type: 'number', minimum: 0 },
+    maxPointLead: { type: 'number', minimum: 0 },
+}
+
+export const StatsSchema = {
+  type: 'object',
+  additionalProperties: false,
+  properties: { ...BaseStatsProperties },
+  required: Object.keys(BaseStatsProperties),
+};
+
+export const MyStatsSchema = {
+  type: 'object',
+  additionalProperties: false,
+  properties: {
+    ...BaseStatsProperties,
+    matchesPlayed: { type: 'number', minimum: 0 },
+  },
+  required: [...Object.keys(BaseStatsProperties), 'matchesPlayed'],
+};
+
 export const TeamSchema = {
   type: 'array',
   nullable: true,
@@ -71,18 +96,7 @@ export const TeamSchema = {
       ranking: { type: 'number', minimum: 0 },
       createdAt: { type: 'string', format: 'date-time' },
       rankingDelta: { type: 'number' },
-      stats: {
-        type: 'object',
-        additionalProperties: false,
-        properties: {
-          pointsScored: { type: 'integer' },
-          pointsConceded: { type: 'integer' },
-          gamesWon: { type: 'integer' },
-          gamesLost: { type: 'integer' },
-          maxPointLead: { type: 'integer' },
-        },
-        required: ['pointsScored', 'pointsConceded', 'gamesWon', 'gamesLost', 'maxPointLead'],
-      },
+      stats: StatsSchema,
     },
     required: ['uuid', 'username', 'ranking', 'createdAt', 'rankingDelta'],
   },

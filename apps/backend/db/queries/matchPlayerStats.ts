@@ -64,3 +64,35 @@ export function upsertMatchPlayerStats(
 }
 
 // No additional read helpers needed by routes; embedded in match queries.
+export function getTotalStatsForUser(uuid: string): MatchPlayerStats | null {
+  try {
+    const result = db.prepare(
+      `
+      SELECT
+        COUNT(mp.id) as matchesPlayed,
+        COALESCE(SUM(s.points_scored), 0) as pointsScored,
+        COALESCE(SUM(s.points_conceded), 0) as pointsConceded,
+        COALESCE(SUM(s.games_won), 0) as gamesWon,
+        COALESCE(SUM(s.games_lost), 0) as gamesLost,
+        COALESCE(MAX(s.max_point_lead), 0) as maxPointLead
+      FROM MatchPlayers mp
+      LEFT JOIN MatchPlayerStats s ON s.match_player_id = mp.id
+      WHERE mp.user_uuid = ?
+      `
+    ).get(uuid) as MatchPlayerStats | undefined;
+    if (!result)
+    {
+      return {
+        pointsScored: 0,
+        pointsConceded: 0,
+        gamesWon: 0,
+        gamesLost: 0,
+        maxPointLead: 0,
+        matchesPlayed: 0,
+      };
+    }
+    return result;
+  } catch (error) {
+    return null;
+  }
+};

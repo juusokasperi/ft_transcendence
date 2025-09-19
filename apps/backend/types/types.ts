@@ -51,6 +51,7 @@ export interface MatchPlayerStats {
   gamesWon: number;
   gamesLost: number;
   maxPointLead: number;
+  matchesPlayed?: number;
 }
 
 // Public user info within the context of a match.

@@ -28,16 +28,18 @@ interface Match {
 }
 
 interface MatchPlayerStats {
-  uuid: string;
+  uuid?: string;
   pointsScored: number;
   pointsConceded: number;
   gamesWon: number;
   gamesLost: number;
   maxPointLead: number;
+  matchesPlayed: number;
 }
 
 const Stats: React.FC = () => {
   const [matches, setMatches] = useState<Match[]>([]);
+  const [stats, setStats] = useState<MatchPlayerStats>();
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [hasMore, setHasMore] = useState(true);
@@ -45,6 +47,16 @@ const Stats: React.FC = () => {
   const pageSize = 5;
   const { axios, user } = useAppContext();
   const myUuid = user?.uuid;
+
+  const fetchStats = async () => {
+    try {
+      const response = await axios.get<MatchPlayerStats>('/api/users/me/stats');
+      setStats(response.data);
+    } catch (err) {
+      const axiosErr = err as AxiosError<{ message?: string }>;
+      toast.error(String(axiosErr?.response?.data?.message));
+    }
+  };
 
   const fetchMatches = async (isLoadMore = false) => {
     try {
@@ -74,6 +86,7 @@ const Stats: React.FC = () => {
   };
 
   useEffect(() => {
+    fetchStats();
     fetchMatches();
   }, []);
 
@@ -89,54 +102,13 @@ const Stats: React.FC = () => {
     });
   };
 
-  // Aggregate ranked game stats for the current user from loaded matches
-  const rankedAgg = React.useMemo(() => {
-    let played = 0;
-    let wins = 0;
-    let losses = 0;
-    let draws = 0;
-    let rankingDeltaTotal = 0;
-    let pointsScored = 0;
-    let pointsConceded = 0;
-    let gamesWon = 0;
-    let gamesLost = 0;
-    let maxPointLeadBest = 0;
-
-    for (const m of matches) {
-      // User's team is normalized to team1 by the backend; still guard by uuid
-      const mine = m.players.team1.find((p) => p && p.uuid === myUuid) || null;
-      if (!mine) continue;
-      played += 1;
-      const result = getMatchResult(m);
-      if (result === 'win') wins += 1;
-      else if (result === 'loss') losses += 1;
-      else draws += 1;
-      rankingDeltaTotal += mine.rankingDelta;
-      if (mine.stats) {
-        pointsScored += mine.stats.pointsScored;
-        pointsConceded += mine.stats.pointsConceded;
-        gamesWon += mine.stats.gamesWon;
-        gamesLost += mine.stats.gamesLost;
-        if (mine.stats.maxPointLead > maxPointLeadBest) maxPointLeadBest = mine.stats.maxPointLead;
-      }
-    }
-    const avgDelta = played > 0 ? (rankingDeltaTotal / played) : 0;
-    const winRate = played > 0 ? Math.round((wins / played) * 100) : 0;
-    return {
-      played,
-      wins,
-      losses,
-      draws,
-      rankingDeltaTotal,
-      avgDelta: Math.round(avgDelta * 10) / 10,
-      winRate,
-      pointsScored,
-      pointsConceded,
-      gamesWon,
-      gamesLost,
-      maxPointLeadBest,
-    };
-  }, [matches, myUuid]);
+  const rankingDeltaTotal = matches.reduce((sum: number, m: Match) => {
+    const mine = m.players.team1.find((p) => p && p.uuid === myUuid);
+    return sum + (mine?.rankingDelta ?? 0);
+  }, 0);
+  const avgDelta = matches.length > 0 ? rankingDeltaTotal / matches.length : 0;
+  const winRate = stats && stats.gamesWon + stats.gamesLost > 0
+    ? Math.round((stats.gamesWon / (stats.gamesWon + stats.gamesLost)) * 100) : 0;
 
   const renderTeam = (
     team: (MatchPlayerPublic | null)[],
@@ -207,91 +179,69 @@ const Stats: React.FC = () => {
 
   return (
     <div className="container mx-auto px-4 py-8">
-      <h1 className="mb-8 text-3xl font-bold text-purple-600">Match Statistics</h1>
-
-      {/* Matches Summary */}
-      <div className="mb-8 rounded-lg bg-white p-6 shadow-md">
-        <h2 className="mb-4 text-xl font-bold text-gray-800">Summary</h2>
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-          <div className="text-center">
-            <div className="text-2xl font-bold text-purple-600">{matches.length}</div>
-            <div className="text-gray-600">Total Matches</div>
-          </div>
-          <div className="text-center">
-            <div className="text-2xl font-bold text-green-600">
-              {
-                matches.filter((m) => m.tournamentId !== null && m.tournamentId !== undefined)
-                  .length
-              }
-            </div>
-            <div className="text-gray-600">Tournament Matches</div>
-          </div>
-          <div className="text-center">
-            <div className="text-2xl font-bold text-blue-600">
-              {
-                matches.filter((m) => m.tournamentId === null || m.tournamentId === undefined)
-                  .length
-              }
-            </div>
-            <div className="text-gray-600">Casual Matches</div>
-          </div>
-        </div>
-      </div>
-
       {/* Ranked Stats */}
+      {stats && (
       <div className="mb-8 rounded-lg bg-white p-6 shadow-md">
         <h2 className="mb-4 text-xl font-bold text-gray-800">Ranked Stats</h2>
         <div className="grid grid-cols-1 gap-4 md:grid-cols-3 lg:grid-cols-4">
           <div className="text-center">
-            <div className="text-2xl font-bold text-purple-600">{rankedAgg.played}</div>
+            <div className="text-2xl font-bold text-purple-600">{stats.matchesPlayed}</div>
             <div className="text-gray-600">Matches Played</div>
           </div>
           <div className="text-center">
-            <div className="text-2xl font-bold text-green-600">{rankedAgg.wins}</div>
+            <div className="text-2xl font-bold text-green-600">{stats.gamesWon}</div>
             <div className="text-gray-600">Wins</div>
           </div>
           <div className="text-center">
-            <div className="text-2xl font-bold text-red-600">{rankedAgg.losses}</div>
+            <div className="text-2xl font-bold text-red-600">{stats.gamesLost}</div>
             <div className="text-gray-600">Losses</div>
           </div>
           <div className="text-center">
-            <div className="text-2xl font-bold text-blue-600">{rankedAgg.winRate}%</div>
+            <div className="text-2xl font-bold text-blue-600">{winRate}%</div>
             <div className="text-gray-600">Win Rate</div>
           </div>
           <div className="text-center">
-            <div className={`text-2xl font-bold ${rankedAgg.rankingDeltaTotal >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-              {rankedAgg.rankingDeltaTotal >= 0 ? `+${rankedAgg.rankingDeltaTotal}` : rankedAgg.rankingDeltaTotal}
+            <div className={`text-2xl font-bold`}>
+              {1000 + rankingDeltaTotal}
+            </div>
+            <div className="text-gray-600">Rating</div>
+          </div>
+          <div className="text-center">
+            <div className={`text-2xl font-bold ${rankingDeltaTotal >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+              {rankingDeltaTotal >= 0 ? `+${rankingDeltaTotal}` : rankingDeltaTotal}
             </div>
             <div className="text-gray-600">Net Rating Change</div>
           </div>
           <div className="text-center">
-            <div className={`text-2xl font-bold ${rankedAgg.avgDelta >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-              {rankedAgg.avgDelta >= 0 ? `+${rankedAgg.avgDelta}` : rankedAgg.avgDelta}
+            <div className={`text-2xl font-bold ${avgDelta >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+              {avgDelta >= 0 ? `+${avgDelta}` : avgDelta}
             </div>
             <div className="text-gray-600">Avg Rating Change</div>
           </div>
           <div className="text-center">
-            <div className="text-2xl font-bold text-gray-800">{rankedAgg.pointsScored}</div>
+            <div className="text-2xl font-bold text-gray-800">{stats.pointsScored}</div>
             <div className="text-gray-600">Points Scored</div>
           </div>
           <div className="text-center">
-            <div className="text-2xl font-bold text-gray-800">{rankedAgg.pointsConceded}</div>
+            <div className="text-2xl font-bold text-gray-800">{stats.pointsConceded}</div>
             <div className="text-gray-600">Points Conceded</div>
           </div>
           <div className="text-center">
-            <div className="text-2xl font-bold text-gray-800">{rankedAgg.gamesWon}</div>
+            <div className="text-2xl font-bold text-gray-800">{stats.gamesWon}</div>
             <div className="text-gray-600">Games Won</div>
           </div>
           <div className="text-center">
-            <div className="text-2xl font-bold text-gray-800">{rankedAgg.gamesLost}</div>
+            <div className="text-2xl font-bold text-gray-800">{stats.gamesLost}</div>
             <div className="text-gray-600">Games Lost</div>
           </div>
           <div className="text-center">
-            <div className="text-2xl font-bold text-gray-800">{rankedAgg.maxPointLeadBest}</div>
+            <div className="text-2xl font-bold text-gray-800">{stats.maxPointLead}</div>
             <div className="text-gray-600">Best Point Lead</div>
           </div>
         </div>
       </div>
+
+      )}
 
       {/* Matches List */}
       <div className="rounded-lg bg-white shadow-md">

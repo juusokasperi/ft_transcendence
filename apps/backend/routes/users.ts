@@ -38,8 +38,9 @@ import {
   getSettingsSchema,
   updateSettingsSchema,
 } from '../schemas/userSchemas.ts';
-import { getUserMatchesSchema } from '../schemas/matchSchemas.ts';
+import { getUserMatchesSchema, getMyStatsSchema } from '../schemas/matchSchemas.ts';
 import { getMatchesWithPlayersForUser } from '../db/queries/matches.ts';
+import { getTotalStatsForUser } from '../db/queries/matchPlayerStats.ts';
 
 /*
 	TO DO:
@@ -93,6 +94,23 @@ export async function userRoutes(app: FastifyInstance) {
         });
       } catch (err) {
         return res.status(500).send({ message: 'Failed to fetch current user' });
+      }
+    },
+  );
+
+  app.get(
+    '/me/stats',
+    {
+      schema: getMyStatsSchema,
+      preHandler: [authPreHandler, tokenUuidCheck, updateLastSeenHandler],
+    },
+    async (req: FastifyRequest, res: FastifyReply) => {
+      try {
+        const uuid = req.user!.uuid;
+        const stats = getTotalStatsForUser(uuid);
+        return res.status(200).send(stats);
+      } catch (err) {
+        return res.status(500).send({ message: 'Failed to fetch user stats' });
       }
     },
   );

@@ -5,6 +5,7 @@ import {
   TournamentStageSchema,
   UuidSchema,
   MatchPlayerStatsArraySchema,
+  MyStatsSchema
 } from './fieldSchemas.ts';
 
 export const addMatchSchema = {
@@ -98,6 +99,15 @@ export const MatchesQuerySchema = {
       minimum: 0,
       description: 'Optional offset for matches fetching',
     },
+  },
+};
+
+export const getMyStatsSchema = {
+  tags: ['Match'],
+  summary: 'Get stats for authenticated user',
+  response: {
+    200: MyStatsSchema,
+    500: ErrorResponseSchema,
   },
 };
 
