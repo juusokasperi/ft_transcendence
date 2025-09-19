@@ -1,5 +1,5 @@
 import db from '../client.ts';
-import type { MatchWithPlayers, PublicUser, PublicUserWithPoints } from '../../types/types.ts';
+import type { MatchWithPlayers, PublicUserWithPoints } from '../../types/types.ts';
 import type { MatchDb, MatchPlayerDb, MatchWithPlayersForUserDb } from '../../types/dbtypes.ts';
 
 function addMatchHelper(
