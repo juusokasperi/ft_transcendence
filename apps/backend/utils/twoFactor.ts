@@ -20,6 +20,7 @@ export function generateAuthenticatorSecret({ label }: SecretParams) {
 }
 
 export function verifyTotpToken(secret: string, token: string): boolean {
+  console.log('Verifying TOTP token', { secret, token });
   if (!secret || !token) return false;
   const normalized = token.replace(/\s+/g, '');
   return authenticator.check(normalized, secret);
