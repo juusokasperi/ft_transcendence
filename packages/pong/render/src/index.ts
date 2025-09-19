@@ -15,6 +15,7 @@ export {
   readIntent,
   toggleControlsMirrored,
   blockInputFor,
+  setBindingProfile,
 } from './client/input/aggregate';
 
 // ── FX / Visuals ───────────────────────────────────────────────────────────────
@@ -25,6 +26,7 @@ export { createPaddleAnimator } from './client/visuals/animate-paddle';
 // ── UI / HUD ──────────────────────────────────────────────────────────────────
 export { createScoreboard } from './client/ui/scoreboard';
 export { updateHUD } from './client/ui/hud-binding';
+export type { MatchSnapshot } from '@pong/shared';
 
 // ── App adapters / mappers ────────────────────────────────────────────────────
 export { computeBounds } from './app/bounds';
