@@ -36,43 +36,55 @@ export function collidePaddle(s: GameState, dt: number): GameState {
   const { x, z, vx, vz } = ball;
   const nextX = x + vx * dt;
 
-  const halfDepth = bounds.paddleHalfDepthZ + bounds.ballRadius / 2;
-  const sides = [
-    {
-      plane: bounds.leftPaddleX + bounds.ballRadius,
-      pz: paddles.P1.z,
-      pvz: paddles.P1.vz,
-    },
-    {
-      plane: bounds.rightPaddleX - bounds.ballRadius,
-      pz: paddles.P2.z,
-      pvz: paddles.P2.vz,
-    },
-  ] as const;
+  // Expand paddle hitbox along Z by a full ball radius
+  const halfDepth = bounds.paddleHalfDepthZ + bounds.ballRadius;
+  const clampMin = -(bounds.halfWidthZ - bounds.ballRadius);
+  const clampMax = +(bounds.halfWidthZ - bounds.ballRadius);
+  const denom = nextX - x;
+  if (Math.abs(denom) < 1e-9) return s; // no horizontal travel
 
-  for (const { plane, pz, pvz } of sides) {
-    const denom = nextX - x;
-    if (Math.abs(denom) < 1e-9) continue; // no horizontal travel
-    if ((plane - x) * denom <= 0) continue; // not moving toward this plane
+  // Check collision with left paddle plane
+  {
+    const plane = bounds.leftPaddleX + bounds.ballRadius;
+    if ((plane - x) * denom > 0) {
+      const t = (plane - x) / denom;
+      if (t >= 0 && t <= 1) {
+        if (Math.abs(z - paddles.P1.z) <= halfDepth) {
+          const zHit = z + vz * dt * t;
+          return {
+            ...s,
+            ball: {
+              x: plane,
+              z: clampZ(zHit, clampMin, clampMax),
+              vx: -vx,
+              vz: vz + paddles.P1.vz * params.zEnglish,
+            },
+          };
+        }
+      }
+    }
+  }
 
-    const t = (plane - x) / denom; // fraction of dt
-    if (t < 0 || t > 1) continue; // no hit within this step
-    if (Math.abs(z - pz) > halfDepth) continue; // outside paddle depth
-
-    const zHit = z + vz * dt * t;
-    return {
-      ...s,
-      ball: {
-        x: plane,
-        z: clampZ(
-          zHit,
-          -(s.bounds.halfWidthZ - s.bounds.ballRadius),
-          +(s.bounds.halfWidthZ - s.bounds.ballRadius),
-        ),
-        vx: -vx,
-        vz: vz + pvz * params.zEnglish,
-      },
-    };
+  // Check collision with right paddle plane
+  {
+    const plane = bounds.rightPaddleX - bounds.ballRadius;
+    if ((plane - x) * denom > 0) {
+      const t = (plane - x) / denom;
+      if (t >= 0 && t <= 1) {
+        if (Math.abs(z - paddles.P2.z) <= halfDepth) {
+          const zHit = z + vz * dt * t;
+          return {
+            ...s,
+            ball: {
+              x: plane,
+              z: clampZ(zHit, clampMin, clampMax),
+              vx: -vx,
+              vz: vz + paddles.P2.vz * params.zEnglish,
+            },
+          };
+        }
+      }
+    }
   }
 
   return s;

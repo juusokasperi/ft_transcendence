@@ -3,6 +3,7 @@ import { createEngine } from '@pong/render';
 import { createLifecycle } from '@pong/render';
 import { createWorld } from '@pong/render';
 import { attachLocalInput, readIntent, toggleControlsMirrored, blockInputFor } from '@pong/render';
+import { setBindingProfile } from '@pong/render';
 import { createBounces } from '@pong/render';
 import { FXManager } from '@pong/render';
 import { createScoreboard } from '@pong/render';
@@ -90,15 +91,8 @@ export function createLocalApp(canvas: HTMLCanvasElement, preferences?: Preferen
     camera: world.camera,
   });
 
-  // Ruleset + match controller config
-  const RULES = tableTennisRules({
-    match: {
-      bestOf: 5,
-      switchEndsEachGame: true,
-      decidingGameMidSwapAtPoints: 5,
-      alternateInitialServerEachGame: true,
-    },
-  });
+  // Ruleset + match controller config (allow overrides from preferences)
+  const RULES = tableTennisRules(preferences?.rules);
 
   const matchSeed = randomSeed32();
   const initialServer = pickInitialServer(matchSeed);
@@ -121,6 +115,7 @@ export function createLocalApp(canvas: HTMLCanvasElement, preferences?: Preferen
   let state: GameState = createInitialState(bounds, initialServer);
 
   // Input
+  setBindingProfile('local');
   const detachInput = attachLocalInput(canvas);
   scene.onDisposeObservable.add(detachInput);
 
@@ -129,6 +124,11 @@ export function createLocalApp(canvas: HTMLCanvasElement, preferences?: Preferen
 
   // Intro gate (wall-clock ms until which logic is gated)
   let introUntil = 0;
+
+  // HUD diff cache for match boxes
+  let lastBestOf = 0;
+  let lastCurrentGameIndex = 0;
+  let lastHistoryRef: ReturnType<typeof mapHistoryForPlayers> | null = null;
 
   // Fixed-step lifecycle (simulation cadence is set here)
   const loop = createLifecycle(engine, scene, {
@@ -148,6 +148,24 @@ export function createLocalApp(canvas: HTMLCanvasElement, preferences?: Preferen
       // 3) Match controller (scoring/game flow/swap sides)
       const mc = match.afterPhysicsStep(stepped.next);
       state = mc.state;
+
+      // Emit lightweight DOM event so host UI can react without tight coupling.
+      // Fires exactly once per match.
+      if (mc.events.matchOver) {
+        const { winner } = mc.events.matchOver;
+        const snap = match.getSnapshot();
+        const historyForHUD = mapHistoryForPlayers(snap.gamesHistory);
+        canvas.dispatchEvent(
+          new CustomEvent('pong:matchOver', {
+            detail: {
+              winner,
+              bestOf: snap.bestOf,
+              gamesHistory: historyForHUD,
+              names,
+            },
+          }),
+        );
+      }
 
       if (mc.events.swapSidesNow) {
         // controls follow player
@@ -198,12 +216,30 @@ export function createLocalApp(canvas: HTMLCanvasElement, preferences?: Preferen
       // 5) HUD (player-pinned)
       const snap = match.getSnapshot();
       const stateForHUD = mapStateForPlayerRows(state, rowsMirrored);
-      const historyForHUD = mapHistoryForPlayers(snap.gamesHistory, RULES.match.switchEndsEachGame);
-      updateHUD(hud, stateForHUD, names, {
-        bestOf: snap.bestOf,
-        currentGameIndex: snap.currentGameIndex,
-        gamesHistory: historyForHUD,
-      });
+      const historyForHUD = mapHistoryForPlayers(snap.gamesHistory);
+      const changed =
+        snap.bestOf !== lastBestOf ||
+        snap.currentGameIndex !== lastCurrentGameIndex ||
+        historyForHUD !== lastHistoryRef;
+
+      updateHUD(
+        hud,
+        stateForHUD,
+        names,
+        changed
+          ? {
+              bestOf: snap.bestOf,
+              currentGameIndex: snap.currentGameIndex,
+              gamesHistory: historyForHUD,
+            }
+          : undefined,
+      );
+
+      if (changed) {
+        lastBestOf = snap.bestOf;
+        lastCurrentGameIndex = snap.currentGameIndex;
+        lastHistoryRef = historyForHUD;
+      }
 
       // 6) Visual bounce Y + project meshes
       const ballY = Bounces.update(state.ball.x, state.ball.vx);

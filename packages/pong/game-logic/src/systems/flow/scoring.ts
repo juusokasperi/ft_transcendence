@@ -31,9 +31,18 @@ function handlePointScored(
       ? { ...s.points, west: s.points.west + 1 }
       : { ...s.points, east: s.points.east + 1 };
 
+  // Attribute to player totals using current occupancy
+  const scoringEnd: TableEnd = tableEnd === 'east' ? 'west' : 'east';
+  const scoringPlayer = s.playerAtEnd[scoringEnd];
+  const pointsByPlayer =
+    scoringPlayer === 'P1'
+      ? { ...s.pointsByPlayer, P1: s.pointsByPlayer.P1 + 1 }
+      : { ...s.pointsByPlayer, P2: s.pointsByPlayer.P2 + 1 };
+
   const scored: GameState = {
     ...s,
     points,
+    pointsByPlayer,
     // Freeze ball exactly at the goal for the pause
     ball: { x: freezeX, z: freezeZ, vx: 0, vz: 0 },
   };

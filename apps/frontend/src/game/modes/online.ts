@@ -10,6 +10,7 @@ import { computeBounds } from '@pong/render';
 import { detectEnteredServe, onEnteredServe } from '@pong/render';
 import { mapStateForPlayerRows } from '@pong/render';
 import { attachLocalInput } from '@pong/render';
+import { setBindingProfile } from '@pong/render';
 import { createBounces } from '@pong/render';
 import { createPaddleAnimator } from '@pong/render';
 import { toggleControlsMirrored } from '@pong/render';
@@ -130,6 +131,7 @@ export function createOnlineApp(
   hud.attachToCanvas(canvas);
 
   // Input
+  setBindingProfile('online');
   const detachInput = attachLocalInput(canvas);
   scene.onDisposeObservable.add(detachInput);
 
@@ -192,6 +194,9 @@ export function createOnlineApp(
   let prevSnap: GameState | null = null;
   let prevT = 0,
     currT = 0; // ms timestamps for snapshots
+  // HUD diff cache
+  let lastHudBestOf = 0;
+  let lastHudCurrentGameIndex = 0;
 
   const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
 
@@ -246,11 +251,24 @@ export function createOnlineApp(
           bestOf || 1,
           finishedGames + (snap.phase === 'matchOver' ? 0 : 1),
         );
-        updateHUD(hud, stateForHUD, names, {
-          bestOf: bestOf || 1,
-          currentGameIndex,
-          gamesHistory: [], // server does not send history; show current/live only
-        });
+        const hudChanged =
+          (bestOf || 1) !== lastHudBestOf || currentGameIndex !== lastHudCurrentGameIndex;
+        updateHUD(
+          hud,
+          stateForHUD,
+          names,
+          hudChanged
+            ? {
+                bestOf: bestOf || 1,
+                currentGameIndex,
+                gamesHistory: [], // server does not send history; show current/live only
+              }
+            : undefined,
+        );
+        if (hudChanged) {
+          lastHudBestOf = bestOf || 1;
+          lastHudCurrentGameIndex = currentGameIndex;
+        }
       }
 
       // 4) Drain FX events queued from snapshots (avoid dropping on mismatch rates)

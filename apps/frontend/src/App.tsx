@@ -9,10 +9,10 @@ import { Toaster } from 'react-hot-toast';
 import Friends from './pages/Friends';
 import Stats from './pages/Stats';
 import Confirmation from './pages/Confirmation';
-import PingPong from './pages/PingPong/PingPong';
-import LocalGame from './pages/PingPong/LocalGame';
+import PingPong from './pages/pong3D/pong-homepage';
+import LocalGame from './pages/pong3D/local-game';
 import DeleteUser from './pages/DeleteUser';
-import OnlineGame from './pages/PingPong/OnlineGame';
+import OnlineGame from './pages/pong3D/online-game';
 
 function App() {
   return (

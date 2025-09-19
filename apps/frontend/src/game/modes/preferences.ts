@@ -1,8 +1,12 @@
 // Utility helpers for color parsing and material tinting in local mode
 
+import type { Ruleset } from '@pong/shared';
+
 export type Preferences = {
   player1: { name: string; paddleColor: string };
   player2: { name: string; paddleColor: string };
+  /** Optional per-user match rules overrides for local mode. */
+  rules?: Partial<Ruleset>;
 };
 
 export type NamesByEnd = { east: string; west: string };
