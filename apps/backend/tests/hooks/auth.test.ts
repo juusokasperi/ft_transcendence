@@ -1,10 +1,16 @@
 // tests/hooks/auth.test.ts
 import { describe, it, expect, beforeAll, afterAll, vi } from 'vitest';
 import fastify from 'fastify';
-import jwt from 'jsonwebtoken';
+import { signAccessToken } from '../../utils/jwt.ts';
 
 // Mock config to control SECRET used by authPreHandler
-vi.mock('../../utils/config.ts', () => ({ SECRET: 'testsecret' }));
+vi.mock('../../utils/config.ts', () => ({
+  SECRET: 'testsecret',
+  JWT_ACCESS_TTL: '4h',
+  JWT_2FA_TTL: '10m',
+  TFA_CODE_DIGITS: 6,
+  TFA_ISSUER: 'TestApp',
+}));
 
 import { authPreHandler } from '../../hooks/auth.ts';
 
@@ -16,7 +22,7 @@ function buildApp() {
 
 describe('authPreHandler', () => {
   const app = buildApp();
-  const token = jwt.sign({ uuid: 'u-123' }, 'testsecret');
+  const token = signAccessToken({ uuid: 'u-123', username: 'tester' });
 
   beforeAll(async () => {
     await app.ready();
