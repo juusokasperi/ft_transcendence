@@ -70,9 +70,21 @@ export const TeamSchema = {
       avatar: AvatarSchema,
       ranking: { type: 'number', minimum: 0 },
       createdAt: { type: 'string', format: 'date-time' },
-      pointsAwarded: { type: 'number' },
+      rankingDelta: { type: 'number' },
+      stats: {
+        type: 'object',
+        additionalProperties: false,
+        properties: {
+          pointsScored: { type: 'integer' },
+          pointsConceded: { type: 'integer' },
+          gamesWon: { type: 'integer' },
+          gamesLost: { type: 'integer' },
+          maxPointLead: { type: 'integer' },
+        },
+        required: ['pointsScored', 'pointsConceded', 'gamesWon', 'gamesLost', 'maxPointLead'],
+      },
     },
-    required: ['uuid', 'username', 'ranking', 'createdAt', 'pointsAwarded'],
+    required: ['uuid', 'username', 'ranking', 'createdAt', 'rankingDelta'],
   },
 };
 
@@ -111,4 +123,25 @@ export const MatchSchema = {
     tournamentStage: TournamentStageSchema,
   },
   required: ['id', 'team1Score', 'team2Score', 'players', 'playedAt'],
+};
+
+// Per-player stats payload item for posting match stats
+export const MatchPlayerStatsItemSchema = {
+  type: 'object',
+  properties: {
+    uuid: UuidSchema,
+    pointsScored: { type: 'integer', minimum: 0 },
+    pointsConceded: { type: 'integer', minimum: 0 },
+    gamesWon: { type: 'integer', minimum: 0 },
+    gamesLost: { type: 'integer', minimum: 0 },
+    maxPointLead: { type: 'integer', minimum: 0 },
+  },
+  required: ['uuid', 'pointsScored', 'pointsConceded', 'gamesWon', 'gamesLost', 'maxPointLead'],
+  additionalProperties: false,
+};
+
+export const MatchPlayerStatsArraySchema = {
+  type: 'array',
+  minItems: 1,
+  items: MatchPlayerStatsItemSchema,
 };

@@ -4,13 +4,14 @@ import toast from 'react-hot-toast';
 import { AxiosError } from 'axios';
 import { resolveAvatarUrl } from '../utils/avatarUrl';
 
-interface PublicUserWithPoints {
+interface MatchPlayerPublic {
   uuid: string;
   username: string;
   avatar: string | null;
   ranking: number;
   createdAt: string;
-  pointsAwarded: number;
+  rankingDelta: number;
+  stats?: MatchPlayerStats;
 }
 
 interface Match {
@@ -18,12 +19,21 @@ interface Match {
   team1Score: number;
   team2Score: number;
   players: {
-    team1: (PublicUserWithPoints | null)[];
-    team2: (PublicUserWithPoints | null)[];
+    team1: (MatchPlayerPublic | null)[];
+    team2: (MatchPlayerPublic | null)[];
   };
   playedAt: string;
   tournamentId: number | null;
   tournamentStage: string | null;
+}
+
+interface MatchPlayerStats {
+  uuid: string;
+  pointsScored: number;
+  pointsConceded: number;
+  gamesWon: number;
+  gamesLost: number;
+  maxPointLead: number;
 }
 
 const Stats: React.FC = () => {
@@ -33,7 +43,8 @@ const Stats: React.FC = () => {
   const [hasMore, setHasMore] = useState(true);
   const [offset, setOffset] = useState(0);
   const pageSize = 5;
-  const { axios } = useAppContext();
+  const { axios, user } = useAppContext();
+  const myUuid = user?.uuid;
 
   const fetchMatches = async (isLoadMore = false) => {
     try {
@@ -44,12 +55,15 @@ const Stats: React.FC = () => {
       const response = await axios.get<Match[]>(
         `/api/matches?count=${pageSize}&offset=${currentOffset}`,
       );
-      if (isLoadMore) setMatches((prev: Match[]) => [...prev, ...response.data]);
-      else setMatches(response.data);
+      const newMatches = response.data;
+      if (isLoadMore) setMatches((prev: Match[]) => [...prev, ...newMatches]);
+      else setMatches(newMatches);
 
       setHasMore(response.data.length === pageSize);
       if (isLoadMore) setOffset((prev: number) => prev + pageSize);
       else setOffset(pageSize);
+
+      // Stats are embedded in the match payload (player.stats). No extra fetch.
     } catch (err) {
       const axiosErr = err as AxiosError<{ message?: string }>;
       toast.error(String(axiosErr?.response?.data?.message));
@@ -75,8 +89,57 @@ const Stats: React.FC = () => {
     });
   };
 
+  // Aggregate ranked game stats for the current user from loaded matches
+  const rankedAgg = React.useMemo(() => {
+    let played = 0;
+    let wins = 0;
+    let losses = 0;
+    let draws = 0;
+    let rankingDeltaTotal = 0;
+    let pointsScored = 0;
+    let pointsConceded = 0;
+    let gamesWon = 0;
+    let gamesLost = 0;
+    let maxPointLeadBest = 0;
+
+    for (const m of matches) {
+      // User's team is normalized to team1 by the backend; still guard by uuid
+      const mine = m.players.team1.find((p) => p && p.uuid === myUuid) || null;
+      if (!mine) continue;
+      played += 1;
+      const result = getMatchResult(m);
+      if (result === 'win') wins += 1;
+      else if (result === 'loss') losses += 1;
+      else draws += 1;
+      rankingDeltaTotal += mine.rankingDelta;
+      if (mine.stats) {
+        pointsScored += mine.stats.pointsScored;
+        pointsConceded += mine.stats.pointsConceded;
+        gamesWon += mine.stats.gamesWon;
+        gamesLost += mine.stats.gamesLost;
+        if (mine.stats.maxPointLead > maxPointLeadBest) maxPointLeadBest = mine.stats.maxPointLead;
+      }
+    }
+    const avgDelta = played > 0 ? (rankingDeltaTotal / played) : 0;
+    const winRate = played > 0 ? Math.round((wins / played) * 100) : 0;
+    return {
+      played,
+      wins,
+      losses,
+      draws,
+      rankingDeltaTotal,
+      avgDelta: Math.round(avgDelta * 10) / 10,
+      winRate,
+      pointsScored,
+      pointsConceded,
+      gamesWon,
+      gamesLost,
+      maxPointLeadBest,
+    };
+  }, [matches, myUuid]);
+
   const renderTeam = (
-    team: (PublicUserWithPoints | null)[],
+    team: (MatchPlayerPublic | null)[],
     teamName: string,
     colorClass: string,
   ) => (
@@ -84,6 +147,7 @@ const Stats: React.FC = () => {
       <span className="text-sm font-medium text-gray-600">{teamName}</span>
       {team.map((player, index) => {
         const avatarUrl = resolveAvatarUrl(player?.avatar, axios.defaults.baseURL);
+        const pstats = player?.stats;
         return (
           <div key={index} className="flex items-center space-x-2">
             {player ? (
@@ -95,8 +159,14 @@ const Stats: React.FC = () => {
                     <span className="ml-1 text-xs text-gray-500">({player.ranking})</span>
                   </div>
                   <span className={`text-xs ${colorClass}`}>
-                    {player.pointsAwarded > 0 ? `+${player.pointsAwarded}` : player.pointsAwarded}
+                    {player.rankingDelta > 0 ? `+${player.rankingDelta}` : player.rankingDelta}
                   </span>
+                  {pstats && (
+                    <span className="text-[10px] text-gray-500">
+                      Pts {pstats.pointsScored}-{pstats.pointsConceded} • Games {pstats.gamesWon}-
+                      {pstats.gamesLost} • Lead {pstats.maxPointLead}
+                    </span>
+                  )}
                 </div>
               </>
             ) : (
@@ -164,6 +234,61 @@ const Stats: React.FC = () => {
               }
             </div>
             <div className="text-gray-600">Casual Matches</div>
+          </div>
+        </div>
+      </div>
+
+      {/* Ranked Stats */}
+      <div className="mb-8 rounded-lg bg-white p-6 shadow-md">
+        <h2 className="mb-4 text-xl font-bold text-gray-800">Ranked Stats</h2>
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-3 lg:grid-cols-4">
+          <div className="text-center">
+            <div className="text-2xl font-bold text-purple-600">{rankedAgg.played}</div>
+            <div className="text-gray-600">Matches Played</div>
+          </div>
+          <div className="text-center">
+            <div className="text-2xl font-bold text-green-600">{rankedAgg.wins}</div>
+            <div className="text-gray-600">Wins</div>
+          </div>
+          <div className="text-center">
+            <div className="text-2xl font-bold text-red-600">{rankedAgg.losses}</div>
+            <div className="text-gray-600">Losses</div>
+          </div>
+          <div className="text-center">
+            <div className="text-2xl font-bold text-blue-600">{rankedAgg.winRate}%</div>
+            <div className="text-gray-600">Win Rate</div>
+          </div>
+          <div className="text-center">
+            <div className={`text-2xl font-bold ${rankedAgg.rankingDeltaTotal >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+              {rankedAgg.rankingDeltaTotal >= 0 ? `+${rankedAgg.rankingDeltaTotal}` : rankedAgg.rankingDeltaTotal}
+            </div>
+            <div className="text-gray-600">Net Rating Change</div>
+          </div>
+          <div className="text-center">
+            <div className={`text-2xl font-bold ${rankedAgg.avgDelta >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+              {rankedAgg.avgDelta >= 0 ? `+${rankedAgg.avgDelta}` : rankedAgg.avgDelta}
+            </div>
+            <div className="text-gray-600">Avg Rating Change</div>
+          </div>
+          <div className="text-center">
+            <div className="text-2xl font-bold text-gray-800">{rankedAgg.pointsScored}</div>
+            <div className="text-gray-600">Points Scored</div>
+          </div>
+          <div className="text-center">
+            <div className="text-2xl font-bold text-gray-800">{rankedAgg.pointsConceded}</div>
+            <div className="text-gray-600">Points Conceded</div>
+          </div>
+          <div className="text-center">
+            <div className="text-2xl font-bold text-gray-800">{rankedAgg.gamesWon}</div>
+            <div className="text-gray-600">Games Won</div>
+          </div>
+          <div className="text-center">
+            <div className="text-2xl font-bold text-gray-800">{rankedAgg.gamesLost}</div>
+            <div className="text-gray-600">Games Lost</div>
+          </div>
+          <div className="text-center">
+            <div className="text-2xl font-bold text-gray-800">{rankedAgg.maxPointLeadBest}</div>
+            <div className="text-gray-600">Best Point Lead</div>
           </div>
         </div>
       </div>

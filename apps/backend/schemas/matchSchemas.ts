@@ -4,6 +4,7 @@ import {
   TournamentIDSchema,
   TournamentStageSchema,
   UuidSchema,
+  MatchPlayerStatsArraySchema,
 } from './fieldSchemas.ts';
 
 export const addMatchSchema = {
@@ -134,3 +135,37 @@ export const getUserMatchesSchema = {
     500: ErrorResponseSchema,
   },
 };
+
+export const addMatchStatsSchema = {
+  tags: ['Match'],
+  summary: 'Attach per-player stats to an existing match',
+  params: {
+    type: 'object',
+    required: ['matchId'],
+    properties: {
+      matchId: { type: 'number', minimum: 1 },
+    },
+  },
+  body: {
+    type: 'object',
+    additionalProperties: false,
+    properties: {
+      players: MatchPlayerStatsArraySchema,
+    },
+    required: ['players'],
+  },
+  response: {
+    200: {
+      type: 'object',
+      properties: {
+        message: { type: 'string' },
+        updated: { type: 'number' },
+      },
+    },
+    400: ErrorResponseSchema,
+    404: ErrorResponseSchema,
+    500: ErrorResponseSchema,
+  },
+};
+
+// No standalone GET /:matchId/stats schema; stats are embedded in match payloads.

@@ -1,5 +1,5 @@
 import db from '../client.ts';
-import type { MatchWithPlayers, PublicUserWithPoints } from '../../types/types.ts';
+import type { MatchWithPlayers, MatchPlayerPublic } from '../../types/types.ts';
 import type { MatchDb, MatchPlayerDb, MatchWithPlayersForUserDb } from '../../types/dbtypes.ts';
 
 function addMatchHelper(
@@ -27,17 +27,17 @@ function addMatchPlayerHelper(
   matchId: number,
   uuid: string,
   team: number,
-  pointsAwarded: number,
+  rankingDelta: number,
 ): number | null {
   try {
     const result = db
       .prepare(
         `
-			INSERT INTO MatchPlayers (match_id, user_uuid, team_number, points_awarded)
+			INSERT INTO MatchPlayers (match_id, user_uuid, team_number, ranking_delta)
 			VALUES (?, ?, ?, ?)
 			`,
       )
-      .run(matchId, uuid, team, pointsAwarded);
+      .run(matchId, uuid, team, rankingDelta);
     return result.lastInsertRowid as number;
   } catch (error) {
     return null;
@@ -113,14 +113,20 @@ export function getMatchWithPlayers(matchId: number): MatchWithPlayers | null {
         `
 			SELECT
 				mp.team_number,
-        mp.points_awarded,
+        mp.ranking_delta,
 				u.uuid,
 				u.username,
 				u.avatar,
 				u.ranking,
-				u.created_at
+				u.created_at,
+        s.points_scored,
+        s.points_conceded,
+        s.games_won,
+        s.games_lost,
+        s.max_point_lead
 			FROM MatchPlayers mp
 			LEFT JOIN Users u on mp.user_uuid = u.uuid
+        LEFT JOIN MatchPlayerStats s on s.match_player_id = mp.id
 			WHERE mp.match_id = ?
 			ORDER BY mp.team_number, mp.id
 			`,
@@ -131,30 +137,50 @@ export function getMatchWithPlayers(matchId: number): MatchWithPlayers | null {
       .filter((player) => player.team_number === 1)
       .map((player) =>
         player.uuid
-          ? {
+          ? ({
               uuid: player.uuid,
-              username: player.username,
+              username: player.username!,
               avatar: player.avatar,
-              ranking: player.ranking,
-              createdAt: player.created_at,
-              pointsAwarded: player.points_awarded,
-            }
+              ranking: player.ranking!,
+              createdAt: player.created_at!,
+              rankingDelta: player.ranking_delta,
+              stats:
+                player.points_scored == null
+                  ? undefined
+                  : {
+                      pointsScored: player.points_scored,
+                      pointsConceded: player.points_conceded!,
+                      gamesWon: player.games_won!,
+                      gamesLost: player.games_lost!,
+                      maxPointLead: player.max_point_lead!,
+                    },
+            } as MatchPlayerPublic)
           : null,
-      ) as (PublicUserWithPoints | null)[];
+      ) as (MatchPlayerPublic | null)[];
     const team2Players = players
       .filter((player) => player.team_number === 2)
       .map((player) =>
         player.uuid
-          ? {
+          ? ({
               uuid: player.uuid,
-              username: player.username,
+              username: player.username!,
               avatar: player.avatar,
-              ranking: player.ranking,
-              createdAt: player.created_at,
-              pointsAwarded: player.points_awarded,
-            }
+              ranking: player.ranking!,
+              createdAt: player.created_at!,
+              rankingDelta: player.ranking_delta,
+              stats:
+                player.points_scored == null
+                  ? undefined
+                  : {
+                      pointsScored: player.points_scored,
+                      pointsConceded: player.points_conceded!,
+                      gamesWon: player.games_won!,
+                      gamesLost: player.games_lost!,
+                      maxPointLead: player.max_point_lead!,
+                    },
+            } as MatchPlayerPublic)
           : null,
-      ) as (PublicUserWithPoints | null)[];
+      ) as (MatchPlayerPublic | null)[];
 
     return {
       id: match.id,
@@ -208,15 +234,21 @@ export function getMatchesWithPlayersForUser(
         um.tournament_id,
         um.tournament_stage,
         mp.team_number,
-        mp.points_awarded,
+        mp.ranking_delta,
         u.uuid,
         u.username,
         u.avatar,
         u.ranking,
-        u.created_at as user_created_at
+        u.created_at as user_created_at,
+        s.points_scored,
+        s.points_conceded,
+        s.games_won,
+        s.games_lost,
+        s.max_point_lead
       FROM UserMatches um
       INNER JOIN MatchPlayers mp ON mp.match_id = um.id
       LEFT JOIN Users u ON mp.user_uuid = u.uuid
+      LEFT JOIN MatchPlayerStats s ON s.match_player_id = mp.id
       ORDER BY um.created_at DESC, mp.team_number, mp.id
       `,
       )
@@ -239,14 +271,24 @@ export function getMatchesWithPlayersForUser(
       const match = matchesMap.get(row.match_id)!;
       const player =
         row.uuid != null
-          ? {
+          ? ({
               uuid: row.uuid,
               username: row.username!,
               avatar: row.avatar,
               ranking: row.ranking!,
               createdAt: row.user_created_at!,
-              pointsAwarded: row.points_awarded!,
-            }
+              rankingDelta: row.ranking_delta!,
+              stats:
+                row.points_scored == null
+                  ? undefined
+                  : {
+                      pointsScored: row.points_scored,
+                      pointsConceded: row.points_conceded!,
+                      gamesWon: row.games_won!,
+                      gamesLost: row.games_lost!,
+                      maxPointLead: row.max_point_lead!,
+                    },
+            } as MatchPlayerPublic)
           : null;
       if (row.uuid === uuid) (match as any).userTeam = row.team_number;
       if (row.team_number === 1) {

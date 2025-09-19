@@ -8,7 +8,8 @@ import {
   getMatchWithPlayers,
 } from '../db/queries/matches.ts';
 import { authPreHandler, matchAuthPreHandler, tokenUuidCheck } from '../hooks/auth.ts';
-import { addMatchSchema, getMatchSchema, getMyMatchesSchema } from '../schemas/matchSchemas.ts';
+import { addMatchSchema, getMatchSchema, getMyMatchesSchema, addMatchStatsSchema } from '../schemas/matchSchemas.ts';
+import { upsertMatchPlayerStats } from '../db/queries/matchPlayerStats.ts';
 
 // Different stages of tournament can affect ELO rating more
 function getTournamentMultiplier(tournamentStage?: string): number {
@@ -189,4 +190,69 @@ export async function matchRoutes(app: FastifyInstance) {
       }
     },
   );
+
+  // Add or update per-player stats for an existing match
+  app.post(
+    '/:matchId/stats',
+    {
+      schema: addMatchStatsSchema,
+      preHandler: [matchAuthPreHandler],
+    },
+    async (req: FastifyRequest, res: FastifyReply) => {
+      try {
+        const { matchId } = req.params as { matchId: number };
+        const { players } = req.body as {
+          players: Array<{
+            uuid: string;
+            pointsScored: number;
+            pointsConceded: number;
+            gamesWon: number;
+            gamesLost: number;
+            maxPointLead: number;
+          }>;
+        };
+        // Verify match exists
+        const matchRow = db
+          .prepare('SELECT id FROM Matches WHERE id = ? LIMIT 1')
+          .get(matchId) as { id: number } | undefined;
+        if (!matchRow) return res.status(404).send({ message: 'Match not found' });
+
+        // Map user -> match_player.id for this match
+        const matchPlayers = db
+          .prepare('SELECT id, user_uuid FROM MatchPlayers WHERE match_id = ?')
+          .all(matchId) as Array<{ id: number; user_uuid: string | null }>;
+        const idByUuid = new Map<string, number>();
+        for (const mp of matchPlayers) if (mp.user_uuid) idByUuid.set(mp.user_uuid, mp.id);
+
+        // Save all stats atomically
+        const txn = db.transaction(() => {
+          let updated = 0;
+          for (const p of players) {
+            const mpId = idByUuid.get(p.uuid);
+            if (!mpId) throw new Error(`Player ${p.uuid} not part of match ${matchId}`);
+            const ok = upsertMatchPlayerStats(mpId, {
+              pointsScored: p.pointsScored,
+              pointsConceded: p.pointsConceded,
+              gamesWon: p.gamesWon,
+              gamesLost: p.gamesLost,
+              maxPointLead: p.maxPointLead,
+            });
+            if (!ok) throw new Error(`Failed to upsert stats for ${p.uuid}`);
+            updated++;
+          }
+          return updated;
+        });
+
+        const updated = txn();
+        return res.status(200).send({ message: 'Stats saved', updated });
+      } catch (error) {
+        console.error('POST /matches/:matchId/stats failed:', error);
+        const msg = error instanceof Error ? error.message : 'Failed to save stats for match';
+        const code = /not part of match/i.test(msg) ? 400 : 500;
+        return res.status(code).send({ message: msg });
+      }
+    },
+  );
+
+  // No extra GET /:matchId/stats route: stats are embedded in match payloads.
 }
