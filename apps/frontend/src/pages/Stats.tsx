@@ -75,7 +75,11 @@ const Stats: React.FC = () => {
     });
   };
 
-  const renderTeam = (team: (PublicUserWithPoints | null)[], teamName: string, colorClass: string) => (
+  const renderTeam = (
+    team: (PublicUserWithPoints | null)[],
+    teamName: string,
+    colorClass: string,
+  ) => (
     <div className="flex flex-col space-y-1">
       <span className="text-sm font-medium text-gray-600">{teamName}</span>
       {team.map((player, index) => {
@@ -88,14 +92,13 @@ const Stats: React.FC = () => {
                 <div className="flex flex-col">
                   <div>
                     <span className="text-sm">{player.username}</span>
-                    <span className="text-xs text-gray-500 ml-1">({player.ranking})</span>
+                    <span className="ml-1 text-xs text-gray-500">({player.ranking})</span>
                   </div>
                   <span className={`text-xs ${colorClass}`}>
                     {player.pointsAwarded > 0 ? `+${player.pointsAwarded}` : player.pointsAwarded}
                   </span>
                 </div>
               </>
-
             ) : (
               <span className="text-sm text-gray-400">Unknown Player</span>
             )}
@@ -193,7 +196,7 @@ const Stats: React.FC = () => {
 
                   <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
                     {/* Team 1 */}
-                    <div>{renderTeam(match.players.team1, 'Team 1')}</div>
+                    <div>{renderTeam(match.players.team1, 'Team 1', colorClass)}</div>
 
                     {/* Score */}
                     <div className="flex items-center justify-center">
