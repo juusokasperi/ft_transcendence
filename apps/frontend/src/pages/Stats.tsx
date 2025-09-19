@@ -4,12 +4,13 @@ import toast from 'react-hot-toast';
 import { AxiosError } from 'axios';
 import { resolveAvatarUrl } from '../utils/avatarUrl';
 
-interface PublicUser {
+interface PublicUserWithPoints {
   uuid: string;
   username: string;
   avatar: string | null;
   ranking: number;
   createdAt: string;
+  pointsAwarded: number;
 }
 
 interface Match {
@@ -17,8 +18,8 @@ interface Match {
   team1Score: number;
   team2Score: number;
   players: {
-    team1: (PublicUser | null)[];
-    team2: (PublicUser | null)[];
+    team1: (PublicUserWithPoints | null)[];
+    team2: (PublicUserWithPoints | null)[];
   };
   playedAt: string;
   tournamentId: number | null;
@@ -74,7 +75,11 @@ const Stats: React.FC = () => {
     });
   };
 
-  const renderTeam = (team: (PublicUser | null)[], teamName: string) => (
+  const renderTeam = (
+    team: (PublicUserWithPoints | null)[],
+    teamName: string,
+    colorClass: string,
+  ) => (
     <div className="flex flex-col space-y-1">
       <span className="text-sm font-medium text-gray-600">{teamName}</span>
       {team.map((player, index) => {
@@ -84,8 +89,15 @@ const Stats: React.FC = () => {
             {player ? (
               <>
                 <img src={avatarUrl} alt={player.username} className="h-6 w-6 rounded-full" />
-                <span className="text-sm">{player.username}</span>
-                <span className="text-xs text-gray-500">({player.ranking})</span>
+                <div className="flex flex-col">
+                  <div>
+                    <span className="text-sm">{player.username}</span>
+                    <span className="ml-1 text-xs text-gray-500">({player.ranking})</span>
+                  </div>
+                  <span className={`text-xs ${colorClass}`}>
+                    {player.pointsAwarded > 0 ? `+${player.pointsAwarded}` : player.pointsAwarded}
+                  </span>
+                </div>
               </>
             ) : (
               <span className="text-sm text-gray-400">Unknown Player</span>
@@ -184,7 +196,7 @@ const Stats: React.FC = () => {
 
                   <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
                     {/* Team 1 */}
-                    <div>{renderTeam(match.players.team1, 'Team 1')}</div>
+                    <div>{renderTeam(match.players.team1, 'Team 1', colorClass)}</div>
 
                     {/* Score */}
                     <div className="flex items-center justify-center">
@@ -192,12 +204,11 @@ const Stats: React.FC = () => {
                         <div className={`text-3xl font-bold ${colorClass}`}>
                           {match.team1Score} - {match.team2Score}
                         </div>
-                        <div className="text-sm text-gray-500">Final Score</div>
                       </div>
                     </div>
 
                     {/* Team 2 */}
-                    <div>{renderTeam(match.players.team2, 'Team 2')}</div>
+                    <div>{renderTeam(match.players.team2, 'Team 2', '')}</div>
                   </div>
                 </div>
               );

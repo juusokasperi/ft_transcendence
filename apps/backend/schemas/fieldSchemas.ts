@@ -70,8 +70,9 @@ export const TeamSchema = {
       avatar: AvatarSchema,
       ranking: { type: 'number', minimum: 0 },
       createdAt: { type: 'string', format: 'date-time' },
+      pointsAwarded: { type: 'number' },
     },
-    required: ['uuid', 'username', 'ranking', 'createdAt'],
+    required: ['uuid', 'username', 'ranking', 'createdAt', 'pointsAwarded'],
   },
 };
 

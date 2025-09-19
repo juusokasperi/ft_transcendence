@@ -45,13 +45,17 @@ export interface PublicUser {
   createdAt: string;
 }
 
+export interface PublicUserWithPoints extends PublicUser {
+  pointsAwarded: number;
+}
+
 export interface MatchWithPlayers {
   id: number;
   team1Score: number;
   team2Score: number;
   players: {
-    team1: (PublicUser | null)[];
-    team2: (PublicUser | null)[];
+    team1: (PublicUserWithPoints | null)[];
+    team2: (PublicUserWithPoints | null)[];
   };
   playedAt: string;
   tournamentId: number | null;

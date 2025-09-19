@@ -34,6 +34,7 @@ export interface MatchDb {
 
 export interface MatchPlayerDb {
   team_number: number;
+  points_awarded: number;
   uuid: string | null;
   username: string | null;
   avatar: string | null;
@@ -47,6 +48,7 @@ export interface MatchWithPlayersForUserDb {
   team_2_score: number;
   tournament_id: number | null;
   tournament_stage: string | null;
+  points_awarded: number;
   match_created_at: string;
   team_number: number;
   uuid: string | null;
