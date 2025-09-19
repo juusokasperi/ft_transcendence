@@ -1,4 +1,4 @@
-// apps/frontend/src/game/ai/bot-controller.ts
+// apps/frontend/src/games/pong/ai/bot-controller.ts
 
 export type BotSeat = 'P1' | 'P2';
 export type BotDifficulty = 'easy' | 'normal' | 'hard';

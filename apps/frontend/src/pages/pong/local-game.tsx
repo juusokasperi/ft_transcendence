@@ -6,6 +6,7 @@ import type { Ruleset } from '@pong/shared';
 import '@pong/render/ui/tailwind.css';
 import '@pong/render/register';
 import { createScoreboard } from '@pong/render';
+import type { Observation } from '../../games/pong/ai/bot-controller';
 
 type AccessibilitySettings = {
   colorBlindMode: 'none' | 'protanopia' | 'deuteranopia' | 'tritanopia' | 'highContrast';
@@ -72,7 +73,7 @@ const LocalGame: React.FC = () => {
   }, [postMatch, isPlaying]);
 
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
-  const appRef = useRef<{ destroy(): void; observe?: () => any } | null>(null);
+  const appRef = useRef<{ destroy(): void; observe?: () => Observation } | null>(null);
   const botRef = useRef<{ stop(): void } | null>(null);
 
   const STORAGE_KEY = 'pong_local_settings_v1';

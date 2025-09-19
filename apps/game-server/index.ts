@@ -22,13 +22,19 @@ interface Player {
   axis: number;
 }
 
+// Merge physics FX events with controller flow events for a single payload.
+type ControllerEvents = ReturnType<
+  ReturnType<typeof createMatchController>['afterPhysicsStep']
+>['events'];
+type ServerEvents = FrameEvents & ControllerEvents;
+
 interface Match {
   id: string;
   players: { P1?: Player; P2?: Player };
   state: GameState;
   controller: ReturnType<typeof createMatchController>;
   loop?: NodeJS.Timeout;
-  lastEvents: FrameEvents;
+  lastEvents: ServerEvents;
   lastMatch?: MatchSnapshot;
 }
 
@@ -65,7 +71,7 @@ function startMatch(match: Match) {
     const stepped = handleSteps(match.state, dt);
     const mc = match.controller.afterPhysicsStep(stepped.next);
     match.state = mc.state;
-    match.lastEvents = { ...stepped.events, ...mc.events } as any;
+    match.lastEvents = { ...stepped.events, ...mc.events };
     match.lastMatch = match.controller.getSnapshot();
     broadcast(match, {
       type: 'snapshot',
