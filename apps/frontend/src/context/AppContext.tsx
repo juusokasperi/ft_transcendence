@@ -5,7 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import { useUser } from '../hooks/useUser';
 import type { User } from '../types';
 
-axios.defaults.baseURL = import.meta.env.VITE_DEV_API_PROXY_TARGET;
+//axios.defaults.baseURL = import.meta.env.VITE_DEV_API_PROXY_TARGET;
 axios.defaults.withCredentials = true;
 
 type Ctx = {
