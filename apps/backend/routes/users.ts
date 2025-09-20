@@ -117,7 +117,10 @@ export async function userRoutes(app: FastifyInstance) {
     async (req: FastifyRequest, res: FastifyReply) => {
       try {
         const uuid = req.user!.uuid;
+        const user = getUserByUuid(uuid);
+        if (!user) return res.status(404).send({ message: 'User not found' });
         const stats = getTotalStatsForUser(uuid);
+        if (!stats) return res.status(500).send({ message: 'Failed to fetch user stats' });
         return res.status(200).send(stats);
       } catch (err) {
         return res.status(500).send({ message: 'Failed to fetch user stats' });
@@ -458,6 +461,9 @@ export async function userRoutes(app: FastifyInstance) {
       try {
         const { uuid } = req.params as { uuid: string };
         const { count, offset } = req.query as { count?: number; offset?: number };
+        const user = getUserByUuid(uuid);
+        if (!user) return res.status(404).send({ message: 'User not found' });
+
         const results = getMatchesWithPlayersForUser(uuid, count, offset);
         return res.status(200).send(results);
       } catch (error) {
