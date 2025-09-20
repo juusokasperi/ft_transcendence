@@ -7,10 +7,16 @@ import {
   MatchPlayerStatsArraySchema,
   MyStatsSchema,
 } from './fieldSchemas.ts';
+import { USER_ROUTE_SECURITY } from './userSchemas.ts';
+
+const MATCH_ROUTE_SECURITY = [
+  { bearerAuth: [] as readonly string[] } as Record<string, readonly string[]>,
+] as ReadonlyArray<Record<string, readonly string[]>>;
 
 export const addMatchSchema = {
   tags: ['Match'],
   summary: 'Add match results to database and update rankings',
+  security: MATCH_ROUTE_SECURITY,
   body: {
     type: 'object',
     properties: {
@@ -71,6 +77,7 @@ export const addMatchSchema = {
 export const getMatchSchema = {
   tags: ['Match'],
   summary: 'Get single match results from DB',
+  security: USER_ROUTE_SECURITY,
   params: {
     type: 'object',
     required: ['matchId'],
@@ -104,6 +111,7 @@ export const MatchesQuerySchema = {
 
 export const getMyStatsSchema = {
   tags: ['Match'],
+  security: USER_ROUTE_SECURITY,
   summary: 'Get stats for authenticated user',
   response: {
     200: MyStatsSchema,
@@ -114,6 +122,7 @@ export const getMyStatsSchema = {
 export const getMyMatchesSchema = {
   tags: ['Match'],
   summary: 'Get matches for authenticated user',
+  security: USER_ROUTE_SECURITY,
   querystring: MatchesQuerySchema,
   response: {
     200: {
@@ -128,6 +137,7 @@ export const getMyMatchesSchema = {
 export const getUserMatchesSchema = {
   tags: ['Match'],
   summary: 'Get matches for another user by UUID',
+  security: USER_ROUTE_SECURITY,
   params: {
     type: 'object',
     properties: {
@@ -149,6 +159,7 @@ export const getUserMatchesSchema = {
 export const addMatchStatsSchema = {
   tags: ['Match'],
   summary: 'Attach per-player stats to an existing match',
+  security: MATCH_ROUTE_SECURITY,
   params: {
     type: 'object',
     required: ['matchId'],
