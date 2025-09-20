@@ -8,23 +8,20 @@ const TWO_FACTOR_EXP = JWT_2FA_TTL as unknown as jwt.SignOptions['expiresIn'];
 
 // JWT payload for access tokens
 export type AccessTokenPayload = JWTPayload & { purpose: 'access' };
-// JWT payload for two-factor tokens
 export type TwoFactorTokenPayload = JWTPayload & { purpose: 'two-factor' };
 
+export type AccessTokenInputPayload = Omit<JWTPayload, 'purpose'>;
+export type TwoFactorTokenInputPayload = Omit<JWTPayload, 'purpose'>;
+
 // Sign a JWT access token with 'access' purpose
-export function signAccessToken(payload: JWTPayload): string {
-  const { purpose: _ignored, ...rest } = payload;
-  const tokenPayload: AccessTokenPayload = { ...rest, purpose: 'access' };
+export function signAccessToken(payload: AccessTokenInputPayload): string {
+  const tokenPayload: AccessTokenPayload = { ...payload, purpose: 'access' };
   return jwt.sign(tokenPayload, JWT_SECRET, { expiresIn: ACCESS_TOKEN_EXP });
 }
 
 // Sign a JWT two-factor token with 'two-factor' purpose
-export function signTwoFactorToken(payload: JWTPayload): string {
-  const { purpose: _ignored, ...rest } = payload;
-  const tokenPayload: TwoFactorTokenPayload = {
-    ...rest,
-    purpose: 'two-factor',
-  };
+export function signTwoFactorToken(payload: TwoFactorTokenInputPayload): string {
+  const tokenPayload: TwoFactorTokenPayload = { ...payload, purpose: 'two-factor' };
   return jwt.sign(tokenPayload, JWT_SECRET, { expiresIn: TWO_FACTOR_EXP });
 }
 
