@@ -23,6 +23,7 @@ vi.mock('../../db/client.ts', () => ({
 // 2) Mock the DB queries INSIDE the factory (no top-level refs!)
 vi.mock('../../db/queries/users.ts', () => {
   return {
+    getUserByUuid: vi.fn(),
     getUserStats: vi.fn(),
     updateUserRanking: vi.fn(),
     getMatchesWithPlayersForUser: vi.fn(),
@@ -377,6 +378,13 @@ describe('GET /api/users/:uuid/matches', () => {
 
   it('200 returns array of { id, team1Score, team2Score, players, playedAt, tournamentId, tournamentStage }', async () => {
     const validUuid = '123e4567-e89b-12d3-a456-426614174000';
+    (usersQueries.getUserByUuid as unknown as Mock).mockReturnValueOnce({
+      uuid: validUuid,
+      username: 'Joe',
+      avatar: 'avatar1.png',
+      ranking: 1000,
+      createdAt: '2024-01-01T00:00:00Z',
+    });
     (matchesQueries.getMatchesWithPlayersForUser as unknown as Mock).mockReturnValueOnce([
       {
         id: 1,
