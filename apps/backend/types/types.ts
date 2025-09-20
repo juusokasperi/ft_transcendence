@@ -11,6 +11,7 @@ export interface JWTPayload {
   username: string;
   iat?: number;
   exp?: number;
+  purpose?: 'access' | 'two-factor';
 }
 
 export interface User {
@@ -19,6 +20,7 @@ export interface User {
   email: string;
   passwordHash: string | null;
   tfa: boolean;
+  tfaSecret: string | null;
   avatar: string | null;
   ranking: number;
   createdAt: string;

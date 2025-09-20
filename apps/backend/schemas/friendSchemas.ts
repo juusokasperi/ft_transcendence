@@ -6,10 +6,15 @@ import {
 } from './responseSchemas.ts';
 import { UsernameSchema, UuidSchema, EmailSchema } from './fieldSchemas.ts';
 
+const FRIEND_ROUTE_SECURITY: ReadonlyArray<Record<string, readonly string[]>> = [
+  { bearerAuth: [] as readonly string[] },
+  { tokenAuth: [] as readonly string[] },
+];
+
 export const friendsSchema = {
   tags: ['Friends'],
   summary: 'Get all friends of user',
-  security: [{ bearerAuth: [] }],
+  security: FRIEND_ROUTE_SECURITY,
   response: {
     200: {
       type: 'array',
@@ -23,7 +28,7 @@ export const friendsSchema = {
 export const pendingSchema = {
   tags: ['Friends'],
   summary: 'Get all sent or received pending friend requests',
-  security: [{ bearerAuth: [] }],
+  security: FRIEND_ROUTE_SECURITY,
   response: {
     200: {
       type: 'array',
@@ -36,7 +41,7 @@ export const pendingSchema = {
 export const respondFriendSchema = {
   tags: ['Friends'],
   summary: 'Respond to a received friend request',
-  security: [{ bearerAuth: [] }],
+  security: FRIEND_ROUTE_SECURITY,
   body: {
     type: 'object',
     properties: {
@@ -57,7 +62,7 @@ export const respondFriendSchema = {
 export const sendFriendSchema = {
   tags: ['Friends'],
   summary: 'Send a friend request to another user',
-  security: [{ bearerAuth: [] }],
+  security: FRIEND_ROUTE_SECURITY,
   body: {
     type: 'object',
     properties: {
@@ -78,7 +83,7 @@ export const sendFriendSchema = {
 export const deleteFriendSchema = {
   tags: ['Friends'],
   summary: 'Delete an existing friendship',
-  security: [{ bearerAuth: [] }],
+  security: FRIEND_ROUTE_SECURITY,
   params: {
     type: 'object',
     required: ['user2Uuid'],

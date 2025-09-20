@@ -8,6 +8,10 @@ vi.mock('../../utils/config.ts', () => ({
   MATCH_SECRET: 'testsecret',
   SECRET: 'testsecret',
   DATABASE_PATH: ':memory:',
+  JWT_ACCESS_TTL: '4h',
+  JWT_2FA_TTL: '10m',
+  TFA_CODE_DIGITS: 6,
+  TFA_ISSUER: 'TestApp',
 }));
 
 vi.mock('../../db/client.ts', () => ({
@@ -40,6 +44,7 @@ import * as matchesQueries from '../../db/queries/matches.ts';
 import { matchRoutes } from '../../routes/matches.ts';
 import { userRoutes } from '../../routes/users.ts';
 import jwt from 'jsonwebtoken';
+import { signAccessToken } from '../../utils/jwt.ts';
 
 function buildApp() {
   const app = fastify({ logger: false });
@@ -56,7 +61,7 @@ const makeMatchToken = () =>
   jwt.sign({ service: 'game-node', iat: Math.floor(Date.now() / 1000) }, MATCH_SECRET, {
     expiresIn: '1h',
   });
-const makeUserToken = (uuid: string) => jwt.sign({ uuid }, SECRET, { expiresIn: '1h' });
+const makeUserToken = (uuid: string) => signAccessToken({ uuid, username: 'tester' });
 
 /*
   POST /api/matches/

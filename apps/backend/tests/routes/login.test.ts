@@ -6,6 +6,10 @@ import bcrypt from 'bcrypt';
 vi.mock('../../utils/config.ts', () => ({
   SECRET: 'testsecret',
   DATABASE_PATH: ':memory:',
+  JWT_ACCESS_TTL: '4h',
+  JWT_2FA_TTL: '10m',
+  TFA_CODE_DIGITS: 6,
+  TFA_ISSUER: 'TestApp',
 }));
 
 const usersMock = vi.hoisted(() => ({
@@ -31,14 +35,17 @@ function buildApp() {
 }
 
 describe('POST /api/login', () => {
+  const USER_UUID = '11111111-1111-1111-1111-111111111111';
   const app = buildApp();
 
   beforeAll(async () => {
     usersMock.getUserByEmail.mockReturnValue({
-      uuid: 'u-1',
+      uuid: USER_UUID,
       username: 'alice',
       passwordHash: await bcrypt.hash('StrongPass123!', 10),
       avatar: null,
+      tfa: false,
+      tfaSecret: null,
     });
     await app.ready();
   });
@@ -59,7 +66,7 @@ describe('POST /api/login', () => {
     const tokenCookie = parseSetCookie(res.headers['set-cookie'], 'token');
     expect(tokenCookie).toBeTruthy();
     expect(res.json()).toEqual({
-      user: { username: 'alice', uuid: 'u-1', avatar: null },
+      user: { username: 'alice', uuid: USER_UUID, avatar: null, tfa: false },
     });
   });
 });

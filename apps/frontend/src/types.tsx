@@ -4,8 +4,9 @@ export interface User {
   uuid: string;
   username: string;
   email: string;
-  avatar: string;
+  avatar: string | null;
   wins: number;
   losses: number;
   createdAt: string;
+  tfaEnabled: boolean;
 }

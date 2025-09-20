@@ -3,20 +3,25 @@ import type { User, UserStats, UserSettings } from '../../types/types.ts';
 import type { UserDb, UserStatsDb, UserSettingsDb } from '../../types/dbtypes.ts';
 import crypto from 'crypto';
 
-export function getUserByUuid(uuid: string): User | undefined {
-  const user = db.prepare('SELECT * FROM Users where uuid = ?').get(uuid) as UserDb | null;
-  if (!user) return undefined;
+function mapUserRecord(user: UserDb): User {
   return {
     uuid: user.uuid,
     username: user.username,
     email: user.email,
     passwordHash: user.password_hash,
     tfa: !!user.tfa,
+    tfaSecret: user.tfa_secret,
     avatar: user.avatar,
     ranking: user.ranking,
     createdAt: user.created_at,
     googleId: user.google_id,
   };
+}
+
+export function getUserByUuid(uuid: string): User | undefined {
+  const user = db.prepare('SELECT * FROM Users where uuid = ?').get(uuid) as UserDb | null;
+  if (!user) return undefined;
+  return mapUserRecord(user);
 }
 
 export function getUserByUsernameOrEmail(username: string, email: string): User | undefined {
@@ -24,65 +29,25 @@ export function getUserByUsernameOrEmail(username: string, email: string): User 
     .prepare('SELECT * FROM Users where username = ? OR email = ?')
     .get(username, email) as UserDb | null;
   if (!user) return undefined;
-  return {
-    uuid: user.uuid,
-    username: user.username,
-    email: user.email,
-    passwordHash: user.password_hash,
-    tfa: !!user.tfa,
-    avatar: user.avatar,
-    ranking: user.ranking,
-    createdAt: user.created_at,
-    googleId: user.google_id,
-  };
+  return mapUserRecord(user);
 }
 
 export function getUserByUsername(username: string): User | undefined {
   const user = db.prepare('SELECT * FROM Users where username = ?').get(username) as UserDb | null;
   if (!user) return undefined;
-  return {
-    uuid: user.uuid,
-    username: user.username,
-    email: user.email,
-    passwordHash: user.password_hash,
-    tfa: !!user.tfa,
-    avatar: user.avatar,
-    ranking: user.ranking,
-    createdAt: user.created_at,
-    googleId: user.google_id,
-  };
+  return mapUserRecord(user);
 }
 
 export function getUserByEmail(email: string): User | undefined {
   const user = db.prepare('SELECT * FROM Users WHERE email = ?').get(email) as UserDb | null;
   if (!user) return undefined;
-  return {
-    uuid: user.uuid,
-    username: user.username,
-    email: user.email,
-    passwordHash: user.password_hash,
-    tfa: !!user.tfa,
-    avatar: user.avatar,
-    ranking: user.ranking,
-    createdAt: user.created_at,
-    googleId: user.google_id,
-  };
+  return mapUserRecord(user);
 }
 
 export function getUserByGoogleId(googleId: string): User | undefined {
   const user = db.prepare('SELECT * FROM Users WHERE google_id = ?').get(googleId) as UserDb | null;
   if (!user) return undefined;
-  return {
-    uuid: user.uuid,
-    username: user.username,
-    email: user.email,
-    passwordHash: user.password_hash,
-    tfa: !!user.tfa,
-    avatar: user.avatar,
-    ranking: user.ranking,
-    createdAt: user.created_at,
-    googleId: user.google_id,
-  };
+  return mapUserRecord(user);
 }
 
 export function getUser(identifier: string): User | undefined {
@@ -90,17 +55,7 @@ export function getUser(identifier: string): User | undefined {
     .prepare(`SELECT * FROM Users WHERE uuid = ? OR username = ? OR email = ?`)
     .get(identifier, identifier, identifier) as UserDb | null;
   if (!user) return undefined;
-  return {
-    uuid: user.uuid,
-    username: user.username,
-    email: user.email,
-    passwordHash: user.password_hash,
-    tfa: !!user.tfa,
-    avatar: user.avatar,
-    ranking: user.ranking,
-    createdAt: user.created_at,
-    googleId: user.google_id,
-  };
+  return mapUserRecord(user);
 }
 
 export function addUser(

@@ -15,6 +15,7 @@ export async function up(db: Database) {
 	email TEXT NOT NULL COLLATE NOCASE,
 	password_hash TEXT,
 	tfa	BOOLEAN NOT NULL DEFAULT FALSE,
+	tfa_secret TEXT,
 	avatar TEXT,
 	ranking INTEGER NOT NULL DEFAULT 1000,
 	created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,

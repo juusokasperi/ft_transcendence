@@ -42,6 +42,10 @@ export const SECRET = process.env.SECRET as string;
 export const MATCH_SECRET = process.env.MATCH_SECRET as string;
 export const FRONTEND_URL = process.env.FRONTEND_URL as string;
 export const NGINX_PORT = process.env.NGINX_PORT as string;
+export const JWT_ACCESS_TTL = process.env.JWT_ACCESS_TTL || '4h';
+export const JWT_2FA_TTL = process.env.JWT_2FA_TTL || '10m';
+export const TFA_ISSUER = process.env.TFA_ISSUER || 'BabylonPong';
+export const TFA_CODE_DIGITS = Number(process.env.TFA_CODE_DIGITS || '6');
 export const ENABLE_SQLITE_METRICS = process.env.ENABLE_SQLITE_METRICS as string;
 
 // Export Swagger config
@@ -70,6 +74,15 @@ export const swaggerConfig: SwaggerOptions = {
           type: 'http',
           scheme: 'bearer',
           bearerFormat: 'JWT',
+          description:
+            'For Swagger/manual testing you can still supply Authorization: Bearer <token>.',
+        },
+        tokenAuth: {
+          type: 'apiKey',
+          in: 'cookie',
+          name: 'token',
+          description:
+            'Primary browser auth uses the httpOnly "token" cookie issued by the backend.',
         },
       },
     },
