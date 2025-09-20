@@ -74,7 +74,8 @@ export const swaggerConfig: SwaggerOptions = {
           type: 'http',
           scheme: 'bearer',
           bearerFormat: 'JWT',
-          description: 'For Swagger/manual testing you can still supply Authorization: Bearer <token>.',
+          description:
+            'For Swagger/manual testing you can still supply Authorization: Bearer <token>.',
         },
         tokenAuth: {
           type: 'apiKey',
