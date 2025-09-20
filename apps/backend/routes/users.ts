@@ -265,7 +265,7 @@ export async function userRoutes(app: FastifyInstance) {
         const valid = verifyTotpToken(user.tfaSecret, code);
         if (!valid) return res.status(400).send({ message: 'Invalid authentication code' });
 
-        const completed = completeTwoFactorEnrollment(uuid);
+        const completed = completeTwoFactorEnrollment(uuid, user.tfaSecret);
         if (!completed) return res.status(500).send({ message: 'Failed to enable two-factor' });
 
         res.status(200).send({ success: 'Two-factor authentication enabled.' });

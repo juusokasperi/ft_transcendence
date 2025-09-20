@@ -12,7 +12,7 @@ export function beginTwoFactorEnrollment(uuid: string, secret: string | null): b
   return result.changes === 1;
 }
 
-export function completeTwoFactorEnrollment(uuid: string, secret: string | null = null): boolean {
+export function completeTwoFactorEnrollment(uuid: string, secret: string | null): boolean {
   const result = db
     .prepare(
       `UPDATE Users
