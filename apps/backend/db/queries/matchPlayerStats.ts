@@ -74,7 +74,7 @@ export function getTotalStatsForUser(uuid: string): MatchPlayerStatsMe | null {
               OR (mp.team_number = 2 AND m.team_2_score > m.team_1_score)
             THEN 1 ELSE 0 END
         ) as matchesWon,
-        SUM (
+        SUM(
           CASE
             WHEN (mp.team_number = 1 AND m.team_1_score < m.team_2_score)
               OR (mp.team_number = 2 AND m.team_2_score < m.team_1_score)
