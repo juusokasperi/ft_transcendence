@@ -57,6 +57,7 @@ up:
 	@echo ">> Starting default stack (attached)"
 	docker compose -p $(NAME) $(ROOT_COMPOSE) $(ENV_ROOT) up --build
 
+
 detached:
 	$(ensure_dirs)
 	$(ensure_builder)
@@ -75,9 +76,19 @@ elk-detached:
 	@echo ">> Starting profile 'elk' (detached)"
 	docker compose -p $(NAME) --profile elk up --build -d
 
+mon:
+	$(ensure_dirs)
+	$(ensure_builder)
+	docker compose -p $(NAME)  --profile monitoring up --build
+
+mon-detached:
+	$(ensure_dirs)
+	$(ensure_builder)
+	docker compose -p $(NAME)  --profile monitoring up --build -d
+
 down:
 	@echo ">> Stopping & removing default stack (volumes, local images, orphans)"
-	docker compose -p $(NAME) $(ROOT_COMPOSE) $(ENV_ROOT) --profile elk down -v --rmi local --remove-orphans
+	docker compose -p $(NAME) $(ROOT_COMPOSE) $(ENV_ROOT) --profile elk --profile monitoring down -v --rmi local --remove-orphans
 
 down-elk:
 	@echo ">> Stopping & removing profile 'elk' (volumes, local images, orphans)"
@@ -152,6 +163,9 @@ restart:
 restart-elk:
 	@echo ">> Restarting services in profile 'elk'"
 	docker compose -p $(NAME) --profile elk restart
+
+restart-mon:
+	docker compose -p $(NAME) --profile monitoring restart
 
 restart-%:
 	@echo ">> Restarting service '$*' (if present in any compose file)"

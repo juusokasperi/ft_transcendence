@@ -68,7 +68,7 @@ const OnlineGame: React.FC = () => {
     let cancelled = false;
     (async () => {
       try {
-        const { bootstrapOnlinePong } = await import('../../game/host/online-embed');
+        const { bootstrapOnlinePong } = await import('../../games/pong/host/online-embed');
         if (cancelled) return;
         const app = await bootstrapOnlinePong(canvasRef.current!, {
           serverUrl,
@@ -109,6 +109,24 @@ const OnlineGame: React.FC = () => {
     appRef.current = null;
     setStatus('idle');
   };
+
+  // End-of-match handling: listen for in-canvas event and exit back to lobby
+  useEffect(() => {
+    if ((status !== 'starting' && status !== 'playing') || !canvasRef.current) return;
+    const canvas = canvasRef.current;
+    let timer: number | null = null;
+    const onMatchOver = () => {
+      // Small delay to let the final FX/hud play out, then quit
+      timer = window.setTimeout(() => {
+        handleQuit();
+      }, 3000);
+    };
+    canvas.addEventListener('pong:matchOver', onMatchOver as EventListener);
+    return () => {
+      canvas.removeEventListener('pong:matchOver', onMatchOver as EventListener);
+      if (timer !== null) clearTimeout(timer);
+    };
+  }, [status]);
 
   if (status === 'starting' || status === 'playing') {
     return (
