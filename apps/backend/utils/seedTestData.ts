@@ -174,7 +174,7 @@ for (let i = 0; i < 25; i++) {
     joePoints = -10;
   } else if (wilStats.gamesWon < joeStats.gamesWon) {
     wilPoints = -10;
-    joePoints = -10;
+    joePoints = 10;
   } else {
     wilPoints = 0;
     joePoints = 0;
