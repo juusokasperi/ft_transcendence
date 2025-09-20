@@ -22,16 +22,16 @@ import { /* mixOnlineAxes, */ type PlayerSeat } from '@pong/render';
 import { disposeWorld } from '@pong/render';
 
 import type { GameState } from '@pong/game-logic';
-import type { FrameEvents } from '@pong/shared';
+import type { FrameEvents, MatchSnapshot } from '@pong/shared';
 import { SERVE_SELECT_TOTAL_MS } from '@pong/shared';
 import { clamp01 } from '@pong/shared';
 
-import { wsUrl } from '../../utils/url';
+import { wsUrl } from '../../../utils/url';
 
 // --- Net placeholders (wire your transport here) -----------------------------------
 type OnlineClient = {
   mySeat: PlayerSeat; // "P1" | "P2"
-  onSnapshot(cb: (s: GameState, ev: FrameEvents) => void): void;
+  onSnapshot(cb: (s: GameState, ev: FrameEvents, match?: MatchSnapshot) => void): void;
   onOpponentAxis(cb: (axis: number) => void): void; // scalar [-1..1]
   sendLocalAxis(axis: number): void; // called every tick
   disconnect(): void;
@@ -55,7 +55,9 @@ async function connectOnline(cfg: {
 
     gameWs.addEventListener('open', () => {
       console.log('[OnlineGame] WebSocket connection opened');
-      const snapshotListeners = new Set<(s: GameState, ev: FrameEvents) => void>();
+      const snapshotListeners = new Set<
+        (s: GameState, ev: FrameEvents, m?: MatchSnapshot) => void
+      >();
       const opponentAxisListeners = new Set<(axis: number) => void>();
 
       gameWs.addEventListener('message', (ev) => {
@@ -63,7 +65,7 @@ async function connectOnline(cfg: {
         //console.log('[OnlineGame] Received message:', data);
         switch (data.type) {
           case 'snapshot':
-            snapshotListeners.forEach((cb) => cb(data.state, data.events));
+            snapshotListeners.forEach((cb) => cb(data.state, data.events, data.match));
             break;
           case 'opponentAxis':
             opponentAxisListeners.forEach((cb) => cb(data.axis));
@@ -185,6 +187,8 @@ export function createOnlineApp(
   const eventQueue: FrameEvents[] = []; // buffer to avoid dropping events between frames
   let prevPhase: GameState['phase'] | null = null;
   let didBootFX = false;
+  let didFireMatchOverEvent = false;
+  let latestMatch: MatchSnapshot | undefined;
 
   // Simple (optional) rows mirroring knob if you choose to flip per-game
   // NOTE: With server-authoritative flow, you can toggle this via messages.
@@ -194,9 +198,7 @@ export function createOnlineApp(
   let prevSnap: GameState | null = null;
   let prevT = 0,
     currT = 0; // ms timestamps for snapshots
-  // HUD diff cache
-  let lastHudBestOf = 0;
-  let lastHudCurrentGameIndex = 0;
+  // HUD snapshot cache (from server)
 
   const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
 
@@ -245,30 +247,7 @@ export function createOnlineApp(
 
         // 3) HUD (player-pinned)
         const stateForHUD = mapStateForPlayerRows(snap, rowsMirrored);
-        const bestOf = snap.params.bestOf | 0;
-        const finishedGames = (snap.games.east | 0) + (snap.games.west | 0);
-        const currentGameIndex = Math.min(
-          bestOf || 1,
-          finishedGames + (snap.phase === 'matchOver' ? 0 : 1),
-        );
-        const hudChanged =
-          (bestOf || 1) !== lastHudBestOf || currentGameIndex !== lastHudCurrentGameIndex;
-        updateHUD(
-          hud,
-          stateForHUD,
-          names,
-          hudChanged
-            ? {
-                bestOf: bestOf || 1,
-                currentGameIndex,
-                gamesHistory: [], // server does not send history; show current/live only
-              }
-            : undefined,
-        );
-        if (hudChanged) {
-          lastHudBestOf = bestOf || 1;
-          lastHudCurrentGameIndex = currentGameIndex;
-        }
+        updateHUD(hud, stateForHUD, names, latestMatch);
       }
 
       // 4) Drain FX events queued from snapshots (avoid dropping on mismatch rates)
@@ -297,7 +276,7 @@ export function createOnlineApp(
       //console.log('[OnlineGame] Received opponent axis:', axis);
     });
 
-    net.onSnapshot((s, ev) => {
+    net.onSnapshot((s, ev, matchSnap) => {
       //console.log('[OnlineGame] Received snapshot. Phase:', s.phase);
       if (!didBootFX) {
         didBootFX = true;
@@ -324,16 +303,34 @@ export function createOnlineApp(
         }
       }
       prevPhase = s.phase;
+      latestMatch = matchSnap ?? latestMatch;
 
       // Respond to server signaled side swaps (if present in events)
       const anyEv = ev as any;
       if (anyEv && anyEv.swapSidesNow) {
-        toggleControlsMirrored();
+        // Mirror HUD rows for readability and play a small crossover cue.
+        rowsMirrored = !rowsMirrored;
+        // Swap paddle materials so colors/skins follow players across sides.
         const m = left.mesh.material;
         left.mesh.material = right.mesh.material;
         right.mesh.material = m;
-        rowsMirrored = !rowsMirrored;
         paddleAnim.cue(180);
+      }
+
+      // Fire a DOM event once when the match concludes (parity with local mode)
+      if (!didFireMatchOverEvent && anyEv && anyEv.matchOver) {
+        didFireMatchOverEvent = true;
+        const winner = anyEv.matchOver.winner as 'east' | 'west';
+        canvas.dispatchEvent(
+          new CustomEvent('pong:matchOver', {
+            detail: {
+              winner,
+              bestOf: latestMatch?.bestOf ?? s.params.bestOf,
+              gamesHistory: latestMatch?.gamesHistory ?? [],
+              names,
+            },
+          }),
+        );
       }
 
       // Snapshot ring for tiny interpolation

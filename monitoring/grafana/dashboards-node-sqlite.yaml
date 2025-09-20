@@ -1,0 +1,11 @@
+apiVersion: 1
+
+providers:
+  - name: 'node-sqlite-dashboards'
+    orgId: 1
+    folder: 'Node-Sqlite'
+    type: file
+    disableDeletion: false
+    editable: true
+    options:
+      path: /etc/grafana/dashboards/node-sqlite

@@ -7,6 +7,10 @@ import cookie from '@fastify/cookie';
 vi.mock('../../utils/config.ts', () => ({
   SECRET: 'testsecret',
   DATABASE_PATH: ':memory:',
+  JWT_ACCESS_TTL: '4h',
+  JWT_2FA_TTL: '10m',
+  TFA_CODE_DIGITS: 6,
+  TFA_ISSUER: 'TestApp',
 }));
 
 // 2) Make updateLastSeen a no-op (preHandler requires it)
@@ -31,7 +35,7 @@ vi.mock('../../db/queries/users.ts', () => {
 // 4) Now import modules that use those mocks
 import * as usersQueries from '../../db/queries/users.ts';
 import { userRoutes } from '../../routes/users.ts';
-import jwt from 'jsonwebtoken';
+import { signAccessToken } from '../../utils/jwt.ts';
 
 function buildApp() {
   const app = fastify({ logger: false });
@@ -40,10 +44,10 @@ function buildApp() {
   return app;
 }
 
-const SECRET = 'testsecret';
-const makeToken = (uuid: string) => jwt.sign({ uuid }, SECRET, { expiresIn: '1h' });
+const makeToken = (uuid: string) => signAccessToken({ uuid, username: 'tester' });
 
 describe('GET /api/users/me', () => {
+  const USER_UUID = '22222222-2222-2222-2222-222222222222';
   const app = buildApp();
 
   beforeAll(async () => {
@@ -73,7 +77,7 @@ describe('GET /api/users/me', () => {
 
   it('404 when user not found', async () => {
     (usersQueries.getUserByUuid as unknown as Mock).mockReturnValueOnce(null);
-    const token = makeToken('u-404');
+    const token = makeToken('33333333-3333-3333-3333-333333333333');
 
     const res = await app.inject({
       method: 'GET',
@@ -87,12 +91,13 @@ describe('GET /api/users/me', () => {
 
   it('200 returns { username, uuid, avatar }', async () => {
     (usersQueries.getUserByUuid as unknown as Mock).mockReturnValueOnce({
-      uuid: 'u-123',
+      uuid: USER_UUID,
       username: 'alice',
       avatar: 'https://example.com/a.png',
+      tfa: false,
     });
 
-    const token = makeToken('u-123');
+    const token = makeToken(USER_UUID);
     const res = await app.inject({
       method: 'GET',
       url: '/api/users/me',
@@ -102,8 +107,9 @@ describe('GET /api/users/me', () => {
     expect(res.statusCode).toBe(200);
     expect(res.json()).toEqual({
       username: 'alice',
-      uuid: 'u-123',
+      uuid: USER_UUID,
       avatar: 'https://example.com/a.png',
+      tfa: false,
     });
   });
 });

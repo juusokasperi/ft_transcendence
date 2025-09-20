@@ -4,6 +4,7 @@ export interface UserDb {
   email: string;
   password_hash: string | null;
   tfa: number;
+  tfa_secret: string | null;
   avatar: string | null;
   ranking: number;
   created_at: string;

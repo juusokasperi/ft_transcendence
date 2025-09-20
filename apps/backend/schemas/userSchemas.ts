@@ -15,6 +15,28 @@ import {
   PhotoSensitiveSchema,
 } from './fieldSchemas.ts';
 
+const TwoFactorSetupResponseSchema = {
+  type: 'object',
+  required: ['secret', 'otpauthUrl'],
+  properties: {
+    secret: { type: 'string' },
+    otpauthUrl: { type: 'string' },
+  },
+};
+
+const TwoFactorConfirmBodySchema = {
+  type: 'object',
+  required: ['code'],
+  properties: {
+    code: {
+      type: 'string',
+      minLength: 3,
+      maxLength: 10,
+    },
+  },
+  additionalProperties: false,
+};
+
 export const getAllUsersSchema = {
   tags: ['User'],
   summary: 'Get all users from database',
@@ -45,10 +67,15 @@ export const getUserSchema = {
   },
 };
 
+const USER_ROUTE_SECURITY = [
+  { bearerAuth: [] as readonly string[] } as Record<string, readonly string[]>,
+  { tokenAuth: [] as readonly string[] } as Record<string, readonly string[]>,
+] as ReadonlyArray<Record<string, readonly string[]>>;
+
 export const getMeSchema = {
   tags: ['User'],
   summary: 'Get the currently authenticated user',
-  security: [{ bearerAuth: [] }],
+  security: USER_ROUTE_SECURITY,
   response: {
     200: {
       type: 'object',
@@ -56,6 +83,7 @@ export const getMeSchema = {
         username: UsernameSchema,
         uuid: UuidSchema,
         avatar: { anyOf: [{ type: 'string' }, { type: 'null' }] },
+        tfa: { type: 'boolean' },
       },
     },
     401: ErrorResponseSchema,
@@ -67,7 +95,7 @@ export const getMeSchema = {
 export const userDeleteSchema = {
   tags: ['User'],
   summary: "Mark user for deletion and send a confirmation link to user's email",
-  security: [{ bearerAuth: [] }],
+  security: USER_ROUTE_SECURITY,
   response: {
     200: SuccessResponseSchema,
     404: ErrorResponseSchema,
@@ -78,7 +106,7 @@ export const userDeleteSchema = {
 export const userDeleteConfirmSchema = {
   tags: ['User'],
   summary: 'Delete user from database',
-  security: [{ bearerAuth: [] }],
+  security: USER_ROUTE_SECURITY,
   params: {
     type: 'object',
     required: ['token'],
@@ -103,7 +131,7 @@ export const userDeleteConfirmSchema = {
 export const updateUsernameSchema = {
   tags: ['User'],
   summary: 'Update username',
-  security: [{ bearerAuth: [] }],
+  security: USER_ROUTE_SECURITY,
   body: {
     type: 'object',
     properties: {
@@ -123,7 +151,7 @@ export const updateUsernameSchema = {
 export const updatePassSchema = {
   tags: ['User'],
   summary: 'Update password',
-  security: [{ bearerAuth: [] }],
+  security: USER_ROUTE_SECURITY,
   body: {
     type: 'object',
     properties: {
@@ -144,7 +172,7 @@ export const updatePassSchema = {
 export const updateAvatarSchema = {
   tags: ['User'],
   summary: 'Update avatar picture',
-  security: [{ bearerAuth: [] }],
+  security: USER_ROUTE_SECURITY,
   consumes: ['multipart/form-data'],
   response: {
     200: UsersSchema,
@@ -157,7 +185,7 @@ export const updateAvatarSchema = {
 export const deleteAvatarSchema = {
   tags: ['User'],
   summary: "Delete users's avatar pic",
-  security: [{ bearerAuth: [] }],
+  security: USER_ROUTE_SECURITY,
   response: {
     200: UsersSchema,
     400: ErrorResponseSchema,
@@ -169,7 +197,7 @@ export const deleteAvatarSchema = {
 export const getSettingsSchema = {
   tags: ['User'],
   summary: "Get user's profile settings",
-  security: [{ bearerAuth: [] }],
+  security: USER_ROUTE_SECURITY,
   response: {
     200: SettingsSchema,
     404: ErrorResponseSchema,
@@ -180,7 +208,7 @@ export const getSettingsSchema = {
 export const updateSettingsSchema = {
   tags: ['User'],
   summary: "Update user's profile settings",
-  security: [{ bearerAuth: [] }],
+  security: USER_ROUTE_SECURITY,
   body: {
     type: 'object',
     properties: {
@@ -194,6 +222,43 @@ export const updateSettingsSchema = {
   response: {
     200: SettingsSchema,
     400: ValidationErrorResponseSchema,
+    500: ErrorResponseSchema,
+  },
+};
+
+export const twoFactorSetupSchema = {
+  tags: ['User'],
+  summary: 'Start two-factor authentication setup',
+  security: USER_ROUTE_SECURITY,
+  response: {
+    200: TwoFactorSetupResponseSchema,
+    400: ErrorResponseSchema,
+    401: ErrorResponseSchema,
+    500: ErrorResponseSchema,
+  },
+};
+
+export const twoFactorConfirmSchema = {
+  tags: ['User'],
+  summary: 'Confirm two-factor authentication and enable it',
+  security: USER_ROUTE_SECURITY,
+  body: TwoFactorConfirmBodySchema,
+  response: {
+    200: SuccessResponseSchema,
+    400: ValidationErrorResponseSchema,
+    401: ErrorResponseSchema,
+    500: ErrorResponseSchema,
+  },
+};
+
+export const twoFactorDisableSchema = {
+  tags: ['User'],
+  summary: 'Disable two-factor authentication for the current user',
+  security: USER_ROUTE_SECURITY,
+  response: {
+    200: SuccessResponseSchema,
+    400: ErrorResponseSchema,
+    401: ErrorResponseSchema,
     500: ErrorResponseSchema,
   },
 };

@@ -8,7 +8,13 @@ export const useUser = () => {
     const s = localStorage.getItem('user');
     if (s) {
       try {
-        setUserState(JSON.parse(s));
+        const parsed = JSON.parse(s) as User | null;
+        if (parsed) {
+          setUserState({
+            ...parsed,
+            tfaEnabled: Boolean((parsed as any).tfaEnabled ?? (parsed as any).tfa ?? false),
+          });
+        }
       } catch {
         localStorage.removeItem('user');
       }
