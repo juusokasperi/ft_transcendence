@@ -1,8 +1,7 @@
 import type { FastifyInstance } from 'fastify';
 import type { FastifyRequest } from 'fastify';
 import crypto from 'crypto';
-import db from '../db/client.ts';
-import { signAccessToken } from '../utils/jwt.ts';
+import { signAccessToken, signTwoFactorToken } from '../utils/jwt.ts';
 import {
   getUserByGoogleId,
   createUserFromGoogle,
@@ -17,7 +16,6 @@ const GOOGLE_AUTH = 'https://accounts.google.com/o/oauth2/v2/auth';
 const GOOGLE_TOKEN = 'https://oauth2.googleapis.com/token';
 const GOOGLE_USERINFO = 'https://openidconnect.googleapis.com/v1/userinfo';
 
-const SESSION_COOKIE = 'session';
 const STATE_COOKIE = 'oauth_state';
 
 const redirectPath = process.env.GOOGLE_OAUTH_REDIRECT_PATH || '/api/auth/google/callback';
@@ -170,9 +168,18 @@ export default async function googleSign(app: FastifyInstance) {
       });
     }
 
-    // 3) Issue JWT in HttpOnly cookie
+    if (user?.tfa) {
+      const pendingToken = signTwoFactorToken({ username: user.username, uuid: user.uuid });
+      reply.clearCookie('token', { path: '/' });
+      const params = new URLSearchParams({
+        pendingToken,
+        method: 'totp',
+        source: 'google',
+      });
+      return reply.redirect(`/login?${params.toString()}`);
+    }
+
     const appToken = signAccessToken({ username: user.username, uuid: user.uuid });
-    // Set JS-readable cookies so your SPA behaves the same as normal login:
     reply.setCookie('token', appToken, {
       httpOnly: true,
       sameSite: 'strict', // matches FE

@@ -3,11 +3,12 @@ import AuthForm from '../components/AuthForm';
 import { useAppContext } from '../context/AppContext';
 import { toast } from 'react-hot-toast';
 import type { AxiosError } from 'axios';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import type { User } from '../types';
 
 const Login: React.FC = () => {
   const { axios, login, navigate, user } = useAppContext();
+  const location = useLocation();
   const [loading, setLoading] = useState(false);
   const [twoFactorPending, setTwoFactorPending] = useState<{
     token: string;
@@ -20,6 +21,26 @@ const Login: React.FC = () => {
   useEffect(() => {
     if (user) navigate('/');
   }, [user, navigate]);
+
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const pendingToken = params.get('pendingToken');
+    if (!pendingToken) return;
+
+    setTwoFactorPending({
+      token: pendingToken,
+      method: params.get('method') ?? 'totp',
+    });
+    setTwoFactorCode('');
+    setTwoFactorError(null);
+    setTwoFactorLoading(false);
+
+    if (params.get('source') === 'google') {
+      toast('Enter the code from your authenticator to finish Google sign-in.');
+    }
+
+    navigate('/login', { replace: true });
+  }, [location.search, navigate]);
 
   const handleLogin = async (data: { email: string; password: string }) => {
     setTwoFactorPending(null);
@@ -80,7 +101,7 @@ const Login: React.FC = () => {
     e.preventDefault();
     if (!twoFactorPending) return;
     if (!twoFactorCode.trim()) {
-      setTwoFactorError('Введите код из приложения.');
+      setTwoFactorError('Please enter the authentication code');
       return;
     }
     setTwoFactorLoading(true);
