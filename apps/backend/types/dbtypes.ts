@@ -49,7 +49,6 @@ export interface MatchPlayer {
   maxPointLead?: number | null;
 }
 
-
 export interface MatchWithPlayersForUserDb {
   match_id: number;
   team_1_score: number;

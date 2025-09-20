@@ -9,4 +9,3 @@ export async function up(db: Database) {
 export async function down(db: Database) {
   db.exec(`DROP INDEX IF EXISTS idx_matchplayers_match;`);
 }
-

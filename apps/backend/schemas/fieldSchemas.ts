@@ -60,12 +60,12 @@ export const AvatarSchema = {
 };
 
 const BaseStatsProperties = {
-    pointsScored: { type: 'number', minimum: 0 },
-    pointsConceded: { type: 'number', minimum: 0 },
-    gamesWon: { type: 'number', minimum: 0 },
-    gamesLost: { type: 'number', minimum: 0 },
-    maxPointLead: { type: 'number', minimum: 0 },
-}
+  pointsScored: { type: 'number', minimum: 0 },
+  pointsConceded: { type: 'number', minimum: 0 },
+  gamesWon: { type: 'number', minimum: 0 },
+  gamesLost: { type: 'number', minimum: 0 },
+  maxPointLead: { type: 'number', minimum: 0 },
+};
 
 export const StatsSchema = {
   type: 'object',

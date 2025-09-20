@@ -72,12 +72,12 @@ Uses `better-sqlite3` to interact with the SQLite database. Migrations are handl
 
 ### MatchPlayers
 
-| Field          | Type | Key     | Nullable | Etc                              |
-| -------------- | ---- | ------- | -------- | -------------------------------- |
-| id             | INT  | Primary | No       | Autoincrement                    |
-| match_id       | INT  | Foreign | No       | On match delete, delete this row |
-| user_uuid      | TEXT | Foreign | No       | On user delete, set NULL         |
-| team_number    | DATE |         | No       | Must be 1 or 2                   |
+| Field         | Type | Key     | Nullable | Etc                              |
+| ------------- | ---- | ------- | -------- | -------------------------------- |
+| id            | INT  | Primary | No       | Autoincrement                    |
+| match_id      | INT  | Foreign | No       | On match delete, delete this row |
+| user_uuid     | TEXT | Foreign | No       | On user delete, set NULL         |
+| team_number   | DATE |         | No       | Must be 1 or 2                   |
 | ranking_delta | INT  |         | No       |                                  |
 
 ### PendingUsers

@@ -50,14 +50,7 @@ export function upsertMatchPlayerStats(
       WHERE match_player_id = ?
     `,
     )
-    .run(
-      s.pointsScored,
-      s.pointsConceded,
-      s.gamesWon,
-      s.gamesLost,
-      s.maxPointLead,
-      matchPlayerId,
-    );
+    .run(s.pointsScored, s.pointsConceded, s.gamesWon, s.gamesLost, s.maxPointLead, matchPlayerId);
   // Note: SQLite returns changes = 0 if values are identical.
   // Treat that as success to keep this helper idempotent.
   return res.changes >= 0;
@@ -66,8 +59,9 @@ export function upsertMatchPlayerStats(
 // No additional read helpers needed by routes; embedded in match queries.
 export function getTotalStatsForUser(uuid: string): MatchPlayerStatsMe | null {
   try {
-    const result = db.prepare(
-      `
+    const result = db
+      .prepare(
+        `
       SELECT
         COALESCE(SUM(s.points_scored), 0) as pointsScored,
         COALESCE(SUM(s.points_conceded), 0) as pointsConceded,
@@ -92,10 +86,10 @@ export function getTotalStatsForUser(uuid: string): MatchPlayerStatsMe | null {
       LEFT JOIN Users u on u.uuid = mp.user_uuid
       LEFT JOIN Matches m ON m.id = mp.match_id
       WHERE mp.user_uuid = ?
-      `
-    ).get(uuid) as MatchPlayerStatsMe | undefined;
-    if (!result)
-    {
+      `,
+      )
+      .get(uuid) as MatchPlayerStatsMe | undefined;
+    if (!result) {
       return {
         pointsScored: 0,
         pointsConceded: 0,
@@ -111,4 +105,4 @@ export function getTotalStatsForUser(uuid: string): MatchPlayerStatsMe | null {
   } catch (error) {
     return null;
   }
-};
+}

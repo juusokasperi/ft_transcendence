@@ -8,7 +8,12 @@ import {
   getMatchWithPlayers,
 } from '../db/queries/matches.ts';
 import { authPreHandler, matchAuthPreHandler, tokenUuidCheck } from '../hooks/auth.ts';
-import { addMatchSchema, getMatchSchema, getMyMatchesSchema, addMatchStatsSchema } from '../schemas/matchSchemas.ts';
+import {
+  addMatchSchema,
+  getMatchSchema,
+  getMyMatchesSchema,
+  addMatchStatsSchema,
+} from '../schemas/matchSchemas.ts';
 import { upsertMatchPlayerStats } from '../db/queries/matchPlayerStats.ts';
 
 // Different stages of tournament can affect ELO ranking more
@@ -212,9 +217,9 @@ export async function matchRoutes(app: FastifyInstance) {
           }>;
         };
         // Verify match exists
-        const matchRow = db
-          .prepare('SELECT id FROM Matches WHERE id = ? LIMIT 1')
-          .get(matchId) as { id: number } | undefined;
+        const matchRow = db.prepare('SELECT id FROM Matches WHERE id = ? LIMIT 1').get(matchId) as
+          | { id: number }
+          | undefined;
         if (!matchRow) return res.status(404).send({ message: 'Match not found' });
 
         // Map user -> match_player.id for this match

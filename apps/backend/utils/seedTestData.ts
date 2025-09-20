@@ -20,10 +20,13 @@ import { deleteUser } from '../db/queries/userDelete.ts';
 // Run migrations first
 await runMigrations();
 
-function generateMatchStats(games: {p1: number, p2: number}[]) {
-  let p1GamesWon = 0, p2GamesWon = 0;
-  let p1Points = 0, p2Points = 0;
-  let p1MaxLead = 0, p2MaxLead = 0;
+function generateMatchStats(games: { p1: number; p2: number }[]) {
+  let p1GamesWon = 0,
+    p2GamesWon = 0;
+  let p1Points = 0,
+    p2Points = 0;
+  let p1MaxLead = 0,
+    p2MaxLead = 0;
 
   for (const g of games) {
     p1Points += g.p1;
@@ -48,14 +51,14 @@ function generateMatchStats(games: {p1: number, p2: number}[]) {
       gamesWon: p2GamesWon,
       gamesLost: p1GamesWon,
       maxPointLead: p2MaxLead,
-    }
+    },
   ];
-};
+}
 
 function getMatchPlayerId(matchId: number, userUuid: string): number | null {
-  const row = db.prepare(
-    'SELECT id FROM MatchPlayers WHERE match_id = ? AND user_uuid = ?'
-  ).get(matchId, userUuid) as { id: number } | undefined;
+  const row = db
+    .prepare('SELECT id FROM MatchPlayers WHERE match_id = ? AND user_uuid = ?')
+    .get(matchId, userUuid) as { id: number } | undefined;
   return row?.id ?? null;
 }
 
@@ -91,17 +94,33 @@ const matchIds = [
 const statsData = [
   [0, uuidBob, { pointsScored: 11, pointsConceded: 5, gamesWon: 1, gamesLost: 0, maxPointLead: 6 }],
   [0, uuidJoe, { pointsScored: 5, pointsConceded: 11, gamesWon: 0, gamesLost: 1, maxPointLead: 2 }],
-  [1, uuidBob, { pointsScored: 11, pointsConceded: 0, gamesWon: 1, gamesLost: 0, maxPointLead: 11 }],
+  [
+    1,
+    uuidBob,
+    { pointsScored: 11, pointsConceded: 0, gamesWon: 1, gamesLost: 0, maxPointLead: 11 },
+  ],
   [1, uuidJoe, { pointsScored: 0, pointsConceded: 11, gamesWon: 0, gamesLost: 1, maxPointLead: 0 }],
-  [2, uuidWil, { pointsScored: 10, pointsConceded: 12, gamesWon: 0, gamesLost: 1, maxPointLead: 3 }],
-  [2, uuidBob, { pointsScored: 12, pointsConceded: 10, gamesWon: 1, gamesLost: 0, maxPointLead: 4 }],
+  [
+    2,
+    uuidWil,
+    { pointsScored: 10, pointsConceded: 12, gamesWon: 0, gamesLost: 1, maxPointLead: 3 },
+  ],
+  [
+    2,
+    uuidBob,
+    { pointsScored: 12, pointsConceded: 10, gamesWon: 1, gamesLost: 0, maxPointLead: 4 },
+  ],
   [3, uuidJoe, { pointsScored: 1, pointsConceded: 11, gamesWon: 0, gamesLost: 1, maxPointLead: 1 }],
-  [3, uuidWil, { pointsScored: 11, pointsConceded: 1, gamesWon: 1, gamesLost: 0, maxPointLead: 10 }],
+  [
+    3,
+    uuidWil,
+    { pointsScored: 11, pointsConceded: 1, gamesWon: 1, gamesLost: 0, maxPointLead: 10 },
+  ],
   [4, uuidJoe, { pointsScored: 8, pointsConceded: 11, gamesWon: 0, gamesLost: 1, maxPointLead: 4 }],
   [4, uuidWil, { pointsScored: 11, pointsConceded: 8, gamesWon: 1, gamesLost: 0, maxPointLead: 7 }],
 ];
 
-for (const [matchIdx, userUuid, stats] of statsData) {
+for (const [matchIdx, userUuid, stats] of statsData as any) {
   const matchId = matchIds[matchIdx];
   if (!matchId) continue;
   const matchPlayerId = getMatchPlayerId(matchId, userUuid);
@@ -118,7 +137,7 @@ for (const [matchIdx, userUuid, stats] of statsData) {
   if (!user) continue;
   const oldRanking = user.ranking;
   updateUserRanking(userUuid, oldRanking + delta);
-};
+}
 
 // Change UserProfileSettings for Joe and Bob
 updateUserSettings(uuidJoe, {
@@ -132,14 +151,16 @@ updateUserSettings(uuidBob, { paddle_color: '#BB00FF', color_blind_mode: 2 });
 for (let i = 0; i < 25; i++) {
   const gamesToWin = Math.random() < 0.5 ? 2 : 3;
   const totalGames = gamesToWin * 2 - 1;
-  let wilGames = 0, joeGames = 0;
-  const games: {p1: number, p2: number}[] = [];
+  let wilGames = 0,
+    joeGames = 0;
+  const games: { p1: number; p2: number }[] = [];
 
   for (let g = 0; g < totalGames; g++) {
     let wilScore = Math.floor(8 + Math.random() * 4); // 8-11
     let joeScore = Math.floor(7 + Math.random() * 5); // 7-11
     if (wilScore === joeScore) wilScore++;
-    if (wilScore > joeScore) wilGames++; else joeGames++;
+    if (wilScore > joeScore) wilGames++;
+    else joeGames++;
     games.push({ p1: wilScore, p2: joeScore });
     if (wilGames === gamesToWin || joeGames === gamesToWin) break;
   }
@@ -158,7 +179,14 @@ for (let i = 0; i < 25; i++) {
     wilPoints = 0;
     joePoints = 0;
   }
-  const matchId = addMatch(wilStats.gamesWon, joeStats.gamesWon, uuidWil, uuidJoe, wilPoints, joePoints);
+  const matchId = addMatch(
+    wilStats.gamesWon,
+    joeStats.gamesWon,
+    uuidWil,
+    uuidJoe,
+    wilPoints,
+    joePoints,
+  );
   if (!matchId) continue;
 
   const wilMatchPlayerId = getMatchPlayerId(matchId, uuidWil);

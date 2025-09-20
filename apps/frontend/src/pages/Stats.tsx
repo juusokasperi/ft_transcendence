@@ -39,7 +39,6 @@ interface MatchPlayerStats {
   ranking?: number;
 }
 
-
 const Stats: React.FC = () => {
   const [matches, setMatches] = useState<Match[]>([]);
   const [stats, setStats] = useState<MatchPlayerStats>();
@@ -105,17 +104,15 @@ const Stats: React.FC = () => {
     });
   };
 
-  const rankingDeltaTotal = stats && stats.ranking - 1000;
-  const matchesPlayed = stats ? stats.matchesWon + stats.matchesLost : 0;
+  const rankingDeltaTotal = stats ? stats.ranking! - 1000 : 0;
+  const matchesPlayed = stats ? stats.matchesWon! + stats.matchesLost! : 0;
   const avgDelta = matchesPlayed > 0 ? Number((rankingDeltaTotal / matchesPlayed).toFixed(2)) : 0;
-  const winRate = stats && stats.gamesWon + stats.gamesLost > 0
-    ? Math.round((stats.gamesWon / (stats.gamesWon + stats.gamesLost)) * 100) : 0;
+  const winRate =
+    stats && stats.gamesWon + stats.gamesLost > 0
+      ? Math.round((stats.gamesWon / (stats.gamesWon + stats.gamesLost)) * 100)
+      : 0;
 
-  const renderTeam = (
-    team: (MatchPlayerPublic | null)[],
-    teamName: string,
-    colorClass: string,
-  ) => (
+  const renderTeam = (team: (MatchPlayerPublic | null)[], teamName: string, colorClass: string) => (
     <div className="flex flex-col space-y-1">
       <span className="text-sm font-medium text-gray-600">{teamName}</span>
       {team.map((player, index) => {
@@ -183,66 +180,67 @@ const Stats: React.FC = () => {
     <div className="container mx-auto px-4 py-8">
       {/* Ranked Stats */}
       {stats && (
-      <div className="mb-8 rounded-lg bg-white p-6 shadow-md">
-        <h2 className="mb-4 text-xl font-bold text-gray-800">Ranked Stats</h2>
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-3 lg:grid-cols-4">
-          <div className="text-center">
-            <div className="text-2xl font-bold text-purple-600">{matchesPlayed}</div>
-            <div className="text-gray-600">Matches Played</div>
-          </div>
-          <div className="text-center">
-            <div className="text-2xl font-bold text-green-600">{stats.matchesWon}</div>
-            <div className="text-gray-600">Wins</div>
-          </div>
-          <div className="text-center">
-            <div className="text-2xl font-bold text-red-600">{stats.matchesLost}</div>
-            <div className="text-gray-600">Losses</div>
-          </div>
-          <div className="text-center">
-            <div className="text-2xl font-bold text-blue-600">{winRate}%</div>
-            <div className="text-gray-600">Win Rate</div>
-          </div>
-          <div className="text-center">
-            <div className={`text-2xl font-bold`}>
-              {stats.ranking}
+        <div className="mb-8 rounded-lg bg-white p-6 shadow-md">
+          <h2 className="mb-4 text-xl font-bold text-gray-800">Ranked Stats</h2>
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-3 lg:grid-cols-4">
+            <div className="text-center">
+              <div className="text-2xl font-bold text-purple-600">{matchesPlayed}</div>
+              <div className="text-gray-600">Matches Played</div>
             </div>
-            <div className="text-gray-600">Rating</div>
-          </div>
-          <div className="text-center">
-            <div className={`text-2xl font-bold ${rankingDeltaTotal >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-              {rankingDeltaTotal >= 0 ? `+${rankingDeltaTotal}` : rankingDeltaTotal}
+            <div className="text-center">
+              <div className="text-2xl font-bold text-green-600">{stats.matchesWon}</div>
+              <div className="text-gray-600">Wins</div>
             </div>
-            <div className="text-gray-600">Net Rating Change</div>
-          </div>
-          <div className="text-center">
-            <div className={`text-2xl font-bold ${avgDelta >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-              {avgDelta >= 0 ? `+${avgDelta}` : avgDelta}
+            <div className="text-center">
+              <div className="text-2xl font-bold text-red-600">{stats.matchesLost}</div>
+              <div className="text-gray-600">Losses</div>
             </div>
-            <div className="text-gray-600">Avg Rating Change</div>
-          </div>
-          <div className="text-center">
-            <div className="text-2xl font-bold text-gray-800">{stats.pointsScored}</div>
-            <div className="text-gray-600">Points Scored</div>
-          </div>
-          <div className="text-center">
-            <div className="text-2xl font-bold text-gray-800">{stats.pointsConceded}</div>
-            <div className="text-gray-600">Points Conceded</div>
-          </div>
-          <div className="text-center">
-            <div className="text-2xl font-bold text-gray-800">{stats.gamesWon}</div>
-            <div className="text-gray-600">Games Won</div>
-          </div>
-          <div className="text-center">
-            <div className="text-2xl font-bold text-gray-800">{stats.gamesLost}</div>
-            <div className="text-gray-600">Games Lost</div>
-          </div>
-          <div className="text-center">
-            <div className="text-2xl font-bold text-gray-800">{stats.maxPointLead}</div>
-            <div className="text-gray-600">Best Point Lead</div>
+            <div className="text-center">
+              <div className="text-2xl font-bold text-blue-600">{winRate}%</div>
+              <div className="text-gray-600">Win Rate</div>
+            </div>
+            <div className="text-center">
+              <div className={`text-2xl font-bold`}>{stats.ranking}</div>
+              <div className="text-gray-600">Rating</div>
+            </div>
+            <div className="text-center">
+              <div
+                className={`text-2xl font-bold ${rankingDeltaTotal >= 0 ? 'text-green-600' : 'text-red-600'}`}
+              >
+                {rankingDeltaTotal >= 0 ? `+${rankingDeltaTotal}` : rankingDeltaTotal}
+              </div>
+              <div className="text-gray-600">Net Rating Change</div>
+            </div>
+            <div className="text-center">
+              <div
+                className={`text-2xl font-bold ${avgDelta >= 0 ? 'text-green-600' : 'text-red-600'}`}
+              >
+                {avgDelta >= 0 ? `+${avgDelta}` : avgDelta}
+              </div>
+              <div className="text-gray-600">Avg Rating Change</div>
+            </div>
+            <div className="text-center">
+              <div className="text-2xl font-bold text-gray-800">{stats.pointsScored}</div>
+              <div className="text-gray-600">Points Scored</div>
+            </div>
+            <div className="text-center">
+              <div className="text-2xl font-bold text-gray-800">{stats.pointsConceded}</div>
+              <div className="text-gray-600">Points Conceded</div>
+            </div>
+            <div className="text-center">
+              <div className="text-2xl font-bold text-gray-800">{stats.gamesWon}</div>
+              <div className="text-gray-600">Games Won</div>
+            </div>
+            <div className="text-center">
+              <div className="text-2xl font-bold text-gray-800">{stats.gamesLost}</div>
+              <div className="text-gray-600">Games Lost</div>
+            </div>
+            <div className="text-center">
+              <div className="text-2xl font-bold text-gray-800">{stats.maxPointLead}</div>
+              <div className="text-gray-600">Best Point Lead</div>
+            </div>
           </div>
         </div>
-      </div>
-
       )}
 
       {/* Matches List */}

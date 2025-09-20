@@ -5,7 +5,7 @@ import {
   TournamentStageSchema,
   UuidSchema,
   MatchPlayerStatsArraySchema,
-  MyStatsSchema
+  MyStatsSchema,
 } from './fieldSchemas.ts';
 
 export const addMatchSchema = {
