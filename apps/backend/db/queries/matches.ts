@@ -49,8 +49,8 @@ export function addMatch(
   team2Score: number,
   team1Player: string,
   team2Player: string,
-  team1RatingDelta: number,
-  team2RatingDelta: number,
+  team1RankingDelta: number,
+  team2RankingDelta: number,
   tournamentId?: number,
   tournamentStage?: string,
 ): number | null;
@@ -59,8 +59,8 @@ export function addMatch(
   team2Score: number,
   team1Players: string[],
   team2Players: string[],
-  team1RatingDelta: number,
-  team2RatingDelta: number,
+  team1RankingDelta: number,
+  team2RankingDelta: number,
   tournamentId?: number,
   tournamentStage?: string,
 ): number | null;
@@ -69,8 +69,8 @@ export function addMatch(
   team2Score: number,
   team1: string | string[],
   team2: string | string[],
-  team1RatingDelta: number,
-  team2RatingDelta: number,
+  team1RankingDelta: number,
+  team2RankingDelta: number,
   tournamentId?: number,
   tournamentStage?: string,
 ): number | null {
@@ -86,11 +86,11 @@ export function addMatch(
     const team2Players = Array.isArray(team2) ? team2 : [team2];
 
     for (const playerId of team1Players) {
-      const result = addMatchPlayerHelper(matchId, playerId, 1, team1RatingDelta);
+      const result = addMatchPlayerHelper(matchId, playerId, 1, team1RankingDelta);
       if (!result) throw new Error(`Failed to add team 1 player: ${playerId}`);
     }
     for (const playerId of team2Players) {
-      const result = addMatchPlayerHelper(matchId, playerId, 2, team2RatingDelta);
+      const result = addMatchPlayerHelper(matchId, playerId, 2, team2RankingDelta);
       if (!result) throw new Error(`Failed to add team 2 player: ${playerId}`);
     }
 

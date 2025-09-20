@@ -11,7 +11,7 @@ import { authPreHandler, matchAuthPreHandler, tokenUuidCheck } from '../hooks/au
 import { addMatchSchema, getMatchSchema, getMyMatchesSchema, addMatchStatsSchema } from '../schemas/matchSchemas.ts';
 import { upsertMatchPlayerStats } from '../db/queries/matchPlayerStats.ts';
 
-// Different stages of tournament can affect ELO rating more
+// Different stages of tournament can affect ELO ranking more
 function getTournamentMultiplier(tournamentStage?: string): number {
   if (!tournamentStage) return 1.0;
 
@@ -104,13 +104,13 @@ export async function matchRoutes(app: FastifyInstance) {
           team1Result = 'draw';
           team2Result = 'draw';
         }
-        const team1RatingDelta = calculateEloChange(
+        const team1RankingDelta = calculateEloChange(
           team1AvgElo,
           team2AvgElo,
           team1Result,
           tournamentStage,
         );
-        const team2RatingDelta = calculateEloChange(
+        const team2RankingDelta = calculateEloChange(
           team2AvgElo,
           team1AvgElo,
           team2Result,
@@ -122,17 +122,17 @@ export async function matchRoutes(app: FastifyInstance) {
           team2Score,
           team1Players,
           team2Players,
-          team1RatingDelta,
-          team2RatingDelta,
+          team1RankingDelta,
+          team2RankingDelta,
           tournamentId,
           tournamentStage,
         );
         if (!matchId) throw new Error('Failed to create match');
-        updateTeamRanking(team1Players, team1Stats, team1RatingDelta);
-        updateTeamRanking(team2Players, team2Stats, team2RatingDelta);
+        updateTeamRanking(team1Players, team1Stats, team1RankingDelta);
+        updateTeamRanking(team2Players, team2Stats, team2RankingDelta);
         return {
           matchId,
-          eloChanges: { team1: team1RatingDelta, team2: team2RatingDelta },
+          eloChanges: { team1: team1RankingDelta, team2: team2RankingDelta },
         };
       });
 
