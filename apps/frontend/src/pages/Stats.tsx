@@ -118,7 +118,7 @@ const Stats: React.FC = () => {
       {team.map((player, index) => {
         const avatarUrl = resolveAvatarUrl(player?.avatar, axios.defaults.baseURL);
         const pstats = player?.stats;
-        console.log(player);
+        
         return (
           <div key={index} className="flex items-center space-x-2">
             {player && player.username ? (
