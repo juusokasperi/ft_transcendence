@@ -73,6 +73,14 @@ export const swaggerConfig: SwaggerOptions = {
           type: 'http',
           scheme: 'bearer',
           bearerFormat: 'JWT',
+          description: 'For Swagger/manual testing you can still supply Authorization: Bearer <token>.',
+        },
+        tokenAuth: {
+          type: 'apiKey',
+          in: 'cookie',
+          name: 'token',
+          description:
+            'Primary browser auth uses the httpOnly "token" cookie issued by the backend.',
         },
       },
     },

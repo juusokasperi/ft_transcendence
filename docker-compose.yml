@@ -55,8 +55,8 @@ services:
     depends_on:
       deps:
         condition: service_completed_successfully
-    #ports:
-      #- "${FRONTEND_PORT:-5173}:5173"
+    ports:
+      - "${FRONTEND_PORT:-5173}:5173"
     volumes:
       - .:/work:cached
       - pnpm-store:/pnpm/store
@@ -85,8 +85,8 @@ services:
     depends_on:
       deps:
         condition: service_completed_successfully
-    #ports:
-      #- "${BACKEND_PORT:-3001}:3001"
+    ports:
+      - "${BACKEND_PORT:-3001}:3001"
     volumes:
       - .:/work:cached
       - pnpm-store:/pnpm/store

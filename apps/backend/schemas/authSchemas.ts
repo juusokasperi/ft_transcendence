@@ -199,7 +199,10 @@ export const resetPassConfirmSchema = {
 export const logoutSchema = {
   tags: ['Auth'],
   summary: "Moves user's last_seen field back 10 minutes to appear offline",
-  security: [{ bearerAuth: [] }],
+  security: [
+    { bearerAuth: [] as readonly string[] },
+    { tokenAuth: [] as readonly string[] },
+  ] as ReadonlyArray<Record<string, readonly string[]>>,
   response: {
     200: SuccessResponseSchema,
     400: ErrorResponseSchema,
