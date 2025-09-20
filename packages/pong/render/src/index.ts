@@ -36,4 +36,3 @@ export { mapStateForPlayerRows, mapHistoryForPlayers } from './app/hud-map';
 
 export { decHide, incHide } from './client/fx/utils';
 export type { PlayerSeat, mixOnlineAxes } from './app/seat-router';
-export { nextLocalMatchSeed } from './app/seed';

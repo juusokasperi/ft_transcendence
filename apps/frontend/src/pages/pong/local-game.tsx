@@ -6,6 +6,7 @@ import type { Ruleset } from '@pong/shared';
 import '@pong/render/ui/tailwind.css';
 import '@pong/render/register';
 import { createScoreboard } from '@pong/render';
+import type { Observation } from '../../games/pong/ai/bot-controller';
 
 type AccessibilitySettings = {
   colorBlindMode: 'none' | 'protanopia' | 'deuteranopia' | 'tritanopia' | 'highContrast';
@@ -49,6 +50,7 @@ const LocalGame: React.FC = () => {
   const navigate = useNavigate();
   const [settings, setSettings] = useState<UserSettings>(defaultSettings);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [aiEnabled, setAiEnabled] = useState(false); // Player 2 as AI
   const [postMatch, setPostMatch] = useState<{
     winner: 'east' | 'west';
     bestOf: number;
@@ -71,7 +73,8 @@ const LocalGame: React.FC = () => {
   }, [postMatch, isPlaying]);
 
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
-  const appRef = useRef<{ destroy(): void } | null>(null);
+  const appRef = useRef<{ destroy(): void; observe?: () => Observation } | null>(null);
+  const botRef = useRef<{ stop(): void } | null>(null);
 
   const STORAGE_KEY = 'pong_local_settings_v1';
 
@@ -126,6 +129,9 @@ const LocalGame: React.FC = () => {
       } catch {
         setSettings(defaultSettings);
       }
+    } else {
+      // No persisted defaults → ensure in-memory defaults are applied on visit
+      setSettings(defaultSettings);
     }
   }, []);
 
@@ -151,7 +157,7 @@ const LocalGame: React.FC = () => {
       // Lazy-load Babylon + host adapter only when starting the game
       //console.log('[LocalGame] Attempting to lazy-load Pong...');
       try {
-        const { bootstrapPong } = await import('../../game/host/dom-embed');
+        const { bootstrapPong } = await import('../../games/pong/host/dom-embed');
         if (cancelled) {
           //console.log('[LocalGame] Cancelled before bootstrap.');
           return;
@@ -164,6 +170,18 @@ const LocalGame: React.FC = () => {
           rules: settings.rules,
         });
         appRef.current = app;
+
+        // If AI is enabled, start bot controlling Player 2
+        if (aiEnabled && canvasRef.current && (app as any).observe) {
+          try {
+            const { BotController } = await import('../../games/pong/ai/bot-controller');
+            const bot = new BotController(canvasRef.current!, 'P2', (app as any).observe, 'normal');
+            bot.start();
+            botRef.current = bot;
+          } catch (e) {
+            console.error('[LocalGame] Failed to start AI bot', e);
+          }
+        }
       } catch (e) {
         console.error('[LocalGame] Failed to start Pong', e);
         setIsPlaying(false);
@@ -172,6 +190,10 @@ const LocalGame: React.FC = () => {
 
     return () => {
       cancelled = true;
+      if (botRef.current) {
+        botRef.current.stop();
+        botRef.current = null;
+      }
       if (appRef.current) {
         //console.log('[LocalGame] Destroying Pong app...');
         appRef.current.destroy();
@@ -232,6 +254,59 @@ const LocalGame: React.FC = () => {
   const handleQuit = () => {
     //console.log('[LocalGame] Quit button clicked.');
     setIsPlaying(false);
+    // Revert any unsaved changes back to saved defaults (or built-in defaults)
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        setSettings({
+          player1: {
+            name: parsed.player1?.name || defaultSettings.player1.name,
+            paddleColor: parsed.player1?.paddleColor || defaultSettings.player1.paddleColor,
+          },
+          player2: {
+            name: parsed.player2?.name || defaultSettings.player2.name,
+            paddleColor: parsed.player2?.paddleColor || defaultSettings.player2.paddleColor,
+          },
+          accessibility: {
+            colorBlindMode:
+              parsed.accessibility?.colorBlindMode || defaultSettings.accessibility.colorBlindMode,
+            photoSensitiveMode:
+              parsed.accessibility?.photoSensitiveMode ||
+              defaultSettings.accessibility.photoSensitiveMode,
+          },
+          rules: {
+            game: {
+              targetScore:
+                parsed.rules?.game?.targetScore ?? defaultSettings.rules.game.targetScore,
+              winBy: parsed.rules?.game?.winBy ?? defaultSettings.rules.game.winBy,
+              servesPerTurn:
+                parsed.rules?.game?.servesPerTurn ?? defaultSettings.rules.game.servesPerTurn,
+              deuceServesPerTurn:
+                parsed.rules?.game?.deuceServesPerTurn ??
+                defaultSettings.rules.game.deuceServesPerTurn,
+              deuceAt: parsed.rules?.game?.deuceAt ?? defaultSettings.rules.game.deuceAt,
+            },
+            match: {
+              bestOf: parsed.rules?.match?.bestOf ?? defaultSettings.rules.match.bestOf,
+              switchEndsEachGame:
+                parsed.rules?.match?.switchEndsEachGame ??
+                defaultSettings.rules.match.switchEndsEachGame,
+              decidingGameMidSwapAtPoints:
+                parsed.rules?.match?.decidingGameMidSwapAtPoints ??
+                defaultSettings.rules.match.decidingGameMidSwapAtPoints,
+              alternateInitialServerEachGame:
+                parsed.rules?.match?.alternateInitialServerEachGame ??
+                defaultSettings.rules.match.alternateInitialServerEachGame,
+            },
+          },
+        });
+      } else {
+        setSettings(defaultSettings);
+      }
+    } catch {
+      setSettings(defaultSettings);
+    }
   };
 
   // Playing view: fullscreen canvas + Quit
@@ -660,6 +735,18 @@ const LocalGame: React.FC = () => {
                   </div>
                 </div>
               )}
+            </div>
+
+            {/* AI Toggle */}
+            <div className="flex justify-center pb-2">
+              <label className="flex items-center gap-2 text-white/90">
+                <input
+                  type="checkbox"
+                  checked={aiEnabled}
+                  onChange={(e) => setAiEnabled(e.target.checked)}
+                />
+                <span>Play vs AI (Player 2)</span>
+              </label>
             </div>
 
             {/* Buttons */}
