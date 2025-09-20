@@ -51,7 +51,12 @@ export interface MatchPlayerStats {
   gamesWon: number;
   gamesLost: number;
   maxPointLead: number;
-  matchesPlayed?: number;
+}
+
+export interface MatchPlayerStatsMe extends MatchPlayerStats {
+  matchesWon: number;
+  matchesLost: number;
+  ranking: number;
 }
 
 // Public user info within the context of a match.

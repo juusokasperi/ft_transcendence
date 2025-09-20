@@ -79,9 +79,11 @@ export const MyStatsSchema = {
   additionalProperties: false,
   properties: {
     ...BaseStatsProperties,
-    matchesPlayed: { type: 'number', minimum: 0 },
+    matchesWon: { type: 'number', minimum: 0 },
+    matchesLost: { type: 'number', minimum: 0 },
+    ranking: { type: 'number', minimum: 0 },
   },
-  required: [...Object.keys(BaseStatsProperties), 'matchesPlayed'],
+  required: [...Object.keys(BaseStatsProperties), 'matchesWon', 'matchesLost', 'ranking'],
 };
 
 export const TeamSchema = {

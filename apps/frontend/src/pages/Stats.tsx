@@ -34,8 +34,11 @@ interface MatchPlayerStats {
   gamesWon: number;
   gamesLost: number;
   maxPointLead: number;
-  matchesPlayed: number;
+  matchesWon?: number;
+  matchesLost?: number;
+  ranking?: number;
 }
+
 
 const Stats: React.FC = () => {
   const [matches, setMatches] = useState<Match[]>([]);
@@ -102,11 +105,9 @@ const Stats: React.FC = () => {
     });
   };
 
-  const rankingDeltaTotal = matches.reduce((sum: number, m: Match) => {
-    const mine = m.players.team1.find((p) => p && p.uuid === myUuid);
-    return sum + (mine?.rankingDelta ?? 0);
-  }, 0);
-  const avgDelta = matches.length > 0 ? rankingDeltaTotal / matches.length : 0;
+  const rankingDeltaTotal = stats && stats.ranking - 1000;
+  const matchesPlayed = stats ? stats.matchesWon + stats.matchesLost : 0;
+  const avgDelta = matchesPlayed > 0 ? Number((rankingDeltaTotal / matchesPlayed).toFixed(2)) : 0;
   const winRate = stats && stats.gamesWon + stats.gamesLost > 0
     ? Math.round((stats.gamesWon / (stats.gamesWon + stats.gamesLost)) * 100) : 0;
 
@@ -120,9 +121,10 @@ const Stats: React.FC = () => {
       {team.map((player, index) => {
         const avatarUrl = resolveAvatarUrl(player?.avatar, axios.defaults.baseURL);
         const pstats = player?.stats;
+        console.log(player);
         return (
           <div key={index} className="flex items-center space-x-2">
-            {player ? (
+            {player && player.username ? (
               <>
                 <img src={avatarUrl} alt={player.username} className="h-6 w-6 rounded-full" />
                 <div className="flex flex-col">
@@ -185,15 +187,15 @@ const Stats: React.FC = () => {
         <h2 className="mb-4 text-xl font-bold text-gray-800">Ranked Stats</h2>
         <div className="grid grid-cols-1 gap-4 md:grid-cols-3 lg:grid-cols-4">
           <div className="text-center">
-            <div className="text-2xl font-bold text-purple-600">{stats.matchesPlayed}</div>
+            <div className="text-2xl font-bold text-purple-600">{matchesPlayed}</div>
             <div className="text-gray-600">Matches Played</div>
           </div>
           <div className="text-center">
-            <div className="text-2xl font-bold text-green-600">{stats.gamesWon}</div>
+            <div className="text-2xl font-bold text-green-600">{stats.matchesWon}</div>
             <div className="text-gray-600">Wins</div>
           </div>
           <div className="text-center">
-            <div className="text-2xl font-bold text-red-600">{stats.gamesLost}</div>
+            <div className="text-2xl font-bold text-red-600">{stats.matchesLost}</div>
             <div className="text-gray-600">Losses</div>
           </div>
           <div className="text-center">
@@ -202,7 +204,7 @@ const Stats: React.FC = () => {
           </div>
           <div className="text-center">
             <div className={`text-2xl font-bold`}>
-              {1000 + rankingDeltaTotal}
+              {stats.ranking}
             </div>
             <div className="text-gray-600">Rating</div>
           </div>

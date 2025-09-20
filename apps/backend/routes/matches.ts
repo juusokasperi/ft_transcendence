@@ -104,13 +104,13 @@ export async function matchRoutes(app: FastifyInstance) {
           team1Result = 'draw';
           team2Result = 'draw';
         }
-        const team1Points = calculateEloChange(
+        const team1RatingDelta = calculateEloChange(
           team1AvgElo,
           team2AvgElo,
           team1Result,
           tournamentStage,
         );
-        const team2Points = calculateEloChange(
+        const team2RatingDelta = calculateEloChange(
           team2AvgElo,
           team1AvgElo,
           team2Result,
@@ -122,17 +122,17 @@ export async function matchRoutes(app: FastifyInstance) {
           team2Score,
           team1Players,
           team2Players,
-          team1Points,
-          team2Points,
+          team1RatingDelta,
+          team2RatingDelta,
           tournamentId,
           tournamentStage,
         );
         if (!matchId) throw new Error('Failed to create match');
-        updateTeamRanking(team1Players, team1Stats, team1Points);
-        updateTeamRanking(team2Players, team2Stats, team2Points);
+        updateTeamRanking(team1Players, team1Stats, team1RatingDelta);
+        updateTeamRanking(team2Players, team2Stats, team2RatingDelta);
         return {
           matchId,
-          eloChanges: { team1: team1Points, team2: team2Points },
+          eloChanges: { team1: team1RatingDelta, team2: team2RatingDelta },
         };
       });
 
