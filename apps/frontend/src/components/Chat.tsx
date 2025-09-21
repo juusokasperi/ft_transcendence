@@ -2,15 +2,22 @@ import React, { useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import { X } from "lucide-react";
 import { useAppContext } from "../context/AppContext";
+import SplitButton from "./ui/SplitButton";
 
-const WS_URL = "ws://localhost:8080/chat"; // via nginx proxy
+//const WS_URL = "ws://localhost:8080/chat"; // via nginx proxy
+const WS_URL = `${window.location.protocol === "https:" ? "wss" : "ws"}://${window.location.hostname}:8080/chat`;
+type ChatMessage = {
+  from?: string;
+  message: string;
+  system?: boolean;
+};
 
 
 const Chat: React.FC<{ onClose: () => void; username?: string }> = ({
   onClose,
   username = "Player",
 }) => {
-  const [messages, setMessages] = useState<string[]>([]);
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [sender, setSender] = useState<string[]>([]);
   const [input, setInput] = useState("");
   const wsRef = useRef<WebSocket | null>(null);
@@ -26,23 +33,29 @@ const Chat: React.FC<{ onClose: () => void; username?: string }> = ({
       // Tell server our username
       ws.send(JSON.stringify({ type: "setName", username: chatUsername }));
     };
-
     ws.onmessage = (event) => {
       const data = JSON.parse(event.data);
       if (data.type === "chat") {
-        setMessages((prev) => [...prev, `${data.message}`]);
-        setSender(data.from);
+        setMessages((prev) => [...prev, { from: data.from, message: data.message }]);
       } else if (data.type === "userJoined") {
-        setMessages((prev) => [...prev, `✅ ${data.username} joined the chat`]);
+        setMessages((prev) => [
+          ...prev,
+          { message: `✅ ${data.username} joined the chat`, system: true },
+        ]);
       } else if (data.type === "userLeft") {
-        setMessages((prev) => [...prev, `❌ ${data.username} left the chat`]);
+        setMessages((prev) => [
+          ...prev,
+          { message: `❌ ${data.username} left the chat`, system: true },
+        ]);
       } else if (data.type === "connected") {
         console.log(`[CHAT] Connected with id: ${data.clientId}`);
       }
     };
 
+
     ws.onclose = () => {
-      setMessages((prev) => [...prev, "⚠️ Disconnected from chat"]);
+      setMessages((prev) => [...prev, {message:"⚠️ Disconnected from chat", system:true}]);
+
     };
 
     return () => {
@@ -56,6 +69,7 @@ const Chat: React.FC<{ onClose: () => void; username?: string }> = ({
       setInput("");
     }
   };
+
 
   return (
     <motion.div
@@ -76,7 +90,15 @@ const Chat: React.FC<{ onClose: () => void; username?: string }> = ({
       <div className="flex-1 space-y-1 overflow-y-auto p-3 text-sm">
         {messages.map((msg, idx) => (
           <div key={idx} className="rounded bg-white/10 px-2 py-1 text-white/90">
-            {sender}: {msg}
+            {msg.system ? (
+              <span>{msg.message}</span>
+            ) : (
+              <>
+                <span className="font-semibold">{msg.from}</span>
+                <SplitButton />
+                <span>{msg.message}</span>
+              </>
+            )}
           </div>
         ))}
       </div>

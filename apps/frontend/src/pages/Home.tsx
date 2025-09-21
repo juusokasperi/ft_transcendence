@@ -4,6 +4,7 @@ import type { Variants } from "framer-motion";
 import { useAppContext } from "../context/AppContext";
 import { Link } from "react-router-dom";
 import Chat from "../components/Chat";
+import SplitButton from "../components/ui/SplitButton";
 
 const containerVariants: Variants = {
   hidden: {},

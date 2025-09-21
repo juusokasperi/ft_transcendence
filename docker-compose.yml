@@ -129,8 +129,8 @@ services:
     environment:
       PNPM_STORE_DIR: /pnpm/store
       CHOKIDAR_USEPOLLING: "true"
-    ports:
-      - "${MATCHMAKING_PORT:-4242}:4242"
+        #ports:
+      #- "${MATCHMAKING_PORT:-4242}:4242"
     volumes:
       - .:/work:cached
       - pnpm-store:/pnpm/store
