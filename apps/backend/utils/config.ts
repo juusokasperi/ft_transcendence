@@ -48,6 +48,37 @@ export const TFA_ISSUER = process.env.TFA_ISSUER || 'BabylonPong';
 export const TFA_CODE_DIGITS = Number(process.env.TFA_CODE_DIGITS || '6');
 export const ENABLE_SQLITE_METRICS = process.env.ENABLE_SQLITE_METRICS as string;
 
+type MailTransportConfig = {
+  host: string;
+  port: number;
+  secure: boolean;
+  auth: { user: string; pass: string };
+};
+
+const MAIL_HOST = process.env.MAIL_HOST;
+const MAIL_PORT = process.env.MAIL_PORT ? Number(process.env.MAIL_PORT) : undefined;
+const MAIL_SECURE_ENV = process.env.MAIL_SECURE;
+const MAIL_USER = process.env.MAIL_USER;
+const MAIL_PASS = process.env.MAIL_PASS;
+
+const MAIL_SECURE = MAIL_SECURE_ENV ? MAIL_SECURE_ENV !== 'false' : undefined;
+
+export const MAIL_FROM =
+  process.env.MAIL_FROM || MAIL_USER || '"No Reply" <no-reply@babylonpong.com>';
+
+export const MAIL_TRANSPORT_CONFIG: MailTransportConfig | null =
+  MAIL_HOST && MAIL_USER && MAIL_PASS
+    ? {
+        host: MAIL_HOST,
+        port: MAIL_PORT ?? 465,
+        secure: MAIL_SECURE ?? true,
+        auth: {
+          user: MAIL_USER,
+          pass: MAIL_PASS,
+        },
+      }
+    : null;
+
 // Export Swagger config
 export const swaggerConfig: SwaggerOptions = {
   openapi: {
