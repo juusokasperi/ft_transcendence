@@ -36,15 +36,7 @@ async function getTransporter() {
   return transporterPromise;
 }
 
-async function dispatchEmail({
-  to,
-  subject,
-  html,
-}: {
-  to: string;
-  subject: string;
-  html: string;
-}) {
+async function dispatchEmail({ to, subject, html }: { to: string; subject: string; html: string }) {
   const transporter = await getTransporter();
   const info = await transporter.sendMail({
     from: MAIL_FROM,
