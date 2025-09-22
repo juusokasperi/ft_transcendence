@@ -4,13 +4,14 @@ import toast from 'react-hot-toast';
 import { AxiosError } from 'axios';
 import { resolveAvatarUrl } from '../utils/avatarUrl';
 
-interface PublicUserWithPoints {
+interface MatchPlayerPublic {
   uuid: string;
   username: string;
   avatar: string | null;
   ranking: number;
   createdAt: string;
-  pointsAwarded: number;
+  rankingDelta: number;
+  stats?: MatchPlayerStats;
 }
 
 interface Match {
@@ -18,22 +19,46 @@ interface Match {
   team1Score: number;
   team2Score: number;
   players: {
-    team1: (PublicUserWithPoints | null)[];
-    team2: (PublicUserWithPoints | null)[];
+    team1: (MatchPlayerPublic | null)[];
+    team2: (MatchPlayerPublic | null)[];
   };
   playedAt: string;
   tournamentId: number | null;
   tournamentStage: string | null;
 }
 
+interface MatchPlayerStats {
+  uuid?: string;
+  pointsScored: number;
+  pointsConceded: number;
+  gamesWon: number;
+  gamesLost: number;
+  maxPointLead: number;
+  matchesWon?: number;
+  matchesLost?: number;
+  ranking?: number;
+}
+
 const Stats: React.FC = () => {
   const [matches, setMatches] = useState<Match[]>([]);
+  const [stats, setStats] = useState<MatchPlayerStats>();
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [hasMore, setHasMore] = useState(true);
   const [offset, setOffset] = useState(0);
   const pageSize = 5;
-  const { axios } = useAppContext();
+  const { axios, user } = useAppContext();
+  const myUuid = user?.uuid;
+
+  const fetchStats = async () => {
+    try {
+      const response = await axios.get<MatchPlayerStats>('/api/users/me/stats');
+      setStats(response.data);
+    } catch (err) {
+      const axiosErr = err as AxiosError<{ message?: string }>;
+      toast.error(String(axiosErr?.response?.data?.message));
+    }
+  };
 
   const fetchMatches = async (isLoadMore = false) => {
     try {
@@ -44,12 +69,15 @@ const Stats: React.FC = () => {
       const response = await axios.get<Match[]>(
         `/api/matches?count=${pageSize}&offset=${currentOffset}`,
       );
-      if (isLoadMore) setMatches((prev: Match[]) => [...prev, ...response.data]);
-      else setMatches(response.data);
+      const newMatches = response.data;
+      if (isLoadMore) setMatches((prev: Match[]) => [...prev, ...newMatches]);
+      else setMatches(newMatches);
 
       setHasMore(response.data.length === pageSize);
       if (isLoadMore) setOffset((prev: number) => prev + pageSize);
       else setOffset(pageSize);
+
+      // Stats are embedded in the match payload (player.stats). No extra fetch.
     } catch (err) {
       const axiosErr = err as AxiosError<{ message?: string }>;
       toast.error(String(axiosErr?.response?.data?.message));
@@ -60,6 +88,7 @@ const Stats: React.FC = () => {
   };
 
   useEffect(() => {
+    fetchStats();
     fetchMatches();
   }, []);
 
@@ -75,18 +104,24 @@ const Stats: React.FC = () => {
     });
   };
 
-  const renderTeam = (
-    team: (PublicUserWithPoints | null)[],
-    teamName: string,
-    colorClass: string,
-  ) => (
+  const rankingDeltaTotal = stats ? stats.ranking! - 1000 : 0;
+  const matchesPlayed = stats ? stats.matchesWon! + stats.matchesLost! : 0;
+  const avgDelta = matchesPlayed > 0 ? Number((rankingDeltaTotal / matchesPlayed).toFixed(2)) : 0;
+  const winRate =
+    stats && stats.gamesWon + stats.gamesLost > 0
+      ? Math.round((stats.gamesWon / (stats.gamesWon + stats.gamesLost)) * 100)
+      : 0;
+
+  const renderTeam = (team: (MatchPlayerPublic | null)[], teamName: string, colorClass: string) => (
     <div className="flex flex-col space-y-1">
       <span className="text-sm font-medium text-gray-600">{teamName}</span>
       {team.map((player, index) => {
         const avatarUrl = resolveAvatarUrl(player?.avatar, axios.defaults.baseURL);
+        const pstats = player?.stats;
+
         return (
           <div key={index} className="flex items-center space-x-2">
-            {player ? (
+            {player && player.username ? (
               <>
                 <img src={avatarUrl} alt={player.username} className="h-6 w-6 rounded-full" />
                 <div className="flex flex-col">
@@ -95,8 +130,14 @@ const Stats: React.FC = () => {
                     <span className="ml-1 text-xs text-gray-500">({player.ranking})</span>
                   </div>
                   <span className={`text-xs ${colorClass}`}>
-                    {player.pointsAwarded > 0 ? `+${player.pointsAwarded}` : player.pointsAwarded}
+                    {player.rankingDelta > 0 ? `+${player.rankingDelta}` : player.rankingDelta}
                   </span>
+                  {pstats && (
+                    <span className="text-[10px] text-gray-500">
+                      Pts {pstats.pointsScored}-{pstats.pointsConceded} • Games {pstats.gamesWon}-
+                      {pstats.gamesLost} • Lead {pstats.maxPointLead}
+                    </span>
+                  )}
                 </div>
               </>
             ) : (
@@ -137,36 +178,70 @@ const Stats: React.FC = () => {
 
   return (
     <div className="container mx-auto px-4 py-8">
-      <h1 className="mb-8 text-3xl font-bold text-purple-600">Match Statistics</h1>
-
-      {/* Matches Summary */}
-      <div className="mb-8 rounded-lg bg-white p-6 shadow-md">
-        <h2 className="mb-4 text-xl font-bold text-gray-800">Summary</h2>
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-          <div className="text-center">
-            <div className="text-2xl font-bold text-purple-600">{matches.length}</div>
-            <div className="text-gray-600">Total Matches</div>
-          </div>
-          <div className="text-center">
-            <div className="text-2xl font-bold text-green-600">
-              {
-                matches.filter((m) => m.tournamentId !== null && m.tournamentId !== undefined)
-                  .length
-              }
+      {/* Ranked Stats */}
+      {stats && (
+        <div className="mb-8 rounded-lg bg-white p-6 shadow-md">
+          <h2 className="mb-4 text-xl font-bold text-gray-800">Ranked Stats</h2>
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-3 lg:grid-cols-4">
+            <div className="text-center">
+              <div className="text-2xl font-bold text-purple-600">{matchesPlayed}</div>
+              <div className="text-gray-600">Matches Played</div>
             </div>
-            <div className="text-gray-600">Tournament Matches</div>
-          </div>
-          <div className="text-center">
-            <div className="text-2xl font-bold text-blue-600">
-              {
-                matches.filter((m) => m.tournamentId === null || m.tournamentId === undefined)
-                  .length
-              }
+            <div className="text-center">
+              <div className="text-2xl font-bold text-green-600">{stats.matchesWon}</div>
+              <div className="text-gray-600">Wins</div>
             </div>
-            <div className="text-gray-600">Casual Matches</div>
+            <div className="text-center">
+              <div className="text-2xl font-bold text-red-600">{stats.matchesLost}</div>
+              <div className="text-gray-600">Losses</div>
+            </div>
+            <div className="text-center">
+              <div className="text-2xl font-bold text-blue-600">{winRate}%</div>
+              <div className="text-gray-600">Win Rate</div>
+            </div>
+            <div className="text-center">
+              <div className={`text-2xl font-bold`}>{stats.ranking}</div>
+              <div className="text-gray-600">Rating</div>
+            </div>
+            <div className="text-center">
+              <div
+                className={`text-2xl font-bold ${rankingDeltaTotal >= 0 ? 'text-green-600' : 'text-red-600'}`}
+              >
+                {rankingDeltaTotal >= 0 ? `+${rankingDeltaTotal}` : rankingDeltaTotal}
+              </div>
+              <div className="text-gray-600">Net Rating Change</div>
+            </div>
+            <div className="text-center">
+              <div
+                className={`text-2xl font-bold ${avgDelta >= 0 ? 'text-green-600' : 'text-red-600'}`}
+              >
+                {avgDelta >= 0 ? `+${avgDelta}` : avgDelta}
+              </div>
+              <div className="text-gray-600">Avg Rating Change</div>
+            </div>
+            <div className="text-center">
+              <div className="text-2xl font-bold text-gray-800">{stats.pointsScored}</div>
+              <div className="text-gray-600">Points Scored</div>
+            </div>
+            <div className="text-center">
+              <div className="text-2xl font-bold text-gray-800">{stats.pointsConceded}</div>
+              <div className="text-gray-600">Points Conceded</div>
+            </div>
+            <div className="text-center">
+              <div className="text-2xl font-bold text-gray-800">{stats.gamesWon}</div>
+              <div className="text-gray-600">Games Won</div>
+            </div>
+            <div className="text-center">
+              <div className="text-2xl font-bold text-gray-800">{stats.gamesLost}</div>
+              <div className="text-gray-600">Games Lost</div>
+            </div>
+            <div className="text-center">
+              <div className="text-2xl font-bold text-gray-800">{stats.maxPointLead}</div>
+              <div className="text-gray-600">Best Point Lead</div>
+            </div>
           </div>
         </div>
-      </div>
+      )}
 
       {/* Matches List */}
       <div className="rounded-lg bg-white shadow-md">

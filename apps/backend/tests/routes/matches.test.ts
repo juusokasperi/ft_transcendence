@@ -23,6 +23,7 @@ vi.mock('../../db/client.ts', () => ({
 // 2) Mock the DB queries INSIDE the factory (no top-level refs!)
 vi.mock('../../db/queries/users.ts', () => {
   return {
+    getUserByUuid: vi.fn(),
     getUserStats: vi.fn(),
     updateUserRanking: vi.fn(),
     getMatchesWithPlayersForUser: vi.fn(),
@@ -240,7 +241,7 @@ describe('GET /api/matches', () => {
               avatar: 'avatar1.png',
               ranking: 1000,
               createdAt: '2024-01-01T00:00:00Z',
-              pointsAwarded: 10,
+              rankingDelta: 10,
             },
           ],
           team2: [
@@ -250,7 +251,7 @@ describe('GET /api/matches', () => {
               avatar: 'avatar2.png',
               ranking: 1800,
               createdAt: '2024-01-03T12:30:00Z',
-              pointsAwarded: 5,
+              rankingDelta: 5,
             },
           ],
         },
@@ -270,7 +271,7 @@ describe('GET /api/matches', () => {
               avatar: 'avatar1.png',
               ranking: 1000,
               createdAt: '2024-01-01T00:00:00Z',
-              pointsAwarded: 3,
+              rankingDelta: 3,
             },
           ],
           team2: [
@@ -280,7 +281,7 @@ describe('GET /api/matches', () => {
               avatar: null,
               ranking: 900,
               createdAt: '2024-01-05T12:30:00Z',
-              pointsAwarded: -5,
+              rankingDelta: -5,
             },
           ],
         },
@@ -321,7 +322,7 @@ describe('GET /api/matches', () => {
       avatar: expect.any(String),
       ranking: expect.any(Number),
       createdAt: expect.any(String),
-      pointsAwarded: expect.any(Number),
+      rankingDelta: expect.any(Number),
     });
 
     expect(responseData[1].tournamentId).toBe(1);
@@ -377,6 +378,13 @@ describe('GET /api/users/:uuid/matches', () => {
 
   it('200 returns array of { id, team1Score, team2Score, players, playedAt, tournamentId, tournamentStage }', async () => {
     const validUuid = '123e4567-e89b-12d3-a456-426614174000';
+    (usersQueries.getUserByUuid as unknown as Mock).mockReturnValueOnce({
+      uuid: validUuid,
+      username: 'Joe',
+      avatar: 'avatar1.png',
+      ranking: 1000,
+      createdAt: '2024-01-01T00:00:00Z',
+    });
     (matchesQueries.getMatchesWithPlayersForUser as unknown as Mock).mockReturnValueOnce([
       {
         id: 1,
@@ -390,7 +398,7 @@ describe('GET /api/users/:uuid/matches', () => {
               avatar: 'avatar1.png',
               ranking: 1000,
               createdAt: '2024-01-01T00:00:00Z',
-              pointsAwarded: 25,
+              rankingDelta: 25,
             },
           ],
           team2: [
@@ -400,7 +408,7 @@ describe('GET /api/users/:uuid/matches', () => {
               avatar: 'avatar2.png',
               ranking: 1800,
               createdAt: '2024-01-03T12:30:00Z',
-              pointsAwarded: -25,
+              rankingDelta: -25,
             },
           ],
         },
@@ -420,7 +428,7 @@ describe('GET /api/users/:uuid/matches', () => {
               avatar: 'avatar1.png',
               ranking: 1000,
               createdAt: '2024-01-01T00:00:00Z',
-              pointsAwarded: 30,
+              rankingDelta: 30,
             },
           ],
           team2: [
@@ -430,7 +438,7 @@ describe('GET /api/users/:uuid/matches', () => {
               avatar: null,
               ranking: 900,
               createdAt: '2024-01-05T12:30:00Z',
-              pointsAwarded: -30,
+              rankingDelta: -30,
             },
           ],
         },
@@ -471,7 +479,7 @@ describe('GET /api/users/:uuid/matches', () => {
       avatar: expect.any(String),
       ranking: expect.any(Number),
       createdAt: expect.any(String),
-      pointsAwarded: expect.any(Number),
+      rankingDelta: expect.any(Number),
     });
 
     expect(responseData[1].tournamentId).toBe(1);
