@@ -97,12 +97,12 @@ export async function userRoutes(app: FastifyInstance) {
 
         const { pass } = req.query as { pass?: string };
         const returnBody = {
-            username: u.username,
-            uuid: u.uuid,
-            avatar: u.avatar ?? null,
-            tfa: !!u.tfa,
-            ...(pass && pass === 'yes' ? { hasPass: !!u.passwordHash } : {}),
-          };
+          username: u.username,
+          uuid: u.uuid,
+          avatar: u.avatar ?? null,
+          tfa: !!u.tfa,
+          ...(pass && pass === 'yes' ? { hasPass: !!u.passwordHash } : {}),
+        };
         // return only what the FE needs to render header/profile
         return res.status(200).send(returnBody);
       } catch (err) {
@@ -228,8 +228,7 @@ export async function userRoutes(app: FastifyInstance) {
         const uuid = req.user!.uuid;
         const user = getUserByUuid(uuid);
         if (!user) return res.status(404).send({ message: 'User not found' });
-        if (user.passwordHash)
-        {
+        if (user.passwordHash) {
           if (!currentPassword) return res.status(400).send({ message: 'Invalid password' });
           const isValidPassword = await bcrypt.compare(currentPassword, user.passwordHash || '');
           if (!isValidPassword) return res.status(400).send({ message: 'Invalid password' });
