@@ -104,7 +104,7 @@ const OnlineGame: React.FC = () => {
           removeLobby(msg.lobbyId);
           break;
         default:
-          console.error('Unknown message type');
+          console.error('Unknown message type:', msg.type);
       }
     });
     clientRef.current = client;
