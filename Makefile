@@ -1,6 +1,14 @@
 # Project / compose
 NAME             = ft-transcendence-dev
-ROOT_COMPOSE     = -f docker-compose.yml
+ROOT_COMPOSE     = --profile dev -f docker-compose.yml
+
+# TODO: have separate NAME variable for prod? need to clean dev and prod
+# separately?
+# order of the `-f` options matters when docker merges compose files
+PROD_COMPOSE     = --profile prod -f docker-compose.yml -f docker-compose-prod.yml
+
+# DEV_PROFILE = --profile dev
+# PROD_PROFILE = --profile prod
 
 # No user-mapping variables needed anymore; volumes are cleaned by helper image
 # Node/pnpm strategy:
@@ -48,7 +56,7 @@ endef
 # ========================
 #  Orchestration
 # ========================
-.PHONY: all up detached elk elk-detached down down-elk clean nuke check-leftovers fclean re stop restart restart-elk restart-% builder-init builder-use builder-prune builder-rm check-leftovers-global overview-docker
+.PHONY: all up detached up-prod detached-prod elk elk-detached down down-elk clean nuke check-leftovers fclean re stop restart restart-elk restart-% builder-init builder-use builder-prune builder-rm check-leftovers-global overview-docker
 all: up
 
 up:
@@ -63,6 +71,18 @@ detached:
 	$(ensure_builder)
 	@echo ">> Starting default stack (detached)"
 	docker compose -p $(NAME) $(ROOT_COMPOSE) $(ENV_ROOT) up --build -d
+
+up-prod:
+	$(ensure_dirs)
+	$(ensure_builder)
+	@echo ">> Starting default stack (attached)"
+	docker compose -p $(NAME) $(PROD_COMPOSE) $(ENV_ROOT) up --build
+
+detached-prod:
+	$(ensure_dirs)
+	$(ensure_builder)
+	@echo ">> Starting default stack (detached)"
+	docker compose -p $(NAME) $(PROD_COMPOSE) $(ENV_ROOT) up --build -d
 
 elk:
 	$(ensure_dirs)
@@ -88,7 +108,7 @@ mon-detached:
 
 down:
 	@echo ">> Stopping & removing default stack (volumes, local images, orphans)"
-	docker compose -p $(NAME) $(ROOT_COMPOSE) $(ENV_ROOT) --profile elk --profile monitoring down -v --rmi local --remove-orphans
+	docker compose -p $(NAME) $(ROOT_COMPOSE) $(PROD_COMPOSE) $(ENV_ROOT) --profile elk --profile monitoring down -v --rmi local --remove-orphans
 
 down-elk:
 	@echo ">> Stopping & removing profile 'elk' (volumes, local images, orphans)"
@@ -240,6 +260,8 @@ overview-docker:
 help:
 	@echo "Usage:"
 	@echo "  make / make up            # Build & start default stack [uses Buildx '$(BUILDER)']"
+	@echo "  make up-prod              # Build & start prod stack [uses Buildx '$(BUILDER)']"
+	@echo "  make detached-prod        # Build & start prod stack but detached"
 	@echo "  make detached             # Same as 'up', but detached (-d)"
 	@echo "  make elk                  # Start compose profile 'elk' (attached)"
 	@echo "  make elk-detached         # Start compose profile 'elk' (detached)"
