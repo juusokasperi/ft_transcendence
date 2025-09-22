@@ -144,7 +144,14 @@ export function handleReady(
   checkLobbyReady(lobbyId, lobbies, clients);
 }
 
-export function parseLobbyInfo(lobby: Lobby): any {
+interface LobbyInfo {
+  lobbyId: string;
+  hostName: string;
+  capacity: number;
+  membersCount: number;
+}
+
+export function parseLobbyInfo(lobby: Lobby): LobbyInfo {
   return {
     lobbyId: lobby.id,
     hostName: lobby.hostName,
