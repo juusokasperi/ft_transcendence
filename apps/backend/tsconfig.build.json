@@ -2,6 +2,7 @@
   "extends": "../../.config/tsconfig.base.json",
   "compilerOptions": {
     "emitDeclarationOnly": true,
+    "allowImportingTsExtensions": true,
     "declaration": true,
     "noEmit": false,
     "module": "NodeNext",

@@ -1,0 +1,189 @@
+name: ft-transcendence-prod
+
+networks:
+  prod-private:
+    driver: bridge
+  prod-public:
+    driver: bridge
+
+volumes:
+  redis_data: {}
+  frontend_dist: {}
+
+services:
+  # Backend
+  backend:
+    build:
+      context: .
+      dockerfile: ./apps/backend/prod.dockerfile
+    image: ft-transcendence-backend-prod:latest
+    restart: unless-stopped
+    env_file:
+      - ./.env
+    networks:
+      - prod-private
+    volumes:
+      - ./apps/backend/data/sqlite:/data
+      - ./apps/backend/data/sqlite/uploads:/data/uploads
+    logging:
+      driver: gelf
+      options:
+        gelf-address: udp://localhost:12201
+
+  # Frontend builds the site and then exits
+  frontend-builder:
+    build:
+      context: .
+      dockerfile: ./apps/frontend/prod.dockerfile
+    image: ft-transcendence-frontend-builder:latest
+    volumes:
+      - .:/work:cached
+      - frontend_dist:/work/apps/frontend/dist
+    networks:
+      - prod-private
+
+  # Nginx gateway (public entrypoint)
+  nginx:
+    image: nginx:1.27-alpine
+    restart: unless-stopped
+    depends_on:
+      backend:
+        condition: service_started
+      game-server:
+        condition: service_started
+      frontend-builder:
+        condition: service_completed_successfully
+    ports:
+      - "${NGINX_PORT:-80}:80"
+    volumes:
+      - ./nginx/prod.conf:/etc/nginx/conf.d/default.conf
+      - frontend_dist:/usr/share/nginx/html:ro
+    networks:
+      - prod-public
+      - prod-private
+    logging:
+      driver: gelf
+      options:
+        gelf-address: udp://localhost:12201
+  #
+  # # Matchmaking service
+  # matchmaking-service:
+  #   build:
+  #     context: .
+  #     dockerfile: ./apps/matchmaking/Dockerfile
+  #   image: ft-transcendence-matchmaking:latest
+  #   restart: unless-stopped
+  #   env_file:
+  #     - ./.env
+  #   networks:
+  #     - prod-private
+  #   depends_on:
+  #     - allocator
+  #   logging:
+  #     driver: gelf
+  #     options:
+  #       gelf-address: udp://localhost:12201
+  #
+  # Game server(s)
+  # TODO: depends on Redis?
+  game-server:
+    build:
+      context: .
+      dockerfile: ./apps/game-server/prod.dockerfile
+    image: ft-transcendence-game-server-prod:latest
+    restart: unless-stopped
+    env_file:
+      - ./.env
+    networks:
+      - prod-private
+    logging:
+      driver: gelf
+      options:
+        gelf-address: udp://localhost:12201
+
+  # game-server-2:
+  #   image: ft-transcendence-game-server:latest
+  #   restart: unless-stopped
+  #   env_file:
+  #     - ./.env
+  #   networks:
+  #     - prod-private
+  #   logging:
+  #     driver: gelf
+  #     options:
+  #       gelf-address: udp://localhost:12201
+  #
+  # # Allocator
+  # allocator:
+  #   build:
+  #     context: .
+  #     dockerfile: ./apps/allocator/Dockerfile
+  #   image: ft-transcendence-allocator:latest
+  #   restart: unless-stopped
+  #   env_file:
+  #     - ./.env
+  #   environment:
+  #     REDIS_URL: redis://redis:6379
+  #   networks:
+  #     - prod-private
+  #   depends_on:
+  #     - redis
+  #   logging:
+  #     driver: gelf
+  #     options:
+  #       gelf-address: udp://localhost:12201
+  #
+  # Redis
+  redis:
+    image: redis:8.2.1-alpine
+    restart: unless-stopped
+    volumes:
+      - redis_data:/data
+    networks:
+      - prod-private
+    logging:
+      driver: gelf
+      options:
+        gelf-address: udp://localhost:12201
+
+  # # Scorer
+  # scorer:
+  #   build:
+  #     context: .
+  #     dockerfile: ./apps/scorer/Dockerfile
+  #   image: ft-transcendence-scorer:latest
+  #   restart: unless-stopped
+  #   env_file:
+  #     - ./.env
+  #   environment:
+  #     REDIS_URL: redis://redis:6379
+  #   networks:
+  #     - prod-private
+  #   depends_on:
+  #     - redis
+  #     - game-server
+  #     - game-server-2
+  #   logging:
+  #     driver: gelf
+  #     options:
+  #       gelf-address: udp://localhost:12201
+  #
+  # # Game Gateway
+  # game-gateway:
+  #   build:
+  #     context: .
+  #     dockerfile: ./apps/game-gateway/Dockerfile
+  #   image: ft-transcendence-game-gateway:latest
+  #   restart: unless-stopped
+  #   env_file:
+  #     - ./.env
+  #   networks:
+  #     - prod-private
+  #   ports:
+  #     - "55550:55550"
+  #   depends_on:
+  #     - redis
+  #   logging:
+  #     driver: gelf
+  #     options:
+  #       gelf-address: udp://localhost:12201

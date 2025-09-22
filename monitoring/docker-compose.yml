@@ -78,12 +78,16 @@ services:
       - '--disable_metrics=cpu_topology,disk,network,memory,memory_numa,tcp,udp,percpu,sched,process,hugetlb,referenced_memory,resctrl,cpuset,advtcp'
       - '--docker_only=true'
       - '--housekeeping_interval=30s'
+    cap_add:
+      - SYS_PTRACE
     ports:
       - '8090:8080'
     volumes:
       - '/:/rootfs:ro'
       - '/var/run:/var/run:ro'
       - '/sys:/sys:ro'
+      - '/sys/fs/cgroup:/sys/fs/cgroup:ro'
       - '/var/lib/docker/:/var/lib/docker:ro'
+      - '/var/run/docker.sock:/var/run/docker.sock:ro'
     networks:
       - devnet
