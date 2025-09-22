@@ -20,14 +20,15 @@ const LobbyList: React.FC<LobbyListProps> = ({ lobbies, onJoin }) => {
           <li key={lobby.lobbyId} className="flex items-center gap-2">
             <span className="text-white/60">{lobby.hostName}'s lobby</span>
             {lobby.membersCount < lobby.capacity ? (
-            <button
-              onClick={() => onJoin(lobby.lobbyId)}
-              className="ml-2 rounded border border-blue-400 px-2 py-1 text-xs text-blue-300 hover:bg-blue-400 hover:text-black"
-            >
-              Join
-            </button>)
-            : <>Full</>
-            }
+              <button
+                onClick={() => onJoin(lobby.lobbyId)}
+                className="ml-2 rounded border border-blue-400 px-2 py-1 text-xs text-blue-300 hover:bg-blue-400 hover:text-black"
+              >
+                Join
+              </button>
+            ) : (
+              <>Full</>
+            )}
           </li>
         ))}
       </ul>
@@ -84,7 +85,7 @@ const OnlineGame: React.FC = () => {
           break;
         case 'lobbyUpdated':
           setLobbies((prev: Lobby[]) => {
-            const idx = prev.findIndex(l => l.lobbyId === msg.lobby.lobbyId);
+            const idx = prev.findIndex((l) => l.lobbyId === msg.lobby.lobbyId);
             if (idx !== -1) {
               const updated = [...prev];
               updated[idx] = { ...updated[idx], ...msg.lobby };
@@ -151,17 +152,16 @@ const OnlineGame: React.FC = () => {
   }, [serverUrl, matchId, seat]);
 
   const removeLobby = (lobbyId: string) => {
-    setLobbies((prev: Lobby[]) => prev.filter(l => l.lobbyId !== lobbyId));
+    setLobbies((prev: Lobby[]) => prev.filter((l) => l.lobbyId !== lobbyId));
   };
 
   const getLobbyPlayerCount = (lobbyId: string) => {
-    const lobby = lobbies.find(l => l.lobbyId === lobbyId);
+    const lobby = lobbies.find((l) => l.lobbyId === lobbyId);
     return lobby ? `${lobby.membersCount}/${lobby.capacity}` : 'N/A';
   };
 
   const handleCreateLobby = () => {
-    if (user && user.username)
-      clientRef.current?.createLobby(user.username)
+    if (user && user.username) clientRef.current?.createLobby(user.username);
   };
   const handleReady = () => {
     if (lobbyId) {
@@ -272,9 +272,7 @@ const OnlineGame: React.FC = () => {
                 </p>
                 <p>
                   <span className="text-white/60">Players: </span>
-                  <span className="font-mono">
-                    {getLobbyPlayerCount(lobbyId)}
-                  </span>
+                  <span className="font-mono">{getLobbyPlayerCount(lobbyId)}</span>
                 </p>
                 <button
                   onClick={handleReady}

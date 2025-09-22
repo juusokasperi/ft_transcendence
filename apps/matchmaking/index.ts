@@ -3,7 +3,13 @@ import { v4 as uuid } from 'uuid';
 import { PORT } from './utils/config.ts';
 import type { ClientInfo, Lobby, MatchmakingClientMessage } from './types/types.ts';
 import { log } from './utils/log.ts';
-import { handleCreateLobby, handleInvite, handleAcceptInvite, handleDeclineInvite, handleReady } from './utils/handlers.ts';
+import {
+  handleCreateLobby,
+  handleInvite,
+  handleAcceptInvite,
+  handleDeclineInvite,
+  handleReady,
+} from './utils/handlers.ts';
 import { broadcastLobbies } from './utils/broadcast.ts';
 import { removeClient, cleanupLobby } from './utils/cleanup.ts';
 
@@ -47,7 +53,9 @@ wss.on('connection', (socket: WebSocket) => {
         handleReady(data, client, lobbies, clients);
         break;
       default:
-        client.socket.send(JSON.stringify({ type: 'error', message: 'Unknown message from client' }));
+        client.socket.send(
+          JSON.stringify({ type: 'error', message: 'Unknown message from client' }),
+        );
     }
   });
 

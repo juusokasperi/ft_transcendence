@@ -5,7 +5,11 @@ import { broadcastToAll, broadcast } from './broadcast.ts';
 import { v4 as uuid } from 'uuid';
 import { cleanupLobby, removeClientFromLobby } from './cleanup.ts';
 
-export function checkLobbyReady(lobbyId: string, lobbies: Map<string, Lobby>, clients: Map<string, ClientInfo>) {
+export function checkLobbyReady(
+  lobbyId: string,
+  lobbies: Map<string, Lobby>,
+  clients: Map<string, ClientInfo>,
+) {
   const lobby = lobbies.get(lobbyId);
   if (!lobby) return;
   const members = Array.from(lobby.members);
@@ -26,24 +30,39 @@ export function checkLobbyReady(lobbyId: string, lobbies: Map<string, Lobby>, cl
     });
     cleanupLobby(lobbyId, lobbies, clients);
   }
-};
+}
 
-export function handleCreateLobby(data: MatchmakingClientMessage, client: ClientInfo, lobbies: Map<string, Lobby>, clients: Map<string, ClientInfo>) {
+export function handleCreateLobby(
+  data: MatchmakingClientMessage,
+  client: ClientInfo,
+  lobbies: Map<string, Lobby>,
+  clients: Map<string, ClientInfo>,
+) {
   if (data.type !== 'createLobby') return;
   const { username } = data;
   client.username = username;
   const lobbyId = uuid();
   const timeout = setTimeout(() => cleanupLobby(lobbyId, lobbies, clients), LOBBY_TTL_MS);
-  lobbies.set(lobbyId, { id: lobbyId, members: new Set([client.id]), timeout, hostName: client.username, capacity: LOBBY_SIZE });
+  lobbies.set(lobbyId, {
+    id: lobbyId,
+    members: new Set([client.id]),
+    timeout,
+    hostName: client.username,
+    capacity: LOBBY_SIZE,
+  });
   log(`Lobby created: ${lobbyId} by ${client.id} / ${client.username}`);
   client.lobbyId = lobbyId;
   client.ready = false;
   client.socket.send(JSON.stringify({ type: 'lobbyCreated', lobbyId }));
   const lobby = lobbies.get(lobbyId);
-  broadcastToAll({type: 'lobbyAdded', lobby: parseLobbyInfo(lobby!) }, clients);
-};
+  broadcastToAll({ type: 'lobbyAdded', lobby: parseLobbyInfo(lobby!) }, clients);
+}
 
-export function handleInvite(data: MatchmakingClientMessage, client: ClientInfo, clients: Map<string, ClientInfo>) {
+export function handleInvite(
+  data: MatchmakingClientMessage,
+  client: ClientInfo,
+  clients: Map<string, ClientInfo>,
+) {
   if (data.type !== 'invite') return;
   const { targetId, lobbyId } = data;
   if (!lobbyId || !targetId) return;
@@ -51,11 +70,16 @@ export function handleInvite(data: MatchmakingClientMessage, client: ClientInfo,
   const target = clients.get(targetId);
   if (target) {
     log(`Invite: ${client.id} invited ${targetId} to lobby ${lobbyId}`);
-  target.socket.send(JSON.stringify({ type: 'invited', lobbyId, from: client.id }));
+    target.socket.send(JSON.stringify({ type: 'invited', lobbyId, from: client.id }));
   }
-};
+}
 
-export function handleAcceptInvite(data: MatchmakingClientMessage, client: ClientInfo, lobbies: Map<string, Lobby>, clients: Map<string, ClientInfo>) {
+export function handleAcceptInvite(
+  data: MatchmakingClientMessage,
+  client: ClientInfo,
+  lobbies: Map<string, Lobby>,
+  clients: Map<string, ClientInfo>,
+) {
   if (data.type !== 'acceptInvite') return;
   const { lobbyId } = data;
   if (!lobbyId) return;
@@ -76,9 +100,14 @@ export function handleAcceptInvite(data: MatchmakingClientMessage, client: Clien
   log(`Invite accepted: ${client.id} joined lobby ${lobbyId}`);
   broadcast(lobbyId, { type: 'inviteAccepted', memberId: client.id }, lobbies, clients);
   broadcastToAll({ type: 'lobbyUpdated', lobby: parseLobbyInfo(lobby) }, clients);
-};
+}
 
-export function handleDeclineInvite(data: MatchmakingClientMessage, client: ClientInfo, lobbies: Map<string, Lobby>, clients: Map<string, ClientInfo>) {
+export function handleDeclineInvite(
+  data: MatchmakingClientMessage,
+  client: ClientInfo,
+  lobbies: Map<string, Lobby>,
+  clients: Map<string, ClientInfo>,
+) {
   if (data.type !== 'declineInvite') return;
   const { lobbyId } = data;
   const lobby = lobbies.get(lobbyId);
@@ -88,9 +117,14 @@ export function handleDeclineInvite(data: MatchmakingClientMessage, client: Clie
   }
   log(`Invite declined: ${client.id} declined lobby ${lobbyId}`);
   broadcast(lobbyId, { type: 'inviteDeclined', memberId: client.id }, lobbies, clients);
-};
+}
 
-export function handleReady(data: MatchmakingClientMessage, client: ClientInfo, lobbies: Map<string, Lobby>, clients: Map<string, ClientInfo>) {
+export function handleReady(
+  data: MatchmakingClientMessage,
+  client: ClientInfo,
+  lobbies: Map<string, Lobby>,
+  clients: Map<string, ClientInfo>,
+) {
   if (data.type !== 'ready') return;
   const { lobbyId, ready } = data;
   if (client.lobbyId !== lobbyId) {
@@ -101,9 +135,14 @@ export function handleReady(data: MatchmakingClientMessage, client: ClientInfo, 
   }
   client.ready = !!ready;
   log(`Ready state: ${client.id} in lobby ${lobbyId} is now ${!!ready}`);
-  broadcast(lobbyId, { type: 'memberReady', memberId: client.id, ready: !!ready }, lobbies, clients);
+  broadcast(
+    lobbyId,
+    { type: 'memberReady', memberId: client.id, ready: !!ready },
+    lobbies,
+    clients,
+  );
   checkLobbyReady(lobbyId, lobbies, clients);
-};
+}
 
 export function parseLobbyInfo(lobby: Lobby): any {
   return {
@@ -112,5 +151,4 @@ export function parseLobbyInfo(lobby: Lobby): any {
     capacity: lobby.capacity,
     membersCount: lobby.members.size,
   };
-};
-
+}
