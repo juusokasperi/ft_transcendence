@@ -2,11 +2,46 @@ import React, { useEffect, useRef, useState } from 'react';
 import { createMatchmakingClient, type MatchmakingMessage } from '../../services/matchmaking';
 import type { PlayerSeat } from '@pong/render';
 import { useLayoutEffect } from 'react';
+import { useAppContext } from '../../context/AppContext';
+import type { Lobby } from '../../services/matchmaking';
+
+interface LobbyListProps {
+  lobbies: Lobby[];
+  onJoin: (lobbyId: string) => void;
+}
+
+const LobbyList: React.FC<LobbyListProps> = ({ lobbies, onJoin }) => {
+  console.log('Lobbies len:', lobbies.length);
+  console.log(lobbies);
+  if (lobbies.length === 0) return null;
+  return (
+    <div className="mb-4">
+      <h2 className="mb-2 text-lg font-semibold">Open Lobbies</h2>
+      <ul className="space-y-1">
+        {lobbies.map((lobby) => (
+          <li key={lobby.lobbyId} className="flex items-center gap-2">
+            <span className="text-white/60">{lobby.hostName}'s lobby</span>
+            {lobby.membersCount < lobby.capacity ? (
+            <button
+              onClick={() => onJoin(lobby.lobbyId)}
+              className="ml-2 rounded border border-blue-400 px-2 py-1 text-xs text-blue-300 hover:bg-blue-400 hover:text-black"
+            >
+              Join
+            </button>)
+            : <>Full</>
+            }
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+};
 
 const OnlineGame: React.FC = () => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const appRef = useRef<{ destroy(): void } | null>(null);
   const clientRef = useRef<ReturnType<typeof createMatchmakingClient> | null>(null);
+  const { user } = useAppContext();
 
   const [clientId, setClientId] = useState('');
   const [lobbyId, setLobbyId] = useState('');
@@ -19,6 +54,7 @@ const OnlineGame: React.FC = () => {
   const [seat, setSeat] = useState<PlayerSeat>('P1');
   const [joinLobbyId, setJoinLobbyId] = useState('');
   const [ready, setReady] = useState(false);
+  const [lobbies, setLobbies] = useState<Lobby[]>([]);
 
   useEffect(() => {
     const client = createMatchmakingClient((msg: MatchmakingMessage) => {
@@ -37,6 +73,13 @@ const OnlineGame: React.FC = () => {
           setSeat(msg.seat);
           setStatus('starting');
           client.socket.close();
+          break;
+        case 'lobbyAdded':
+
+          setLobbies((prev: Match[]) => [...prev, ...newMatches]);
+          setLobbies()
+        case 'lobbyList':
+          setLobbies(msg.lobbies);
           break;
       }
     });
@@ -89,7 +132,7 @@ const OnlineGame: React.FC = () => {
     };
   }, [serverUrl, matchId, seat]);
 
-  const handleCreateLobby = () => clientRef.current?.createLobby();
+  const handleCreateLobby = () => clientRef.current?.createLobby(user!.username);
   const handleReady = () => {
     if (lobbyId) {
       clientRef.current?.setReady(lobbyId, true);
@@ -224,6 +267,13 @@ const OnlineGame: React.FC = () => {
                     Join
                   </button>
                 </div>
+                <LobbyList
+                  lobbies={lobbies}
+                  onJoin={(lobbyId) => {
+                    setJoinLobbyId(lobbyId);
+                    handleJoinLobby();
+                  }}
+                />
               </div>
             )}
           </div>

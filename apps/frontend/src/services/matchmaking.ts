@@ -1,5 +1,14 @@
+export type Lobby = {
+  lobbyId: string;
+  hostName: string;
+  capacity: number;
+  membersCount: number;
+};
+
 export type MatchmakingMessage =
   | { type: 'connected'; clientId: string }
+  | { type: 'lobbyList'; lobbies: Lobby[] }
+  | { type: 'lobbyAdded'; lobby: Lobby}
   | { type: 'lobbyCreated'; lobbyId: string }
   | { type: 'invited'; lobbyId: string; from: string }
   | { type: 'inviteAccepted'; memberId: string }
@@ -28,8 +37,8 @@ export function createMatchmakingClient(onMessage: (msg: MatchmakingMessage) => 
 
   return {
     socket,
-    createLobby() {
-      socket.send(JSON.stringify({ type: 'createLobby' }));
+    createLobby(username: string) {
+      socket.send(JSON.stringify({ type: 'createLobby', username }));
     },
     invite(targetId: string, lobbyId: string) {
       socket.send(JSON.stringify({ type: 'invite', targetId, lobbyId }));

@@ -8,6 +8,7 @@ dotenv.config();
 interface ClientInfo {
   id: string;
   socket: WebSocket;
+  username: string;
   lobbyId?: string;
   ready: boolean;
 }
@@ -23,6 +24,7 @@ interface Lobby {
 const PORT = Number(process.env.MATCHMAKING_PORT || 4242);
 const GAME_SERVER_URL = process.env.GAME_SERVER_URL || 'ws://localhost:55553';
 const LOBBY_TTL_MS = 5 * 60 * 1000; // 5 minutes. We need a timeout to avoid stale lobbies.
+const LOBBY_SIZE = 2;
 
 const wss = new WebSocketServer({ port: PORT });
 const clients = new Map<string, ClientInfo>();
@@ -77,8 +79,7 @@ function parseLobbyInfo(lobby: Lobby): any {
   };
 };
 
-// If clientTo is passed, broadcast only to that client, otherwise broadcast to all connected clients
-function broadcastLobbies(clientTo?: ClientInfo) {
+function broadcastLobbies(clientTo: ClientInfo) {
   const openLobbies = Array.from(lobbies.values())
     .map(lobby => parseLobbyInfo(lobby));
   const msg = JSON.stringify({ type: 'lobbyList', lobbies: openLobbies });
@@ -136,12 +137,83 @@ function log(...args: any[]) {
   console.log('[MM]', ...args);
 }
 
+function handleCreateLobby(data: any, client: ClientInfo) {
+  const lobbyId = uuid();
+  const timeout = setTimeout(() => cleanupLobby(lobbyId), LOBBY_TTL_MS);
+  lobbies.set(lobbyId, { id: lobbyId, members: new Set([client.id]), timeout, hostName: client.username, capacity: LOBBY_SIZE });
+  log(`Lobby created: ${lobbyId} by ${client.id} / ${client.username}`);
+  client.lobbyId = lobbyId;
+  client.ready = false;
+  client.socket.send(JSON.stringify({ type: 'lobbyCreated', lobbyId }));
+  const lobby = lobbies.get(lobbyId)
+  broadcastToAll({type: 'lobbyAdded', ...parseLobbyInfo(lobby!) });
+};
+
+function handleInvite(data: any, client: ClientInfo) {
+  const { targetId, lobbyId } = data;
+  if (!lobbyId || !targetId) return;
+  if (!client.lobbyId || lobbyId != client.lobbyId) return;
+  const target = clients.get(targetId);
+  if (target) {
+    log(`Invite: ${client.id} invited ${targetId} to lobby ${lobbyId}`);
+  target.socket.send(JSON.stringify({ type: 'invited', lobbyId, from: client.id }));
+  }
+};
+
+function handleAcceptInvite(data: any, client: ClientInfo) {
+  const { lobbyId } = data;
+  if (!lobbyId) return;
+  const lobby = lobbies.get(lobbyId);
+  if (!lobby) {
+    log(`AcceptInvite failed: lobby ${lobbyId} not found for client ${client.id}`);
+    return;
+  }
+  if (lobby.capacity <= lobby.members.size) {
+    log(`AcceptInvite failed: lobby ${lobbyId} is full`);
+    client.socket.send(JSON.stringify({ type: 'error', message: 'Lobby is full' }));
+    return;
+  }
+  // Remove client from a lobby if they were in one before
+  removeClientFromLobby(client.id);
+  lobby.members.add(client.id);
+  client.lobbyId = lobbyId;
+  client.ready = false;
+  log(`Invite accepted: ${id} joined lobby ${lobbyId}`);
+  broadcast(lobbyId, { type: 'inviteAccepted', memberId: client.id });
+  //broadcastToAll({ type: 'lobbyUpdated', lobby });
+};
+
+function handleDeclineInvite(data: any, client: ClientInfo) {
+  const { lobbyId } = data;
+  const lobby = lobbies.get(lobbyId);
+  if (!lobby) {
+    log(`DeclineInvite failed: lobby ${lobbyId} not found for client ${client.id}`);
+    return;
+  }
+  log(`Invite declined: ${client.id} declined lobby ${lobbyId}`);
+  broadcast(lobbyId, { type: 'inviteDeclined', memberId: client.id });
+};
+
+function handleReady(data: any, client: ClientInfo) {
+  const { lobbyId, ready } = data;
+  if (client.lobbyId !== lobbyId) {
+    log(
+      `Ready failed: client ${client.id} tried to set ready for lobby ${lobbyId}, but is in lobby ${client.lobbyId}`,
+    );
+    return;
+  }
+  client.ready = !!ready;
+  log(`Ready state: ${client.id} in lobby ${lobbyId} is now ${!!ready}`);
+  broadcast(lobbyId, { type: 'memberReady', memberId: client.id, ready: !!ready });
+  checkLobbyReady(lobbyId);
+}
+
 console.log(`Matchmaking WebSocket server listening on ${PORT}`);
 log(`Server started on port ${PORT}`);
 
 wss.on('connection', (socket: WebSocket) => {
   const id = uuid();
-  const client: ClientInfo = { id, socket, ready: false };
+  const client: ClientInfo = { id, socket, ready: false, username: 'Unknown user' };
   clients.set(id, client);
   log(`Client connected: ${id}`);
   socket.send(JSON.stringify({ type: 'connected', clientId: id }));
@@ -154,69 +226,30 @@ wss.on('connection', (socket: WebSocket) => {
       log(`Invalid message from ${id}:`, raw.toString());
       return;
     }
-    const { type } = data;
-    // Implement switch-case for message types later
-    if (type === 'createLobby') {
-      const { username } = data;
-      const lobbyId = uuid();
-      const timeout = setTimeout(() => cleanupLobby(lobbyId), LOBBY_TTL_MS);
-      // Define lobbySize (scalability for multiplayer possibility)
-      lobbies.set(lobbyId, { id: lobbyId, members: new Set([id]), timeout, hostName: username, capacity: 2 });
-      client.lobbyId = lobbyId;
-      client.ready = false;
-      log(`Lobby created: ${lobbyId} by ${id} / ${username}`);
-      socket.send(JSON.stringify({ type: 'lobbyCreated', lobbyId }));
-      const lobby = lobbies.get(lobbyId);
-      broadcastToAll({type: 'lobbyAdded', ...parseLobbyInfo(lobby) });
-    } else if (type === 'invite') {
-      const { targetId, lobbyId } = data;
-      const target = clients.get(targetId);
-      if (target) {
-        log(`Invite: ${id} invited ${targetId} to lobby ${lobbyId}`);
-        target.socket.send(JSON.stringify({ type: 'invited', lobbyId, from: id }));
-      }
-    } else if (type === 'acceptInvite') {
-      const { lobbyId } = data;
-      const lobby = lobbies.get(lobbyId);
-      if (!lobby) {
-        log(`AcceptInvite failed: lobby ${lobbyId} not found for client ${id}`);
-        return;
-      }
-      if (lobby.capacity <= lobby.members.size) {
-        log(`AcceptInvite failed: lobby ${lobbyId} is full`);
-        socket.send(JSON.stringify({ type: 'error', message: 'Lobby is full' }));
-        return;
-      }
-      // Remove client from a lobby if they were in one before
-      removeClientFromLobby(id);
-
-      lobby.members.add(id);
-      client.lobbyId = lobbyId;
-      client.ready = false;
-      log(`Invite accepted: ${id} joined lobby ${lobbyId}`);
-      broadcast(lobbyId, { type: 'inviteAccepted', memberId: id });
-    } else if (type === 'declineInvite') {
-      const { lobbyId } = data;
-      const lobby = lobbies.get(lobbyId);
-      if (!lobby) {
-        log(`DeclineInvite failed: lobby ${lobbyId} not found for client ${id}`);
-        return;
-      }
-      log(`Invite declined: ${id} declined lobby ${lobbyId}`);
-      broadcast(lobbyId, { type: 'inviteDeclined', memberId: id });
-    } else if (type === 'ready') {
-      const { lobbyId, ready } = data;
-      if (client.lobbyId !== lobbyId) {
-        log(
-          `Ready failed: client ${id} tried to set ready for lobby ${lobbyId}, but is in lobby ${client.lobbyId}`,
-        );
-        return;
-      }
-      client.ready = !!ready;
-      log(`Ready state: ${id} in lobby ${lobbyId} is now ${!!ready}`);
-      broadcast(lobbyId, { type: 'memberReady', memberId: id, ready: !!ready });
-      checkLobbyReady(lobbyId);
+    const { type, username } = data;
+    if (username) client.username = username;
+    switch (type) {
+      case 'createLobby':
+        handleCreateLobby(data, client);
+        break;
+      case 'invite':
+        handleInvite(data, client);
+        break;
+      case 'acceptInvite':
+        handleAcceptInvite(data, client);
+        break;
+      case 'declineInvite':
+        handleDeclineInvite(data, client);
+        break;
+      case 'ready':
+        handleReady(data, client);
+        break;
+      default:
+        client.socket.send(JSON.stringify({ type: 'error', message: 'Unknown message from client' }));
     }
+    // Implement switch-case for message types later
+   // } else if (type === 'ready') {
+    // }
   });
 
   socket.on('close', () => {
