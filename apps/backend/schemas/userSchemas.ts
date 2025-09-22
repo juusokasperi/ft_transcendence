@@ -76,6 +76,16 @@ export const getMeSchema = {
   tags: ['User'],
   summary: 'Get the currently authenticated user',
   security: USER_ROUTE_SECURITY,
+  querystring: {
+    type: 'object',
+    properties: {
+      pass: {
+        type: 'string',
+        enum: ['yes', 'no'],
+        description: 'Return boolean whether user has set up a password',
+      },
+    },
+  },
   response: {
     200: {
       type: 'object',
@@ -84,6 +94,7 @@ export const getMeSchema = {
         uuid: UuidSchema,
         avatar: { anyOf: [{ type: 'string' }, { type: 'null' }] },
         tfa: { type: 'boolean' },
+        hasPass: { type: 'boolean' },
       },
     },
     401: ErrorResponseSchema,
@@ -159,7 +170,7 @@ export const updatePassSchema = {
       newPassword: PassSchema,
     },
     additionalProperties: false,
-    required: ['currentPassword', 'newPassword'],
+    required: ['newPassword'],
   },
   response: {
     200: SuccessResponseSchema,
