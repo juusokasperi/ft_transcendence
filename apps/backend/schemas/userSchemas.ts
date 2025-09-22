@@ -67,7 +67,7 @@ export const getUserSchema = {
   },
 };
 
-const USER_ROUTE_SECURITY = [
+export const USER_ROUTE_SECURITY = [
   { bearerAuth: [] as readonly string[] } as Record<string, readonly string[]>,
   { tokenAuth: [] as readonly string[] } as Record<string, readonly string[]>,
 ] as ReadonlyArray<Record<string, readonly string[]>>;

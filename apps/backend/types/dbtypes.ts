@@ -33,14 +33,20 @@ export interface MatchDb {
   tournament_stage: string | null;
 }
 
-export interface MatchPlayerDb {
-  team_number: number;
-  points_awarded: number;
+export interface MatchPlayer {
+  teamNumber: number;
+  rankingDelta: number;
   uuid: string | null;
   username: string | null;
   avatar: string | null;
   ranking: number | null;
-  created_at: string | null;
+  createdAt: string | null;
+  // Optional stats from LEFT JOIN MatchPlayerStats
+  pointsScored?: number | null;
+  pointsConceded?: number | null;
+  gamesWon?: number | null;
+  gamesLost?: number | null;
+  maxPointLead?: number | null;
 }
 
 export interface MatchWithPlayersForUserDb {
@@ -49,7 +55,7 @@ export interface MatchWithPlayersForUserDb {
   team_2_score: number;
   tournament_id: number | null;
   tournament_stage: string | null;
-  points_awarded: number;
+  ranking_delta: number;
   match_created_at: string;
   team_number: number;
   uuid: string | null;
@@ -57,6 +63,12 @@ export interface MatchWithPlayersForUserDb {
   avatar: string | null;
   ranking: number | null;
   user_created_at: string | null;
+  // Optional stats from LEFT JOIN MatchPlayerStats
+  points_scored?: number | null;
+  points_conceded?: number | null;
+  games_won?: number | null;
+  games_lost?: number | null;
+  max_point_lead?: number | null;
 }
 
 export interface PublicUserDb {

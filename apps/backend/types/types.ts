@@ -47,17 +47,34 @@ export interface PublicUser {
   createdAt: string;
 }
 
-export interface PublicUserWithPoints extends PublicUser {
-  pointsAwarded: number;
+export interface MatchPlayerStats {
+  pointsScored: number;
+  pointsConceded: number;
+  gamesWon: number;
+  gamesLost: number;
+  maxPointLead: number;
 }
 
+export interface MatchPlayerStatsMe extends MatchPlayerStats {
+  matchesWon: number;
+  matchesLost: number;
+  ranking: number;
+}
+
+// Public user info within the context of a match.
+export interface MatchPlayerPublic extends PublicUser {
+  rankingDelta: number; // rating change from this match
+  stats?: MatchPlayerStats; // optional per-player match stats
+}
+
+// Per-match, per-player statistics. Does not include ELO changes (see rankingDelta above).
 export interface MatchWithPlayers {
   id: number;
   team1Score: number;
   team2Score: number;
   players: {
-    team1: (PublicUserWithPoints | null)[];
-    team2: (PublicUserWithPoints | null)[];
+    team1: (MatchPlayerPublic | null)[];
+    team2: (MatchPlayerPublic | null)[];
   };
   playedAt: string;
   tournamentId: number | null;

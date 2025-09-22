@@ -119,11 +119,11 @@ If your business rule is that match player user fields must always be present, c
   const u = db.prepare('SELECT username, avatar, ranking FROM Users WHERE uuid = ?').get(uuid);
   db.prepare(
     `
-    INSERT INTO MatchPlayers (match_id, user_uuid, team_number, points_awarded,
+    INSERT INTO MatchPlayers (match_id, user_uuid, team_number, ranking_delta,
                               username_at_match, avatar_at_match, ranking_at_match)
     VALUES (?, ?, ?, ?, ?, ?, ?)
   `,
-  ).run(matchId, uuid, team, points, u.username, u.avatar, u.ranking);
+  ).run(matchId, uuid, team, delta, u.username, u.avatar, u.ranking);
   ```
 
 Trade‑offs
