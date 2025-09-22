@@ -8,7 +8,11 @@ export function getFriends(user1Uuid: string): UserStats[] {
       .prepare(
         `
 		SELECT
-			u.username, u.uuid, u.avatar, u.ranking, u.created_at,
+			u.username,
+      u.uuid,
+      u.avatar,
+      u.ranking,
+      u.created_at,
 			COUNT(m.id) as total_matches,
 			COUNT(CASE
 				WHEN (mp.team_number = 1 AND m.team_1_score > m.team_2_score)
@@ -60,7 +64,7 @@ export function getPendingFriendRequestsReceived(user1Uuid: string): PublicUser[
       .prepare(
         `
 		SELECT
-			u.username, u.uuid, u.avatar, u.ranking
+			u.username, u.uuid, u.avatar, u.ranking, u.created_at
 			FROM Friends f
 			JOIN Users u on u.uuid = f.friend_1_uuid
 			WHERE f.friend_2_uuid = ? AND f.accepted = false
@@ -87,7 +91,7 @@ export function getPendingFriendRequestsSent(user1Uuid: string): PublicUser[] {
       .prepare(
         `
 		SELECT
-			u.username, u.uuid, u.avatar, u.ranking
+			u.username, u.uuid, u.avatar, u.ranking, u.created_at
 			FROM Friends f
 			JOIN Users u on u.uuid = f.friend_2_uuid
 			WHERE f.friend_1_uuid = ? AND f.accepted = false

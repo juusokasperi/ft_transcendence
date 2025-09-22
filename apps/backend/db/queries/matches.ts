@@ -1,6 +1,6 @@
 import db from '../client.ts';
-import type { MatchWithPlayers, PublicUserWithPoints } from '../../types/types.ts';
-import type { MatchDb, MatchPlayerDb, MatchWithPlayersForUserDb } from '../../types/dbtypes.ts';
+import type { MatchWithPlayers, MatchPlayerPublic } from '../../types/types.ts';
+import type { MatchDb, MatchPlayer, MatchWithPlayersForUserDb } from '../../types/dbtypes.ts';
 
 function addMatchHelper(
   team1Score: number,
@@ -27,17 +27,17 @@ function addMatchPlayerHelper(
   matchId: number,
   uuid: string,
   team: number,
-  pointsAwarded: number,
+  rankingDelta: number,
 ): number | null {
   try {
     const result = db
       .prepare(
         `
-			INSERT INTO MatchPlayers (match_id, user_uuid, team_number, points_awarded)
+			INSERT INTO MatchPlayers (match_id, user_uuid, team_number, ranking_delta)
 			VALUES (?, ?, ?, ?)
 			`,
       )
-      .run(matchId, uuid, team, pointsAwarded);
+      .run(matchId, uuid, team, rankingDelta);
     return result.lastInsertRowid as number;
   } catch (error) {
     return null;
@@ -49,8 +49,8 @@ export function addMatch(
   team2Score: number,
   team1Player: string,
   team2Player: string,
-  team1Points: number,
-  team2Points: number,
+  team1RankingDelta: number,
+  team2RankingDelta: number,
   tournamentId?: number,
   tournamentStage?: string,
 ): number | null;
@@ -59,8 +59,8 @@ export function addMatch(
   team2Score: number,
   team1Players: string[],
   team2Players: string[],
-  team1Points: number,
-  team2Points: number,
+  team1RankingDelta: number,
+  team2RankingDelta: number,
   tournamentId?: number,
   tournamentStage?: string,
 ): number | null;
@@ -69,8 +69,8 @@ export function addMatch(
   team2Score: number,
   team1: string | string[],
   team2: string | string[],
-  team1Points: number,
-  team2Points: number,
+  team1RankingDelta: number,
+  team2RankingDelta: number,
   tournamentId?: number,
   tournamentStage?: string,
 ): number | null {
@@ -86,11 +86,11 @@ export function addMatch(
     const team2Players = Array.isArray(team2) ? team2 : [team2];
 
     for (const playerId of team1Players) {
-      const result = addMatchPlayerHelper(matchId, playerId, 1, team1Points);
+      const result = addMatchPlayerHelper(matchId, playerId, 1, team1RankingDelta);
       if (!result) throw new Error(`Failed to add team 1 player: ${playerId}`);
     }
     for (const playerId of team2Players) {
-      const result = addMatchPlayerHelper(matchId, playerId, 2, team2Points);
+      const result = addMatchPlayerHelper(matchId, playerId, 2, team2RankingDelta);
       if (!result) throw new Error(`Failed to add team 2 player: ${playerId}`);
     }
 
@@ -112,49 +112,75 @@ export function getMatchWithPlayers(matchId: number): MatchWithPlayers | null {
       .prepare(
         `
 			SELECT
-				mp.team_number,
-        mp.points_awarded,
+				mp.team_number as teamNumber,
+        mp.ranking_delta as rankingDelta,
 				u.uuid,
 				u.username,
 				u.avatar,
 				u.ranking,
-				u.created_at
+				u.created_at as createdAt,
+        s.points_scored as pointsScored,
+        s.points_conceded as pointsConceded,
+        s.games_won as gamesWon,
+        s.games_lost as gamesLost,
+        s.max_point_lead as maxPointLead
 			FROM MatchPlayers mp
 			LEFT JOIN Users u on mp.user_uuid = u.uuid
+        LEFT JOIN MatchPlayerStats s on s.match_player_id = mp.id
 			WHERE mp.match_id = ?
 			ORDER BY mp.team_number, mp.id
 			`,
       )
-      .all(matchId) as MatchPlayerDb[];
+      .all(matchId) as MatchPlayer[];
 
     const team1Players = players
-      .filter((player) => player.team_number === 1)
+      .filter((player) => player.teamNumber === 1)
       .map((player) =>
         player.uuid
-          ? {
+          ? ({
               uuid: player.uuid,
-              username: player.username,
+              username: player.username!,
               avatar: player.avatar,
-              ranking: player.ranking,
-              createdAt: player.created_at,
-              pointsAwarded: player.points_awarded,
-            }
+              ranking: player.ranking!,
+              createdAt: player.createdAt!,
+              rankingDelta: player.rankingDelta,
+              stats:
+                player.pointsScored == null
+                  ? undefined
+                  : {
+                      pointsScored: player.pointsScored,
+                      pointsConceded: player.pointsConceded!,
+                      gamesWon: player.gamesWon!,
+                      gamesLost: player.gamesLost!,
+                      maxPointLead: player.maxPointLead!,
+                    },
+            } as MatchPlayerPublic)
           : null,
-      ) as (PublicUserWithPoints | null)[];
+      ) as (MatchPlayerPublic | null)[];
     const team2Players = players
-      .filter((player) => player.team_number === 2)
+      .filter((player) => player.teamNumber === 2)
       .map((player) =>
         player.uuid
-          ? {
+          ? ({
               uuid: player.uuid,
-              username: player.username,
+              username: player.username!,
               avatar: player.avatar,
-              ranking: player.ranking,
-              createdAt: player.created_at,
-              pointsAwarded: player.points_awarded,
-            }
+              ranking: player.ranking!,
+              createdAt: player.createdAt!,
+              rankingDelta: player.rankingDelta,
+              stats:
+                player.pointsScored == null
+                  ? undefined
+                  : {
+                      pointsScored: player.pointsScored,
+                      pointsConceded: player.pointsConceded!,
+                      gamesWon: player.gamesWon!,
+                      gamesLost: player.gamesLost!,
+                      maxPointLead: player.maxPointLead!,
+                    },
+            } as MatchPlayerPublic)
           : null,
-      ) as (PublicUserWithPoints | null)[];
+      ) as (MatchPlayerPublic | null)[];
 
     return {
       id: match.id,
@@ -208,15 +234,21 @@ export function getMatchesWithPlayersForUser(
         um.tournament_id,
         um.tournament_stage,
         mp.team_number,
-        mp.points_awarded,
+        mp.ranking_delta,
         u.uuid,
         u.username,
         u.avatar,
         u.ranking,
-        u.created_at as user_created_at
+        u.created_at as user_created_at,
+        s.points_scored,
+        s.points_conceded,
+        s.games_won,
+        s.games_lost,
+        s.max_point_lead
       FROM UserMatches um
       INNER JOIN MatchPlayers mp ON mp.match_id = um.id
       LEFT JOIN Users u ON mp.user_uuid = u.uuid
+      LEFT JOIN MatchPlayerStats s ON s.match_player_id = mp.id
       ORDER BY um.created_at DESC, mp.team_number, mp.id
       `,
       )
@@ -239,14 +271,24 @@ export function getMatchesWithPlayersForUser(
       const match = matchesMap.get(row.match_id)!;
       const player =
         row.uuid != null
-          ? {
+          ? ({
               uuid: row.uuid,
               username: row.username!,
               avatar: row.avatar,
               ranking: row.ranking!,
               createdAt: row.user_created_at!,
-              pointsAwarded: row.points_awarded!,
-            }
+              rankingDelta: row.ranking_delta!,
+              stats:
+                row.points_scored == null
+                  ? undefined
+                  : {
+                      pointsScored: row.points_scored,
+                      pointsConceded: row.points_conceded!,
+                      gamesWon: row.games_won!,
+                      gamesLost: row.games_lost!,
+                      maxPointLead: row.max_point_lead!,
+                    },
+            } as MatchPlayerPublic)
           : null;
       if (row.uuid === uuid) (match as any).userTeam = row.team_number;
       if (row.team_number === 1) {
