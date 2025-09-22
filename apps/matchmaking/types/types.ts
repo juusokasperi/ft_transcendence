@@ -22,3 +22,10 @@ export type MatchmakingClientMessage =
   | { type: 'acceptInvite'; lobbyId: string }
   | { type: 'declineInvite'; lobbyId: string }
   | { type: 'ready'; lobbyId: string; ready: boolean };
+
+export interface LobbyInfo {
+  lobbyId: string;
+  hostName: string;
+  capacity: number;
+  membersCount: number;
+}

@@ -1,4 +1,4 @@
-import type { ClientInfo, Lobby, MatchmakingClientMessage } from '../types/types.ts';
+import type { ClientInfo, Lobby, MatchmakingClientMessage, LobbyInfo } from '../types/types.ts';
 import { GAME_SERVER_URL, LOBBY_TTL_MS, LOBBY_SIZE } from './config.ts';
 import { log } from './log.ts';
 import { broadcastToAll, broadcast } from './broadcast.ts';
@@ -142,13 +142,6 @@ export function handleReady(
     clients,
   );
   checkLobbyReady(lobbyId, lobbies, clients);
-}
-
-interface LobbyInfo {
-  lobbyId: string;
-  hostName: string;
-  capacity: number;
-  membersCount: number;
 }
 
 export function parseLobbyInfo(lobby: Lobby): LobbyInfo {
