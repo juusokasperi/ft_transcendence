@@ -11,8 +11,6 @@ interface LobbyListProps {
 }
 
 const LobbyList: React.FC<LobbyListProps> = ({ lobbies, onJoin }) => {
-  console.log('Lobbies len:', lobbies.length);
-  console.log(lobbies);
   if (lobbies.length === 0) return null;
   return (
     <div className="mb-4">
@@ -56,12 +54,18 @@ const OnlineGame: React.FC = () => {
   const [ready, setReady] = useState(false);
   const [lobbies, setLobbies] = useState<Lobby[]>([]);
 
+  const inMatchMaking = status !== 'starting' && status !== 'playing';
+
   useEffect(() => {
+    if (!inMatchMaking) return;
     const client = createMatchmakingClient((msg: MatchmakingMessage) => {
       switch (msg.type) {
         case 'connected':
           setClientId(msg.clientId);
           setStatus('idle');
+          break;
+        case 'lobbyList':
+          setLobbies(msg.lobbies);
           break;
         case 'lobbyCreated':
           setLobbyId(msg.lobbyId);
@@ -72,20 +76,34 @@ const OnlineGame: React.FC = () => {
           setMatchId(msg.matchId);
           setSeat(msg.seat);
           setStatus('starting');
+          removeLobby(msg.lobbyId);
           client.socket.close();
           break;
         case 'lobbyAdded':
-
-          setLobbies((prev: Match[]) => [...prev, ...newMatches]);
-          setLobbies()
-        case 'lobbyList':
-          setLobbies(msg.lobbies);
+          setLobbies((prev: Lobby[]) => [...prev, msg.lobby]);
           break;
+        case 'lobbyUpdated':
+          setLobbies((prev: Lobby[]) => {
+            const idx = prev.findIndex(l => l.lobbyId === msg.lobby.lobbyId);
+            if (idx !== -1) {
+              const updated = [...prev];
+              updated[idx] = { ...updated[idx], ...msg.lobby };
+              return updated;
+            } else {
+              return [...prev, msg.lobby];
+            }
+          });
+          break;
+        case 'lobbyRemoved':
+          removeLobby(msg.lobbyId);
+          break;
+        default:
+          console.error('Unknown message type');
       }
     });
     clientRef.current = client;
     return () => client.socket.close();
-  }, []);
+  }, [inMatchMaking]);
 
   // Auto-focus canvas when starting/playing
   useLayoutEffect(() => {
@@ -132,7 +150,19 @@ const OnlineGame: React.FC = () => {
     };
   }, [serverUrl, matchId, seat]);
 
-  const handleCreateLobby = () => clientRef.current?.createLobby(user!.username);
+  const removeLobby = (lobbyId: string) => {
+    setLobbies((prev: Lobby[]) => prev.filter(l => l.lobbyId !== lobbyId));
+  };
+
+  const getLobbyPlayerCount = (lobbyId: string) => {
+    const lobby = lobbies.find(l => l.lobbyId === lobbyId);
+    return lobby ? `${lobby.membersCount}/${lobby.capacity}` : 'N/A';
+  };
+
+  const handleCreateLobby = () => {
+    if (user && user.username)
+      clientRef.current?.createLobby(user.username)
+  };
   const handleReady = () => {
     if (lobbyId) {
       clientRef.current?.setReady(lobbyId, true);
@@ -146,11 +176,19 @@ const OnlineGame: React.FC = () => {
     setJoinLobbyId('');
   };
 
+  const handleJoinLobbyDirect = (lobbyId: string) => {
+    clientRef.current?.acceptInvite(lobbyId);
+    setLobbyId(lobbyId);
+    setJoinLobbyId('');
+  };
+
   // NEW: same playing container as LocalGame (for both 'starting' and 'playing')
   const handleQuit = () => {
     appRef.current?.destroy();
     appRef.current = null;
-    setStatus('idle');
+    setLobbyId('');
+    setReady(false);
+    setStatus('connecting');
   };
 
   // End-of-match handling: listen for in-canvas event and exit back to lobby
@@ -232,6 +270,12 @@ const OnlineGame: React.FC = () => {
                   <span className="text-white/60">Lobby:</span>{' '}
                   <span className="font-mono">{lobbyId}</span>
                 </p>
+                <p>
+                  <span className="text-white/60">Players: </span>
+                  <span className="font-mono">
+                    {getLobbyPlayerCount(lobbyId)}
+                  </span>
+                </p>
                 <button
                   onClick={handleReady}
                   disabled={ready}
@@ -270,8 +314,7 @@ const OnlineGame: React.FC = () => {
                 <LobbyList
                   lobbies={lobbies}
                   onJoin={(lobbyId) => {
-                    setJoinLobbyId(lobbyId);
-                    handleJoinLobby();
+                    handleJoinLobbyDirect(lobbyId);
                   }}
                 />
               </div>

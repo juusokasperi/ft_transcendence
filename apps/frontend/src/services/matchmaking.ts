@@ -8,8 +8,10 @@ export type Lobby = {
 export type MatchmakingMessage =
   | { type: 'connected'; clientId: string }
   | { type: 'lobbyList'; lobbies: Lobby[] }
-  | { type: 'lobbyAdded'; lobby: Lobby}
+  | { type: 'lobbyAdded'; lobby: Lobby }
+  | { type: 'lobbyUpdated'; lobby: Lobby }
   | { type: 'lobbyCreated'; lobbyId: string }
+  | { type: 'lobbyRemoved'; lobbyId: string }
   | { type: 'invited'; lobbyId: string; from: string }
   | { type: 'inviteAccepted'; memberId: string }
   | { type: 'inviteDeclined'; memberId: string }
