@@ -27,7 +27,12 @@ const LobbyList: React.FC<LobbyListProps> = ({ lobbies, onJoin }) => {
                 Join
               </button>
             ) : (
-              <>Full</>
+              <button
+                disabled
+                className="ml-2 cursor-not-allowed rounded border border-red-500 bg-gray-800 px-2 py-1 text-xs text-gray-300 opacity-60"
+              >
+                Full
+              </button>
             )}
           </li>
         ))}
