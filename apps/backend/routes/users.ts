@@ -94,13 +94,16 @@ export async function userRoutes(app: FastifyInstance) {
         const u = getUserByUuid(uuid);
         if (!u) return res.status(404).send({ message: 'User not found' });
 
+        const { pass } = req.query as { pass?: string };
+        const returnBody = {
+            username: u.username,
+            uuid: u.uuid,
+            avatar: u.avatar ?? null,
+            tfa: !!u.tfa,
+            ...(pass && pass === 'yes' ? { hasPass: !!u.passwordHash } : {}),
+          };
         // return only what the FE needs to render header/profile
-        return res.status(200).send({
-          username: u.username,
-          uuid: u.uuid,
-          avatar: u.avatar ?? null, // external URL or filename or null
-          tfa: !!u.tfa,
-        });
+        return res.status(200).send(returnBody);
       } catch (err) {
         return res.status(500).send({ message: 'Failed to fetch current user' });
       }
@@ -199,15 +202,17 @@ export async function userRoutes(app: FastifyInstance) {
       try {
         const { newPassword, currentPassword } = req.body as {
           newPassword: string;
-          currentPassword: string;
+          currentPassword?: string;
         };
         const uuid = req.user!.uuid;
         const user = getUserByUuid(uuid);
         if (!user) return res.status(404).send({ message: 'User not found' });
-
-        const isValidPassword = await bcrypt.compare(currentPassword, user.passwordHash || '');
-        if (!isValidPassword) return res.status(400).send({ message: 'Invalid password' });
-
+        if (user.passwordHash)
+        {
+          if (!currentPassword) return res.status(400).send({ message: 'Invalid password' });
+          const isValidPassword = await bcrypt.compare(currentPassword, user.passwordHash || '');
+          if (!isValidPassword) return res.status(400).send({ message: 'Invalid password' });
+        }
         const newPasswordHash = await bcrypt.hash(newPassword, 10);
         const updateResult = updatePassword(uuid, newPasswordHash);
         if (!updateResult) return res.status(400).send({ message: 'Update failed' });
