@@ -5,7 +5,9 @@ import { useNavigate } from 'react-router-dom';
 import { useUser } from '../hooks/useUser';
 import type { User } from '../types';
 
-axios.defaults.baseURL = import.meta.env.VITE_BACKEND_URL;
+// The baseURL is intentionally not set here because the frontend and backend are served from the same origin during development and production.
+// If you need to proxy API requests to a different backend, uncomment the line below and set VITE_DEV_API_PROXY_TARGET in your environment.
+//axios.defaults.baseURL = import.meta.env.VITE_DEV_API_PROXY_TARGET;
 axios.defaults.withCredentials = true;
 
 type Ctx = {
@@ -22,39 +24,38 @@ export const AppProvider: React.FC<React.PropsWithChildren> = ({ children }) => 
   const navigate = useNavigate();
   const { user, setUser } = useUser();
 
+  const buildUser = (payload: unknown): User => {
+    const source = (payload ?? {}) as Record<string, unknown>;
+    return {
+      username: String(source.username ?? ''),
+      uuid: String(source.uuid ?? ''),
+      avatar: (source.avatar as string | null) ?? null,
+      id: Number(source.id ?? 0),
+      email: String(source.email ?? ''),
+      wins: Number(source.wins ?? 0),
+      losses: Number(source.losses ?? 0),
+      createdAt: String(source.createdAt ?? ''),
+      tfaEnabled: Boolean(source.tfa ?? source.tfaEnabled ?? false),
+    };
+  };
+
   useEffect(() => {
     axios
       .get('/api/users/me')
-      .then(({ data }) =>
-        setUser({
-          username: data.username,
-          uuid: data.uuid,
-          avatar: data.avatar ?? null,
-          id: data.id ?? 0,
-          email: data.email ?? '',
-          wins: data.wins ?? 0,
-          losses: data.losses ?? 0,
-          createdAt: data.createdAt ?? '',
-        }),
-      )
+      .then(({ data }) => {
+        setUser(buildUser(data));
+      })
       .catch(() => {});
   }, []);
 
   const login = (data: User) => {
-    setUser({
-      username: data.username,
-      uuid: data.uuid,
-      avatar: data.avatar ?? null,
-      id: data.id ?? 0,
-      email: data.email ?? '',
-      wins: data.wins ?? 0,
-      losses: data.losses ?? 0,
-      createdAt: data.createdAt ?? '',
-    });
+    setUser(buildUser(data));
   };
 
   const logout = async () => {
-    await axios.post('/api/logout');
+    try {
+      await axios.post('/api/logout');
+    } catch (err) {}
     setUser(null);
     navigate('/');
   };

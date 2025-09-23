@@ -9,6 +9,7 @@ export function handleSteps(
   state: GameState,
   dt: number,
 ): { next: GameState; events: FrameEvents } {
+  // Start from a shallow copy to avoid accidental mutations of the input state
   let s = { ...state };
   const events: FrameEvents = {};
 

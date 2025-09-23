@@ -7,6 +7,7 @@ export { disposeWorld } from './client/engine/teardown';
 
 // ── World / Scene ──────────────────────────────────────────────────────────────
 export { createWorld } from './client/scene/scene';
+export { setPaddleColors } from './client/scene/color';
 
 // ── Input ─────────────────────────────────────────────────────────────────────
 export {
@@ -14,6 +15,7 @@ export {
   readIntent,
   toggleControlsMirrored,
   blockInputFor,
+  setBindingProfile,
 } from './client/input/aggregate';
 
 // ── FX / Visuals ───────────────────────────────────────────────────────────────
@@ -24,6 +26,7 @@ export { createPaddleAnimator } from './client/visuals/animate-paddle';
 // ── UI / HUD ──────────────────────────────────────────────────────────────────
 export { createScoreboard } from './client/ui/scoreboard';
 export { updateHUD } from './client/ui/hud-binding';
+export type { MatchSnapshot } from '@pong/shared';
 
 // ── App adapters / mappers ────────────────────────────────────────────────────
 export { computeBounds } from './app/bounds';
@@ -33,4 +36,3 @@ export { mapStateForPlayerRows, mapHistoryForPlayers } from './app/hud-map';
 
 export { decHide, incHide } from './client/fx/utils';
 export type { PlayerSeat, mixOnlineAxes } from './app/seat-router';
-export { nextLocalMatchSeed } from './app/seed';

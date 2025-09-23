@@ -52,7 +52,7 @@ export const UsersSchema = {
     createdAt: { type: 'string', format: 'date-time' },
     wins: { type: 'integer' },
     losses: { type: 'integer' },
-    totalGames: { type: 'integer' },
+    totalMatches: { type: 'integer' },
     online: { type: 'boolean' },
   },
 };

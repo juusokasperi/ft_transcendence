@@ -10,10 +10,11 @@ import {
   type GameState,
 } from '@pong/game-logic';
 import type { FrameEvents } from '@pong/shared';
+import type { MatchSnapshot } from '@pong/shared';
 
 dotenv.config();
 
-const PORT = Number(process.env.GAME_SERVER_PORT || 55555);
+const PORT = Number(process.env.GAME_SERVER_PORT || 55553);
 
 interface Player {
   socket: WebSocket;
@@ -21,13 +22,20 @@ interface Player {
   axis: number;
 }
 
+// Merge physics FX events with controller flow events for a single payload.
+type ControllerEvents = ReturnType<
+  ReturnType<typeof createMatchController>['afterPhysicsStep']
+>['events'];
+type ServerEvents = FrameEvents & ControllerEvents;
+
 interface Match {
   id: string;
   players: { P1?: Player; P2?: Player };
   state: GameState;
   controller: ReturnType<typeof createMatchController>;
   loop?: NodeJS.Timeout;
-  lastEvents: FrameEvents;
+  lastEvents: ServerEvents;
+  lastMatch?: MatchSnapshot;
 }
 
 const wss = new WebSocketServer({ port: PORT });
@@ -51,16 +59,26 @@ function startMatch(match: Match) {
   match.state = { ...match.state, tPauseBtwPointsMs: 0 };
   match.loop = setInterval(() => {
     const dt = 1 / 60;
+    // Route seat inputs to physical sides based on current occupancy.
+    // By convention in game-logic, P1 paddle channel = LEFT (east), P2 = RIGHT (west).
+    const leftSeat = match.state.playerAtEnd.east; // 'P1' | 'P2'
+    const rightSeat = match.state.playerAtEnd.west; // 'P1' | 'P2'
     const intent = {
-      leftAxis: match.players.P1?.axis ?? 0,
-      rightAxis: match.players.P2?.axis ?? 0,
+      leftAxis: match.players[leftSeat]?.axis ?? 0,
+      rightAxis: match.players[rightSeat]?.axis ?? 0,
     };
     match.state = stepPaddles(match.state, intent, dt);
     const stepped = handleSteps(match.state, dt);
     const mc = match.controller.afterPhysicsStep(stepped.next);
     match.state = mc.state;
     match.lastEvents = { ...stepped.events, ...mc.events };
-    broadcast(match, { type: 'snapshot', state: match.state, events: match.lastEvents });
+    match.lastMatch = match.controller.getSnapshot();
+    broadcast(match, {
+      type: 'snapshot',
+      state: match.state,
+      events: match.lastEvents,
+      match: match.lastMatch,
+    });
     // Opponent axis echo for simple prediction
     if (match.players.P1)
       match.players.P1.socket.send(
@@ -96,7 +114,8 @@ wss.on('connection', (socket, req) => {
     match = {
       id: matchId,
       players: {},
-      state: createInitialState(bounds, 'east'),
+      // initialize from controller to keep params/rules in sync
+      state: controller.getGame(),
       controller,
       lastEvents: {},
     };
@@ -113,7 +132,7 @@ wss.on('connection', (socket, req) => {
       if (data.type === 'axis') {
         player.axis = Number(data.axis) || 0;
         // Debug axis input
-        console.log(`[GameServer] Received axis from ${seat} in match ${matchId}:`, player.axis);
+        // console.log(`[GameServer] Received axis from ${seat} in match ${matchId}:`, player.axis);
       }
     } catch {
       console.warn(`[GameServer] Malformed message from ${seat} in match ${matchId}`);

@@ -41,7 +41,7 @@ coverage/
 temp/
 tmp/
 apps/frontend/.vite/
-WARP.md
+.venv/
 
 ### Environment files
 .env

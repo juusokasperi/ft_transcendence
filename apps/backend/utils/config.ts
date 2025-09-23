@@ -9,6 +9,7 @@ dotenv.config();
 const REQUIRED = [
   'FRONTEND_URL',
   'SECRET',
+  'MATCH_SECRET',
   'DATABASE_PATH',
   'BACKEND_HOST',
   'BACKEND_PORT',
@@ -38,8 +39,45 @@ export const DATABASE_PATH = DB_PATH;
 export const BACKEND_PORT = Number(process.env.BACKEND_PORT!);
 export const BACKEND_HOST = process.env.BACKEND_HOST as string;
 export const SECRET = process.env.SECRET as string;
+export const MATCH_SECRET = process.env.MATCH_SECRET as string;
 export const FRONTEND_URL = process.env.FRONTEND_URL as string;
 export const NGINX_PORT = process.env.NGINX_PORT as string;
+export const JWT_ACCESS_TTL = process.env.JWT_ACCESS_TTL || '4h';
+export const JWT_2FA_TTL = process.env.JWT_2FA_TTL || '10m';
+export const TFA_ISSUER = process.env.TFA_ISSUER || 'BabylonPong';
+export const TFA_CODE_DIGITS = Number(process.env.TFA_CODE_DIGITS || '6');
+export const ENABLE_SQLITE_METRICS = process.env.ENABLE_SQLITE_METRICS as string;
+
+type MailTransportConfig = {
+  host: string;
+  port: number;
+  secure: boolean;
+  auth: { user: string; pass: string };
+};
+
+const MAIL_HOST = process.env.MAIL_HOST;
+const MAIL_PORT = process.env.MAIL_PORT ? Number(process.env.MAIL_PORT) : undefined;
+const MAIL_SECURE_ENV = process.env.MAIL_SECURE;
+const MAIL_USER = process.env.MAIL_USER;
+const MAIL_PASS = process.env.MAIL_PASS;
+
+const MAIL_SECURE = MAIL_SECURE_ENV ? MAIL_SECURE_ENV !== 'false' : undefined;
+
+export const MAIL_FROM =
+  process.env.MAIL_FROM || MAIL_USER || '"No Reply" <no-reply@babylonpong.com>';
+
+export const MAIL_TRANSPORT_CONFIG: MailTransportConfig | null =
+  MAIL_HOST && MAIL_USER && MAIL_PASS
+    ? {
+        host: MAIL_HOST,
+        port: MAIL_PORT ?? 465,
+        secure: MAIL_SECURE ?? true,
+        auth: {
+          user: MAIL_USER,
+          pass: MAIL_PASS,
+        },
+      }
+    : null;
 
 // Export Swagger config
 export const swaggerConfig: SwaggerOptions = {
@@ -57,7 +95,7 @@ export const swaggerConfig: SwaggerOptions = {
     ],
     tags: [
       { name: 'User', description: 'User related endpoints' },
-      { name: 'Game', description: 'Game related endpoints' },
+      { name: 'Match', description: 'Match related endpoints' },
       { name: 'Auth', description: 'Authentication related endpoints' },
       { name: 'Friends', description: 'Friends related endpoints' },
     ],
@@ -67,6 +105,15 @@ export const swaggerConfig: SwaggerOptions = {
           type: 'http',
           scheme: 'bearer',
           bearerFormat: 'JWT',
+          description:
+            'For Swagger/manual testing you can still supply Authorization: Bearer <token>.',
+        },
+        tokenAuth: {
+          type: 'apiKey',
+          in: 'cookie',
+          name: 'token',
+          description:
+            'Primary browser auth uses the httpOnly "token" cookie issued by the backend.',
         },
       },
     },

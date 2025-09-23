@@ -22,12 +22,12 @@ services:
         - project=transcendence
     volumes:
       - elk_certs:/usr/share/elasticsearch/config/certs
-    user: "0"
+    user: '0'
     environment:
       - ELASTIC_PASSWORD=${ELASTIC_PASSWORD}
       - KIBANA_PASSWORD=${KIBANA_PASSWORD}
     healthcheck:
-      test: ["CMD-SHELL", "[ -f config/certs/elasticsearch/elasticsearch.crt ]"]
+      test: ['CMD-SHELL', '[ -f config/certs/elasticsearch/elasticsearch.crt ]']
       interval: 1s
       timeout: 5s
       retries: 120
@@ -76,7 +76,7 @@ services:
     healthcheck:
       test:
         [
-          "CMD-SHELL",
+          'CMD-SHELL',
           "curl -s --cacert config/certs/ca/ca.crt https://localhost:9200 | grep -q 'missing authentication credentials'",
         ]
       interval: 10s
@@ -115,11 +115,7 @@ services:
       - XPACK_REPORTING_ENCRYPTIONKEY=${ENCRYPTION_KEY}
     mem_limit: ${KB_MEM_LIMIT}
     healthcheck:
-      test:
-        [
-          "CMD-SHELL",
-          "curl -s -I http://localhost:5601 | grep -q 'HTTP/1.1 302 Found'",
-        ]
+      test: ['CMD-SHELL', "curl -s -I http://localhost:5601 | grep -q 'HTTP/1.1 302 Found'"]
       interval: 10s
       timeout: 10s
       retries: 120
@@ -170,8 +166,8 @@ services:
     ports:
       # Listens for GELF input here. The GELF driver can only send to host IPs,
       # not into containers => this port needs to be exposed
-      - "12201:12201/udp"
+      - '12201:12201/udp'
       # Logstash monitoring API
-      - "9600:9600"
+      - '9600:9600'
     networks:
       - devnet

@@ -3,8 +3,9 @@ import { createInitialState } from '../model/state';
 import { serveFrom } from '../systems/flow/service';
 import { PAUSE_BETWEEN_GAMES_MS, PAUSE_MATCH_OVER_MS } from '../constants';
 import type { TableEnd } from '@pong/shared';
-import type { Ruleset } from '@pong/shared';
+import type { Ruleset, MatchSnapshot } from '@pong/shared';
 import { sideOpposite } from '@pong/shared';
+import type { GameHistoryEntry } from '@pong/shared';
 
 export function createMatchController(
   bounds: GameState['bounds'],
@@ -14,11 +15,11 @@ export function createMatchController(
   let game = addRulesToState(createInitialState(bounds, initialServer), rules);
   let currentGameIndex = 1;
 
-  const gamesWonByEnd = { east: 0, west: 0 };
+  const gamesWonByEnd: Record<TableEnd, number> = { east: 0, west: 0 };
 
   // New: count by player identity. Define P1 as the player who starts the match on EAST.
   let p1AtEastNow = true; // flips whenever we swap sides
-  const gamesWonByPlayer = { P1: 0, P2: 0 };
+  const gamesWonByPlayer: Record<'P1' | 'P2', number> = { P1: 0, P2: 0 };
 
   let matchWinner: TableEnd | undefined;
   let endsFlippedThisGame = false;
@@ -34,30 +35,40 @@ export function createMatchController(
   }> = [];
 
   function addRulesToState(s: GameState, r: Ruleset): GameState {
+    const deuceAt = r.game.deuceAt ?? r.game.targetScore - 1;
+    const targetGames = Math.ceil(r.match.bestOf / 2);
+    const params: GameState['params'] = {
+      ...s.params,
+      targetScore: r.game.targetScore,
+      winBy: r.game.winBy,
+      servesPerTurn: r.game.servesPerTurn,
+      deuceServesPerTurn: r.game.deuceServesPerTurn,
+      deuceAt,
+      // Keep match params in sync with rules as well
+      bestOf: r.match.bestOf,
+      targetGames,
+    };
     return {
       ...s,
       serviceTurnsLeft: r.game.servesPerTurn,
-      params: {
-        ...s.params,
-        targetScore: r.game.targetScore,
-        winBy: r.game.winBy,
-        servesPerTurn: r.game.servesPerTurn,
-        deuceServesPerTurn: r.game.deuceServesPerTurn,
-        deuceAt: r.game.deuceAt!, // resolved
-      } as any,
+      params,
     };
   }
 
-  function snapshot() {
+  // Cache to avoid cloning history every tick when unchanged
+  let lastSnapHistoryRef: GameHistoryEntry[] = [];
+  let lastSnapHistoryLen = 0;
+
+  function snapshot(): MatchSnapshot {
+    // Only clone history when it actually changes length (i.e., end of a game)
+    if (gamesHistory.length !== lastSnapHistoryLen) {
+      lastSnapHistoryRef = [...gamesHistory];
+      lastSnapHistoryLen = gamesHistory.length;
+    }
     return {
       bestOf: rules.match.bestOf,
       currentGameIndex,
-      gamesWon: { ...gamesWonByEnd },
-      matchWinner,
-      endsFlippedThisGame,
-      midSwapDoneThisGame,
-      initialServerThisGame,
-      gamesHistory: [...gamesHistory],
+      gamesHistory: lastSnapHistoryRef,
     };
   }
 
@@ -83,7 +94,13 @@ export function createMatchController(
         game.points.west >= rules.match.decidingGameMidSwapAtPoints)
     ) {
       midSwapDoneThisGame = true;
-      p1AtEastNow = !p1AtEastNow; // ⟵ keep player↔end mapping correct
+      // Swap player occupancy in game state and mirror controller flag
+      const swapped = {
+        east: game.playerAtEnd.west,
+        west: game.playerAtEnd.east,
+      } as const;
+      game = { ...game, playerAtEnd: swapped };
+      p1AtEastNow = !p1AtEastNow; // keep controller mapping consistent
       events.swapSidesNow = true;
     }
 
@@ -100,7 +117,7 @@ export function createMatchController(
 
       if (rules.match.switchEndsEachGame) {
         endsFlippedThisGame = true;
-        p1AtEastNow = !p1AtEastNow; // ⟵ sides actually swap at game start
+        p1AtEastNow = !p1AtEastNow; // sides actually swap at game start
         events.swapSidesNow = true;
       }
 
@@ -109,7 +126,9 @@ export function createMatchController(
         : initialServerThisGame;
       initialServerThisGame = nextInitialServer;
 
-      const fresh = addRulesToState(createInitialState(game.bounds, nextInitialServer), rules);
+      // Fresh state with correct player occupancy for the new game
+      const freshBase = createInitialState(game.bounds, nextInitialServer, p1AtEastNow);
+      const fresh = addRulesToState(freshBase, rules);
       game = serveFrom(nextInitialServer, fresh);
 
       return { state: game, events };
@@ -119,20 +138,22 @@ export function createMatchController(
     if (game.phase === 'gameOver' && game.gameWinner) {
       // Record immutable history once
       if (!gamesHistory.some((g) => g.gameIndex === currentGameIndex)) {
+        // Record immutable history in PLAYER space (east row = P1, west row = P2)
         gamesHistory.push({
           gameIndex: currentGameIndex,
-          east: game.points.east,
-          west: game.points.west,
-          winner: game.gameWinner,
+          east: game.pointsByPlayer.P1,
+          west: game.pointsByPlayer.P2,
+          winner: game.pointsByPlayer.P1 >= game.pointsByPlayer.P2 ? 'east' : 'west',
         });
       }
 
       // Keep old end-based counters for reference (not used to decide match)
-      gamesWonByEnd[game.gameWinner]++;
+      const winnerEnd = game.gameWinner as TableEnd; // narrow for strict index access
+      gamesWonByEnd[winnerEnd] = (gamesWonByEnd[winnerEnd] ?? 0) + 1;
 
       // ✅ Player-centric win counting
-      const winnerPlayer = endToPlayer(game.gameWinner);
-      gamesWonByPlayer[winnerPlayer]++;
+      const winnerPlayer = endToPlayer(winnerEnd);
+      gamesWonByPlayer[winnerPlayer] = (gamesWonByPlayer[winnerPlayer] ?? 0) + 1;
 
       events.gameOver = {
         winner: game.gameWinner,
@@ -154,6 +175,7 @@ export function createMatchController(
         game = {
           ...game,
           phase: 'matchOver',
+          matchWinner,
           tMatchOverMs: PAUSE_MATCH_OVER_MS,
         };
         return { state: game, events };

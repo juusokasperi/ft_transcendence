@@ -37,7 +37,19 @@ import {
   deleteAvatarSchema,
   getSettingsSchema,
   updateSettingsSchema,
+  twoFactorSetupSchema,
+  twoFactorConfirmSchema,
+  twoFactorDisableSchema,
 } from '../schemas/userSchemas.ts';
+import { getUserMatchesSchema, getMyStatsSchema } from '../schemas/matchSchemas.ts';
+import {
+  beginTwoFactorEnrollment,
+  completeTwoFactorEnrollment,
+  disableTwoFactor,
+} from '../db/queries/twoFactor.ts';
+import { generateAuthenticatorSecret, verifyTotpToken } from '../utils/twoFactor.ts';
+import { getMatchesWithPlayersForUser } from '../db/queries/matches.ts';
+import { getTotalStatsForUser } from '../db/queries/matchPlayerStats.ts';
 
 /*
 	TO DO:
@@ -83,14 +95,38 @@ export async function userRoutes(app: FastifyInstance) {
         const u = getUserByUuid(uuid);
         if (!u) return res.status(404).send({ message: 'User not found' });
 
-        // return only what the FE needs to render header/profile
-        return res.status(200).send({
+        const { pass } = req.query as { pass?: string };
+        const returnBody = {
           username: u.username,
           uuid: u.uuid,
-          avatar: u.avatar ?? null, // external URL or filename or null
-        });
+          avatar: u.avatar ?? null,
+          tfa: !!u.tfa,
+          ...(pass && pass === 'yes' ? { hasPass: !!u.passwordHash } : {}),
+        };
+        // return only what the FE needs to render header/profile
+        return res.status(200).send(returnBody);
       } catch (err) {
         return res.status(500).send({ message: 'Failed to fetch current user' });
+      }
+    },
+  );
+
+  app.get(
+    '/me/stats',
+    {
+      schema: getMyStatsSchema,
+      preHandler: [authPreHandler, tokenUuidCheck, updateLastSeenHandler],
+    },
+    async (req: FastifyRequest, res: FastifyReply) => {
+      try {
+        const uuid = req.user!.uuid;
+        const user = getUserByUuid(uuid);
+        if (!user) return res.status(404).send({ message: 'User not found' });
+        const stats = getTotalStatsForUser(uuid);
+        if (!stats) return res.status(500).send({ message: 'Failed to fetch user stats' });
+        return res.status(200).send(stats);
+      } catch (err) {
+        return res.status(500).send({ message: 'Failed to fetch user stats' });
       }
     },
   );
@@ -187,21 +223,104 @@ export async function userRoutes(app: FastifyInstance) {
       try {
         const { newPassword, currentPassword } = req.body as {
           newPassword: string;
-          currentPassword: string;
+          currentPassword?: string;
         };
         const uuid = req.user!.uuid;
         const user = getUserByUuid(uuid);
         if (!user) return res.status(404).send({ message: 'User not found' });
-
-        const isValidPassword = await bcrypt.compare(currentPassword, user.passwordHash || '');
-        if (!isValidPassword) return res.status(400).send({ message: 'Invalid password' });
-
+        if (user.passwordHash) {
+          if (!currentPassword) return res.status(400).send({ message: 'Invalid password' });
+          const isValidPassword = await bcrypt.compare(currentPassword, user.passwordHash || '');
+          if (!isValidPassword) return res.status(400).send({ message: 'Invalid password' });
+        }
         const newPasswordHash = await bcrypt.hash(newPassword, 10);
         const updateResult = updatePassword(uuid, newPasswordHash);
         if (!updateResult) return res.status(400).send({ message: 'Update failed' });
         res.status(200).send({ success: 'Password successfully updated' });
       } catch (error) {
         res.status(500).send({ message: 'Failed to update user' });
+      }
+    },
+  );
+
+  // Start two-factor setup
+  app.post(
+    '/me/tfa/setup',
+    {
+      schema: twoFactorSetupSchema,
+      preHandler: [authPreHandler, tokenUuidCheck, updateLastSeenHandler],
+    },
+    async (req: FastifyRequest, res: FastifyReply) => {
+      try {
+        const uuid = req.user!.uuid;
+        const user = getUserByUuid(uuid);
+        if (!user) return res.status(404).send({ message: 'User not found' });
+        if (user.tfa && user.tfaSecret)
+          return res.status(400).send({ message: 'Two-factor authentication already enabled' });
+
+        const { secret, otpauthUrl } = generateAuthenticatorSecret({
+          label: user.email || user.username,
+        });
+        const saved = beginTwoFactorEnrollment(uuid, secret);
+        if (!saved) return res.status(500).send({ message: 'Failed to start setup' });
+
+        res.status(200).send({ secret, otpauthUrl });
+      } catch (error) {
+        res.status(500).send({ message: 'Failed to start two-factor setup' });
+      }
+    },
+  );
+
+  // Confirm two-factor setup
+  app.post(
+    '/me/tfa/confirm',
+    {
+      schema: twoFactorConfirmSchema,
+      preHandler: [authPreHandler, tokenUuidCheck, updateLastSeenHandler],
+    },
+    async (req: FastifyRequest, res: FastifyReply) => {
+      try {
+        const uuid = req.user!.uuid;
+        const { code } = req.body as { code: string };
+        const user = getUserByUuid(uuid);
+        if (!user) return res.status(404).send({ message: 'User not found' });
+        if (!user.tfaSecret)
+          return res.status(400).send({ message: 'No pending two-factor setup found' });
+
+        const valid = verifyTotpToken(user.tfaSecret, code);
+        if (!valid) return res.status(400).send({ message: 'Invalid authentication code' });
+
+        const completed = completeTwoFactorEnrollment(uuid, user.tfaSecret);
+        if (!completed) return res.status(500).send({ message: 'Failed to enable two-factor' });
+
+        res.status(200).send({ success: 'Two-factor authentication enabled.' });
+      } catch (error) {
+        res.status(500).send({ message: 'Failed to confirm two-factor setup' });
+      }
+    },
+  );
+
+  // Disable two-factor
+  app.delete(
+    '/me/tfa',
+    {
+      schema: twoFactorDisableSchema,
+      preHandler: [authPreHandler, tokenUuidCheck, updateLastSeenHandler],
+    },
+    async (req: FastifyRequest, res: FastifyReply) => {
+      try {
+        const uuid = req.user!.uuid;
+        const user = getUserByUuid(uuid);
+        if (!user) return res.status(404).send({ message: 'User not found' });
+        if (!user.tfa && !user.tfaSecret) {
+          res.status(200).send({ success: 'Two-factor authentication disabled.' });
+          return;
+        }
+        const disabled = disableTwoFactor(uuid);
+        if (!disabled) return res.status(500).send({ message: 'Failed to disable two-factor' });
+        res.status(200).send({ success: 'Two-factor authentication disabled.' });
+      } catch (error) {
+        res.status(500).send({ message: 'Failed to disable two-factor' });
       }
     },
   );
@@ -332,6 +451,27 @@ export async function userRoutes(app: FastifyInstance) {
         res.status(200).send(settings);
       } catch (err) {
         res.status(500).send({ message: 'Failed to update user profile settings.' });
+      }
+    },
+  );
+
+  app.get(
+    '/:uuid/matches',
+    {
+      schema: getUserMatchesSchema,
+      preHandler: [authPreHandler, tokenUuidCheck],
+    },
+    async (req: FastifyRequest, res: FastifyReply) => {
+      try {
+        const { uuid } = req.params as { uuid: string };
+        const { count, offset } = req.query as { count?: number; offset?: number };
+        const user = getUserByUuid(uuid);
+        if (!user) return res.status(404).send({ message: 'User not found' });
+        const results = getMatchesWithPlayersForUser(uuid, count, offset);
+        return res.status(200).send(results);
+      } catch (error) {
+        console.error('GET /matches failed:', error);
+        return res.status(500).send({ message: 'Failed to fetch match data for user' });
       }
     },
   );

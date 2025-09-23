@@ -12,7 +12,7 @@ export async function up(db: Database) {
 	created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 	);`);
 
-  db.exec(`CREATE INDEX idx_unconfirmed_users ON PendingUsers(expires_at)`);
+  db.exec(`CREATE INDEX IF NOT EXISTS idx_unconfirmed_users ON PendingUsers(expires_at)`);
 }
 
 export async function down(db: Database) {

@@ -1,11 +1,21 @@
+import { axesFromKeys, setBindingProfile } from './bindings';
+
 const keys = new Set<string>();
 
 type KeyboardDetach = () => void;
 
 /** Attach key listeners to any focusable host element (e.g., canvas). */
 export function attachKeyboard(el: HTMLElement): KeyboardDetach {
-  const dn = (e: KeyboardEvent) => keys.add(e.key);
-  const up = (e: KeyboardEvent) => keys.delete(e.key);
+  const dn = (e: KeyboardEvent) => {
+    // Use physical key location to be layout-agnostic (WASD vs ZQSD, etc.)
+    keys.add(e.code);
+    // Prevent page scroll when the canvas has focus and arrows are used
+    if (e.code === 'ArrowUp' || e.code === 'ArrowDown') e.preventDefault();
+  };
+  const up = (e: KeyboardEvent) => {
+    keys.delete(e.code);
+    if (e.code === 'ArrowUp' || e.code === 'ArrowDown') e.preventDefault();
+  };
   el.addEventListener('keydown', dn);
   el.addEventListener('keyup', up);
   return () => {
@@ -20,14 +30,9 @@ export function readKeyboardAxes(): {
   leftAxisKey: number;
   rightAxisKey: number;
 } {
-  const clamp1 = (v: number) => (v > 0 ? 1 : v < 0 ? -1 : 0);
-
-  const leftKey = (keys.has('z') ? 1 : 0) + (keys.has('s') ? -1 : 0);
-
-  const rightKey = (keys.has('ArrowUp') ? 1 : 0) + (keys.has('ArrowDown') ? -1 : 0);
-
-  return {
-    leftAxisKey: clamp1(leftKey),
-    rightAxisKey: clamp1(rightKey),
-  };
+  return axesFromKeys(keys);
 }
+
+// Re-export for convenience so higher layers can switch profiles without
+// reaching into bindings.ts directly.
+export { setBindingProfile };

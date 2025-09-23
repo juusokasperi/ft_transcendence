@@ -9,7 +9,7 @@ VITE_FRONTEND_PORT=5173
 
 VITE_DEV_API_PROXY_TARGET=http://backend:3001
 VITE_MATCHMAKING_PROXY_TARGET=ws://matchmaking-service:4242
-VITE_GAME_WS_PROXY_TARGET=ws://game-server:55555
+VITE_GAME_WS_PROXY_TARGET=ws://game-server:55553
 VITE_PUBLIC_DEV_PORT=8080
 
 # If you run API locally (no docker), override this instead:

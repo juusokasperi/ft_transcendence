@@ -6,6 +6,10 @@ import cookie from '@fastify/cookie';
 vi.mock('../../utils/config.ts', () => ({
   SECRET: 'testsecret',
   DATABASE_PATH: ':memory:',
+  JWT_ACCESS_TTL: '4h',
+  JWT_2FA_TTL: '10m',
+  TFA_CODE_DIGITS: 6,
+  TFA_ISSUER: 'TestApp',
 }));
 
 // Fully mock the users query module so we never touch the real DB

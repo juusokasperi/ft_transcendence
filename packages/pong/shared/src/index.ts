@@ -9,6 +9,7 @@ export {
   XorShift32,
   deriveSeed32,
   pickInitialServer,
+  randomSeed32,
   type MatchSeed,
 } from './utils/random';
 export { type Disposable } from './utils/disposable';
@@ -18,5 +19,5 @@ export type { FrameEvents } from './protocol/events';
 export type { InputIntent } from './protocol/input';
 export { ZeroIntent } from './protocol/input';
 
-export type { GameHistoryEntry } from './protocol/state';
+export type { GameHistoryEntry, MatchSnapshot } from './protocol/state';
 export { clamp01 } from './utils/math';
