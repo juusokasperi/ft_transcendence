@@ -2,11 +2,50 @@ import React, { useEffect, useRef, useState } from 'react';
 import { createMatchmakingClient, type MatchmakingMessage } from '../../services/matchmaking';
 import type { PlayerSeat } from '@pong/render';
 import { useLayoutEffect } from 'react';
+import { useAppContext } from '../../context/AppContext';
+import type { Lobby } from '../../services/matchmaking';
+
+interface LobbyListProps {
+  lobbies: Lobby[];
+  onJoin: (lobbyId: string) => void;
+}
+
+const LobbyList: React.FC<LobbyListProps> = ({ lobbies, onJoin }) => {
+  if (lobbies.length === 0) return null;
+  return (
+    <div className="mb-4">
+      <h2 className="mb-2 text-lg font-semibold">Open Lobbies</h2>
+      <ul className="space-y-1">
+        {lobbies.map((lobby) => (
+          <li key={lobby.lobbyId} className="flex items-center gap-2">
+            <span className="text-white/60">{lobby.hostName}'s lobby</span>
+            {lobby.membersCount < lobby.capacity ? (
+              <button
+                onClick={() => onJoin(lobby.lobbyId)}
+                className="ml-2 rounded border border-blue-400 px-2 py-1 text-xs text-blue-300 hover:bg-blue-400 hover:text-black"
+              >
+                Join
+              </button>
+            ) : (
+              <button
+                disabled
+                className="ml-2 cursor-not-allowed rounded border border-red-500 bg-gray-800 px-2 py-1 text-xs text-gray-300 opacity-60"
+              >
+                Full
+              </button>
+            )}
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+};
 
 const OnlineGame: React.FC = () => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const appRef = useRef<{ destroy(): void } | null>(null);
   const clientRef = useRef<ReturnType<typeof createMatchmakingClient> | null>(null);
+  const { user } = useAppContext();
 
   const [clientId, setClientId] = useState('');
   const [lobbyId, setLobbyId] = useState('');
@@ -19,13 +58,20 @@ const OnlineGame: React.FC = () => {
   const [seat, setSeat] = useState<PlayerSeat>('P1');
   const [joinLobbyId, setJoinLobbyId] = useState('');
   const [ready, setReady] = useState(false);
+  const [lobbies, setLobbies] = useState<Lobby[]>([]);
+
+  const inMatchMaking = status !== 'starting' && status !== 'playing';
 
   useEffect(() => {
+    if (!inMatchMaking) return;
     const client = createMatchmakingClient((msg: MatchmakingMessage) => {
       switch (msg.type) {
         case 'connected':
           setClientId(msg.clientId);
           setStatus('idle');
+          break;
+        case 'lobbyList':
+          setLobbies(msg.lobbies);
           break;
         case 'lobbyCreated':
           setLobbyId(msg.lobbyId);
@@ -36,13 +82,34 @@ const OnlineGame: React.FC = () => {
           setMatchId(msg.matchId);
           setSeat(msg.seat);
           setStatus('starting');
+          removeLobby(msg.lobbyId);
           client.socket.close();
           break;
+        case 'lobbyAdded':
+          setLobbies((prev: Lobby[]) => [...prev, msg.lobby]);
+          break;
+        case 'lobbyUpdated':
+          setLobbies((prev: Lobby[]) => {
+            const idx = prev.findIndex((l) => l.lobbyId === msg.lobby.lobbyId);
+            if (idx !== -1) {
+              const updated = [...prev];
+              updated[idx] = { ...updated[idx], ...msg.lobby };
+              return updated;
+            } else {
+              return [...prev, msg.lobby];
+            }
+          });
+          break;
+        case 'lobbyRemoved':
+          removeLobby(msg.lobbyId);
+          break;
+        default:
+          console.error('Unknown message type:', msg.type);
       }
     });
     clientRef.current = client;
     return () => client.socket.close();
-  }, []);
+  }, [inMatchMaking]);
 
   // Auto-focus canvas when starting/playing
   useLayoutEffect(() => {
@@ -89,7 +156,18 @@ const OnlineGame: React.FC = () => {
     };
   }, [serverUrl, matchId, seat]);
 
-  const handleCreateLobby = () => clientRef.current?.createLobby();
+  const removeLobby = (lobbyId: string) => {
+    setLobbies((prev: Lobby[]) => prev.filter((l) => l.lobbyId !== lobbyId));
+  };
+
+  const getLobbyPlayerCount = (lobbyId: string) => {
+    const lobby = lobbies.find((l) => l.lobbyId === lobbyId);
+    return lobby ? `${lobby.membersCount}/${lobby.capacity}` : 'N/A';
+  };
+
+  const handleCreateLobby = () => {
+    if (user && user.username) clientRef.current?.createLobby(user.username);
+  };
   const handleReady = () => {
     if (lobbyId) {
       clientRef.current?.setReady(lobbyId, true);
@@ -103,11 +181,19 @@ const OnlineGame: React.FC = () => {
     setJoinLobbyId('');
   };
 
+  const handleJoinLobbyDirect = (lobbyId: string) => {
+    clientRef.current?.acceptInvite(lobbyId);
+    setLobbyId(lobbyId);
+    setJoinLobbyId('');
+  };
+
   // NEW: same playing container as LocalGame (for both 'starting' and 'playing')
   const handleQuit = () => {
     appRef.current?.destroy();
     appRef.current = null;
-    setStatus('idle');
+    setLobbyId('');
+    setReady(false);
+    setStatus('connecting');
   };
 
   // End-of-match handling: listen for in-canvas event and exit back to lobby
@@ -189,6 +275,10 @@ const OnlineGame: React.FC = () => {
                   <span className="text-white/60">Lobby:</span>{' '}
                   <span className="font-mono">{lobbyId}</span>
                 </p>
+                <p>
+                  <span className="text-white/60">Players: </span>
+                  <span className="font-mono">{getLobbyPlayerCount(lobbyId)}</span>
+                </p>
                 <button
                   onClick={handleReady}
                   disabled={ready}
@@ -224,6 +314,12 @@ const OnlineGame: React.FC = () => {
                     Join
                   </button>
                 </div>
+                <LobbyList
+                  lobbies={lobbies}
+                  onJoin={(lobbyId) => {
+                    handleJoinLobbyDirect(lobbyId);
+                  }}
+                />
               </div>
             )}
           </div>
