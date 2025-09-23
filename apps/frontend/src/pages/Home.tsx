@@ -142,7 +142,7 @@ const Hero: React.FC = () => {
       )}
 
       {/* Chat popup */}
-      {user && chatOpen && <Chat onClose={() => setChatOpen(false)} />}
+      {user && chatOpen && <Chat onClose={() => setChatOpen(false)} channel="lobby" />}
     </>
   );
 };

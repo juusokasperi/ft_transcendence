@@ -4,35 +4,55 @@ import { X } from "lucide-react";
 import { useAppContext } from "../context/AppContext";
 import SplitButton from "./ui/SplitButton";
 
-//const WS_URL = "ws://localhost:8080/chat"; // via nginx proxy
+// WS endpoint (nginx proxy or direct)
 const WS_URL = `${window.location.protocol === "https:" ? "wss" : "ws"}://${window.location.hostname}:8080/chat`;
+
 type ChatMessage = {
   from?: string;
   message: string;
   system?: boolean;
 };
 
+type ChatProps = {
+  onClose: () => void;
+  username?: string;
+  channel: string; //
+  size?: "sm" | "md" | "lg"; // 
+  defaultOpen?: boolean; // 
+};
 
-const Chat: React.FC<{ onClose: () => void; username?: string }> = ({
+const sizeClasses = {
+  sm: "h-64 w-64",
+  md: "h-96 w-80", // your current default
+  lg: "h-[32rem] w-[28rem] bottom-6 right-6",
+};
+
+const Chat: React.FC<ChatProps> = ({
   onClose,
   username = "Player",
+  channel,
+  size = "md",
+  defaultOpen = true,
 }) => {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
-  const [sender, setSender] = useState<string[]>([]);
   const [input, setInput] = useState("");
   const wsRef = useRef<WebSocket | null>(null);
 
-  const { axios, user } = useAppContext();
-  const chatUsername = user?.username || "Player";
+  const { user } = useAppContext();
+  const chatUsername = user?.username || username;
 
   useEffect(() => {
+    if (!defaultOpen) return; // only connect if open by default or later toggled
     const ws = new WebSocket(WS_URL);
     wsRef.current = ws;
 
     ws.onopen = () => {
       // Tell server our username
       ws.send(JSON.stringify({ type: "setName", username: chatUsername }));
+      // Join the specific channel
+      ws.send(JSON.stringify({ type: "joinChannel", channel }));
     };
+
     ws.onmessage = (event) => {
       const data = JSON.parse(event.data);
       if (data.type === "chat") {
@@ -40,28 +60,31 @@ const Chat: React.FC<{ onClose: () => void; username?: string }> = ({
       } else if (data.type === "userJoined") {
         setMessages((prev) => [
           ...prev,
-          { message: `✅ ${data.username} joined the chat`, system: true },
+          { message: `✅ ${data.username} joined ${channel}`, system: true },
         ]);
       } else if (data.type === "userLeft") {
         setMessages((prev) => [
           ...prev,
-          { message: `❌ ${data.username} left the chat`, system: true },
+          { message: `❌ ${data.username} left ${channel}`, system: true },
         ]);
       } else if (data.type === "connected") {
         console.log(`[CHAT] Connected with id: ${data.clientId}`);
+      } else if (data.type === "channelJoined") {
+        console.log(`[CHAT] Joined channel: ${data.channel}`);
       }
     };
 
-
     ws.onclose = () => {
-      setMessages((prev) => [...prev, {message:"⚠️ Disconnected from chat", system:true}]);
-
+      setMessages((prev) => [
+        ...prev,
+        { message: "⚠️ Disconnected from chat", system: true },
+      ]);
     };
 
     return () => {
       ws.close();
     };
-  }, [username]);
+  }, [channel, chatUsername, defaultOpen]);
 
   const sendMessage = () => {
     if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN && input.trim() !== "") {
@@ -70,17 +93,18 @@ const Chat: React.FC<{ onClose: () => void; username?: string }> = ({
     }
   };
 
+  if (!defaultOpen) return null; // don’t render if closed by default
 
   return (
     <motion.div
-      className="fixed bottom-6 right-6 z-50 flex h-96 w-80 flex-col overflow-hidden rounded-2xl border border-white/30 bg-gray-900/95 text-white shadow-xl backdrop-blur-md"
+      className={`fixed bottom-6 right-6 z-50 flex flex-col overflow-hidden rounded-2xl border border-white/30 bg-gray-900/95 text-white shadow-xl backdrop-blur-md ${sizeClasses[size]}`}
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: 20 }}
     >
       {/* Header */}
       <div className="flex items-center justify-between border-b border-white/20 px-3 py-2">
-        <h3 className="font-semibold">Live Chat</h3>
+        <h3 className="font-semibold">Live Chat ({channel})</h3>
         <button onClick={onClose} className="p-1 hover:text-red-400">
           <X size={18} />
         </button>

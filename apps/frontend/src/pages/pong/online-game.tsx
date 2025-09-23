@@ -4,6 +4,7 @@ import type { PlayerSeat } from '@pong/render';
 import { useLayoutEffect } from 'react';
 import { useAppContext } from '../../context/AppContext';
 import type { Lobby } from '../../services/matchmaking';
+import Chat from '../../components/Chat';
 
 interface LobbyListProps {
   lobbies: Lobby[];
@@ -323,7 +324,17 @@ const OnlineGame: React.FC = () => {
               </div>
             )}
           </div>
+
         </div>
+
+            {user && lobbyId && (
+            <Chat
+              onClose={() => {}}
+              channel={lobbyId}
+              size="lg"
+              defaultOpen
+            />
+          )}
       </div>
     </div>
   );

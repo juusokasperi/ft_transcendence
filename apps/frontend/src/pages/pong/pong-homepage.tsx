@@ -1,8 +1,13 @@
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
+import Chat from '../../components/Chat';
+import { useAppContext } from '../../context/AppContext';
+import { useState } from 'react';
+
 
 const PingPong: React.FC = () => {
-  const navigate = useNavigate();
+
+  const [chatOpen, setChatOpen] = useState(false);
+  const { axios, user,navigate } = useAppContext();
 
   const handleLocalPlay = () => navigate('/ping-pong/local');
   const handleOnlinePlay = () => navigate('/ping-pong/online');
@@ -64,6 +69,19 @@ const PingPong: React.FC = () => {
           transform: scale(1.05);
         }
       `}</style>
+
+      {/* Floating chat button */}
+      {user && !chatOpen && (
+        <button
+          onClick={() => setChatOpen(true)}
+          className="fixed bottom-6 right-6 z-40 rounded-full bg-indigo-600 p-4 text-white shadow-lg hover:bg-indigo-500"
+        >
+          💬
+        </button>
+      )}
+
+      {/* Chat popup */}
+      {user && chatOpen && <Chat onClose={() => setChatOpen(false)} channel="pong" />}
     </div>
   );
 };
