@@ -33,10 +33,7 @@ export default function SplitButton() {
   };
 
   const handleClose = (event: Event) => {
-    if (
-      anchorRef.current &&
-      anchorRef.current.contains(event.target as HTMLElement)
-    ) {
+    if (anchorRef.current && anchorRef.current.contains(event.target as HTMLElement)) {
       return;
     }
 
@@ -45,16 +42,16 @@ export default function SplitButton() {
 
   return (
     <React.Fragment>
-        <Button
-          size="small"
-          aria-controls={open ? 'split-button-menu' : undefined}
-          aria-expanded={open ? 'true' : undefined}
-          aria-label="select merge strategy"
-          aria-haspopup="menu"
-          onClick={handleToggle}
-        >
-          <ArrowDropDownIcon />
-        </Button>
+      <Button
+        size="small"
+        aria-controls={open ? 'split-button-menu' : undefined}
+        aria-expanded={open ? 'true' : undefined}
+        aria-label="select merge strategy"
+        aria-haspopup="menu"
+        onClick={handleToggle}
+      >
+        <ArrowDropDownIcon />
+      </Button>
       <Popper
         sx={{ zIndex: 1 }}
         open={open}
@@ -67,8 +64,7 @@ export default function SplitButton() {
           <Grow
             {...TransitionProps}
             style={{
-              transformOrigin:
-                placement === 'bottom' ? 'center top' : 'center bottom',
+              transformOrigin: placement === 'bottom' ? 'center top' : 'center bottom',
             }}
           >
             <Paper>

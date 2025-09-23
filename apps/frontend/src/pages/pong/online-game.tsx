@@ -324,17 +324,9 @@ const OnlineGame: React.FC = () => {
               </div>
             )}
           </div>
-
         </div>
 
-            {user && lobbyId && (
-            <Chat
-              onClose={() => {}}
-              channel={lobbyId}
-              size="lg"
-              defaultOpen
-            />
-          )}
+        {user && lobbyId && <Chat onClose={() => {}} channel={lobbyId} size="lg" defaultOpen />}
       </div>
     </div>
   );

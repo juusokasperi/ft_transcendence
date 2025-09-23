@@ -3,11 +3,9 @@ import Chat from '../../components/Chat';
 import { useAppContext } from '../../context/AppContext';
 import { useState } from 'react';
 
-
 const PingPong: React.FC = () => {
-
   const [chatOpen, setChatOpen] = useState(false);
-  const { axios, user,navigate } = useAppContext();
+  const { axios, user, navigate } = useAppContext();
 
   const handleLocalPlay = () => navigate('/ping-pong/local');
   const handleOnlinePlay = () => navigate('/ping-pong/online');
