@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import type { ChangeEvent } from 'react';
 import { useAppContext } from '../context/AppContext';
 import toast from 'react-hot-toast';
@@ -66,6 +66,7 @@ const Profile: React.FC = () => {
   const isNewPasswordDirty = isEditing && newPassword.newPassword.length > 0;
   const isConfirmPasswordDirty = isEditing && newPassword.confirmPassword.length > 0;
   const isAvatarDirty = isEditing && Boolean(image);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const resetForm = () => {
     setImage(null);
@@ -76,6 +77,9 @@ const Profile: React.FC = () => {
       confirmPassword: '',
     });
     setError(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
   };
 
   const startEditing = () => {
@@ -89,6 +93,14 @@ const Profile: React.FC = () => {
     setImage(null);
     setImagePreview(resolveAvatarUrl(user?.avatar, axios.defaults.baseURL));
     setIsEditing(true);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  const openAvatarPicker = () => {
+    if (!isEditing) return;
+    fileInputRef.current?.click();
   };
 
   useEffect(() => {
@@ -281,30 +293,47 @@ const Profile: React.FC = () => {
         </div>
         <form className="space-y-4" onSubmit={handleUpdate}>
           {/* Profile Image */}
-          <div>
-            {isEditing && <label className="mb-2 ml-3 block font-medium">Avatar</label>}
-
-            {imagePreview && (
-              <img
-                key={imagePreview}
-                src={imagePreview}
-                alt="Profile"
-                className={`mb-2 h-24 w-24 rounded-full object-cover ${
-                  isEditing ? '' : 'mt-2'
-                } ${isAvatarDirty ? 'ring-4 ring-green-400/60' : ''}`}
-                onError={(e) => {
-                  (e.currentTarget as HTMLImageElement).src = PLACEHOLDER;
-                }}
-              />
-            )}
+          <div className="flex flex-col items-start">
+            <div
+              className={`relative inline-flex h-24 w-24 items-center justify-center rounded-full ${
+                isEditing ? 'cursor-pointer' : ''
+              } ${isAvatarDirty ? 'ring-4 ring-green-400/60' : ''}`}
+              onClick={openAvatarPicker}
+            >
+              {imagePreview && (
+                <img
+                  key={imagePreview}
+                  src={imagePreview}
+                  alt="Profile"
+                  className="h-full w-full rounded-full object-cover"
+                  onError={(e) => {
+                    (e.currentTarget as HTMLImageElement).src = PLACEHOLDER;
+                  }}
+                />
+              )}
+              {isEditing && (
+                <button
+                  type="button"
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    openAvatarPicker();
+                  }}
+                  className={`absolute bottom-1 right-1 flex h-9 w-9 items-center justify-center rounded-full text-white shadow transition ${
+                    isAvatarDirty ? 'bg-green-500 hover:bg-green-400' : 'bg-indigo-600 hover:bg-indigo-500'
+                  }`}
+                  aria-label="Change avatar"
+                >
+                  <span className="text-2xl leading-none">+</span>
+                </button>
+              )}
+            </div>
             {isEditing && (
               <input
+                ref={fileInputRef}
                 type="file"
                 accept="image/*"
                 onChange={handleImageChange}
-                className={`w-full rounded border p-2 transition ${
-                  isAvatarDirty ? 'border-green-500 bg-green-50 ring-1 ring-green-400/60' : ''
-                }`}
+                className="sr-only"
               />
             )}
           </div>
