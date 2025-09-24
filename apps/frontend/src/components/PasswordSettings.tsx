@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import toast from 'react-hot-toast';
 import type { AxiosError } from 'axios';
 
@@ -24,6 +24,11 @@ const PasswordSettings: React.FC<PasswordSettingsProps> = ({ axios, active }) =>
   const [showCurrent, setShowCurrent] = useState<boolean>(false);
   const [showNew, setShowNew] = useState<boolean>(false);
   const [showConfirm, setShowConfirm] = useState<boolean>(false);
+  const [focusedField, setFocusedField] = useState<'current' | 'new' | 'confirm' | null>(null);
+
+  const currentInputRef = useRef<HTMLInputElement | null>(null);
+  const newInputRef = useRef<HTMLInputElement | null>(null);
+  const confirmInputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
     if (!active) {
@@ -53,6 +58,7 @@ const PasswordSettings: React.FC<PasswordSettingsProps> = ({ axios, active }) =>
     setShowCurrent(false);
     setShowNew(false);
     setShowConfirm(false);
+    setFocusedField(null);
   };
 
   const beginEdit = () => {
@@ -120,11 +126,15 @@ const PasswordSettings: React.FC<PasswordSettingsProps> = ({ axios, active }) =>
     }
   };
 
-  const InputWrapper: React.FC<React.PropsWithChildren<{ label: string }>> = ({ label, children }) => (
-    <label className="block">
-      <span className="mb-2 block font-medium text-gray-700">{label}</span>
+  const InputWrapper: React.FC<
+    React.PropsWithChildren<{ label: string; htmlFor: string }>
+  > = ({ label, htmlFor, children }) => (
+    <div className="flex flex-col">
+      <label className="mb-2 text-sm font-medium text-gray-700" htmlFor={htmlFor}>
+        {label}
+      </label>
       {children}
-    </label>
+    </div>
   );
 
   const ToggleButton = ({
@@ -136,12 +146,34 @@ const PasswordSettings: React.FC<PasswordSettingsProps> = ({ axios, active }) =>
   }) => (
     <button
       type="button"
+      onMouseDown={(event) => event.preventDefault()}
       onClick={onClick}
       className="text-xs font-semibold uppercase tracking-wide text-indigo-500 hover:text-indigo-400"
     >
       {active ? 'Hide' : 'Show'}
     </button>
   );
+
+  useEffect(() => {
+    if (!focusedField || !isEditing) return;
+
+    const target =
+      focusedField === 'current'
+        ? currentInputRef.current
+        : focusedField === 'new'
+        ? newInputRef.current
+        : confirmInputRef.current;
+
+    if (!target) return;
+
+    requestAnimationFrame(() => {
+      target.focus({ preventScroll: true });
+      const len = target.value.length;
+      try {
+        target.setSelectionRange(len, len);
+      } catch {}
+    });
+  }, [focusedField, isEditing, currentPassword, newPassword, confirmPassword]);
 
   if (!active) return null;
 
@@ -174,27 +206,37 @@ const PasswordSettings: React.FC<PasswordSettingsProps> = ({ axios, active }) =>
       {isEditing ? (
         <form className="space-y-4" onSubmit={handleSubmit}>
           {hasPassword && (
-            <InputWrapper label="Current password">
-            <div className="flex items-center rounded border border-gray-300 p-2">
+            <InputWrapper label="Current password" htmlFor="current-password">
+              <div className="flex items-center rounded border border-gray-300 p-2">
                 <input
+                  id="current-password"
                   type={showCurrent ? 'text' : 'password'}
                   value={currentPassword}
                   onChange={(e) => setCurrentPassword(e.target.value)}
+                  onFocus={() => setFocusedField('current')}
+                  onBlur={() => setFocusedField(null)}
                   className="flex-1 border-none bg-transparent text-sm outline-none"
+                  autoComplete="current-password"
+                  ref={currentInputRef}
                 />
                 <ToggleButton onClick={() => setShowCurrent((prev) => !prev)} active={showCurrent} />
               </div>
             </InputWrapper>
           )}
 
-          <InputWrapper label="New password">
+          <InputWrapper label="New password" htmlFor="new-password">
             <div className="flex items-center rounded border border-gray-300 p-2">
-              <input
-                type={showNew ? 'text' : 'password'}
-                value={newPassword}
-                onChange={(e) => setNewPassword(e.target.value)}
-                className="flex-1 border-none bg-transparent text-sm outline-none"
-              />
+                <input
+                  id="new-password"
+                  type={showNew ? 'text' : 'password'}
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  onFocus={() => setFocusedField('new')}
+                  onBlur={() => setFocusedField(null)}
+                  className="flex-1 border-none bg-transparent text-sm outline-none"
+                  autoComplete="new-password"
+                  ref={newInputRef}
+                />
               <ToggleButton onClick={() => setShowNew((prev) => !prev)} active={showNew} />
             </div>
             <p className="mt-2 text-xs text-gray-500">
@@ -202,14 +244,19 @@ const PasswordSettings: React.FC<PasswordSettingsProps> = ({ axios, active }) =>
             </p>
           </InputWrapper>
 
-          <InputWrapper label="Confirm new password">
+          <InputWrapper label="Confirm new password" htmlFor="confirm-password">
             <div className="flex items-center rounded border border-gray-300 p-2">
-              <input
-                type={showConfirm ? 'text' : 'password'}
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                className="flex-1 border-none bg-transparent text-sm outline-none"
-              />
+                <input
+                  id="confirm-password"
+                  type={showConfirm ? 'text' : 'password'}
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  onFocus={() => setFocusedField('confirm')}
+                  onBlur={() => setFocusedField(null)}
+                  className="flex-1 border-none bg-transparent text-sm outline-none"
+                  autoComplete="new-password"
+                  ref={confirmInputRef}
+                />
               <ToggleButton onClick={() => setShowConfirm((prev) => !prev)} active={showConfirm} />
             </div>
           </InputWrapper>
@@ -239,7 +286,7 @@ const PasswordSettings: React.FC<PasswordSettingsProps> = ({ axios, active }) =>
             {initialising
               ? 'Loading...'
               : hasPassword
-              ? 'Password authentication is enabled for this account.'
+              ? ''
               : 'You currently sign in via Google. Add a password for backup access.'}
           </div>
           <button
