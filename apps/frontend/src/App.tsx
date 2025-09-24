@@ -13,15 +13,12 @@ import DeleteUser from './pages/DeleteUser';
 import OnlineGame from './pages/pong/online-game';
 import { SidebarProvider } from './context/SidebarContext';
 import { SnackbarProvider } from './context/SnackbarContext';
-import { Toaster } from 'react-hot-toast';
 
 function App() {
   return (
     <SidebarProvider>
       <SnackbarProvider>
         <div>
-          <Toaster />
-
           <Routes>
             <Route path={'/'} element={<Home />} />
             <Route path={'/signup'} element={<Registration />} />

@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useAppContext } from '../context/AppContext';
-import toast from 'react-hot-toast';
 import { AxiosError } from 'axios';
 import { resolveAvatarUrl } from '../utils/avatarUrl';
 import Navbar from '../components/Navbar';
+import { useSnackbar } from '../context/SnackbarContext';
 
 interface MatchPlayerPublic {
   uuid: string;
@@ -49,6 +49,7 @@ const Stats: React.FC = () => {
   const [offset, setOffset] = useState(0);
   const pageSize = 5;
   const { axios, user } = useAppContext();
+  const { enqueueSnackbar } = useSnackbar();
   const myUuid = user?.uuid;
 
   const fetchStats = async () => {
@@ -57,7 +58,10 @@ const Stats: React.FC = () => {
       setStats(response.data);
     } catch (err) {
       const axiosErr = err as AxiosError<{ message?: string }>;
-      toast.error(String(axiosErr?.response?.data?.message));
+      enqueueSnackbar({
+        message: String(axiosErr?.response?.data?.message ?? 'Failed to load stats'),
+        variant: 'error',
+      });
     }
   };
 
@@ -81,7 +85,10 @@ const Stats: React.FC = () => {
       // Stats are embedded in the match payload (player.stats). No extra fetch.
     } catch (err) {
       const axiosErr = err as AxiosError<{ message?: string }>;
-      toast.error(String(axiosErr?.response?.data?.message));
+      enqueueSnackbar({
+        message: String(axiosErr?.response?.data?.message ?? 'Failed to load matches'),
+        variant: 'error',
+      });
     } finally {
       setLoading(false);
       setLoadingMore(false);
