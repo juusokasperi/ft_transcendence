@@ -16,7 +16,7 @@ const Layout: React.FC = () => {
   return (
     <>
       <Navbar />
-      <div className="flex min-h-screen bg-slate-950">
+      <div className="flex min-h-[calc(100vh-6rem)] bg-slate-950">
         <Sidebar />
         <div className="flex-1 px-4 pb-10 pt-24 md:px-10">
           <Outlet />
