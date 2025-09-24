@@ -43,6 +43,7 @@ import {
   handleMatchOver,
   handleSwapSidesNow,
 } from './utils';
+import { orbitCameraFor } from '@pong/render';
 
 /** Public surface returned by createLocalApp() */
 interface PongInstance {
@@ -186,28 +187,44 @@ export function createLocalApp(canvas: HTMLCanvasElement, preferences?: Preferen
           blockInputFor,
         );
         pauseUntil = Math.max(pauseUntil, until);
-        // Controls follow player identity
-        toggleControlsMirrored();
-
-        // Colors/skins follow players across sides
-        swapPaddleMaterials(left.mesh, right.mesh);
-
-        // Update HUD row mapping parity
-        rowsMirrored = !rowsMirrored;
-
-        // Re‑apply preferences so player colors continue to follow players
-        applyPreferences(preferences, {
-          setNames: (n) => (names = n),
-          leftMaterial: left.mesh.material,
-          rightMaterial: right.mesh.material,
-          rowsMirrored,
-        });
-        if (preferences) setHudAndPaletteColorsFromPrefs(hud, preferences, rowsMirrored);
-
-        // Small crossover cue
-        paddleAnim.cue(180);
+        // Spin camera during the pause window (full 360° at constant distance)
+        const spinMs = Math.max(0, until - now);
+        if (spinMs > 0) {
+          orbitCameraFor(world.camera, spinMs, {
+            onHalf: () => {
+              // Controls follow player identity
+              toggleControlsMirrored();
+              // Colors/skins follow players across sides
+              swapPaddleMaterials(left.mesh, right.mesh);
+              // Update HUD row mapping parity
+              rowsMirrored = !rowsMirrored;
+              // Re‑apply preferences so player colors continue to follow players
+              applyPreferences(preferences, {
+                setNames: (n) => (names = n),
+                leftMaterial: left.mesh.material,
+                rightMaterial: right.mesh.material,
+                rowsMirrored,
+              });
+              if (preferences) setHudAndPaletteColorsFromPrefs(hud, preferences, rowsMirrored);
+              // Small crossover cue right after the swap
+              paddleAnim.cue(180);
+            },
+          });
+/*         } else {
+          // Fallback: apply immediately if we have no spin window
+          toggleControlsMirrored();
+          swapPaddleMaterials(left.mesh, right.mesh);
+          rowsMirrored = !rowsMirrored;
+          applyPreferences(preferences, {
+            setNames: (n) => (names = n),
+            leftMaterial: left.mesh.material,
+            rightMaterial: right.mesh.material,
+            rowsMirrored,
+          }); */
+          if (preferences) setHudAndPaletteColorsFromPrefs(hud, preferences, rowsMirrored);
+          paddleAnim.cue(180);
+        }
       }
-      // gameOver handled via snapshot history for messaging; no latch needed
 
       // 4) Entered serve? Trigger visual serve cues
       const entered = detectEnteredServe(prevPhase, state.phase);

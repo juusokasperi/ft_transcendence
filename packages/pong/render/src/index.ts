@@ -8,6 +8,7 @@ export { disposeWorld } from './client/engine/teardown';
 // ── World / Scene ──────────────────────────────────────────────────────────────
 export { createWorld } from './client/scene/scene';
 export { setPaddleColors } from './client/scene/color';
+export { orbitCameraFor } from './client/scene/camera/camera';
 
 // ── Input ─────────────────────────────────────────────────────────────────────
 export {
