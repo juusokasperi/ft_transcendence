@@ -71,8 +71,12 @@ const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
         return;
       }
 
-      const first = focusableEls[0];
-      const last = focusableEls[focusableEls.length - 1];
+      const first = focusableEls.item(0);
+      const last = focusableEls.item(focusableEls.length - 1);
+      if (!first || !last) {
+        event.preventDefault();
+        return;
+      }
       if (event.shiftKey) {
         if (document.activeElement === first) {
           event.preventDefault();
@@ -124,7 +128,10 @@ const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
         aria-describedby={description ? 'confirm-dialog-description' : undefined}
         className="relative w-full max-w-md rounded-3xl border border-white/10 bg-slate-900/95 p-8 shadow-2xl shadow-indigo-950/40"
       >
-        <div className="absolute inset-0 rounded-3xl bg-gradient-to-br from-indigo-500/10 via-purple-500/10 to-slate-900/40" aria-hidden />
+        <div
+          className="absolute inset-0 rounded-3xl bg-gradient-to-br from-indigo-500/10 via-purple-500/10 to-slate-900/40"
+          aria-hidden
+        />
         <div className="relative">
           <h2 id="confirm-dialog-title" className="text-xl font-semibold text-white">
             {title}

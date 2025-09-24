@@ -162,7 +162,9 @@ const Friends: React.FC = () => {
             className="flex items-center justify-between rounded-2xl border border-white/10 bg-white/5 px-4 py-3 shadow-sm shadow-indigo-950/20 backdrop-blur"
           >
             <div className="flex items-center gap-3">
-              <span className={`relative flex h-10 w-10 items-center justify-center rounded-full ring-2 ring-white/20 ${accent ?? ''}`}>
+              <span
+                className={`relative flex h-10 w-10 items-center justify-center rounded-full ring-2 ring-white/20 ${accent ?? ''}`}
+              >
                 <img
                   src={friend.avatar}
                   alt={friend.username}
@@ -252,7 +254,9 @@ const Friends: React.FC = () => {
             <div className="space-y-4">
               <div>
                 <h2 className="text-xl font-semibold text-emerald-300">Online now</h2>
-                <p className="text-sm text-slate-300/80">Friends currently available for matches.</p>
+                <p className="text-sm text-slate-300/80">
+                  Friends currently available for matches.
+                </p>
               </div>
               {renderFriendList(
                 onlineFriends,
@@ -351,8 +355,8 @@ const Friends: React.FC = () => {
               <div>
                 <h2 className="text-xl font-semibold text-indigo-200">Add a friend</h2>
                 <p className="text-sm text-slate-300/80">
-                  Invite someone by their username or email address. We&apos;ll send a pending request
-                  right away.
+                  Invite someone by their username or email address. We&apos;ll send a pending
+                  request right away.
                 </p>
               </div>
               <form onSubmit={handleAddFriend} className="flex flex-col gap-3 sm:flex-row">

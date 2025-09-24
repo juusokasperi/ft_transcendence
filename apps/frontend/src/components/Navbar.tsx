@@ -30,9 +30,7 @@ const Navbar = () => {
 
   const mobileLinks = user ? [...baseLinks, ...profileLinks] : baseLinks;
 
-  const navBackgroundClass = sidebarOpen
-    ? 'bg-slate-950'
-    : 'bg-slate-950/80 backdrop-blur-xl';
+  const navBackgroundClass = sidebarOpen ? 'bg-slate-950' : 'bg-slate-950/80 backdrop-blur-xl';
 
   return (
     <nav
@@ -69,9 +67,7 @@ const Navbar = () => {
               <Link
                 key={link.to}
                 to={link.to}
-                className={`relative transition hover:text-white ${
-                  isActive ? 'text-white' : ''
-                }`}
+                className={`relative transition hover:text-white ${isActive ? 'text-white' : ''}`}
               >
                 {link.label}
                 {isActive && (
@@ -122,7 +118,7 @@ const Navbar = () => {
 
       {sidebarOpen && (
         <div
-          className="fixed inset-x-0 top-22 bottom-0 z-40 bg-slate-950/60 backdrop-blur md:hidden"
+          className="top-22 fixed inset-x-0 bottom-0 z-40 bg-slate-950/60 backdrop-blur md:hidden"
           onClick={closeSidebar}
         >
           <nav

@@ -1,4 +1,12 @@
-import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
+import React, {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 
 export type SnackbarVariant = 'info' | 'success' | 'error' | 'warning';
 
@@ -79,7 +87,10 @@ const SnackbarViewport: React.FC<{
             className={`pointer-events-auto relative w-full overflow-hidden rounded-2xl border ${borderClass} bg-slate-900/95 px-5 py-4 shadow-lg shadow-slate-950/40 backdrop-blur`}
             role={isError ? 'alert' : 'status'}
           >
-            <div className={`absolute inset-0 bg-gradient-to-br ${glowClass} via-transparent to-slate-900/60`} aria-hidden />
+            <div
+              className={`absolute inset-0 bg-gradient-to-br ${glowClass} via-transparent to-slate-900/60`}
+              aria-hidden
+            />
             <div className="relative flex gap-3">
               <div className="mt-1 text-lg" aria-hidden>
                 {isError ? '⛔' : isSuccess ? '✨' : snack.variant === 'warning' ? '⚠️' : '🔔'}

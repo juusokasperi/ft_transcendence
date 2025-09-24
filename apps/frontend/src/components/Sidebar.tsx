@@ -14,7 +14,7 @@ const sideBarLinks: SideBarLink[] = [
 
 const Sidebar: React.FC = () => {
   return (
-    <aside className="hidden md:flex md:w-64 md:flex-col md:border-r md:border-white/10 md:bg-slate-900/70 md:pt-24 md:pb-10 md:text-sm md:text-slate-100 md:shadow-lg md:shadow-indigo-950/20 md:backdrop-blur-xl md:min-h-[calc(100vh-6rem)] md:sticky md:top-24">
+    <aside className="hidden md:sticky md:top-24 md:flex md:min-h-[calc(100vh-6rem)] md:w-64 md:flex-col md:border-r md:border-white/10 md:bg-slate-900/70 md:pb-10 md:pt-24 md:text-sm md:text-slate-100 md:shadow-lg md:shadow-indigo-950/20 md:backdrop-blur-xl">
       <div className="px-6 pb-6">
         <p className="mb-4 text-xs uppercase tracking-[0.35em] text-slate-300/80">Profile</p>
         <nav className="space-y-1">

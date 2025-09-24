@@ -7,7 +7,8 @@ export interface ValidationResult {
 
 export const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 export const usernameRegex = /^(?!-)([a-zA-Z0-9-]+)(?<!-)$/;
-export const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()\-=+[\]{};:|,<.>/?`]).{12,}$/;
+export const passwordRegex =
+  /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()\-=+[\]{};:|,<.>/?`]).{12,}$/;
 
 export const validateEmail = (value: string): boolean => emailRegex.test(value);
 

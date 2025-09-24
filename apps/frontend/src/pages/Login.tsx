@@ -176,7 +176,7 @@ const Login: React.FC = () => {
   return (
     <div className="min-h-screen bg-slate-950">
       <Navbar />
-      <div className="relative min-h-[calc(100vh-6rem)] pt-28 pb-16 text-white">
+      <div className="relative min-h-[calc(100vh-6rem)] pb-16 pt-28 text-white">
         <div className="pointer-events-none absolute inset-x-0 top-0 h-72 bg-gradient-to-b from-indigo-600/40 via-purple-500/10 to-transparent blur-3xl" />
         <div className="pointer-events-none absolute inset-0 overflow-hidden">
           <div className="absolute -left-32 top-40 h-64 w-64 rounded-full bg-indigo-500/10 blur-3xl" />
@@ -192,8 +192,8 @@ const Login: React.FC = () => {
               Sign in to continue your arcade journey.
             </h1>
             <p className="max-w-xl text-base text-slate-200/80 sm:text-lg">
-              Log in to challenge friends, manage your profile.
-              Your games, stats, and security settings stay in sync across devices.
+              Log in to challenge friends, manage your profile. Your games, stats, and security
+              settings stay in sync across devices.
             </p>
             <ul className="space-y-3 text-sm text-slate-300/80 sm:text-base">
               {highlights.map((item) => (
@@ -222,17 +222,18 @@ const Login: React.FC = () => {
                 {!twoFactorPending ? (
                   <>
                     <AuthForm type="login" onSubmit={handleLogin} />
-                    {loading && (
-                      <p className="mt-3 text-sm text-indigo-200/80">Authenticating…</p>
-                    )}
+                    {loading && <p className="mt-3 text-sm text-indigo-200/80">Authenticating…</p>}
                   </>
                 ) : (
                   <form onSubmit={handleTwoFactorSubmit} className="space-y-4">
                     <p className="text-sm text-slate-200/80">
-                      Two-factor authentication is enabled. Enter the code from your authenticator app
-                      to continue.
+                      Two-factor authentication is enabled. Enter the code from your authenticator
+                      app to continue.
                     </p>
-                    <label className="block text-sm font-medium text-slate-200" htmlFor="twoFactorCode">
+                    <label
+                      className="block text-sm font-medium text-slate-200"
+                      htmlFor="twoFactorCode"
+                    >
                       Authentication code
                     </label>
                     <input

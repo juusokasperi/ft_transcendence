@@ -13,34 +13,34 @@ const PingPong: React.FC = () => {
     <div className="relative min-h-screen bg-black">
       <Navbar />
       <div className="relative h-screen w-full overflow-hidden pt-24">
-      {/* Video Background */}
-      <video
-        autoPlay
-        loop
-        muted
-        playsInline
-        className="absolute left-0 top-0 h-full w-full bg-black object-contain object-[center_80%] md:object-cover "
-      >
-        <source src="/src/assets/gif.mp4" type="video/mp4" />
-      </video>
+        {/* Video Background */}
+        <video
+          autoPlay
+          loop
+          muted
+          playsInline
+          className="absolute left-0 top-0 h-full w-full bg-black object-contain object-[center_80%] md:object-cover"
+        >
+          <source src="/src/assets/gif.mp4" type="video/mp4" />
+        </video>
 
-      {/* Neon Menu */}
-      <div className="relative z-10 flex h-full flex-col items-center justify-start space-y-8 pt-24">
-        <button onClick={handleLocalPlay} className="neon-btn neon-pink">
-          Play Local
-        </button>
+        {/* Neon Menu */}
+        <div className="relative z-10 flex h-full flex-col items-center justify-start space-y-8 pt-24">
+          <button onClick={handleLocalPlay} className="neon-btn neon-pink">
+            Play Local
+          </button>
 
-        <button onClick={handleOnlinePlay} className="neon-btn neon-blue">
-          Play Online
-        </button>
+          <button onClick={handleOnlinePlay} className="neon-btn neon-blue">
+            Play Online
+          </button>
 
-        <button onClick={handleTournaments} className="neon-btn neon-purple">
-          Tournaments
-        </button>
-      </div>
+          <button onClick={handleTournaments} className="neon-btn neon-purple">
+            Tournaments
+          </button>
+        </div>
 
-      {/* Neon button styling */}
-      <style>{`
+        {/* Neon button styling */}
+        <style>{`
         .neon-btn {
           position: relative;
           display: inline-flex;

@@ -210,10 +210,26 @@ const Stats: React.FC = () => {
               <div className="absolute -left-10 bottom-0 h-32 w-32 rounded-full bg-purple-500/10 blur-3xl" />
 
               <div className="relative grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-                <StatCard label="Matches played" value={matchesPlayed} accent="from-indigo-400 to-purple-500" />
-                <StatCard label="Wins" value={stats.matchesWon ?? 0} accent="from-emerald-400 to-teal-500" />
-                <StatCard label="Losses" value={stats.matchesLost ?? 0} accent="from-rose-400 to-red-500" />
-                <StatCard label="Win rate" value={`${winRate}%`} accent="from-sky-400 to-indigo-500" />
+                <StatCard
+                  label="Matches played"
+                  value={matchesPlayed}
+                  accent="from-indigo-400 to-purple-500"
+                />
+                <StatCard
+                  label="Wins"
+                  value={stats.matchesWon ?? 0}
+                  accent="from-emerald-400 to-teal-500"
+                />
+                <StatCard
+                  label="Losses"
+                  value={stats.matchesLost ?? 0}
+                  accent="from-rose-400 to-red-500"
+                />
+                <StatCard
+                  label="Win rate"
+                  value={`${winRate}%`}
+                  accent="from-sky-400 to-indigo-500"
+                />
 
                 <StatCard label="Points scored" value={stats.pointsScored} />
                 <StatCard label="Points conceded" value={stats.pointsConceded} />
@@ -275,7 +291,9 @@ const Stats: React.FC = () => {
                       <div className="grid gap-6 sm:grid-cols-[1fr_auto_1fr]">
                         <div>{renderTeam(match.players.team1, 'Team 1', colorClass)}</div>
                         <div className="flex items-center justify-center">
-                          <p className={`rounded-full bg-slate-800/80 px-5 py-2 text-lg font-semibold ${colorClass}`}>
+                          <p
+                            className={`rounded-full bg-slate-800/80 px-5 py-2 text-lg font-semibold ${colorClass}`}
+                          >
                             {match.team1Score} - {match.team2Score}
                           </p>
                         </div>
@@ -325,9 +343,7 @@ const StatCard: React.FC<{
   tone?: keyof typeof toneClass;
 }> = ({ label, value, accent, tone = 'neutral' }) => (
   <div className="relative overflow-hidden rounded-2xl border border-white/10 bg-slate-950/60 p-5 shadow shadow-indigo-950/20">
-    {accent && (
-      <div className={`absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r ${accent}`} />
-    )}
+    {accent && <div className={`absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r ${accent}`} />}
     <p className="text-xs uppercase tracking-[0.25em] text-slate-400">{label}</p>
     <p className={`mt-3 text-2xl font-semibold ${toneClass[tone]}`}>{value}</p>
   </div>

@@ -61,7 +61,7 @@ const Registration: React.FC = () => {
   return (
     <div className="min-h-screen bg-slate-950">
       <Navbar />
-      <div className="relative min-h-[calc(100vh-6rem)] pt-28 pb-16 text-white">
+      <div className="relative min-h-[calc(100vh-6rem)] pb-16 pt-28 text-white">
         <div className="pointer-events-none absolute inset-x-0 top-0 h-72 bg-gradient-to-b from-purple-600/40 via-indigo-500/10 to-transparent blur-3xl" />
         <div className="pointer-events-none absolute inset-0 overflow-hidden">
           <div className="absolute -left-20 top-48 h-64 w-64 rounded-full bg-indigo-500/10 blur-3xl" />
@@ -77,8 +77,8 @@ const Registration: React.FC = () => {
               Claim your spot and start climbing the leaderboard.
             </h1>
             <p className="max-w-xl text-base text-slate-200/80 sm:text-lg">
-              Create an account to unlock competitive matchmaking, track progress across every title,
-              and secure rewards for upcoming seasons.
+              Create an account to unlock competitive matchmaking, track progress across every
+              title, and secure rewards for upcoming seasons.
             </p>
             <ul className="space-y-3 text-sm text-slate-300/80 sm:text-base">
               {highlights.map((item) => (

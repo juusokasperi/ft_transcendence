@@ -1,12 +1,6 @@
 import React from 'react';
 
-type ButtonVariant =
-  | 'primary'
-  | 'danger'
-  | 'secondary'
-  | 'ghost'
-  | 'outline'
-  | 'success';
+type ButtonVariant = 'primary' | 'danger' | 'secondary' | 'ghost' | 'outline' | 'success';
 
 type ButtonTone = 'default' | 'subtle';
 
@@ -41,15 +35,20 @@ const variantClasses: Record<ButtonVariant, Record<ButtonTone, string>> = {
   success: {
     default:
       'bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow shadow-emerald-900/40 hover:from-emerald-400 hover:to-teal-400 focus-visible:ring-emerald-400/60',
-    subtle: 'bg-emerald-500/10 text-emerald-200 hover:bg-emerald-500/20 focus-visible:ring-emerald-400/40',
+    subtle:
+      'bg-emerald-500/10 text-emerald-200 hover:bg-emerald-500/20 focus-visible:ring-emerald-400/40',
   },
   secondary: {
-    default: 'border border-white/20 bg-white/10 text-white hover:bg-white/15 focus-visible:ring-white/30',
-    subtle: 'border border-white/10 bg-transparent text-white hover:bg-white/10 focus-visible:ring-white/20',
+    default:
+      'border border-white/20 bg-white/10 text-white hover:bg-white/15 focus-visible:ring-white/30',
+    subtle:
+      'border border-white/10 bg-transparent text-white hover:bg-white/10 focus-visible:ring-white/20',
   },
   outline: {
-    default: 'border border-white/20 bg-transparent text-white hover:bg-white/10 focus-visible:ring-white/30',
-    subtle: 'border border-white/10 bg-transparent text-white/80 hover:bg-white/5 focus-visible:ring-white/20',
+    default:
+      'border border-white/20 bg-transparent text-white hover:bg-white/10 focus-visible:ring-white/30',
+    subtle:
+      'border border-white/10 bg-transparent text-white/80 hover:bg-white/5 focus-visible:ring-white/20',
   },
   ghost: {
     default: 'text-white hover:bg-white/10 focus-visible:ring-white/20',

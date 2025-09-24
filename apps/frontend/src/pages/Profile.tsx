@@ -335,11 +335,11 @@ const Profile: React.FC = () => {
                 )}
                 <input
                   type="text"
-                  value={isEditing ? username : user?.username ?? ''}
+                  value={isEditing ? username : (user?.username ?? '')}
                   placeholder={user?.username}
                   onChange={(e) => setUsername(e.target.value)}
                   disabled={!isEditing}
-                  className={`w-full rounded-2xl border border-white/15 bg-white/5 px-4 py-3 text-sm text-white placeholder:text-slate-400 transition focus:outline-none focus:ring-2 focus:ring-indigo-400/60 disabled:cursor-not-allowed disabled:opacity-60 ${
+                  className={`w-full rounded-2xl border border-white/15 bg-white/5 px-4 py-3 text-sm text-white transition placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-400/60 disabled:cursor-not-allowed disabled:opacity-60 ${
                     isUsernameDirty ? 'ring-2 ring-emerald-400/70' : ''
                   }`}
                 />
