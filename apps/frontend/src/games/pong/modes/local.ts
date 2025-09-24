@@ -28,7 +28,7 @@ import {
 import { pickInitialServer, SERVE_SELECT_TOTAL_MS, randomSeed32 } from '@pong/shared';
 import { disposeWorld } from '@pong/render';
 import type { Preferences } from './preferences';
-import { applyPreferences, hexToRgb } from './preferences';
+import { applyPreferences, hexToRgb, rgb01ToCss } from './preferences';
 
 interface PongInstance {
   start(): void;
@@ -76,6 +76,13 @@ export function createLocalApp(canvas: HTMLCanvasElement, preferences?: Preferen
     rightMaterial: right.mesh.material,
     rowsMirrored,
   });
+
+  // Match HUD name colors to player/paddle colors (preferences-driven)
+  if (preferences) {
+    const c1 = hexToRgb(preferences.player1.paddleColor);
+    const c2 = hexToRgb(preferences.player2.paddleColor);
+    if (c1 && c2) hud.setPlayerNameColors(rgb01ToCss(c1), rgb01ToCss(c2));
+  }
 
   // Keep global palette in sync for FX (e.g., serve selection) that read Colors.
   // Compute effective left/right tints based on current side mapping.
@@ -206,6 +213,8 @@ export function createLocalApp(canvas: HTMLCanvasElement, preferences?: Preferen
             const leftRGB = rowsMirrored ? c2 : c1;
             const rightRGB = rowsMirrored ? c1 : c2;
             setPaddleColors(leftRGB, rightRGB);
+            // Keep HUD name colors in sync with player colors
+            hud.setPlayerNameColors(rgb01ToCss(c1), rgb01ToCss(c2));
           }
         }
 
@@ -313,6 +322,10 @@ export function createLocalApp(canvas: HTMLCanvasElement, preferences?: Preferen
         rightMaterial: right.mesh.material,
         rowsMirrored,
       });
+      // Update HUD name colors to match updated player colors
+      const c1 = hexToRgb(p.player1.paddleColor);
+      const c2 = hexToRgb(p.player2.paddleColor);
+      if (c1 && c2) hud.setPlayerNameColors(rgb01ToCss(c1), rgb01ToCss(c2));
     },
     observe() {
       // Provide a minimal, read-only snapshot for AI planning.

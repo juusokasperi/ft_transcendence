@@ -6,6 +6,8 @@ export type DomScoreboardAPI = {
   setServer: (end: TableEnd) => void; // blue orb left of the name
   setDeuce: (flag: boolean) => void;
   setPlayerNames: (eastName: string, westName: string) => void;
+  /** Set CSS colors for player names (e.g., to match paddles). */
+  setPlayerNameColors: (eastCss: string, westCss: string) => void;
   setGames: (history: GameHistoryEntry[], bestOf: number, currentGameIndex?: number) => void;
   attachToCanvas: (canvas: HTMLCanvasElement) => void;
   attachToElement: (el: HTMLElement) => void;
@@ -198,6 +200,11 @@ export function createScoreboard(): DomScoreboardAPI {
     setPoints(lastPoints.east, lastPoints.west);
   };
 
+  const setPlayerNameColors = (eastCss: string, westCss: string) => {
+    names.east.name.style.color = eastCss;
+    names.west.name.style.color = westCss;
+  };
+
   // Element anchoring (with ResizeObserver)
   let boundCanvas: HTMLElement | null = null;
   let ro: ResizeObserver | null = null;
@@ -259,6 +266,7 @@ export function createScoreboard(): DomScoreboardAPI {
     setServer,
     setDeuce,
     setPlayerNames,
+    setPlayerNameColors,
     setGames,
     attachToCanvas,
     attachToElement,
