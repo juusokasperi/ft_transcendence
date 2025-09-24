@@ -114,7 +114,7 @@ const Stats: React.FC = () => {
 
   const renderTeam = (team: (MatchPlayerPublic | null)[], teamName: string, colorClass: string) => (
     <div className="flex flex-col space-y-1">
-      <span className="text-sm font-medium text-gray-600">{teamName}</span>
+      <span className="text-xs uppercase tracking-[0.2em] text-slate-400">{teamName}</span>
       {team.map((player, index) => {
         const avatarUrl = resolveAvatarUrl(player?.avatar, axios.defaults.baseURL);
         const pstats = player?.stats;
@@ -123,17 +123,17 @@ const Stats: React.FC = () => {
           <div key={index} className="flex items-center space-x-2">
             {player && player.username ? (
               <>
-                <img src={avatarUrl} alt={player.username} className="h-6 w-6 rounded-full" />
+                <img src={avatarUrl} alt={player.username} className="h-7 w-7 rounded-full" />
                 <div className="flex flex-col">
                   <div>
-                    <span className="text-sm">{player.username}</span>
-                    <span className="ml-1 text-xs text-gray-500">({player.ranking})</span>
+                    <span className="text-sm font-medium text-white/90">{player.username}</span>
+                    <span className="ml-1 text-xs text-slate-400">({player.ranking})</span>
                   </div>
-                  <span className={`text-xs ${colorClass}`}>
+                  <span className={`text-xs font-semibold ${colorClass}`}>
                     {player.rankingDelta > 0 ? `+${player.rankingDelta}` : player.rankingDelta}
                   </span>
                   {pstats && (
-                    <span className="text-[10px] text-gray-500">
+                    <span className="text-[10px] text-slate-400">
                       Pts {pstats.pointsScored}-{pstats.pointsConceded} • Games {pstats.gamesWon}-
                       {pstats.gamesLost} • Lead {pstats.maxPointLead}
                     </span>
@@ -141,7 +141,7 @@ const Stats: React.FC = () => {
                 </div>
               </>
             ) : (
-              <span className="text-sm text-gray-400">Unknown Player</span>
+              <span className="text-sm text-slate-500">Unknown player</span>
             )}
           </div>
         );
@@ -158,160 +158,170 @@ const Stats: React.FC = () => {
   const getResultColor = (result: 'win' | 'loss' | 'draw') => {
     switch (result) {
       case 'win':
-        return 'text-green-600';
+        return 'text-emerald-400';
       case 'loss':
-        return 'text-red-600';
+        return 'text-rose-400';
       case 'draw':
-        return 'text-yellow-600';
+        return 'text-amber-300';
       default:
-        return 'text-gray-800';
+        return 'text-white';
     }
   };
 
-  if (loading) {
-    return (
-      <div className="flex h-64 items-center justify-center">
-        <div className="text-lg text-gray-600">Loading matches..</div>
-      </div>
-    );
-  }
-
   return (
-    <div className="container mx-auto px-4 py-8">
-      {/* Ranked Stats */}
-      {stats && (
-        <div className="mb-8 rounded-lg bg-white p-6 shadow-md">
-          <h2 className="mb-4 text-xl font-bold text-gray-800">Ranked Stats</h2>
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-3 lg:grid-cols-4">
-            <div className="text-center">
-              <div className="text-2xl font-bold text-purple-600">{matchesPlayed}</div>
-              <div className="text-gray-600">Matches Played</div>
-            </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold text-green-600">{stats.matchesWon}</div>
-              <div className="text-gray-600">Wins</div>
-            </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold text-red-600">{stats.matchesLost}</div>
-              <div className="text-gray-600">Losses</div>
-            </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold text-blue-600">{winRate}%</div>
-              <div className="text-gray-600">Win Rate</div>
-            </div>
-            <div className="text-center">
-              <div className={`text-2xl font-bold`}>{stats.ranking}</div>
-              <div className="text-gray-600">Rating</div>
-            </div>
-            <div className="text-center">
-              <div
-                className={`text-2xl font-bold ${rankingDeltaTotal >= 0 ? 'text-green-600' : 'text-red-600'}`}
-              >
-                {rankingDeltaTotal >= 0 ? `+${rankingDeltaTotal}` : rankingDeltaTotal}
-              </div>
-              <div className="text-gray-600">Net Rating Change</div>
-            </div>
-            <div className="text-center">
-              <div
-                className={`text-2xl font-bold ${avgDelta >= 0 ? 'text-green-600' : 'text-red-600'}`}
-              >
-                {avgDelta >= 0 ? `+${avgDelta}` : avgDelta}
-              </div>
-              <div className="text-gray-600">Avg Rating Change</div>
-            </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold text-gray-800">{stats.pointsScored}</div>
-              <div className="text-gray-600">Points Scored</div>
-            </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold text-gray-800">{stats.pointsConceded}</div>
-              <div className="text-gray-600">Points Conceded</div>
-            </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold text-gray-800">{stats.gamesWon}</div>
-              <div className="text-gray-600">Games Won</div>
-            </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold text-gray-800">{stats.gamesLost}</div>
-              <div className="text-gray-600">Games Lost</div>
-            </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold text-gray-800">{stats.maxPointLead}</div>
-              <div className="text-gray-600">Best Point Lead</div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Matches List */}
-      <div className="rounded-lg bg-white shadow-md">
-        <div className="border-b p-6">
-          <h2 className="text-xl font-bold text-gray-800">Recent Matches</h2>
+    <div className="min-h-screen bg-slate-950">
+      <div className="relative min-h-[calc(100vh-6rem)] pb-20 pt-28 text-white">
+        <div className="pointer-events-none absolute inset-x-0 top-0 h-72 bg-gradient-to-b from-indigo-600/40 via-purple-500/10 to-transparent blur-3xl" />
+        <div className="pointer-events-none absolute inset-0 overflow-hidden">
+          <div className="absolute -left-36 top-56 h-64 w-64 rounded-full bg-indigo-500/10 blur-3xl" />
+          <div className="absolute bottom-12 right-8 h-72 w-72 rounded-full bg-purple-500/10 blur-3xl" />
         </div>
 
-        {matches.length > 0 ? (
-          <div className="divide-y divide-gray-200">
-            {matches.map((match) => {
-              const result = getMatchResult(match);
-              const colorClass = getResultColor(result);
-
-              return (
-                <div key={match.id} className="p-6 hover:bg-gray-50">
-                  <div className="mb-4 flex items-start justify-between">
-                    <div className="flex items-center space-x-4">
-                      <div className="text-lg font-bold text-gray-800">Match #{match.id}</div>
-                      {match.tournamentStage && (
-                        <span className="rounded-full bg-purple-100 px-3 py-1 text-sm font-medium text-purple-800">
-                          {match.tournamentStage}
-                        </span>
-                      )}
-                    </div>
-                    <div className="text-sm text-gray-500">{formatDate(match.playedAt)}</div>
-                  </div>
-
-                  <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
-                    {/* Team 1 */}
-                    <div>{renderTeam(match.players.team1, 'Team 1', colorClass)}</div>
-
-                    {/* Score */}
-                    <div className="flex items-center justify-center">
-                      <div className="text-center">
-                        <div className={`text-3xl font-bold ${colorClass}`}>
-                          {match.team1Score} - {match.team2Score}
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Team 2 */}
-                    <div>{renderTeam(match.players.team2, 'Team 2', '')}</div>
-                  </div>
-                </div>
-              );
-            })}
-
-            {hasMore && !loading && (
-              <div className="border-t p-6 text-center">
-                <button
-                  onClick={loadMore}
-                  disabled={loadingMore}
-                  className="rounded-lg bg-purple-600 px-6 py-2 text-white hover:bg-purple-700 disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                  {loadingMore ? 'Loading...' : 'Load More Matches'}
-                </button>
+        <div className="relative mx-auto flex w-full max-w-6xl flex-col gap-10 px-4 sm:px-6 lg:px-12">
+          <header className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
+            <div>
+              <h1 className="text-3xl font-semibold sm:text-4xl">Performance overview</h1>
+              <p className="text-sm text-slate-300/80">
+                Match history, rankings, and streaks are updated after every game you play.
+              </p>
+            </div>
+            {stats && (
+              <div className="inline-flex items-center gap-3 rounded-full border border-indigo-500/30 bg-indigo-500/10 px-4 py-2 text-sm text-indigo-200">
+                <span className="font-semibold">Current rating</span>
+                <span className="rounded-full bg-slate-950/50 px-3 py-1 text-white">
+                  {stats.ranking}
+                </span>
               </div>
             )}
-          </div>
-        ) : (
-          <div className="p-8 text-center">
-            <div className="text-lg text-gray-500">No matches found</div>
-            <div className="mt-2 text-sm text-gray-400">
-              Start playing to see your match history here!
+          </header>
+
+          {stats ? (
+            <section className="relative overflow-hidden rounded-3xl border border-white/10 bg-slate-900/70 p-8 shadow-xl shadow-indigo-950/40 backdrop-blur">
+              <div className="absolute -right-10 top-0 h-40 w-40 rounded-full bg-indigo-500/10 blur-3xl" />
+              <div className="absolute -left-10 bottom-0 h-32 w-32 rounded-full bg-purple-500/10 blur-3xl" />
+
+              <div className="relative grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+                <StatCard label="Matches played" value={matchesPlayed} accent="from-indigo-400 to-purple-500" />
+                <StatCard label="Wins" value={stats.matchesWon ?? 0} accent="from-emerald-400 to-teal-500" />
+                <StatCard label="Losses" value={stats.matchesLost ?? 0} accent="from-rose-400 to-red-500" />
+                <StatCard label="Win rate" value={`${winRate}%`} accent="from-sky-400 to-indigo-500" />
+
+                <StatCard label="Points scored" value={stats.pointsScored} />
+                <StatCard label="Points conceded" value={stats.pointsConceded} />
+                <StatCard label="Games won" value={stats.gamesWon} />
+                <StatCard label="Games lost" value={stats.gamesLost} />
+
+                <StatCard
+                  label="Net rating change"
+                  value={rankingDeltaTotal >= 0 ? `+${rankingDeltaTotal}` : rankingDeltaTotal}
+                  tone={rankingDeltaTotal >= 0 ? 'positive' : 'negative'}
+                />
+                <StatCard
+                  label="Avg rating change"
+                  value={avgDelta >= 0 ? `+${avgDelta}` : avgDelta}
+                  tone={avgDelta >= 0 ? 'positive' : 'negative'}
+                />
+                <StatCard label="Best point lead" value={stats.maxPointLead} />
+              </div>
+            </section>
+          ) : (
+            <section className="rounded-3xl border border-dashed border-white/10 bg-slate-900/60 p-10 text-center text-slate-300/70">
+              Stats will appear here once you finish your first ranked match.
+            </section>
+          )}
+
+          <section className="relative overflow-hidden rounded-3xl border border-white/10 bg-slate-900/70 shadow-xl shadow-indigo-950/30 backdrop-blur">
+            <div className="border-b border-white/10 px-6 py-4">
+              <h2 className="text-lg font-semibold">Recent matches</h2>
             </div>
-          </div>
-        )}
+
+            {loading ? (
+              <div className="flex h-64 items-center justify-center text-sm text-slate-300/70">
+                Pulling your latest games…
+              </div>
+            ) : matches.length > 0 ? (
+              <div className="divide-y divide-white/5">
+                {matches.map((match) => {
+                  const result = getMatchResult(match);
+                  const colorClass = getResultColor(result);
+
+                  return (
+                    <article key={match.id} className="px-6 py-5 transition hover:bg-white/5">
+                      <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                        <div className="flex items-center gap-4">
+                          <span className="rounded-full bg-slate-800/80 px-3 py-1 text-sm text-indigo-200">
+                            Match #{match.id}
+                          </span>
+                          {match.tournamentStage && (
+                            <span className="rounded-full bg-purple-500/20 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-purple-200">
+                              {match.tournamentStage}
+                            </span>
+                          )}
+                        </div>
+                        <time className="text-xs uppercase tracking-[0.2em] text-slate-400">
+                          {formatDate(match.playedAt)}
+                        </time>
+                      </div>
+
+                      <div className="grid gap-6 sm:grid-cols-[1fr_auto_1fr]">
+                        <div>{renderTeam(match.players.team1, 'Team 1', colorClass)}</div>
+                        <div className="flex items-center justify-center">
+                          <p className={`rounded-full bg-slate-800/80 px-5 py-2 text-lg font-semibold ${colorClass}`}>
+                            {match.team1Score} - {match.team2Score}
+                          </p>
+                        </div>
+                        <div>{renderTeam(match.players.team2, 'Team 2', '')}</div>
+                      </div>
+                    </article>
+                  );
+                })}
+
+                {hasMore && (
+                  <div className="border-t border-white/10 p-6 text-center">
+                    <button
+                      onClick={loadMore}
+                      disabled={loadingMore}
+                      className="inline-flex items-center justify-center rounded-full bg-gradient-to-r from-indigo-500 to-purple-500 px-5 py-2 text-sm font-semibold text-white shadow shadow-indigo-900/40 transition hover:from-indigo-400 hover:to-purple-400 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      {loadingMore ? 'Loading…' : 'Load more matches'}
+                    </button>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="p-10 text-center text-slate-300/70">
+                <p className="text-lg font-medium">No matches yet</p>
+                <p className="mt-2 text-sm text-slate-400/80">
+                  Play your first game to start building your match timeline.
+                </p>
+              </div>
+            )}
+          </section>
+        </div>
       </div>
     </div>
   );
 };
+
+const toneClass = {
+  positive: 'text-emerald-400',
+  negative: 'text-rose-400',
+  neutral: 'text-white',
+} as const;
+
+const StatCard: React.FC<{
+  label: string;
+  value: number | string;
+  accent?: string;
+  tone?: keyof typeof toneClass;
+}> = ({ label, value, accent, tone = 'neutral' }) => (
+  <div className="relative overflow-hidden rounded-2xl border border-white/10 bg-slate-950/60 p-5 shadow shadow-indigo-950/20">
+    {accent && (
+      <div className={`absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r ${accent}`} />
+    )}
+    <p className="text-xs uppercase tracking-[0.25em] text-slate-400">{label}</p>
+    <p className={`mt-3 text-2xl font-semibold ${toneClass[tone]}`}>{value}</p>
+  </div>
+);
 
 export default Stats;
