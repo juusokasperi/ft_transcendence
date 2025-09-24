@@ -26,15 +26,15 @@ const PingPong: React.FC = () => {
 
       {/* Neon Menu */}
       <div className="relative z-10 flex h-full flex-col items-center justify-start space-y-8 pt-24">
-        <button onClick={handleLocalPlay} className="neon-btn border-pink-500 text-pink-500">
+        <button onClick={handleLocalPlay} className="neon-btn neon-pink">
           Play Local
         </button>
 
-        <button onClick={handleOnlinePlay} className="neon-btn border-blue-500 text-blue-500">
+        <button onClick={handleOnlinePlay} className="neon-btn neon-blue">
           Play Online
         </button>
 
-        <button onClick={handleTournaments} className="neon-btn border-purple-500 text-purple-500">
+        <button onClick={handleTournaments} className="neon-btn neon-purple">
           Tournaments
         </button>
       </div>
@@ -43,11 +43,15 @@ const PingPong: React.FC = () => {
       <style>{`
         .neon-btn {
           position: relative;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          width: min(80vw, 18rem);
           padding: 1rem 3rem;
           font-size: 1.5rem;
           font-weight: bold;
           text-transform: uppercase;
-          border: 2px solid;
+          border: 2px solid currentColor;
           border-radius: 0.75rem;
           background: transparent;
           cursor: pointer;
@@ -56,6 +60,7 @@ const PingPong: React.FC = () => {
             0 0 10px currentColor,
             0 0 20px currentColor;
           transition: all 0.3s ease-in-out;
+          letter-spacing: 0.1em;
         }
 
         .neon-btn:hover {
@@ -66,6 +71,10 @@ const PingPong: React.FC = () => {
             0 0 80px currentColor;
           transform: scale(1.05);
         }
+
+        .neon-pink { color: #ff4d9d; }
+        .neon-blue { color: #4dc9ff; }
+        .neon-purple { color: #b48bff; }
       `}</style>
       </div>
     </div>
