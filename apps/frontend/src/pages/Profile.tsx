@@ -8,6 +8,7 @@ import TwoFactorSettings from '../components/TwoFactorSettings';
 import PasswordSettings from '../components/PasswordSettings';
 import Button from '../components/Button';
 import { validateUsername } from '../utils/validation';
+import ConfirmDialog from '../components/ConfirmDialog';
 
 const Profile: React.FC = () => {
   const { axios, user, setUser } = useAppContext();
@@ -19,6 +20,8 @@ const Profile: React.FC = () => {
   const [isEditing, setIsEditing] = useState<boolean>(false);
 
   const [loading, setLoading] = useState<boolean>(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState<boolean>(false);
+  const [isDeleting, setIsDeleting] = useState<boolean>(false);
 
   const baseUsername = user?.username ?? '';
   const isUsernameDirty = isEditing && username !== baseUsername;
@@ -175,13 +178,19 @@ const Profile: React.FC = () => {
     setIsEditing(false);
   };
 
-  const handleDelete = async () => {
-    if (!window.confirm('Are you sure you want to delete your account?')) return;
+  const handleConfirmDelete = async () => {
+    if (isDeleting) return;
+
+    setIsDeleting(true);
     try {
       await axios.delete(`/api/users/me`);
       toast.success('Confirmation email sent');
+      setDeleteDialogOpen(false);
     } catch (err: any) {
-      toast.error(err.response?.data?.message || 'Delete failed');
+      const axiosErr = err as AxiosError<{ message?: string }>;
+      toast.error(axiosErr?.response?.data?.message || 'Delete failed');
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -331,7 +340,7 @@ const Profile: React.FC = () => {
                     type="button"
                     variant="danger"
                     tone="subtle"
-                    onClick={handleDelete}
+                    onClick={() => setDeleteDialogOpen(true)}
                     withMinWidth={false}
                     className="flex-1 px-6 py-2 text-sm"
                   >
@@ -346,6 +355,20 @@ const Profile: React.FC = () => {
         <PasswordSettings axios={axios} active={isEditing} />
         <TwoFactorSettings axios={axios} user={user} setUser={setUser} />
       </div>
+      <ConfirmDialog
+        open={deleteDialogOpen}
+        title="Delete account?"
+        description="We will email you a confirmation link. This action cannot be reversed once complete."
+        confirmLabel={isDeleting ? 'Sending…' : 'Yes, delete'}
+        cancelLabel="Keep account"
+        confirmDisabled={isDeleting}
+        tone="danger"
+        onCancel={() => {
+          if (isDeleting) return;
+          setDeleteDialogOpen(false);
+        }}
+        onConfirm={handleConfirmDelete}
+      />
     </div>
   );
 };
