@@ -16,6 +16,7 @@ import { broadcastLobbies } from './utils/broadcast.ts';
 import { removeClient, cleanupLobby } from './utils/cleanup.ts';
 import { handleAcceptMatch, handleDeclineMatch, tryMatchQueue } from './utils/queue.ts';
 import type { IncomingMessage } from 'http';
+import { extractToken } from './utils/auth.ts';
 
 const wss = new WebSocketServer({ port: PORT });
 const clients = new Map<string, ClientInfo>();
@@ -26,33 +27,14 @@ const lobbies = new Map<string, Lobby>();
 console.log(`Matchmaking WebSocket server listening on ${PORT}`);
 log(`Server started on port ${PORT}`);
 
-function extractToken(socket: WebSocket, req: IncomingMessage): string | undefined {
-  const cookieHeader = req.headers.cookie;
-  if (!cookieHeader)
-  {
-    socket.send(JSON.stringify({ type: 'ERROR', code: 'AUTH', message: 'Token missing' }));
-    socket.close();
-    return undefined;
-  }
-  const match = cookieHeader.match(new RegExp('(^|;)\\s*token=([^;]*)'));
-  if (!match || !match[2])
-  {
-    socket.send(JSON.stringify({ type: 'ERROR', code: 'AUTH', message: 'Token missing' }));
-    socket.close();
-    return undefined;
-  }
-  return match[2];
-};
-
 setInterval(() => {
   tryMatchQueue(queue, pendingMatches);
-  }, 1000);
+  }, 500);
 
 wss.on('connection', (socket: WebSocket, req) => {
   const token = extractToken(socket, req);
   if (!token)
     return;
-  console.log(`On cnonection token is ${token}`);
   const id = uuid();
   const client: ClientInfo = { id, socket, ready: false, username: 'Unknown user', joinedAt: Date.now(), uuid: '', mmr: 1000, authenticated: false };
   clients.set(id, client);
@@ -61,6 +43,7 @@ wss.on('connection', (socket: WebSocket, req) => {
     return;
   socket.send(JSON.stringify({ type: 'CONNECTED', clientId: id }));
  // broadcastLobbies(client, lobbies, clients);
+ // This will be for tournament system
   socket.on('message', (raw: RawData) => {
     let data: MatchmakingClientMessage;
     try {
@@ -79,6 +62,7 @@ wss.on('connection', (socket: WebSocket, req) => {
       case 'DECLINE_MATCH':
         handleDeclineMatch(data.matchId, client, pendingMatches, queue);
         break;
+      // These will be for the tournament system
       // case 'createLobby':
       //   handleCreateLobby(data, client, lobbies, clients);
       //   break;
@@ -112,5 +96,6 @@ wss.on('connection', (socket: WebSocket, req) => {
 wss.on('close', () => {
   log('Server closed, cleaning up');
   clients.clear();
+  queue.length = 0;
   lobbies.forEach((_, id) => cleanupLobby(id, lobbies, clients));
 });

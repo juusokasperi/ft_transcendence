@@ -45,7 +45,7 @@ const OnlineGame: React.FC = () => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const appRef = useRef<{ destroy(): void } | null>(null);
   const clientRef = useRef<ReturnType<typeof createMatchmakingClient> | null>(null);
-  const { user } = useAppContext();
+  const { user, navigate } = useAppContext();
 
   const [clientId, setClientId] = useState('');
   const [lobbyId, setLobbyId] = useState('');
@@ -93,9 +93,12 @@ const OnlineGame: React.FC = () => {
           client.socket.close();
           break;
         case 'ERROR':
-          setAuthenticated(false);
-          setStatus('connecting');
-          toast.error(msg.message);
+          if (msg.code === 'AUTH')
+          {
+            setAuthenticated(false);
+            toast.error(msg.message);
+            navigate('/login');
+          }
           break;
         case 'lobbyList':
           setLobbies(msg.lobbies);
@@ -326,66 +329,45 @@ const OnlineGame: React.FC = () => {
             </div>
           )}
 
-          <div className="space-y-2 text-sm text-white/80">
-            <p>
-              <span className="text-white/60">Client:</span>{' '}
-              <span className="font-mono">{clientId || '...'}</span>
-            </p>
+          {lobbyId ? (
+            <div className="mt-2 space-y-3">
+              <p>
+                <span className="text-white/60">Lobby:</span>{' '}
+                <span className="font-mono">{lobbyId}</span>
+              </p>
+              <p>
+                <span className="text-white/60">Players: </span>
+                <span className="font-mono">{getLobbyPlayerCount(lobbyId)}</span>
+              </p>
+              <button
+                onClick={handleReady}
+                disabled={ready}
+                className={
+                  ready
+                    ? 'w-full cursor-default rounded-lg border-2 border-green-400 bg-green-900/80 px-4 py-2 font-semibold text-green-300'
+                    : 'w-full rounded-lg border-2 border-emerald-400 px-4 py-2 font-semibold text-emerald-300 transition hover:bg-emerald-400 hover:text-black'
+                }
+              >
+                {ready ? 'Ready! ✅' : 'I’m Ready ✅'}
+              </button>
+            </div>
+          ) : (
+            <div className="mt-2 space-y-3">
+              <button
+                onClick={handleCreateLobby}
+                className="w-full rounded-lg border-2 border-pink-500 px-4 py-2 font-semibold text-pink-400 transition hover:bg-pink-500 hover:text-black"
+              >
+                Create Tournament
+              </button>
 
-            {lobbyId ? (
-              <div className="mt-2 space-y-3">
-                <p>
-                  <span className="text-white/60">Lobby:</span>{' '}
-                  <span className="font-mono">{lobbyId}</span>
-                </p>
-                <p>
-                  <span className="text-white/60">Players: </span>
-                  <span className="font-mono">{getLobbyPlayerCount(lobbyId)}</span>
-                </p>
-                <button
-                  onClick={handleReady}
-                  disabled={ready}
-                  className={
-                    ready
-                      ? 'w-full cursor-default rounded-lg border-2 border-green-400 bg-green-900/80 px-4 py-2 font-semibold text-green-300'
-                      : 'w-full rounded-lg border-2 border-emerald-400 px-4 py-2 font-semibold text-emerald-300 transition hover:bg-emerald-400 hover:text-black'
-                  }
-                >
-                  {ready ? 'Ready! ✅' : 'I’m Ready ✅'}
-                </button>
-              </div>
-            ) : (
-              <div className="mt-2 space-y-3">
-                <button
-                  onClick={handleCreateLobby}
-                  className="w-full rounded-lg border-2 border-pink-500 px-4 py-2 font-semibold text-pink-400 transition hover:bg-pink-500 hover:text-black"
-                >
-                  Create Tournament
-                </button>
-
-                <div className="flex items-center gap-2">
-                  <input
-                    value={joinLobbyId}
-                    onChange={(e) => setJoinLobbyId(e.target.value)}
-                    placeholder="Lobby ID"
-                    className="flex-1 rounded-lg border border-white/20 bg-black/40 px-3 py-2 font-mono outline-none placeholder:text-white/40 focus:border-white/40"
-                  />
-                  <button
-                    onClick={handleJoinLobby}
-                    className="rounded-lg border-2 border-blue-400 px-4 py-2 font-semibold text-blue-300 transition hover:bg-blue-400 hover:text-black"
-                  >
-                    Join
-                  </button>
-                </div>
-                <LobbyList
-                  lobbies={lobbies}
-                  onJoin={(lobbyId) => {
-                    handleJoinLobbyDirect(lobbyId);
-                  }}
-                />
-              </div>
-            )}
-          </div>
+              <LobbyList
+                lobbies={lobbies}
+                onJoin={(lobbyId) => {
+                  handleJoinLobbyDirect(lobbyId);
+                }}
+              />
+            </div>
+          )}
         </div>
       </div>
     </div>

@@ -1,7 +1,7 @@
 import jwt from 'jsonwebtoken';
 import { SECRET } from './config.ts';
-import { log } from './log.ts';
-
+import type { WebSocket } from 'ws';
+import type { IncomingMessage } from 'http';
 export async function verifySiteToken(token: string): Promise<{ username: string, uuid: string } | null> {
   try {
     const payload = jwt.verify(token, SECRET) as { username: string, uuid: string };
@@ -26,3 +26,22 @@ export async function fetchUserMMR(uuid: string, siteToken: string): Promise<num
     return null;
   }
 }
+
+export function extractToken(socket: WebSocket, req: IncomingMessage): string | undefined {
+  const cookieHeader = req.headers.cookie;
+  if (!cookieHeader)
+  {
+    socket.send(JSON.stringify({ type: 'ERROR', code: 'AUTH', message: 'Token missing' }));
+    socket.close();
+    return undefined;
+  }
+  const match = cookieHeader.match(new RegExp('(^|;)\\s*token=([^;]*)'));
+  if (!match || !match[2])
+  {
+    socket.send(JSON.stringify({ type: 'ERROR', code: 'AUTH', message: 'Token missing' }));
+    socket.close();
+    return undefined;
+  }
+  return match[2];
+};
+
