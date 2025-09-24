@@ -4,6 +4,7 @@ import { useAppContext } from '../context/AppContext';
 import { toast } from 'react-hot-toast';
 import type { AxiosError } from 'axios';
 import type { AxiosResponse } from 'axios';
+import { Link } from 'react-router-dom';
 
 const Registration: React.FC = () => {
   const { axios, navigate, user } = useAppContext();
@@ -51,6 +52,12 @@ const Registration: React.FC = () => {
         <h1 className="mb-6 text-center text-2xl font-bold">Register</h1>
         <AuthForm type="register" onSubmit={handleRegister} />
         {loading && <p className="mt-2 text-sm">Creating account…</p>}
+        <p className="mt-6 text-center text-sm text-gray-600">
+          Already have an account?
+          <Link to="/login" className="ml-1 font-semibold text-blue-700 hover:underline">
+            Sign in →
+          </Link>
+        </p>
       </div>
     </div>
   );

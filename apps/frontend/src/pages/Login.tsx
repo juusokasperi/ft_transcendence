@@ -198,10 +198,12 @@ const Login: React.FC = () => {
             </div>
           </form>
         )}
-        <span className="text-gray-600">Don't have an account yet?</span>
-        <Link to="/signup" className="ml-2 text-blue-700">
-          Sign Up
-        </Link>
+        <p className="mt-6 text-center text-sm text-gray-600">
+          Don't have an account yet?
+          <Link to="/signup" className="ml-1 font-semibold text-blue-700 hover:underline">
+            Sign Up →
+          </Link>
+        </p>
       </div>
     </div>
   );
