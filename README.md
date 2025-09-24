@@ -4,13 +4,13 @@
 
 ## 👥 Team & Responsibilities
 
-| Member     | Role                                                                                                |
-| ---------- | --------------------------------------------------------------------------------------------------- |
-| Matias     | **Frontend** (React + Tailwind + TypeScript) – user flows: registration, login, deletion, dashboard |
-| Juuso/Juri | **Backend (REST API + Database Models)** – user management, stats, friends system                   |
-| Juuso/Juri | **WebSocket Backend** – real-time matchmaking & chat                                                |
-| Nicolas    | **Game Logic Server** – server-side Pong engine, game physics, Babylon 3D rendering                 |
-| Léon       | **DevOps** – Docker, CI/CD, monitoring, deployment                                                  |
+| Member      | Role                                                                                                |
+| ----------- | --------------------------------------------------------------------------------------------------- |
+| Matias      | **Frontend** (React + Tailwind + TypeScript) – user flows: registration, login, deletion, dashboard |
+| Juuso/Iurii | **Backend (REST API + Database Models)** – user management, stats, friends system                   |
+| Juuso/Iurii | **WebSocket Backend** – real-time matchmaking & chat                                                |
+| Nicolas     | **Game Logic Server** – server-side Pong engine, game physics, Babylon 3D rendering                 |
+| Léon        | **DevOps** – Docker, CI/CD, monitoring, deployment                                                  |
 
 ---
 
@@ -21,7 +21,7 @@
 - **Frontend:** Vite + React + Tailwind CSS + TypeScript
 - **Game Engine:** Babylon.js (advanced 3D)
 - **Authentication:** JWT + Google Sign-In + Two-Factor Authentication (2FA)
-- **Real-time:** WebSockets (Yuri’s server for matchmaking/chat + Niklas’s game server)
+- **Real-time:** WebSockets (Iurii’s server for matchmaking/chat + Nicolas’s game server)
 - **DevOps:** Docker, log management, monitoring, microservices design
 - **Optional:** Avalanche + Solidity for blockchain tournament score storage
 
@@ -67,7 +67,7 @@
 
 ## 📅 Planning
 
-**Phase 1 – Initial Backend & Frontend (Matias + Juuso/Juri)**
+**Phase 1 – Initial Backend & Frontend (Matias + Juuso/Iurii)**
 
 - Duration: Weeks 1–2
 - Tasks:
@@ -159,7 +159,7 @@
 
 ## 🛠 Development Workflow
 
-### 1. Backend (Juuso || Juri)
+### 1. Backend (Juuso || Iurii)
 
 - Set up Fastify with SQLite (`better-sqlite3`, `umzug`)
 - Define database models (Users, Games, GamePlayers, Friends)
@@ -179,7 +179,7 @@
 - Send state updates to clients via WebSockets
 - Babylon.js 3D rendering for gameplay
 
-### 4. WebSockets (Juuso || Juri)
+### 4. WebSockets (Juuso || Iurii)
 
 - Build matchmaking system
 - Implement real-time chat
