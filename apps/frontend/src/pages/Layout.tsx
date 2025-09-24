@@ -5,13 +5,13 @@ import { useEffect } from 'react';
 import { useAppContext } from '../context/AppContext';
 
 const Layout: React.FC = () => {
-  const { user, navigate } = useAppContext();
+  const { user, navigate, userReady } = useAppContext();
 
   useEffect(() => {
-    if (!user) {
+    if (userReady && !user) {
       navigate('/');
     }
-  }, [user]);
+  }, [user, userReady, navigate]);
 
   return (
     <div className="flex h-screen flex-col">
