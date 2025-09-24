@@ -1,6 +1,7 @@
 // src/context/AppContext.tsx
-import React, { createContext, useContext, useEffect } from 'react';
+import React, { createContext, useContext, useEffect, useState } from 'react';
 import axios from 'axios';
+import type { AxiosInstance } from 'axios';
 import { useNavigate } from 'react-router-dom';
 import { useUser } from '../hooks/useUser';
 import type { User } from '../types';
@@ -16,13 +17,15 @@ type Ctx = {
   login: (user: User) => void;
   logout: () => Promise<void>;
   setUser: React.Dispatch<React.SetStateAction<User | null>>;
-  axios: typeof axios;
+  axios: AxiosInstance;
+  userReady: boolean;
 };
 const AppContext = createContext<Ctx | undefined>(undefined);
 
 export const AppProvider: React.FC<React.PropsWithChildren> = ({ children }) => {
   const navigate = useNavigate();
   const { user, setUser } = useUser();
+  const [userReady, setUserReady] = useState<boolean>(false);
 
   const buildUser = (payload: unknown): User => {
     const source = (payload ?? {}) as Record<string, unknown>;
@@ -45,11 +48,13 @@ export const AppProvider: React.FC<React.PropsWithChildren> = ({ children }) => 
       .then(({ data }) => {
         setUser(buildUser(data));
       })
-      .catch(() => {});
+      .catch(() => {})
+      .finally(() => setUserReady(true));
   }, []);
 
   const login = (data: User) => {
     setUser(buildUser(data));
+    setUserReady(true);
   };
 
   const logout = async () => {
@@ -57,11 +62,12 @@ export const AppProvider: React.FC<React.PropsWithChildren> = ({ children }) => 
       await axios.post('/api/logout');
     } catch (err) {}
     setUser(null);
+    setUserReady(true);
     navigate('/');
   };
 
   return (
-    <AppContext.Provider value={{ navigate, user, login, logout, axios, setUser }}>
+    <AppContext.Provider value={{ navigate, user, login, logout, axios, setUser, userReady }}>
       {children}
     </AppContext.Provider>
   );
