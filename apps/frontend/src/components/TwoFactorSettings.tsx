@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
 import QRCode from 'qrcode';
 import toast from 'react-hot-toast';
-import type { AxiosError } from 'axios';
-import type axios from 'axios';
+import type { AxiosError, AxiosInstance } from 'axios';
 import type { User } from '../types';
+import Button from './Button';
 
 interface TwoFactorSettingsProps {
-  axios: typeof axios;
+  axios: AxiosInstance;
   user: User | null;
   setUser: React.Dispatch<React.SetStateAction<User | null>>;
 }
@@ -118,19 +118,19 @@ const TwoFactorSettings: React.FC<TwoFactorSettingsProps> = ({ axios, user, setU
 
   return (
     <div className="rounded border border-gray-200 p-6 shadow-sm">
-      <div className="flex items-center justify-between">
-        <div>
+      <div className="grid grid-cols-[1fr_auto] items-start gap-4">
+        <div className="min-w-0">
           <h2 className="text-lg font-semibold">Two-Factor Authentication</h2>
           <p className="text-sm text-gray-600">
             Protect your account with an additional verification step using an authenticator app.
           </p>
         </div>
         {enabled ? (
-          <span className="rounded-full bg-green-100 px-3 py-1 text-xs font-semibold text-green-700">
-            Enabled
+          <span className="justify-self-end rounded-full bg-green-100 px-3 py-1 text-xs font-semibold text-green-700">
+            2fa enabled
           </span>
         ) : (
-          <span className="rounded-full bg-gray-100 px-3 py-1 text-xs font-semibold text-gray-600">
+          <span className="justify-self-end rounded-full bg-gray-100 px-3 py-1 text-xs font-semibold text-gray-600">
             Disabled
           </span>
         )}
@@ -138,14 +138,9 @@ const TwoFactorSettings: React.FC<TwoFactorSettingsProps> = ({ axios, user, setU
 
       <div className="mt-4 space-y-4">
         {!enabled && !setupData && (
-          <button
-            type="button"
-            className="rounded bg-blue-600 px-4 py-2 font-semibold text-white hover:bg-blue-700 disabled:opacity-50"
-            onClick={startSetup}
-            disabled={isLoading}
-          >
+          <Button type="button" onClick={startSetup} disabled={isLoading}>
             {isLoading ? 'Preparing…' : 'Enable 2FA'}
-          </button>
+          </Button>
         )}
 
         {enabled && (
@@ -192,22 +187,24 @@ const TwoFactorSettings: React.FC<TwoFactorSettingsProps> = ({ axios, user, setU
                 onChange={(event) => setVerificationCode(event.target.value)}
               />
               <div className="flex gap-2">
-                <button
+                <Button
                   type="button"
-                  className="flex-1 rounded bg-blue-600 px-4 py-2 font-semibold text-white hover:bg-blue-700 disabled:opacity-50"
                   onClick={confirmSetup}
                   disabled={isConfirming}
+                  className="flex-1"
                 >
                   {isConfirming ? 'Confirming…' : 'Confirm & enable'}
-                </button>
-                <button
+                </Button>
+                <Button
                   type="button"
-                  className="rounded border border-gray-300 px-4 py-2 text-sm"
+                  variant="graybutton"
                   onClick={cancelSetup}
                   disabled={isConfirming}
+                  className="flex-1"
+                  withMinWidth={false}
                 >
                   Cancel
-                </button>
+                </Button>
               </div>
             </div>
           </div>
