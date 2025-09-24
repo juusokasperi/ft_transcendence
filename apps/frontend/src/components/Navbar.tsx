@@ -3,7 +3,7 @@ import { useAppContext } from '../context/AppContext';
 
 const navLinks = [
   { label: 'Home', to: '/' },
-  { label: 'Games', to: '/ping-pong' },
+  { label: 'Pong', to: '/ping-pong' },
 ];
 
 const Navbar = () => {
