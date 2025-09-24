@@ -1,30 +1,16 @@
-volumes:
-  corepack: {}
-
 networks:
   prod-public:
     driver: bridge
   prod-private:
     driver: bridge
-    # TODO: for best security, this should be set to false. Then backend
-    # containers wold have no internet access at all. But that currently 
-    # breaks because the containers still attempt to install pnpm. 
-    internal: true
+    # TODO: for best security, this should be set to true. But that is probably
+    # overkill. Then backend containers would have no internet access at all. 
+    internal: false
 
 services:
   # 1) Install deps ONCE for the whole repo (root lockfile)
   deps:
-    command: >
-      bash -lc "
-        corepack enable &&
-        corepack prepare pnpm@latest --activate &&
-        corepack pnpm --version &&
-        corepack pnpm install --frozen-lockfile -r &&
-        corepack pnpm run --if-present build:libs
-      "
-    volumes:
-      - corepack:/tmp/corepack
-    networks:  !override [prod-public, prod-private]
+    networks:  !override [prod-private]
 
   # 2) Frontend (Vite dev server)
   frontend:
@@ -33,18 +19,8 @@ services:
 
   # 3) Backend (Fastify + tsx watch)
   backend:
-    # command: >
-    #   bash -lc "
-    #     corepack enable && corepack prepare pnpm@latest --activate && pnpm dev
-    #   "
-    command: pnpm exec tsx --tsconfig ./tsconfig.json --watch index.ts
-    environment:
-      PATH: /tmp/corepack/v1:$PATH
-    # command: "tail -f /dev/null"
     ports: !reset []
     networks:  !override [prod-private]
-    volumes:
-      - corepack:/tmp/corepack
 
   # 4) Nginx (single-origin dev, optional but convenient)
   nginx:
