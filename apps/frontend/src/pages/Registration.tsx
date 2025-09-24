@@ -1,11 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import AuthForm from '../components/AuthForm';
 import { useAppContext } from '../context/AppContext';
-import { toast } from 'react-hot-toast';
 import type { AxiosError } from 'axios';
 import type { AxiosResponse } from 'axios';
 import { Link } from 'react-router-dom';
 import Navbar from '../components/Navbar';
+import { useSnackbar } from '../context/SnackbarContext';
 
 const highlights = [
   'Reserve your arcade handle before tournaments open',
@@ -15,6 +15,7 @@ const highlights = [
 
 const Registration: React.FC = () => {
   const { axios, navigate, user } = useAppContext();
+  const { enqueueSnackbar } = useSnackbar();
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -38,16 +39,20 @@ const Registration: React.FC = () => {
         password: data.password,
       });
 
-      console.log(res.data.success);
       const axiosRes = res as AxiosResponse<{ success?: string }>;
       const msg = axiosRes.data.success;
-      toast.success(String(msg));
+      enqueueSnackbar({
+        message: String(msg ?? 'Registration complete'),
+        variant: 'success',
+      });
       navigate('/login');
     } catch (err: any) {
       const axiosErr = err as AxiosError<{ message?: string }>;
       const msg = axiosErr?.response?.data?.message;
-      console.log(axiosErr);
-      toast.error(String(msg));
+      enqueueSnackbar({
+        message: String(msg ?? 'Registration failed'),
+        variant: 'error',
+      });
     } finally {
       setLoading(false);
     }

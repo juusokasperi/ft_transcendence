@@ -1,11 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import AuthForm from '../components/AuthForm';
 import { useAppContext } from '../context/AppContext';
-import { toast } from 'react-hot-toast';
 import type { AxiosError } from 'axios';
 import { Link, useLocation } from 'react-router-dom';
 import type { User } from '../types';
 import Navbar from '../components/Navbar';
+import { useSnackbar } from '../context/SnackbarContext';
 
 const highlights = [
   'Single account for every arcade title',
@@ -15,6 +15,7 @@ const highlights = [
 
 const Login: React.FC = () => {
   const { axios, login, navigate, user } = useAppContext();
+  const { enqueueSnackbar } = useSnackbar();
   const location = useLocation();
   const [loading, setLoading] = useState(false);
   const [twoFactorPending, setTwoFactorPending] = useState<{
@@ -43,11 +44,14 @@ const Login: React.FC = () => {
     setTwoFactorLoading(false);
 
     if (params.get('source') === 'google') {
-      toast('Enter the code from your authenticator to finish Google sign-in.');
+      enqueueSnackbar({
+        message: 'Enter the code from your authenticator to finish Google sign-in.',
+        variant: 'info',
+      });
     }
 
     navigate('/login', { replace: true });
-  }, [location.search, navigate]);
+  }, [location.search, navigate, enqueueSnackbar]);
 
   const handleLogin = async (data: { email: string; password: string }) => {
     setTwoFactorPending(null);
@@ -82,7 +86,10 @@ const Login: React.FC = () => {
           ),
         };
         login(normalized);
-        toast.success('Logged in');
+        enqueueSnackbar({
+          message: 'Logged in',
+          variant: 'success',
+        });
         return;
       }
 
@@ -91,14 +98,20 @@ const Login: React.FC = () => {
           token: res.data.pendingToken as string,
           method: (res.data.method as string) || 'totp',
         });
-        toast('Enter your authentication code to finish logging in.');
+        enqueueSnackbar({
+          message: 'Enter your authentication code to finish logging in.',
+          variant: 'info',
+        });
         return;
       }
 
       throw new Error('Invalid server response');
     } catch (err: any) {
       const axiosErr = err as AxiosError<{ message?: string }>;
-      toast.error(String(axiosErr?.response?.data?.message || err?.message || 'Login failed'));
+      enqueueSnackbar({
+        message: String(axiosErr?.response?.data?.message ?? err?.message ?? 'Login failed'),
+        variant: 'error',
+      });
     } finally {
       setLoading(false);
     }
@@ -137,7 +150,10 @@ const Login: React.FC = () => {
         ),
       };
       login(normalized);
-      toast.success('2FA confirmed, welcome back!');
+      enqueueSnackbar({
+        message: '2FA confirmed, welcome back!',
+        variant: 'success',
+      });
       setTwoFactorPending(null);
       setTwoFactorCode('');
     } catch (err: any) {
