@@ -1,14 +1,12 @@
 import React, { useEffect, useRef, useState } from 'react';
 import toast from 'react-hot-toast';
 import type { AxiosError } from 'axios';
+import Button from './Button';
 
 interface PasswordSettingsProps {
   axios: typeof import('axios');
   active: boolean;
 }
-
-const primaryButtonClass =
-  'inline-flex min-w-[150px] items-center justify-center rounded bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50';
 
 const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()\-=+[\]{};:|,<.>/?`]).{12,}$/;
 
@@ -271,13 +269,9 @@ const PasswordSettings: React.FC<PasswordSettingsProps> = ({ axios, active }) =>
             >
               Cancel
             </button>
-            <button
-              type="submit"
-              disabled={loading}
-              className={primaryButtonClass}
-            >
+            <Button type="submit" disabled={loading}>
               {loading ? 'Saving...' : hasPassword ? 'Update Password' : 'Set Password'}
-            </button>
+            </Button>
           </div>
         </form>
       ) : (
@@ -289,14 +283,9 @@ const PasswordSettings: React.FC<PasswordSettingsProps> = ({ axios, active }) =>
               ? ''
               : 'You currently sign in via Google. Add a password for backup access.'}
           </div>
-          <button
-            type="button"
-            onClick={beginEdit}
-            disabled={initialising}
-            className={primaryButtonClass}
-          >
+          <Button type="button" onClick={beginEdit} disabled={initialising}>
             {hasPassword ? 'Change Password' : 'Set Password'}
-          </button>
+          </Button>
         </div>
       )}
     </div>

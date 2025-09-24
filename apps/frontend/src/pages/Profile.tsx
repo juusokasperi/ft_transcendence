@@ -6,6 +6,7 @@ import type { AxiosError } from 'axios';
 import { PLACEHOLDER, resolveAvatarUrl } from '../utils/avatarUrl';
 import TwoFactorSettings from '../components/TwoFactorSettings';
 import PasswordSettings from '../components/PasswordSettings';
+import Button from '../components/Button';
 
 const Profile: React.FC = () => {
   const { axios, user, setUser } = useAppContext();
@@ -209,13 +210,9 @@ const Profile: React.FC = () => {
               Cancel
             </button>
           ) : (
-            <button
-              type="button"
-              onClick={startEditing}
-              className="rounded bg-indigo-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-indigo-500"
-            >
+            <Button type="button" onClick={startEditing} withMinWidth={false}>
               Edit Profile
-            </button>
+            </Button>
           )}
         </div>
         <form className="space-y-4" onSubmit={handleUpdate}>
@@ -284,21 +281,13 @@ const Profile: React.FC = () => {
           {/* Buttons */}
           {isEditing && (
             <div className="flex items-center justify-between">
-              <button
-                type="submit"
-                disabled={loading}
-                className="inline-flex min-w-[150px] items-center justify-center rounded bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
-              >
+              <Button type="submit" disabled={loading}>
                 {loading ? 'Updating...' : 'Save Changes'}
-              </button>
+              </Button>
 
-              <button
-                type="button"
-                onClick={handleDelete}
-                className="inline-flex min-w-[150px] items-center justify-center rounded bg-red-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-red-600 disabled:cursor-not-allowed disabled:opacity-50"
-              >
+              <Button type="button" variant="danger" onClick={handleDelete}>
                 Delete Account
-              </button>
+              </Button>
             </div>
           )}
         </form>

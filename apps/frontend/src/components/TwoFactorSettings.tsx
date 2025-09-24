@@ -4,6 +4,7 @@ import toast from 'react-hot-toast';
 import type { AxiosError } from 'axios';
 import type axios from 'axios';
 import type { User } from '../types';
+import Button from './Button';
 
 interface TwoFactorSettingsProps {
   axios: typeof axios;
@@ -15,9 +16,6 @@ interface SetupResponse {
   secret: string;
   otpauthUrl: string;
 }
-
-const primaryButtonClass =
-  'inline-flex min-w-[150px] items-center justify-center rounded bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50';
 
 const TwoFactorSettings: React.FC<TwoFactorSettingsProps> = ({ axios, user, setUser }) => {
   const [isLoading, setIsLoading] = useState(false);
@@ -141,14 +139,9 @@ const TwoFactorSettings: React.FC<TwoFactorSettingsProps> = ({ axios, user, setU
 
       <div className="mt-4 space-y-4">
         {!enabled && !setupData && (
-          <button
-            type="button"
-            className={primaryButtonClass}
-            onClick={startSetup}
-            disabled={isLoading}
-          >
+          <Button type="button" onClick={startSetup} disabled={isLoading}>
             {isLoading ? 'Preparing…' : 'Enable 2FA'}
-          </button>
+          </Button>
         )}
 
         {enabled && (
@@ -195,14 +188,14 @@ const TwoFactorSettings: React.FC<TwoFactorSettingsProps> = ({ axios, user, setU
                 onChange={(event) => setVerificationCode(event.target.value)}
               />
               <div className="flex gap-2">
-                <button
+                <Button
                   type="button"
-                  className={`${primaryButtonClass} flex-1`}
                   onClick={confirmSetup}
                   disabled={isConfirming}
+                  className="flex-1"
                 >
                   {isConfirming ? 'Confirming…' : 'Confirm & enable'}
-                </button>
+                </Button>
                 <button
                   type="button"
                   className="rounded border border-gray-300 px-4 py-2 text-sm"
