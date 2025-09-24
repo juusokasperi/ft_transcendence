@@ -19,7 +19,7 @@ const PingPong: React.FC = () => {
         loop
         muted
         playsInline
-        className="absolute left-0 top-0 h-full w-full object-cover"
+        className="absolute left-0 top-0 h-full w-full bg-black object-contain object-[center_80%] md:object-cover "
       >
         <source src="/src/assets/gif.mp4" type="video/mp4" />
       </video>
