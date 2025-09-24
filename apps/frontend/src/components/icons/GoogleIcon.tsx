@@ -5,7 +5,12 @@ interface GoogleIconProps {
 }
 
 const GoogleIcon: React.FC<GoogleIconProps> = ({ className = 'h-5 w-5' }) => (
-  <svg className={className} viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden={true}>
+  <svg
+    className={className}
+    viewBox="0 0 24 24"
+    xmlns="http://www.w3.org/2000/svg"
+    aria-hidden={true}
+  >
     <path
       fill="#4285F4"
       d="M23.5 12.3c0-.8-.1-1.6-.2-2.3H12v4.5h6.5c-.3 1.5-1.1 2.8-2.4 3.7l3 2.3c1.7-1.6 2.7-3.9 2.7-6.5z"

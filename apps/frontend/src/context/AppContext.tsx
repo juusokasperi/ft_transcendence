@@ -1,6 +1,7 @@
 // src/context/AppContext.tsx
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import axios from 'axios';
+import type { AxiosInstance } from 'axios';
 import { useNavigate } from 'react-router-dom';
 import { useUser } from '../hooks/useUser';
 import type { User } from '../types';
@@ -16,7 +17,7 @@ type Ctx = {
   login: (user: User) => void;
   logout: () => Promise<void>;
   setUser: React.Dispatch<React.SetStateAction<User | null>>;
-  axios: typeof axios;
+  axios: AxiosInstance;
   userReady: boolean;
 };
 const AppContext = createContext<Ctx | undefined>(undefined);

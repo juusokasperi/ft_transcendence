@@ -245,7 +245,9 @@ const Profile: React.FC = () => {
                     openAvatarPicker();
                   }}
                   className={`absolute bottom-1 right-1 flex h-9 w-9 items-center justify-center rounded-full text-white shadow transition ${
-                    isAvatarDirty ? 'bg-green-500 hover:bg-green-400' : 'bg-indigo-600 hover:bg-indigo-500'
+                    isAvatarDirty
+                      ? 'bg-green-500 hover:bg-green-400'
+                      : 'bg-indigo-600 hover:bg-indigo-500'
                   }`}
                   aria-label="Change avatar"
                 >
@@ -270,7 +272,7 @@ const Profile: React.FC = () => {
             {isEditing && <label className="mb-2 block font-medium">Change Username</label>}
             <input
               type="text"
-              value={isEditing ? username : user?.username ?? ''}
+              value={isEditing ? username : (user?.username ?? '')}
               placeholder={user?.username}
               onChange={(e) => setUsername(e.target.value)}
               disabled={!isEditing}

@@ -1,13 +1,12 @@
 import React, { useState } from 'react';
 import QRCode from 'qrcode';
 import toast from 'react-hot-toast';
-import type { AxiosError } from 'axios';
-import type axios from 'axios';
+import type { AxiosError, AxiosInstance } from 'axios';
 import type { User } from '../types';
 import Button from './Button';
 
 interface TwoFactorSettingsProps {
-  axios: typeof axios;
+  axios: AxiosInstance;
   user: User | null;
   setUser: React.Dispatch<React.SetStateAction<User | null>>;
 }

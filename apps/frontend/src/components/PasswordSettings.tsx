@@ -1,10 +1,10 @@
 import React, { useEffect, useRef, useState } from 'react';
 import toast from 'react-hot-toast';
-import type { AxiosError } from 'axios';
+import type { AxiosError, AxiosInstance } from 'axios';
 import Button from './Button';
 
 interface PasswordSettingsProps {
-  axios: typeof import('axios');
+  axios: AxiosInstance;
   active: boolean;
 }
 
@@ -37,7 +37,7 @@ const PasswordSettings: React.FC<PasswordSettingsProps> = ({ axios, active }) =>
     }
 
     axios
-      .get('/api/users/me?pass=yes')
+      .get<{ hasPass?: boolean }>('/api/users/me?pass=yes')
       .then(({ data }) => {
         setHasPassword(Boolean(data?.hasPass));
       })
@@ -124,9 +124,11 @@ const PasswordSettings: React.FC<PasswordSettingsProps> = ({ axios, active }) =>
     }
   };
 
-  const InputWrapper: React.FC<
-    React.PropsWithChildren<{ label: string; htmlFor: string }>
-  > = ({ label, htmlFor, children }) => (
+  const InputWrapper: React.FC<React.PropsWithChildren<{ label: string; htmlFor: string }>> = ({
+    label,
+    htmlFor,
+    children,
+  }) => (
     <div className="flex flex-col">
       <label className="mb-2 text-sm font-medium text-gray-700" htmlFor={htmlFor}>
         {label}
@@ -135,13 +137,7 @@ const PasswordSettings: React.FC<PasswordSettingsProps> = ({ axios, active }) =>
     </div>
   );
 
-  const ToggleButton = ({
-    onClick,
-    active,
-  }: {
-    onClick: () => void;
-    active: boolean;
-  }) => (
+  const ToggleButton = ({ onClick, active }: { onClick: () => void; active: boolean }) => (
     <button
       type="button"
       onMouseDown={(event) => event.preventDefault()}
@@ -159,8 +155,8 @@ const PasswordSettings: React.FC<PasswordSettingsProps> = ({ axios, active }) =>
       focusedField === 'current'
         ? currentInputRef.current
         : focusedField === 'new'
-        ? newInputRef.current
-        : confirmInputRef.current;
+          ? newInputRef.current
+          : confirmInputRef.current;
 
     if (!target) return;
 
@@ -184,8 +180,8 @@ const PasswordSettings: React.FC<PasswordSettingsProps> = ({ axios, active }) =>
             {initialising
               ? 'Checking password status...'
               : hasPassword
-              ? 'Update your password regularly to keep your account secure.'
-              : 'Set a password so you can sign in without Google next time.'}
+                ? 'Update your password regularly to keep your account secure.'
+                : 'Set a password so you can sign in without Google next time.'}
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -217,24 +213,27 @@ const PasswordSettings: React.FC<PasswordSettingsProps> = ({ axios, active }) =>
                   autoComplete="current-password"
                   ref={currentInputRef}
                 />
-                <ToggleButton onClick={() => setShowCurrent((prev) => !prev)} active={showCurrent} />
+                <ToggleButton
+                  onClick={() => setShowCurrent((prev) => !prev)}
+                  active={showCurrent}
+                />
               </div>
             </InputWrapper>
           )}
 
           <InputWrapper label="New password" htmlFor="new-password">
             <div className="flex items-center rounded border border-gray-300 p-2">
-                <input
-                  id="new-password"
-                  type={showNew ? 'text' : 'password'}
-                  value={newPassword}
-                  onChange={(e) => setNewPassword(e.target.value)}
-                  onFocus={() => setFocusedField('new')}
-                  onBlur={() => setFocusedField(null)}
-                  className="flex-1 border-none bg-transparent text-sm outline-none"
-                  autoComplete="new-password"
-                  ref={newInputRef}
-                />
+              <input
+                id="new-password"
+                type={showNew ? 'text' : 'password'}
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                onFocus={() => setFocusedField('new')}
+                onBlur={() => setFocusedField(null)}
+                className="flex-1 border-none bg-transparent text-sm outline-none"
+                autoComplete="new-password"
+                ref={newInputRef}
+              />
               <ToggleButton onClick={() => setShowNew((prev) => !prev)} active={showNew} />
             </div>
             <p className="mt-2 text-xs text-gray-500">
@@ -244,17 +243,17 @@ const PasswordSettings: React.FC<PasswordSettingsProps> = ({ axios, active }) =>
 
           <InputWrapper label="Confirm new password" htmlFor="confirm-password">
             <div className="flex items-center rounded border border-gray-300 p-2">
-                <input
-                  id="confirm-password"
-                  type={showConfirm ? 'text' : 'password'}
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  onFocus={() => setFocusedField('confirm')}
-                  onBlur={() => setFocusedField(null)}
-                  className="flex-1 border-none bg-transparent text-sm outline-none"
-                  autoComplete="new-password"
-                  ref={confirmInputRef}
-                />
+              <input
+                id="confirm-password"
+                type={showConfirm ? 'text' : 'password'}
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                onFocus={() => setFocusedField('confirm')}
+                onBlur={() => setFocusedField(null)}
+                className="flex-1 border-none bg-transparent text-sm outline-none"
+                autoComplete="new-password"
+                ref={confirmInputRef}
+              />
               <ToggleButton onClick={() => setShowConfirm((prev) => !prev)} active={showConfirm} />
             </div>
           </InputWrapper>
@@ -276,8 +275,8 @@ const PasswordSettings: React.FC<PasswordSettingsProps> = ({ axios, active }) =>
             {initialising
               ? 'Loading...'
               : hasPassword
-              ? ''
-              : 'You currently sign in via Google. Add a password for backup access.'}
+                ? ''
+                : 'You currently sign in via Google. Add a password for backup access.'}
           </div>
           <Button type="button" onClick={beginEdit} disabled={initialising}>
             {hasPassword ? 'Change Password' : 'Set Password'}
