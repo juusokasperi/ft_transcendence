@@ -22,10 +22,12 @@ export {
 export { createBounces } from './client/visuals/bounce/bounces';
 export { FXManager } from './client/fx/manager';
 export { createPaddleAnimator } from './client/visuals/animate-paddle';
+export type { AbstractMesh } from '@babylonjs/core/Meshes/abstractMesh';
 
 // ── UI / HUD ──────────────────────────────────────────────────────────────────
 export { createScoreboard } from './client/ui/scoreboard';
 export { updateHUD } from './client/ui/hud-binding';
+export type { DomScoreboardAPI } from './client/ui/scoreboard';
 export type { MatchSnapshot } from '@pong/shared';
 
 // ── App adapters / mappers ────────────────────────────────────────────────────

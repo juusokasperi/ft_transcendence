@@ -1,4 +1,13 @@
-// src/app/modes/local.ts
+/**
+ * Local game mode (render + headless loop in the browser).
+ *
+ * Responsibilities:
+ * - Build Babylon world (scene, meshes, camera, lights)
+ * - Drive a fixed‑timestep simulation and project state to meshes
+ * - Create and coordinate HUD + FX (including serve cues and camera shake)
+ * - Surface match/game transitions with short messages and brief pauses
+ * - Keep visual colors in sync with user preferences and side swaps
+ */
 import { createEngine } from '@pong/render';
 import { createLifecycle } from '@pong/render';
 import { createWorld } from '@pong/render';
@@ -14,7 +23,6 @@ import { computeBounds } from '@pong/render';
 import { detectEnteredServe, onEnteredServe } from '@pong/render';
 import { applyFrameEvents } from '@pong/render';
 import { mapStateForPlayerRows, mapHistoryForPlayers } from '@pong/render';
-import { setPaddleColors } from '@pong/render';
 
 import {
   type GameState,
@@ -27,14 +35,20 @@ import {
 
 import { pickInitialServer, SERVE_SELECT_TOTAL_MS, randomSeed32 } from '@pong/shared';
 import { disposeWorld } from '@pong/render';
-import type { Preferences } from './preferences';
-import { applyPreferences, hexToRgb, rgb01ToCss } from './preferences';
+import type { Preferences } from '../preferences';
+import { applyPreferences } from '../preferences';
+import {
+  setHudAndPaletteColorsFromPrefs,
+  swapPaddleMaterials,
+  handleMatchOver,
+  handleSwapSidesNow,
+} from './utils';
 
+/** Public surface returned by createLocalApp() */
 interface PongInstance {
   start(): void;
   destroy(): void;
   updatePreferences(p: Preferences): void;
-  /** Read-only snapshot for AI planning (1 Hz sensor). */
   observe(): {
     ball: { x: number; z: number; vx: number; vz: number };
     paddles: { P1: { z: number }; P2: { z: number } };
@@ -48,8 +62,11 @@ interface PongInstance {
   };
 }
 
+/**
+ * Bootstraps a complete local game on a given canvas element.
+ * - preferences (optional) initialize colors, names, and rules overrides.
+ */
 export function createLocalApp(canvas: HTMLCanvasElement, preferences?: Preferences): PongInstance {
-  // Engine/scene/world
   const { engine, engineDisposable } = createEngine(canvas);
   const world = createWorld(engine);
   const {
@@ -63,10 +80,10 @@ export function createLocalApp(canvas: HTMLCanvasElement, preferences?: Preferen
   const hud = createScoreboard();
   hud.attachToCanvas(canvas);
 
-  // Track actual side swaps to know when the players have crossed (for HUD row mapping)
+  // Tracks whether players have crossed sides (affects HUD row mapping & palette)
   let rowsMirrored = false;
 
-  // Player display names (player-row pinned)
+  // Player display names (always row‑pinned: east → top, west → bottom)
   let names: { east: string; west: string } = { east: ' ', west: ' ' };
 
   // Apply initial preferences if provided
@@ -76,27 +93,9 @@ export function createLocalApp(canvas: HTMLCanvasElement, preferences?: Preferen
     rightMaterial: right.mesh.material,
     rowsMirrored,
   });
+  if (preferences) setHudAndPaletteColorsFromPrefs(hud, preferences, rowsMirrored);
 
-  // Match HUD name colors to player/paddle colors (preferences-driven)
-  if (preferences) {
-    const c1 = hexToRgb(preferences.player1.paddleColor);
-    const c2 = hexToRgb(preferences.player2.paddleColor);
-    if (c1 && c2) hud.setPlayerNameColors(rgb01ToCss(c1), rgb01ToCss(c2));
-  }
-
-  // Keep global palette in sync for FX (e.g., serve selection) that read Colors.
-  // Compute effective left/right tints based on current side mapping.
-  if (preferences) {
-    const c1 = hexToRgb(preferences.player1.paddleColor);
-    const c2 = hexToRgb(preferences.player2.paddleColor);
-    if (c1 && c2) {
-      const leftRGB = rowsMirrored ? c2 : c1;
-      const rightRGB = rowsMirrored ? c1 : c2;
-      setPaddleColors(leftRGB, rightRGB);
-    }
-  }
-
-  // Bounds once (render → headless)
+  // Render→headless bounds (read once after scene is built)
   const { bounds } = computeBounds(world);
 
   // FX manager
@@ -109,13 +108,13 @@ export function createLocalApp(canvas: HTMLCanvasElement, preferences?: Preferen
     camera: world.camera,
   });
 
-  // Ruleset + match controller config (allow overrides from preferences)
+  // Headless rules (allow overrides from preferences)
   const RULES = tableTennisRules(preferences?.rules);
 
   const matchSeed = randomSeed32();
   const initialServer = pickInitialServer(matchSeed);
 
-  // Visual bounce helper — seeded per match (deterministic variety; visual-only)
+  // Visual bounce helper — seeded per match (deterministic variety; visual‑only)
   const Bounces = createBounces(
     ball.mesh,
     table.tableTop.position.y,
@@ -126,36 +125,37 @@ export function createLocalApp(canvas: HTMLCanvasElement, preferences?: Preferen
     matchSeed,
   );
 
-  // Match controller
+  // Match controller (authoritative game flow/state transitions)
   const match = createMatchController(bounds, RULES, initialServer);
 
   // Headless state aligned to match controller (ensures rules overrides apply from game 1)
   let state: GameState = match.getGame();
 
-  // Input
+  // Input wiring (keyboard/touch aggregator)
   setBindingProfile('local');
   const detachInput = attachLocalInput(canvas);
   scene.onDisposeObservable.add(detachInput);
 
-  // Simple paddle-centering tween gate (kept in visuals)
+  // Simple paddle‑centering tween gate (kept in visuals)
   const paddleAnim = createPaddleAnimator(scene, left.mesh, right.mesh);
 
-  // Intro gate (wall-clock ms until which logic is gated)
+  // Intro gate (wall‑clock ms) to postpone physics during intro FX
   let introUntil = 0;
-  // Mid-game pause gate (e.g., decisive mid-swap message)
+  // Mid‑game pause gate (used for decisive mid‑swap and between‑games message)
   let pauseUntil = 0;
 
-  // HUD diff cache for match boxes
+  // HUD diff cache (avoid redundant DOM updates for match boxes)
   let lastBestOf = 0;
   let lastCurrentGameIndex = 0;
   let lastHistoryRef: ReturnType<typeof mapHistoryForPlayers> | null = null;
 
-  // Fixed-step lifecycle (simulation cadence is set here)
+  // Fixed‑step lifecycle (simulation cadence is set here)
   const loop = createLifecycle(engine, scene, {
     logicHz: 60,
     update: (dtMs) => {
       const now = performance.now();
-      if (now < introUntil || now < pauseUntil) return; // skip physics during intro FX or HUD pauses
+      // Gate physics during intro FX or scheduled pauses (HUD messages)
+      if (now < introUntil || now < pauseUntil) return;
       const dt = Math.min(0.05, dtMs / 1000);
 
       // 1) Input → paddles
@@ -170,83 +170,46 @@ export function createLocalApp(canvas: HTMLCanvasElement, preferences?: Preferen
       const mc = match.afterPhysicsStep(stepped.next);
       state = mc.state;
 
-      // Emit lightweight DOM event so host UI can react without tight coupling.
-      // Fires exactly once per match.
+      // Match conclusion: message + host event (fired once per match)
       if (mc.events.matchOver) {
         const { winner } = mc.events.matchOver;
-        hud.flashMessage(`${names[winner]} won, impressive match!`, 3800);
-        const snap = match.getSnapshot();
-        const historyForHUD = mapHistoryForPlayers(snap.gamesHistory);
-        canvas.dispatchEvent(
-          new CustomEvent('pong:matchOver', {
-            detail: {
-              winner,
-              bestOf: snap.bestOf,
-              gamesHistory: historyForHUD,
-              names,
-            },
-          }),
-        );
+        handleMatchOver(hud, names, winner, () => match.getSnapshot(), canvas);
       }
 
       if (mc.events.swapSidesNow) {
-        const midGameSwap = prevPhase === 'rally';
-        if (midGameSwap) {
-          const ms = 3200;
-          hud.flashMessage('Swapping mid-game for decisive game', ms);
-          pauseUntil = Math.max(pauseUntil, performance.now() + ms);
-          blockInputFor(ms);
-        } else {
-          // Use the last finished game's winner from snapshot history (player-pinned)
-          const snapNow = match.getSnapshot();
-          const hist = snapNow.gamesHistory || [];
-          const last = hist[hist.length - 1];
-          if (last?.winner) {
-            const winnerRow = last.winner as 'east' | 'west';
-            const ms = 3200;
-            hud.flashMessage(`${names[winnerRow]} won the game, swapping side!`, ms);
-            pauseUntil = Math.max(pauseUntil, performance.now() + ms);
-            blockInputFor(ms);
-          }
-        }
-        // controls follow player
+        // Show appropriate swap message and briefly pause gameplay
+        const until = handleSwapSidesNow(
+          hud,
+          prevPhase,
+          () => match.getSnapshot(),
+          names,
+          blockInputFor,
+        );
+        pauseUntil = Math.max(pauseUntil, until);
+        // Controls follow player identity
         toggleControlsMirrored();
 
-        // color/skin follows player
-        const m = left.mesh.material;
-        left.mesh.material = right.mesh.material;
-        right.mesh.material = m;
+        // Colors/skins follow players across sides
+        swapPaddleMaterials(left.mesh, right.mesh);
 
-        // HUD mapping parity
+        // Update HUD row mapping parity
         rowsMirrored = !rowsMirrored;
 
-        // Re-apply preferences so player colors continue to follow players
+        // Re‑apply preferences so player colors continue to follow players
         applyPreferences(preferences, {
           setNames: (n) => (names = n),
           leftMaterial: left.mesh.material,
           rightMaterial: right.mesh.material,
           rowsMirrored,
         });
+        if (preferences) setHudAndPaletteColorsFromPrefs(hud, preferences, rowsMirrored);
 
-        // Update palette too, so future FX created after swaps stay accurate
-        if (preferences) {
-          const c1 = hexToRgb(preferences.player1.paddleColor);
-          const c2 = hexToRgb(preferences.player2.paddleColor);
-          if (c1 && c2) {
-            const leftRGB = rowsMirrored ? c2 : c1;
-            const rightRGB = rowsMirrored ? c1 : c2;
-            setPaddleColors(leftRGB, rightRGB);
-            // Keep HUD name colors in sync with player colors
-            hud.setPlayerNameColors(rgb01ToCss(c1), rgb01ToCss(c2));
-          }
-        }
-
-        // crossover cue
+        // Small crossover cue
         paddleAnim.cue(180);
       }
-      // gameOver handled via snapshot history for messaging; no latch required here
+      // gameOver handled via snapshot history for messaging; no latch needed
 
-      // 4) Entered serve? Trigger cues
+      // 4) Entered serve? Trigger visual serve cues
       const entered = detectEnteredServe(prevPhase, state.phase);
       if (entered) {
         onEnteredServe(entered, {
@@ -257,7 +220,7 @@ export function createLocalApp(canvas: HTMLCanvasElement, preferences?: Preferen
         });
       }
 
-      // 5) HUD (player-pinned)
+      // 5) HUD (player‑pinned)
       const snap = match.getSnapshot();
       const stateForHUD = mapStateForPlayerRows(state, rowsMirrored);
       const historyForHUD = mapHistoryForPlayers(snap.gamesHistory);
@@ -293,14 +256,13 @@ export function createLocalApp(canvas: HTMLCanvasElement, preferences?: Preferen
         right.mesh.position.z = state.paddles.P2.z;
       }
 
-      // 7) FX from events
+      // 7) FX from headless events
       applyFrameEvents(fx, stepped.events, ballY);
     },
   });
-  //console.log('[LocalGame] Lifecycle created:', loop);
 
+  // One‑stop teardown for all owned resources
   const destroy = () => {
-    //console.log('[LocalGame] Destroy called');
     disposeWorld({
       loop,
       world, // owns the Scene; disposes it
@@ -308,15 +270,12 @@ export function createLocalApp(canvas: HTMLCanvasElement, preferences?: Preferen
       hud,
       engineDisposable,
     });
-    //console.log('[LocalGame] World disposed');
   };
 
   return {
     start() {
-      //console.log('[LocalGame] start() called');
-      // Pre-roll: run serve selection FX, gate input, then arm opening serve.
+      // Pre‑roll: run serve selection FX, gate input, then arm opening serve
       void import('@pong/render').then(({ incHide }) => {
-        incHide(ball.mesh);
         incHide(ball.mesh);
       });
 
@@ -346,13 +305,10 @@ export function createLocalApp(canvas: HTMLCanvasElement, preferences?: Preferen
         rightMaterial: right.mesh.material,
         rowsMirrored,
       });
-      // Update HUD name colors to match updated player colors
-      const c1 = hexToRgb(p.player1.paddleColor);
-      const c2 = hexToRgb(p.player2.paddleColor);
-      if (c1 && c2) hud.setPlayerNameColors(rgb01ToCss(c1), rgb01ToCss(c2));
+      if (preferences) setHudAndPaletteColorsFromPrefs(hud, preferences, rowsMirrored);
     },
     observe() {
-      // Provide a minimal, read-only snapshot for AI planning.
+      // Provide a minimal, read‑only snapshot for AI planning (1 Hz sensor)
       return {
         ball: { x: state.ball.x, z: state.ball.z, vx: state.ball.vx, vz: state.ball.vz },
         paddles: { P1: { z: state.paddles.P1.z }, P2: { z: state.paddles.P2.z } },

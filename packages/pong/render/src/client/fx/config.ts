@@ -110,7 +110,7 @@ export const DEFAULT_FX_CONFIG: FXConfig = {
   trail: {
     lifeMs: 260,
     poolSize: 48,
-    alphaPeak: 0.30,
+    alphaPeak: 0.3,
     lengthMul: 2.2,
     thicknessMul: 0.9,
     heightMul: 0.6,

@@ -230,11 +230,14 @@ export function createScoreboard(): DomScoreboardAPI {
     msg.textContent = text;
     msg.style.opacity = '1';
     if (msgTimer !== null) clearTimeout(msgTimer);
-    msgTimer = window.setTimeout(() => {
-      msg.style.opacity = '0';
-      msg.textContent = '';
-      msgTimer = null;
-    }, Math.max(500, ms | 0));
+    msgTimer = window.setTimeout(
+      () => {
+        msg.style.opacity = '0';
+        msg.textContent = '';
+        msgTimer = null;
+      },
+      Math.max(500, ms | 0),
+    );
   };
 
   // Element anchoring (with ResizeObserver)
