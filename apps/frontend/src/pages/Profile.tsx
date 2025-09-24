@@ -295,7 +295,7 @@ const Profile: React.FC = () => {
               <button
                 type="button"
                 onClick={handleDelete}
-                className="rounded bg-red-500 px-4 py-2 text-white hover:bg-red-600"
+                className="inline-flex min-w-[150px] items-center justify-center rounded bg-red-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-red-600 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 Delete Account
               </button>

@@ -130,7 +130,7 @@ const TwoFactorSettings: React.FC<TwoFactorSettingsProps> = ({ axios, user, setU
         </div>
         {enabled ? (
           <span className="rounded-full bg-green-100 px-3 py-1 text-xs font-semibold text-green-700">
-            Enabled
+            2fa enabled
           </span>
         ) : (
           <span className="rounded-full bg-gray-100 px-3 py-1 text-xs font-semibold text-gray-600">
