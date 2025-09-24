@@ -196,14 +196,16 @@ const TwoFactorSettings: React.FC<TwoFactorSettingsProps> = ({ axios, user, setU
                 >
                   {isConfirming ? 'Confirming…' : 'Confirm & enable'}
                 </Button>
-                <button
+                <Button
                   type="button"
-                  className="rounded border border-gray-300 px-4 py-2 text-sm"
+                  variant="secondary"
                   onClick={cancelSetup}
                   disabled={isConfirming}
+                  className="flex-1"
+                  withMinWidth={false}
                 >
                   Cancel
-                </button>
+                </Button>
               </div>
             </div>
           </div>

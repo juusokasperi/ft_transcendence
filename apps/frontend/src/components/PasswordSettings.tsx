@@ -262,13 +262,9 @@ const PasswordSettings: React.FC<PasswordSettingsProps> = ({ axios, active }) =>
           {error && <p className="text-sm text-rose-500">{error}</p>}
 
           <div className="flex items-center justify-end gap-3">
-            <button
-              type="button"
-              onClick={cancelEdit}
-              className="rounded border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-700 transition hover:bg-gray-50"
-            >
+            <Button type="button" variant="secondary" onClick={cancelEdit}>
               Cancel
-            </button>
+            </Button>
             <Button type="submit" disabled={loading}>
               {loading ? 'Saving...' : hasPassword ? 'Update Password' : 'Set Password'}
             </Button>

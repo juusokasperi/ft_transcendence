@@ -202,13 +202,15 @@ const Profile: React.FC = () => {
         <div className="mb-6 flex items-center justify-between">
           <h2 className="text-2xl font-bold">Profile</h2>
           {isEditing ? (
-            <button
+            <Button
               type="button"
+              variant="secondary"
               onClick={handleCancelEdit}
-              className="rounded border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-50"
+              withMinWidth={false}
+              className="font-medium"
             >
               Cancel
-            </button>
+            </Button>
           ) : (
             <Button type="button" onClick={startEditing} withMinWidth={false}>
               Edit Profile
