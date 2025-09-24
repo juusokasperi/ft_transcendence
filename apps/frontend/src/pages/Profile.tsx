@@ -247,7 +247,7 @@ const Profile: React.FC = () => {
                   className={`absolute bottom-1 right-1 flex h-9 w-9 items-center justify-center rounded-full text-white shadow transition ${
                     isAvatarDirty
                       ? 'bg-green-500 hover:bg-green-400'
-                      : 'bg-indigo-600 hover:bg-indigo-500'
+                      : 'bg-blue-600 hover:bg-blue-700'
                   }`}
                   aria-label="Change avatar"
                 >

@@ -173,8 +173,8 @@ const PasswordSettings: React.FC<PasswordSettingsProps> = ({ axios, active }) =>
 
   return (
     <div className="rounded border border-gray-200 p-6 shadow-sm">
-      <div className="mb-4 flex items-start justify-between gap-4">
-        <div>
+      <div className="mb-4 grid grid-cols-[1fr_auto] items-start gap-3">
+        <div className="min-w-0">
           <h2 className="text-lg font-semibold">Password</h2>
           <p className="text-sm text-gray-500">
             {initialising
@@ -184,17 +184,15 @@ const PasswordSettings: React.FC<PasswordSettingsProps> = ({ axios, active }) =>
                 : 'Set a password so you can sign in without Google next time.'}
           </p>
         </div>
-        <div className="flex items-center gap-2">
-          {!initialising && (
-            <span
-              className={`rounded-full px-2 py-1 text-xs font-semibold ${
-                hasPassword ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'
-              }`}
-            >
-              {hasPassword ? 'Password enabled' : 'No password yet'}
-            </span>
-          )}
-        </div>
+        {!initialising && (
+          <span
+            className={`justify-self-end rounded-full px-2 py-1 text-xs font-semibold ${
+              hasPassword ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'
+            }`}
+          >
+            {hasPassword ? 'Password enabled' : 'No password yet'}
+          </span>
+        )}
       </div>
 
       {isEditing ? (
@@ -272,11 +270,7 @@ const PasswordSettings: React.FC<PasswordSettingsProps> = ({ axios, active }) =>
       ) : (
         <div className="space-y-3">
           <div className="text-sm text-gray-600">
-            {initialising
-              ? 'Loading...'
-              : hasPassword
-                ? ''
-                : 'You currently sign in via Google. Add a password for backup access.'}
+            {initialising ? 'Loading...' : hasPassword ? '' : 'You currently sign in via Google.'}
           </div>
           <Button type="button" onClick={beginEdit} disabled={initialising}>
             {hasPassword ? 'Change Password' : 'Set Password'}

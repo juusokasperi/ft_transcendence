@@ -118,19 +118,19 @@ const TwoFactorSettings: React.FC<TwoFactorSettingsProps> = ({ axios, user, setU
 
   return (
     <div className="rounded border border-gray-200 p-6 shadow-sm">
-      <div className="flex items-center justify-between">
-        <div>
+      <div className="grid grid-cols-[1fr_auto] items-start gap-4">
+        <div className="min-w-0">
           <h2 className="text-lg font-semibold">Two-Factor Authentication</h2>
           <p className="text-sm text-gray-600">
             Protect your account with an additional verification step using an authenticator app.
           </p>
         </div>
         {enabled ? (
-          <span className="rounded-full bg-green-100 px-3 py-1 text-xs font-semibold text-green-700">
+          <span className="justify-self-end rounded-full bg-green-100 px-3 py-1 text-xs font-semibold text-green-700">
             2fa enabled
           </span>
         ) : (
-          <span className="rounded-full bg-gray-100 px-3 py-1 text-xs font-semibold text-gray-600">
+          <span className="justify-self-end rounded-full bg-gray-100 px-3 py-1 text-xs font-semibold text-gray-600">
             Disabled
           </span>
         )}
