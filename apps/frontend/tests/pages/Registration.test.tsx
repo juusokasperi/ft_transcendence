@@ -1,4 +1,5 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { MemoryRouter } from 'react-router-dom';
 import '@testing-library/jest-dom';
 import { vi } from 'vitest';
 
@@ -38,7 +39,11 @@ describe('Registration page', () => {
       data: { success: 'Confirmation link sent to email.' },
     });
 
-    render(<Registration />);
+    render(
+      <MemoryRouter>
+        <Registration />
+      </MemoryRouter>,
+    );
 
     fireEvent.change(screen.getByLabelText(/username/i), { target: { value: 'testuser' } });
     fireEvent.change(screen.getByLabelText(/email/i), { target: { value: 'e@e.e' } });
@@ -66,7 +71,11 @@ describe('Registration page', () => {
       response: { data: { message: 'Username already taken' } },
     });
 
-    render(<Registration />);
+    render(
+      <MemoryRouter>
+        <Registration />
+      </MemoryRouter>,
+    );
 
     fireEvent.change(screen.getByLabelText(/username/i), { target: { value: 'taken' } });
     fireEvent.change(screen.getByLabelText(/email/i), { target: { value: 'e@e.e' } });
