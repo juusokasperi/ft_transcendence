@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useAppContext } from '../context/AppContext';
-import toast from 'react-hot-toast';
 import { AxiosError } from 'axios';
 import { resolveAvatarUrl } from '../utils/avatarUrl';
+import { useSnackbar } from '../context/SnackbarContext';
 
 interface FriendRequest {
   username: string;
@@ -36,6 +36,7 @@ const Friends: React.FC = () => {
   const [offlineFriends, setOfflineFriends] = useState<Friend[]>([]);
 
   const { axios } = useAppContext();
+  const { enqueueSnackbar } = useSnackbar();
 
   // Add friend
   const handleAddFriend = async (e: React.FormEvent) => {
@@ -44,12 +45,18 @@ const Friends: React.FC = () => {
 
     try {
       await axios.post('/api/friends', { username: friendName });
-      toast.success(`Friend request sent to ${friendName}`);
+      enqueueSnackbar({
+        message: `Friend request sent to ${friendName}`,
+        variant: 'success',
+      });
       setFriendName('');
       fetchSentPendingFriends();
     } catch (err) {
       const axiosErr = err as AxiosError<{ message?: string }>;
-      toast.error(String(axiosErr?.response?.data?.message));
+      enqueueSnackbar({
+        message: String(axiosErr?.response?.data?.message ?? 'Failed to send friend request'),
+        variant: 'error',
+      });
     }
   };
 
@@ -67,7 +74,10 @@ const Friends: React.FC = () => {
       setOfflineFriends(friendsWithAvatar.filter((f) => !f.online));
     } catch (err) {
       const axiosErr = err as AxiosError<{ message?: string }>;
-      toast.error(String(axiosErr?.response?.data?.message));
+      enqueueSnackbar({
+        message: String(axiosErr?.response?.data?.message ?? 'Failed to load friends'),
+        variant: 'error',
+      });
     }
   };
 
@@ -77,7 +87,10 @@ const Friends: React.FC = () => {
       setPendingSent(res.data);
     } catch (err) {
       const axiosErr = err as AxiosError<{ message?: string }>;
-      toast.error(String(axiosErr?.response?.data?.message));
+      enqueueSnackbar({
+        message: String(axiosErr?.response?.data?.message ?? 'Failed to load sent requests'),
+        variant: 'error',
+      });
     }
   };
 
@@ -87,31 +100,46 @@ const Friends: React.FC = () => {
       setPendingReceived(res.data);
     } catch (err) {
       const axiosErr = err as AxiosError<{ message?: string }>;
-      toast.error(String(axiosErr?.response?.data?.message));
+      enqueueSnackbar({
+        message: String(axiosErr?.response?.data?.message ?? 'Failed to load received requests'),
+        variant: 'error',
+      });
     }
   };
 
   const handleAcceptFriend = async (senderUuid: string) => {
     try {
       await axios.patch(`/api/friends/respond/${senderUuid}`, { accept: true });
-      toast.success('Friend request accepted!');
+      enqueueSnackbar({
+        message: 'Friend request accepted!',
+        variant: 'success',
+      });
       fetchSentPendingFriends();
       fetchReceivedPendingFriends();
       fetchAllFriends();
     } catch (err) {
       const axiosErr = err as AxiosError<{ message?: string }>;
-      toast.error(String(axiosErr?.response?.data?.message));
+      enqueueSnackbar({
+        message: String(axiosErr?.response?.data?.message ?? 'Failed to accept request'),
+        variant: 'error',
+      });
     }
   };
 
   const handleRejectFriend = async (senderUuid: string) => {
     try {
       await axios.patch(`/api/friends/respond/${senderUuid}`, { accept: false });
-      toast.success('Friend request rejected!');
+      enqueueSnackbar({
+        message: 'Friend request rejected!',
+        variant: 'info',
+      });
       fetchReceivedPendingFriends();
     } catch (err) {
       const axiosErr = err as AxiosError<{ message?: string }>;
-      toast.error(String(axiosErr?.response?.data?.message));
+      enqueueSnackbar({
+        message: String(axiosErr?.response?.data?.message ?? 'Failed to reject request'),
+        variant: 'error',
+      });
     }
   };
 
