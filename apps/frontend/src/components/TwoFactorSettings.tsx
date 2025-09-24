@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
 import QRCode from 'qrcode';
-import toast from 'react-hot-toast';
 import type { AxiosError, AxiosInstance } from 'axios';
 import type { User } from '../types';
 import Button from './Button';
+import { useSnackbar } from '../context/SnackbarContext';
+import ConfirmDialog from './ConfirmDialog';
 
 interface TwoFactorSettingsProps {
   axios: AxiosInstance;
@@ -22,6 +23,8 @@ const TwoFactorSettings: React.FC<TwoFactorSettingsProps> = ({ axios, user, setU
   const [verificationCode, setVerificationCode] = useState('');
   const [setupData, setSetupData] = useState<SetupResponse | null>(null);
   const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
+  const [confirmDisableOpen, setConfirmDisableOpen] = useState(false);
+  const { enqueueSnackbar } = useSnackbar();
 
   const enabled = Boolean(user?.tfaEnabled);
 
@@ -49,12 +52,18 @@ const TwoFactorSettings: React.FC<TwoFactorSettingsProps> = ({ axios, user, setU
       }
       setSetupData(nextSetup);
       await generateQr(nextSetup.otpauthUrl);
-      toast.success('2FA setup started. Scan the QR code.');
+      enqueueSnackbar({
+        message: '2FA setup started. Scan the QR code.',
+        variant: 'info',
+      });
     } catch (err: any) {
       const axiosErr = err as AxiosError<{ message?: string }>;
-      toast.error(
-        String(axiosErr?.response?.data?.message || err?.message || 'Failed to start setup'),
-      );
+      enqueueSnackbar({
+        message: String(
+          axiosErr?.response?.data?.message ?? err?.message ?? 'Failed to start setup',
+        ),
+        variant: 'error',
+      });
     } finally {
       setIsLoading(false);
     }
@@ -62,7 +71,10 @@ const TwoFactorSettings: React.FC<TwoFactorSettingsProps> = ({ axios, user, setU
 
   const confirmSetup = async () => {
     if (!verificationCode.trim()) {
-      toast.error('Please enter the code from your authenticator app.');
+      enqueueSnackbar({
+        message: 'Please enter the code from your authenticator app.',
+        variant: 'error',
+      });
       return;
     }
     setIsConfirming(true);
@@ -71,22 +83,27 @@ const TwoFactorSettings: React.FC<TwoFactorSettingsProps> = ({ axios, user, setU
         code: verificationCode,
       });
       setUser((prev) => (prev ? { ...prev, tfaEnabled: true } : prev));
-      toast.success('Two-factor authentication enabled');
+      enqueueSnackbar({
+        message: 'Two-factor authentication enabled',
+        variant: 'success',
+      });
       setSetupData(null);
       setQrDataUrl(null);
       setVerificationCode('');
     } catch (err: any) {
       const axiosErr = err as AxiosError<{ message?: string }>;
-      toast.error(
-        String(axiosErr?.response?.data?.message || err?.message || 'Failed to confirm code'),
-      );
+      enqueueSnackbar({
+        message: String(
+          axiosErr?.response?.data?.message ?? err?.message ?? 'Failed to confirm code',
+        ),
+        variant: 'error',
+      });
     } finally {
       setIsConfirming(false);
     }
   };
 
   const disableTwoFactor = async () => {
-    if (!window.confirm('Disable two-factor authentication?')) return;
     setIsLoading(true);
     try {
       await axios.delete('/api/users/me/tfa');
@@ -94,14 +111,21 @@ const TwoFactorSettings: React.FC<TwoFactorSettingsProps> = ({ axios, user, setU
       setSetupData(null);
       setQrDataUrl(null);
       setVerificationCode('');
-      toast.success('Two-factor authentication disabled');
+      enqueueSnackbar({
+        message: 'Two-factor authentication disabled',
+        variant: 'success',
+      });
     } catch (err: any) {
       const axiosErr = err as AxiosError<{ message?: string }>;
-      toast.error(
-        String(axiosErr?.response?.data?.message || err?.message || 'Failed to disable 2FA'),
-      );
+      enqueueSnackbar({
+        message: String(
+          axiosErr?.response?.data?.message ?? err?.message ?? 'Failed to disable 2FA',
+        ),
+        variant: 'error',
+      });
     } finally {
       setIsLoading(false);
+      setConfirmDisableOpen(false);
     }
   };
 
@@ -147,7 +171,7 @@ const TwoFactorSettings: React.FC<TwoFactorSettingsProps> = ({ axios, user, setU
           <button
             type="button"
             className="rounded border border-red-500 px-4 py-2 text-sm font-semibold text-red-600 hover:bg-red-50 disabled:opacity-50"
-            onClick={disableTwoFactor}
+            onClick={() => setConfirmDisableOpen(true)}
             disabled={isLoading}
           >
             Disable 2FA
@@ -211,6 +235,20 @@ const TwoFactorSettings: React.FC<TwoFactorSettingsProps> = ({ axios, user, setU
           </div>
         )}
       </div>
+      <ConfirmDialog
+        open={confirmDisableOpen}
+        title="Disable two-factor authentication?"
+        description="You will lose the extra security provided by verification codes."
+        confirmLabel={isLoading ? 'Disabling…' : 'Disable 2FA'}
+        cancelLabel="Keep 2FA"
+        confirmDisabled={isLoading}
+        tone="danger"
+        onCancel={() => {
+          if (isLoading) return;
+          setConfirmDisableOpen(false);
+        }}
+        onConfirm={disableTwoFactor}
+      />
     </div>
   );
 };
