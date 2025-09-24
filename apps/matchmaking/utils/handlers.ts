@@ -1,9 +1,11 @@
-import type { ClientInfo, Lobby, MatchmakingClientMessage, LobbyInfo } from '../types/types.ts';
+import type { ClientInfo, Lobby, MatchmakingClientMessage, LobbyInfo, PendingMatch } from '../types/types.ts';
 import { GAME_SERVER_URL, LOBBY_TTL_MS, LOBBY_SIZE } from './config.ts';
 import { log } from './log.ts';
 import { broadcastToAll, broadcast } from './broadcast.ts';
 import { v4 as uuid } from 'uuid';
 import { cleanupLobby, removeClientFromLobby } from './cleanup.ts';
+import { verifySiteToken, fetchUserMMR } from './auth.ts';
+import { tryMatchQueue } from './queue.ts';
 
 export function checkLobbyReady(
   lobbyId: string,
@@ -38,6 +40,7 @@ export function handleCreateLobby(
   lobbies: Map<string, Lobby>,
   clients: Map<string, ClientInfo>,
 ) {
+  if (!isAuthenticated(client)) return;
   if (data.type !== 'createLobby') return;
   const { username } = data;
   client.username = username;
@@ -63,6 +66,7 @@ export function handleInvite(
   client: ClientInfo,
   clients: Map<string, ClientInfo>,
 ) {
+  if (!isAuthenticated(client)) return;
   if (data.type !== 'invite') return;
   const { targetId, lobbyId } = data;
   if (!lobbyId || !targetId) return;
@@ -80,6 +84,7 @@ export function handleAcceptInvite(
   lobbies: Map<string, Lobby>,
   clients: Map<string, ClientInfo>,
 ) {
+  if (!isAuthenticated(client)) return;
   if (data.type !== 'acceptInvite') return;
   const { lobbyId } = data;
   if (!lobbyId) return;
@@ -108,6 +113,7 @@ export function handleDeclineInvite(
   lobbies: Map<string, Lobby>,
   clients: Map<string, ClientInfo>,
 ) {
+  if (!isAuthenticated(client)) return;
   if (data.type !== 'declineInvite') return;
   const { lobbyId } = data;
   const lobby = lobbies.get(lobbyId);
@@ -125,6 +131,7 @@ export function handleReady(
   lobbies: Map<string, Lobby>,
   clients: Map<string, ClientInfo>,
 ) {
+  if (!isAuthenticated(client)) return;
   if (data.type !== 'ready') return;
   const { lobbyId, ready } = data;
   if (client.lobbyId !== lobbyId) {
@@ -151,4 +158,39 @@ export function parseLobbyInfo(lobby: Lobby): LobbyInfo {
     capacity: lobby.capacity,
     membersCount: lobby.members.size,
   };
-}
+};
+
+export async function handleAuth(client: ClientInfo, token: string): Promise<boolean> {
+  log(`Handle auth and token is ${token}`);
+  const user = await verifySiteToken(token);
+  if (!user) {
+    client.socket.send(JSON.stringify({ type: 'ERROR', code: 'AUTH', message: 'Invalid token'}));
+    client.socket.close();
+    return false;
+  }
+  const mmr = await fetchUserMMR(user.uuid, token);
+  if (typeof mmr !== 'number') {
+    client.socket.send(JSON.stringify({ type: 'ERROR', code: 'AUTH', message: 'MMR not found' }));
+    client.socket.close();
+    return false;
+  }
+  client.username = user.username;
+  client.uuid = user.uuid;
+  client.authenticated = true;
+  client.mmr = mmr;
+  return true;
+};
+
+export async function handleJoinQueue(client: ClientInfo, queue: ClientInfo[]) {
+  if (!isAuthenticated(client))
+    return;
+  client.joinedAt = Date.now();
+  queue.push(client);
+  client.socket.send(JSON.stringify({ type: 'QUEUE_JOINED' }));
+};
+
+function isAuthenticated(client: ClientInfo): Boolean {
+  if (!client.authenticated)
+    client.socket.send({ type: 'ERROR', code: 'AUTH', message: 'Not authenticated' });
+  return (client.authenticated);
+};

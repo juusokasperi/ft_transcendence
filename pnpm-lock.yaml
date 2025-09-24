@@ -266,6 +266,9 @@ importers:
       dotenv:
         specifier: ^17.2.2
         version: 17.2.2
+      jsonwebtoken:
+        specifier: ^9.0.2
+        version: 9.0.2
       uuid:
         specifier: ^13.0.0
         version: 13.0.0

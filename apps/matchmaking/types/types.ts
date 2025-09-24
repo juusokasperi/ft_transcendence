@@ -2,10 +2,14 @@ import type { WebSocket } from 'ws';
 
 export interface ClientInfo {
   id: string;
+  mmr: number;
   socket: WebSocket;
   username: string;
   lobbyId?: string;
   ready: boolean;
+  uuid: string;
+  authenticated: boolean;
+  joinedAt: number;
 }
 
 export interface Lobby {
@@ -17,6 +21,10 @@ export interface Lobby {
 }
 
 export type MatchmakingClientMessage =
+  | { type: 'AUTH'; siteToken: string }
+  | { type: 'JOIN_QUEUE'; }
+  | { type: 'ACCEPT_MATCH'; matchId: string }
+  | { type: 'DECLINE_MATCH'; matchId: string }
   | { type: 'createLobby'; username: string }
   | { type: 'invite'; targetId: string; lobbyId: string }
   | { type: 'acceptInvite'; lobbyId: string }
@@ -29,3 +37,10 @@ export interface LobbyInfo {
   capacity: number;
   membersCount: number;
 }
+
+export interface PendingMatch {
+  a: ClientInfo,
+  b: ClientInfo,
+  accepted: Set<string>,
+  timer: NodeJS.Timeout
+};

@@ -21,6 +21,7 @@
   "dependencies": {
     "uuid": "^13.0.0",
     "ws": "^8.18.3",
-    "dotenv": "^17.2.2"
+    "dotenv": "^17.2.2",
+    "jsonwebtoken": "^9.0.2"
   }
 }

@@ -1,9 +1,11 @@
 import { WebSocketServer, type WebSocket, type RawData } from 'ws';
 import { v4 as uuid } from 'uuid';
 import { PORT } from './utils/config.ts';
-import type { ClientInfo, Lobby, MatchmakingClientMessage } from './types/types.ts';
+import type { ClientInfo, Lobby, MatchmakingClientMessage, PendingMatch } from './types/types.ts';
 import { log } from './utils/log.ts';
 import {
+  handleAuth,
+  handleJoinQueue,
   handleCreateLobby,
   handleInvite,
   handleAcceptInvite,
@@ -12,21 +14,53 @@ import {
 } from './utils/handlers.ts';
 import { broadcastLobbies } from './utils/broadcast.ts';
 import { removeClient, cleanupLobby } from './utils/cleanup.ts';
+import { handleAcceptMatch, handleDeclineMatch, tryMatchQueue } from './utils/queue.ts';
+import type { IncomingMessage } from 'http';
 
 const wss = new WebSocketServer({ port: PORT });
 const clients = new Map<string, ClientInfo>();
+const queue: ClientInfo[] = [];
+const pendingMatches = new Map<string, PendingMatch>();
 const lobbies = new Map<string, Lobby>();
 
 console.log(`Matchmaking WebSocket server listening on ${PORT}`);
 log(`Server started on port ${PORT}`);
 
-wss.on('connection', (socket: WebSocket) => {
+function extractToken(socket: WebSocket, req: IncomingMessage): string | undefined {
+  const cookieHeader = req.headers.cookie;
+  if (!cookieHeader)
+  {
+    socket.send(JSON.stringify({ type: 'ERROR', code: 'AUTH', message: 'Token missing' }));
+    socket.close();
+    return undefined;
+  }
+  const match = cookieHeader.match(new RegExp('(^|;)\\s*token=([^;]*)'));
+  if (!match || !match[2])
+  {
+    socket.send(JSON.stringify({ type: 'ERROR', code: 'AUTH', message: 'Token missing' }));
+    socket.close();
+    return undefined;
+  }
+  return match[2];
+};
+
+setInterval(() => {
+  tryMatchQueue(queue, pendingMatches);
+  }, 1000);
+
+wss.on('connection', (socket: WebSocket, req) => {
+  const token = extractToken(socket, req);
+  if (!token)
+    return;
+  console.log(`On cnonection token is ${token}`);
   const id = uuid();
-  const client: ClientInfo = { id, socket, ready: false, username: 'Unknown user' };
+  const client: ClientInfo = { id, socket, ready: false, username: 'Unknown user', joinedAt: Date.now(), uuid: '', mmr: 1000, authenticated: false };
   clients.set(id, client);
   log(`Client connected: ${id}`);
-  socket.send(JSON.stringify({ type: 'connected', clientId: id }));
-  broadcastLobbies(client, lobbies, clients);
+  if (!handleAuth(client, token))
+    return;
+  socket.send(JSON.stringify({ type: 'CONNECTED', clientId: id }));
+ // broadcastLobbies(client, lobbies, clients);
   socket.on('message', (raw: RawData) => {
     let data: MatchmakingClientMessage;
     try {
@@ -35,23 +69,31 @@ wss.on('connection', (socket: WebSocket) => {
       log(`Invalid message from ${id}:`, raw.toString());
       return;
     }
-    const { type } = data;
-    switch (type) {
-      case 'createLobby':
-        handleCreateLobby(data, client, lobbies, clients);
+    switch (data.type) {
+      case 'JOIN_QUEUE':
+        handleJoinQueue(client, queue);
         break;
-      case 'invite':
-        handleInvite(data, client, clients);
+      case 'ACCEPT_MATCH':
+        handleAcceptMatch(data.matchId, client, pendingMatches);
         break;
-      case 'acceptInvite':
-        handleAcceptInvite(data, client, lobbies, clients);
+      case 'DECLINE_MATCH':
+        handleDeclineMatch(data.matchId, client, pendingMatches, queue);
         break;
-      case 'declineInvite':
-        handleDeclineInvite(data, client, lobbies, clients);
-        break;
-      case 'ready':
-        handleReady(data, client, lobbies, clients);
-        break;
+      // case 'createLobby':
+      //   handleCreateLobby(data, client, lobbies, clients);
+      //   break;
+      // case 'invite':
+      //   handleInvite(data, client, clients);
+      //   break;
+      // case 'acceptInvite':
+      //   handleAcceptInvite(data, client, lobbies, clients);
+      //   break;
+      // case 'declineInvite':
+      //   handleDeclineInvite(data, client, lobbies, clients);
+      //   break;
+      // case 'ready':
+      //   handleReady(data, client, lobbies, clients);
+      //   break;
       default:
         client.socket.send(
           JSON.stringify({ type: 'error', message: 'Unknown message from client' }),
@@ -62,6 +104,8 @@ wss.on('connection', (socket: WebSocket) => {
   socket.on('close', () => {
     log(`Client disconnected: ${id}`);
     removeClient(id, lobbies, clients);
+    const idx = queue.findIndex(c => c.id === id);
+    if (idx !== -1) queue.splice(idx, 1);
   });
 });
 

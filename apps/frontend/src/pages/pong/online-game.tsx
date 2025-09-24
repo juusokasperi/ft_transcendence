@@ -4,7 +4,7 @@ import type { PlayerSeat } from '@pong/render';
 import { useLayoutEffect } from 'react';
 import { useAppContext } from '../../context/AppContext';
 import type { Lobby } from '../../services/matchmaking';
-
+import toast from 'react-hot-toast';
 interface LobbyListProps {
   lobbies: Lobby[];
   onJoin: (lobbyId: string) => void;
@@ -49,7 +49,8 @@ const OnlineGame: React.FC = () => {
 
   const [clientId, setClientId] = useState('');
   const [lobbyId, setLobbyId] = useState('');
-  const [status, setStatus] = useState<'connecting' | 'idle' | 'lobby' | 'starting' | 'playing'>(
+  const [authenticated, setAuthenticated] = useState(false);
+  const [status, setStatus] = useState<'connecting' | 'in_queue' | 'idle' | 'match_found' | 'match_accepted' | 'lobby' | 'starting' | 'playing'>(
     'connecting',
   );
 
@@ -60,15 +61,41 @@ const OnlineGame: React.FC = () => {
   const [ready, setReady] = useState(false);
   const [lobbies, setLobbies] = useState<Lobby[]>([]);
 
-  const inMatchMaking = status !== 'starting' && status !== 'playing';
+  const inMatchmaking = status !== 'starting' && status !== 'playing';
 
   useEffect(() => {
-    if (!inMatchMaking) return;
+    if (!inMatchmaking) return;
     const client = createMatchmakingClient((msg: MatchmakingMessage) => {
       switch (msg.type) {
-        case 'connected':
+        case 'CONNECTED':
           setClientId(msg.clientId);
+          setAuthenticated(true);
           setStatus('idle');
+          console.log('connected!');
+          break;
+        case 'QUEUE_JOINED':
+          setStatus('in_queue');
+          break;
+        case 'MATCH_FOUND':
+          setStatus('match_found');
+          setMatchId(msg.matchId);
+          break;
+        case 'MATCH_DECLINED':
+          setStatus('idle');
+          toast.error('Your opponent declined or timed out');
+          break;
+        case 'HANDOFF':
+          setServerUrl(msg.gameServerWSUrl);
+          setMatchId(msg.matchId);
+          setSeat(msg.side === 'east' ? 'P1' : 'P2');
+          setStatus('starting');
+          // Close only after handshake with gameserver complete
+          client.socket.close();
+          break;
+        case 'ERROR':
+          setAuthenticated(false);
+          setStatus('connecting');
+          toast.error(msg.message);
           break;
         case 'lobbyList':
           setLobbies(msg.lobbies);
@@ -76,14 +103,6 @@ const OnlineGame: React.FC = () => {
         case 'lobbyCreated':
           setLobbyId(msg.lobbyId);
           setStatus('lobby');
-          break;
-        case 'matchFound':
-          setServerUrl(msg.gameServerUrl);
-          setMatchId(msg.matchId);
-          setSeat(msg.seat);
-          setStatus('starting');
-          removeLobby(msg.lobbyId);
-          client.socket.close();
           break;
         case 'lobbyAdded':
           setLobbies((prev: Lobby[]) => [...prev, msg.lobby]);
@@ -109,7 +128,7 @@ const OnlineGame: React.FC = () => {
     });
     clientRef.current = client;
     return () => client.socket.close();
-  }, [inMatchMaking]);
+  }, [inMatchmaking]);
 
   // Auto-focus canvas when starting/playing
   useLayoutEffect(() => {
@@ -164,6 +183,15 @@ const OnlineGame: React.FC = () => {
     const lobby = lobbies.find((l) => l.lobbyId === lobbyId);
     return lobby ? `${lobby.membersCount}/${lobby.capacity}` : 'N/A';
   };
+
+  const handleAcceptMatch = (matchId: string) => {
+    setStatus('match_accepted');
+    clientRef.current?.acceptMatch(matchId);
+  }
+  const handleDeclineMatch = (matchId: string) => {
+    setStatus('idle');
+    clientRef.current?.declineMatch(matchId);
+  }
 
   const handleCreateLobby = () => {
     if (user && user.username) clientRef.current?.createLobby(user.username);
@@ -263,6 +291,41 @@ const OnlineGame: React.FC = () => {
             </span>
           </div>
 
+          {status === 'idle' && (
+            <button onClick={() => clientRef.current?.joinQueue()}
+            className="w-full rounded-lg border-2 border-emerald-400 px-a py-2 font-semibold text-emerald-300 transition hover:bg-emerald-400 hover:text-black"
+            >
+              Find a Match
+            </button>
+          )}
+
+          {status === 'in_queue' && (
+            <span className="text-white/60">In queue...</span>
+          )}
+
+          {status === 'match_found' && (
+            <div className="mt-2 space-y-3">
+              <p>Match Found!</p>
+              <span>Id: ${matchId}</span>
+              <button onClick={() => handleAcceptMatch(matchId)}
+                className="w-full rounded-lg border-2 border-emerald-400 px-a py-2 font-semibold text-emerald-300 transition hover:bg-emerald-400 hover:text-black"
+              >
+                Accept
+              </button>
+              <button onClick={() => handleDeclineMatch(matchId)}
+                className="w-full rounded-r border-2 border-emerald-400 px-a py-2 font-semibold text-emerald-300 transition hover:bg-emerald-400 hover:text-black"
+              >
+                Decline
+              </button>
+            </div>
+          )}
+
+          {status === 'match_accepted' && (
+            <div className="mt-2 space-y-3">
+              Waiting for the other player to respond.
+            </div>
+          )}
+
           <div className="space-y-2 text-sm text-white/80">
             <p>
               <span className="text-white/60">Client:</span>{' '}
@@ -297,7 +360,7 @@ const OnlineGame: React.FC = () => {
                   onClick={handleCreateLobby}
                   className="w-full rounded-lg border-2 border-pink-500 px-4 py-2 font-semibold text-pink-400 transition hover:bg-pink-500 hover:text-black"
                 >
-                  Create Lobby
+                  Create Tournament
                 </button>
 
                 <div className="flex items-center gap-2">

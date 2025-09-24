@@ -6,7 +6,23 @@ export type Lobby = {
 };
 
 export type MatchmakingMessage =
-  | { type: 'connected'; clientId: string }
+  | { type: 'CONNECTED'; clientId: string }
+  | { type: 'AUTH_OK' }
+  | { type: 'QUEUE_JOINED' }
+  | { type: 'MATCH_FOUND'; matchId: string }
+  | { type: 'MATCH_DECLINED'; matchId: string }
+  | {
+    type: 'HANDOFF';
+    matchId: string;
+    roomId: string;
+    gameServerWSUrl: string;
+    side: 'east' | 'west';
+    joinToken: string;
+    joinTokenTTLSeconds: number;
+    randomSeed: number;
+    simulationStartTick: number;
+  }
+  | { type: 'ERROR'; code: string; message: string }
   | { type: 'lobbyList'; lobbies: Lobby[] }
   | { type: 'lobbyAdded'; lobby: Lobby }
   | { type: 'lobbyUpdated'; lobby: Lobby }
@@ -16,14 +32,7 @@ export type MatchmakingMessage =
   | { type: 'inviteAccepted'; memberId: string }
   | { type: 'inviteDeclined'; memberId: string }
   | { type: 'memberReady'; memberId: string; ready: boolean }
-  | { type: 'lobbyReady'; lobbyId: string }
-  | {
-      type: 'matchFound';
-      lobbyId: string;
-      matchId: string;
-      gameServerUrl: string;
-      seat: 'P1' | 'P2';
-    };
+  | { type: 'lobbyReady'; lobbyId: string };
 
 import { wsUrl } from '../utils/url';
 
@@ -39,6 +48,18 @@ export function createMatchmakingClient(onMessage: (msg: MatchmakingMessage) => 
 
   return {
     socket,
+    auth() {
+      socket.send(JSON.stringify({ type: 'AUTH' }));
+    },
+    joinQueue() {
+      socket.send(JSON.stringify({ type: 'JOIN_QUEUE' }));
+    },
+    acceptMatch(matchId: string) {
+      socket.send(JSON.stringify({ type: 'ACCEPT_MATCH', matchId}));
+    },
+    declineMatch(matchId: string) {
+      socket.send(JSON.stringify({ type: 'DECLINE_MATCH', matchId }));
+    },
     createLobby(username: string) {
       socket.send(JSON.stringify({ type: 'createLobby', username }));
     },
