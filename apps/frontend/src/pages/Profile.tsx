@@ -185,7 +185,6 @@ const Profile: React.FC = () => {
     setIsEditing(false);
   };
 
-  // Delete account
   const handleDelete = async () => {
     if (!window.confirm('Are you sure you want to delete your account?')) return;
     try {
@@ -196,108 +195,167 @@ const Profile: React.FC = () => {
     }
   };
 
+  const wins = user?.wins ?? 0;
+  const losses = user?.losses ?? 0;
+
   return (
-    <div className="mx-auto mt-12 flex max-w-3xl flex-col gap-6">
-      <div className="rounded bg-white p-6 shadow">
-        <div className="mb-6 flex items-center justify-between">
-          <h2 className="text-2xl font-bold">Profile</h2>
-          {isEditing ? (
-            <Button
-              type="button"
-              variant="graybutton"
-              onClick={handleCancelEdit}
-              withMinWidth={false}
-              className="font-medium"
-            >
-              Cancel
-            </Button>
-          ) : (
-            <Button type="button" onClick={startEditing} withMinWidth={false}>
-              Edit Profile
-            </Button>
-          )}
-        </div>
-        <form className="space-y-4" onSubmit={handleUpdate}>
-          {/* Profile Image */}
-          <div className="flex flex-col items-start">
-            <div
-              className={`relative inline-flex h-24 w-24 items-center justify-center rounded-full ${
-                isEditing ? 'cursor-pointer' : ''
-              } ${isAvatarDirty ? 'ring-4 ring-green-400/60' : ''}`}
-              onClick={openAvatarPicker}
-            >
-              {imagePreview && (
-                <img
-                  key={imagePreview}
-                  src={imagePreview}
-                  alt="Profile"
-                  className="h-full w-full rounded-full object-cover"
-                  onError={(e) => {
-                    (e.currentTarget as HTMLImageElement).src = PLACEHOLDER;
-                  }}
+    <div className="relative min-h-[calc(100vh-6rem)] text-white">
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-40 bg-gradient-to-b from-indigo-600/30 via-purple-500/10 to-transparent blur-3xl" />
+      <div className="pointer-events-none absolute inset-0 overflow-hidden">
+        <div className="absolute -left-24 top-48 h-48 w-48 rounded-full bg-indigo-500/10 blur-3xl" />
+        <div className="absolute bottom-0 right-0 h-52 w-52 rounded-full bg-purple-500/10 blur-3xl" />
+      </div>
+
+      <div className="relative mx-auto flex w-full max-w-5xl flex-col gap-8 px-4 pb-16 pt-6 sm:px-6 lg:px-10">
+        <section className="rounded-3xl border border-white/10 bg-slate-900/60 p-6 shadow-xl shadow-indigo-950/30 backdrop-blur">
+          <header className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <div>
+              <h1 className="text-3xl font-semibold sm:text-4xl">Account overview</h1>
+              <p className="text-sm text-slate-300/80">
+                Update your avatar, adjust your nickname, and manage account controls.
+              </p>
+            </div>
+            <div className="flex items-center gap-3">
+              <span className="rounded-full border border-white/15 bg-white/5 px-4 py-2 text-xs uppercase tracking-[0.3em] text-slate-200">
+                Wins {wins}
+              </span>
+              <span className="rounded-full border border-white/15 bg-white/5 px-4 py-2 text-xs uppercase tracking-[0.3em] text-slate-200">
+                Losses {losses}
+              </span>
+            </div>
+          </header>
+
+          <form className="grid gap-8 lg:grid-cols-[auto,1fr]" onSubmit={handleUpdate}>
+            <div className="flex flex-col items-center gap-4">
+              <div
+                className={`relative inline-flex h-28 w-28 items-center justify-center rounded-full border-4 border-white/10 bg-slate-800/80 ${
+                  isEditing ? 'cursor-pointer transition hover:ring-4 hover:ring-indigo-400/60' : ''
+                } ${isAvatarDirty ? 'ring-4 ring-emerald-400/70' : ''}`}
+                onClick={openAvatarPicker}
+              >
+                {imagePreview && (
+                  <img
+                    key={imagePreview}
+                    src={imagePreview}
+                    alt="Profile"
+                    className="h-full w-full rounded-full object-cover"
+                    onError={(e) => {
+                      (e.currentTarget as HTMLImageElement).src = PLACEHOLDER;
+                    }}
+                  />
+                )}
+                {isEditing && (
+                  <button
+                    type="button"
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      openAvatarPicker();
+                    }}
+                    className={`absolute bottom-2 right-2 flex h-9 w-9 items-center justify-center rounded-full text-white shadow shadow-indigo-950/30 transition ${
+                      isAvatarDirty
+                        ? 'bg-emerald-500 hover:bg-emerald-400'
+                        : 'bg-indigo-600 hover:bg-indigo-500'
+                    }`}
+                    aria-label="Change avatar"
+                  >
+                    <span className="text-xl leading-none">+</span>
+                  </button>
+                )}
+              </div>
+              <div className="flex flex-col items-center gap-1 text-center">
+                <p className="text-lg font-semibold">{user?.username}</p>
+                <p className="text-xs uppercase tracking-[0.3em] text-slate-400">{user?.email}</p>
+              </div>
+              {isEditing && (
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={handleImageChange}
+                  className="sr-only"
                 />
               )}
-              {isEditing && (
-                <button
-                  type="button"
-                  onClick={(event) => {
-                    event.stopPropagation();
-                    openAvatarPicker();
-                  }}
-                  className={`absolute bottom-1 right-1 flex h-9 w-9 items-center justify-center rounded-full text-white shadow transition ${
-                    isAvatarDirty
-                      ? 'bg-green-500 hover:bg-green-400'
-                      : 'bg-blue-600 hover:bg-blue-700'
+            </div>
+
+            <div className="flex flex-col gap-6">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <p className="text-sm font-semibold text-indigo-200">Profile status</p>
+                  <p className="text-xs uppercase tracking-[0.3em] text-slate-400">
+                    {isEditing ? 'Editing mode active' : 'Viewing mode'}
+                  </p>
+                </div>
+                {isEditing ? (
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    tone="subtle"
+                    onClick={handleCancelEdit}
+                    withMinWidth={false}
+                    className="rounded-full px-6 py-2 text-sm"
+                  >
+                    Cancel
+                  </Button>
+                ) : (
+                  <Button
+                    type="button"
+                    onClick={startEditing}
+                    withMinWidth={false}
+                    className="rounded-full px-6 py-2 text-sm"
+                  >
+                    Edit profile
+                  </Button>
+                )}
+              </div>
+
+              <div className="space-y-4">
+                {isEditing && (
+                  <label className="text-sm font-semibold text-slate-200">Change username</label>
+                )}
+                <input
+                  type="text"
+                  value={isEditing ? username : user?.username ?? ''}
+                  placeholder={user?.username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  disabled={!isEditing}
+                  className={`w-full rounded-2xl border border-white/15 bg-white/5 px-4 py-3 text-sm text-white placeholder:text-slate-400 transition focus:outline-none focus:ring-2 focus:ring-indigo-400/60 disabled:cursor-not-allowed disabled:opacity-60 ${
+                    isUsernameDirty ? 'ring-2 ring-emerald-400/70' : ''
                   }`}
-                  aria-label="Change avatar"
-                >
-                  <span className="text-2xl leading-none">+</span>
-                </button>
+                />
+                {error && isEditing && <p className="text-sm text-rose-400">{error}</p>}
+              </div>
+
+              {isEditing && (
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                  <Button
+                    type="submit"
+                    disabled={loading}
+                    withMinWidth={false}
+                    variant="success"
+                    className="flex-1 px-6 py-2 text-sm"
+                  >
+                    {loading ? 'Updating…' : 'Save changes'}
+                  </Button>
+
+                  <Button
+                    type="button"
+                    variant="danger"
+                    tone="subtle"
+                    onClick={handleDelete}
+                    withMinWidth={false}
+                    className="flex-1 px-6 py-2 text-sm"
+                  >
+                    Delete account
+                  </Button>
+                </div>
               )}
             </div>
-            {isEditing && (
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/*"
-                onChange={handleImageChange}
-                className="sr-only"
-              />
-            )}
-          </div>
-          {error && isEditing && <p className="text-red-500">{error}</p>}
+          </form>
+        </section>
 
-          {/* Nickname */}
-          <div>
-            {isEditing && <label className="mb-2 block font-medium">Change Username</label>}
-            <input
-              type="text"
-              value={isEditing ? username : (user?.username ?? '')}
-              placeholder={user?.username}
-              onChange={(e) => setUsername(e.target.value)}
-              disabled={!isEditing}
-              className={`w-full rounded border p-2 transition disabled:cursor-not-allowed disabled:opacity-60 ${
-                isEditing ? '' : 'mt-2'
-              } ${isUsernameDirty ? 'border-green-500 bg-green-50 ring-1 ring-green-400/60' : ''}`}
-            />
-          </div>
-
-          {/* Buttons */}
-          {isEditing && (
-            <div className="flex items-center justify-between">
-              <Button type="submit" disabled={loading}>
-                {loading ? 'Updating...' : 'Save Changes'}
-              </Button>
-
-              <Button type="button" variant="redbutton" onClick={handleDelete}>
-                Delete Account
-              </Button>
-            </div>
-          )}
-        </form>
+        <PasswordSettings axios={axios} active={isEditing} />
+        <TwoFactorSettings axios={axios} user={user} setUser={setUser} />
       </div>
-      <PasswordSettings axios={axios} active={isEditing} />
-      <TwoFactorSettings axios={axios} user={user} setUser={setUser} />
     </div>
   );
 };

@@ -197,7 +197,8 @@ const TwoFactorSettings: React.FC<TwoFactorSettingsProps> = ({ axios, user, setU
                 </Button>
                 <Button
                   type="button"
-                  variant="graybutton"
+                  variant="secondary"
+                  tone="subtle"
                   onClick={cancelSetup}
                   disabled={isConfirming}
                   className="flex-1"

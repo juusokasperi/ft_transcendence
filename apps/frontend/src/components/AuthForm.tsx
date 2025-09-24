@@ -208,7 +208,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ type, onSubmit }) => {
         type="submit"
         fullWidth
         className="mb-3"
-        variant={type === 'login' ? 'greenbutton' : 'bluebutton'}
+        variant={type === 'login' ? 'success' : 'primary'}
       >
         {type === 'login' ? 'Login' : 'Register'}
       </Button>
