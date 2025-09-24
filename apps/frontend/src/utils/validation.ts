@@ -5,8 +5,31 @@ export interface ValidationResult {
   msg: string;
 }
 
+/**
+ * Matches a valid email address.
+ * - Must contain one '@' symbol.
+ * - No spaces allowed.
+ * - Must have at least one character before and after '@', and a domain after '.'.
+ */
 export const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+/**
+ * Matches a valid username.
+ * - May contain letters, numbers, and dashes.
+ * - Cannot start or end with a dash.
+ * - No spaces or special characters allowed.
+ */
 export const usernameRegex = /^(?!-)([a-zA-Z0-9-]+)(?<!-)$/;
+
+/**
+ * Matches a strong password.
+ * Requirements:
+ * - At least 12 characters.
+ * - At least one lowercase letter.
+ * - At least one uppercase letter.
+ * - At least one digit.
+ * - At least one special character from: !@#$%^&*()-=+[]{};:|,<.>/?`
+ */
 export const passwordRegex =
   /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()\-=+[\]{};:|,<.>/?`]).{12,}$/;
 
