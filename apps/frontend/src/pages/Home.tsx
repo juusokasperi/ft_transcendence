@@ -109,22 +109,24 @@ const Hero: React.FC = () => {
           </motion.div>
 
           <motion.div
-            className="relative mx-auto flex h-64 w-full max-w-sm items-center justify-center sm:h-72 lg:h-[22rem]"
+            className="mx-auto flex w-full max-w-sm flex-col items-center gap-8 sm:max-w-md lg:max-w-lg"
             variants={itemVariants}
           >
-            <div className="absolute inset-0 rounded-[3rem] bg-gradient-to-br from-indigo-500/30 via-transparent to-purple-500/20 blur-3xl" />
-            {heroScreens.map((screen, index) => (
-              <motion.img
-                key={screen.src}
-                src={screen.src}
-                alt={screen.alt}
-                className={`absolute h-44 w-72 rounded-3xl border border-white/5 object-cover shadow-2xl sm:h-52 sm:w-80 lg:h-60 lg:w-[22rem] ${screen.className}`}
-                initial={{ opacity: 0, scale: 0.92 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ delay: 0.2 + index * 0.12, duration: 0.45, ease: 'easeOut' }}
-              />
-            ))}
-            <div className="absolute bottom-6 left-1/2 flex w-[85%] -translate-x-1/2 items-center justify-between rounded-2xl border border-white/10 bg-slate-900/80 px-4 py-3 text-xs font-medium text-slate-200 shadow-lg shadow-indigo-900/40 backdrop-blur">
+            <div className="relative flex h-64 w-full items-center justify-center sm:h-72 lg:h-[22rem]">
+              <div className="absolute inset-0 rounded-[3rem] bg-gradient-to-br from-indigo-500/30 via-transparent to-purple-500/20 blur-3xl" />
+              {heroScreens.map((screen, index) => (
+                <motion.img
+                  key={screen.src}
+                  src={screen.src}
+                  alt={screen.alt}
+                  className={`absolute h-44 w-72 rounded-3xl border border-white/5 object-cover shadow-2xl sm:h-52 sm:w-80 lg:h-60 lg:w-[22rem] ${screen.className}`}
+                  initial={{ opacity: 0, scale: 0.92 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ delay: 0.2 + index * 0.12, duration: 0.45, ease: 'easeOut' }}
+                />
+              ))}
+            </div>
+            <div className="mt-2 flex w-full items-center justify-between rounded-2xl border border-white/10 bg-slate-900/80 px-4 py-3 text-xs font-medium text-slate-200 shadow-lg shadow-indigo-900/40 backdrop-blur sm:mt-6">
               <span className="flex items-center gap-2">
                 <span className="h-2 w-2 rounded-full bg-emerald-400" />
                 Live matches
