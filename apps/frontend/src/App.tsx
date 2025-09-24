@@ -1,4 +1,3 @@
-import Navbar from './components/Navbar';
 import { Route, Routes } from 'react-router-dom';
 import Registration from './pages/Registration';
 import Login from './pages/Login';
@@ -20,7 +19,6 @@ function App() {
     <SidebarProvider>
       <div>
         <Toaster />
-        <Navbar />
 
         <Routes>
           <Route path={'/'} element={<Home />} />

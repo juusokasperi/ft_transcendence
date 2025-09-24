@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import type { Variants } from 'framer-motion';
 import { useAppContext } from '../context/AppContext';
 import { Link } from 'react-router-dom';
+import Navbar from '../components/Navbar';
 
 const containerVariants: Variants = {
   hidden: {},
@@ -67,12 +68,14 @@ const Hero: React.FC = () => {
   const { user } = useAppContext();
 
   return (
-    <motion.div
-      className="min-h-[calc(100vh-6rem)] bg-slate-950 text-white"
-      variants={containerVariants}
-      initial="hidden"
-      animate="visible"
-    >
+    <>
+      <Navbar />
+      <motion.div
+        className="min-h-[calc(100vh-6rem)] bg-slate-950 text-white"
+        variants={containerVariants}
+        initial="hidden"
+        animate="visible"
+      >
       <div className="relative">
         <div className="pointer-events-none absolute inset-x-0 top-0 h-80 bg-gradient-to-b from-indigo-600/30 via-indigo-400/10 to-transparent blur-3xl" />
       </div>
@@ -181,6 +184,7 @@ const Hero: React.FC = () => {
         </div>
       </motion.div>
     </motion.div>
+    </>
   );
 };
 

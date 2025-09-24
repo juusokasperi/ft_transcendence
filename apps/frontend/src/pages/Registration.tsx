@@ -5,6 +5,7 @@ import { toast } from 'react-hot-toast';
 import type { AxiosError } from 'axios';
 import type { AxiosResponse } from 'axios';
 import { Link } from 'react-router-dom';
+import Navbar from '../components/Navbar';
 
 const highlights = [
   'Reserve your arcade handle before tournaments open',
@@ -54,6 +55,7 @@ const Registration: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-slate-950">
+      <Navbar />
       <div className="relative min-h-[calc(100vh-6rem)] pt-28 pb-16 text-white">
         <div className="pointer-events-none absolute inset-x-0 top-0 h-72 bg-gradient-to-b from-purple-600/40 via-indigo-500/10 to-transparent blur-3xl" />
         <div className="pointer-events-none absolute inset-0 overflow-hidden">

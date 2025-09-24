@@ -1,5 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
+import Navbar from '../../components/Navbar';
 
 const PingPong: React.FC = () => {
   const navigate = useNavigate();
@@ -9,7 +10,9 @@ const PingPong: React.FC = () => {
   const handleTournaments = () => navigate('/ping-pong/tournaments');
 
   return (
-    <div className="relative h-screen w-full overflow-hidden">
+    <div className="relative min-h-screen bg-black">
+      <Navbar />
+      <div className="relative h-screen w-full overflow-hidden pt-24">
       {/* Video Background */}
       <video
         autoPlay
@@ -22,7 +25,7 @@ const PingPong: React.FC = () => {
       </video>
 
       {/* Neon Menu */}
-      <div className="relative z-10 flex h-full flex-col items-center justify-start space-y-8 pt-40">
+      <div className="relative z-10 flex h-full flex-col items-center justify-start space-y-8 pt-24">
         <button onClick={handleLocalPlay} className="neon-btn border-pink-500 text-pink-500">
           Play Local
         </button>
@@ -64,6 +67,7 @@ const PingPong: React.FC = () => {
           transform: scale(1.05);
         }
       `}</style>
+      </div>
     </div>
   );
 };

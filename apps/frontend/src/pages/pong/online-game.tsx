@@ -4,6 +4,7 @@ import type { PlayerSeat } from '@pong/render';
 import { useLayoutEffect } from 'react';
 import { useAppContext } from '../../context/AppContext';
 import type { Lobby } from '../../services/matchmaking';
+import Navbar from '../../components/Navbar';
 
 interface LobbyListProps {
   lobbies: Lobby[];
@@ -216,7 +217,8 @@ const OnlineGame: React.FC = () => {
 
   if (status === 'starting' || status === 'playing') {
     return (
-      <div className="relative h-screen w-full bg-black">
+      <div className="relative min-h-screen w-full bg-black">
+        <Navbar />
         <canvas ref={canvasRef} className="block h-full w-full" tabIndex={0} autoFocus />
         <button
           type="button"
@@ -236,6 +238,8 @@ const OnlineGame: React.FC = () => {
   // Lobby view (unchanged logic; just presentation)
   return (
     <div className="relative min-h-screen w-full overflow-hidden bg-black">
+      <Navbar />
+      <div className="pt-24">
       <video
         autoPlay
         loop
@@ -246,7 +250,7 @@ const OnlineGame: React.FC = () => {
         <source src="/src/assets/gif.mp4" type="video/mp4" />
       </video>
       <div className="absolute inset-0 z-0 bg-black/60" />
-      <div className="relative z-10 mx-auto flex min-h-screen max-w-7xl flex-col items-center justify-center gap-6 p-4 text-white">
+      <div className="relative z-10 mx-auto flex min-h-[calc(100vh-6rem)] max-w-7xl flex-col items-center justify-center gap-6 p-4 text-white">
         <div className="w-full max-w-xl rounded-2xl border border-white/10 bg-white/5 p-6 shadow-2xl backdrop-blur">
           <div className="mb-4 flex items-center justify-between">
             <h1 className="text-2xl font-bold tracking-wide">Online Game</h1>
@@ -324,6 +328,7 @@ const OnlineGame: React.FC = () => {
             )}
           </div>
         </div>
+      </div>
       </div>
     </div>
   );

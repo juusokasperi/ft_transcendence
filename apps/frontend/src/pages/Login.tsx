@@ -5,6 +5,7 @@ import { toast } from 'react-hot-toast';
 import type { AxiosError } from 'axios';
 import { Link, useLocation } from 'react-router-dom';
 import type { User } from '../types';
+import Navbar from '../components/Navbar';
 
 const highlights = [
   'Single account for every arcade title',
@@ -158,6 +159,7 @@ const Login: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-slate-950">
+      <Navbar />
       <div className="relative min-h-[calc(100vh-6rem)] pt-28 pb-16 text-white">
         <div className="pointer-events-none absolute inset-x-0 top-0 h-72 bg-gradient-to-b from-indigo-600/40 via-purple-500/10 to-transparent blur-3xl" />
         <div className="pointer-events-none absolute inset-0 overflow-hidden">
