@@ -1,47 +1,86 @@
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { useAppContext } from '../context/AppContext';
+
+const navLinks = [
+  { label: 'Home', to: '/' },
+  { label: 'Games', to: '/ping-pong' },
+];
 
 const Navbar = () => {
   const { user, logout } = useAppContext();
+  const location = useLocation();
 
   return (
     <nav
       data-app-navbar
-      className="bg-white/3 absolute left-0 top-0 z-50 flex w-full items-center justify-between border-b border-white/10 px-6 py-4 text-white backdrop-blur-md"
+      className="fixed inset-x-0 top-0 z-50 border-b border-white/10 bg-slate-950/80 text-white shadow-[0_10px_30px_-20px_rgba(67,56,202,0.75)] backdrop-blur-xl"
     >
-      {/* Brand */}
-      <div className="bg-gradient-to-r from-indigo-400 to-purple-500 bg-clip-text text-2xl font-extrabold text-transparent drop-shadow-lg">
-        <Link to="/">
-          <img src="/src/assets/logo.png" alt="" className="size-10" />
+      <div className="mx-auto flex w-full max-w-6xl items-center justify-between gap-6 px-4 py-5 sm:px-6 lg:px-12">
+        <Link to="/" className="flex items-center gap-3">
+          <span className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-500 via-purple-500 to-blue-500">
+            <img src="/src/assets/logo.png" alt="Arcade home" className="h-9 w-9" />
+          </span>
+          <span className="hidden text-lg font-semibold tracking-wide text-indigo-100 sm:inline">
+            Arcade Transcendence
+          </span>
         </Link>
-      </div>
 
-      {/* Menu */}
-      <div className="flex items-center gap-4">
-        {user ? (
-          <>
-            <span className="text-sm font-medium text-indigo-300">Welcome {user.username} ✨</span>
-            <Link
-              to="/profile"
-              className="rounded-md bg-gradient-to-r from-indigo-600 to-purple-600 px-4 py-2 text-sm font-semibold text-white shadow transition hover:from-indigo-500 hover:to-purple-500"
-            >
-              Profile
-            </Link>
-            <button
-              onClick={async () => await logout()}
-              className="rounded-md bg-gradient-to-r from-rose-600 to-red-600 px-4 py-2 text-sm font-semibold text-white shadow transition hover:from-rose-500 hover:to-red-500"
-            >
-              Logout
-            </button>
-          </>
-        ) : (
-          <Link
-            to="/login"
-            className="rounded-md bg-gradient-to-r from-green-600 to-emerald-600 px-4 py-2 text-sm font-semibold text-white shadow transition hover:from-green-500 hover:to-emerald-500"
-          >
-            Login
-          </Link>
-        )}
+        <div className="hidden items-center gap-6 text-sm font-medium text-slate-200/80 md:flex">
+          {navLinks.map((link) => {
+            const isActive = location.pathname === link.to;
+            return (
+              <Link
+                key={link.to}
+                to={link.to}
+                className={`relative transition hover:text-white ${
+                  isActive ? 'text-white' : ''
+                }`}
+              >
+                {link.label}
+                {isActive && (
+                  <span className="absolute -bottom-2 left-0 h-[2px] w-full bg-gradient-to-r from-indigo-400 to-purple-400" />
+                )}
+              </Link>
+            );
+          })}
+        </div>
+
+        <div className="flex items-center gap-3">
+          {user ? (
+            <>
+              <span className="hidden text-sm font-medium text-indigo-200 sm:inline">
+                Welcome {user.username} ✨
+              </span>
+              <Link
+                to="/profile"
+                className="hidden items-center justify-center rounded-full border border-indigo-400/60 px-4 py-2 text-sm font-semibold text-indigo-200 transition hover:border-indigo-300 hover:text-white md:inline-flex"
+              >
+                Dashboard
+              </Link>
+              <button
+                onClick={async () => await logout()}
+                className="inline-flex items-center justify-center rounded-full bg-gradient-to-r from-rose-500 to-red-500 px-4 py-2 text-sm font-semibold text-white shadow-sm shadow-rose-900/40 transition hover:from-rose-400 hover:to-red-400"
+              >
+                Log out
+              </button>
+            </>
+          ) : (
+            <div className="flex items-center gap-2">
+              <Link
+                to="/login"
+                className="hidden items-center justify-center rounded-full border border-indigo-400/60 px-4 py-2 text-sm font-semibold text-indigo-200 transition hover:border-indigo-300 hover:text-white sm:inline-flex"
+              >
+                Log in
+              </Link>
+              <Link
+                to="/signup"
+                className="inline-flex items-center justify-center rounded-full bg-gradient-to-r from-indigo-500 to-purple-500 px-5 py-2 text-sm font-semibold text-white shadow-sm shadow-indigo-900/40 transition hover:from-indigo-400 hover:to-purple-400"
+              >
+                Create account
+              </Link>
+            </div>
+          )}
+        </div>
       </div>
     </nav>
   );
