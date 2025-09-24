@@ -38,6 +38,11 @@
     @apply col-span-2 mt-1 justify-self-center rounded-md border border-white/15 bg-white/10 px-2 py-[2px] text-[11px] font-semibold uppercase tracking-wider text-white/90 shadow-[0_6px_16px_rgba(0,0,0,.25)] transition-opacity;
   }
 
+  /* Context message under scoreboard (absolute so it doesn't affect layout) */
+  .pong-hud-msg {
+    @apply pointer-events-none absolute left-1/2 -translate-x-1/2 top-full mt-1 select-none whitespace-nowrap w-fit text-[24px] font-semibold leading-[1.05] text-cyan-300 drop-shadow-[0_0_12px_rgba(56,189,248,.35)] md:text-[26px] transition-opacity;
+  }
+
   /* Score boxes */
   .pong-hud-box {
     @apply grid h-9 w-9 select-none place-items-center rounded-md border border-white/10 bg-white/5 text-[13px] font-extrabold tabular-nums text-white/90;

@@ -333,12 +333,19 @@ export function createOnlineApp(
         // Names follow player colors across swaps
         syncHudNameColors();
         paddleAnim.cue(180);
+        const last = latestMatch?.gamesHistory?.[latestMatch.gamesHistory.length - 1];
+        if (last?.winner) {
+          const winnerName = last.winner === 'east' ? names.east : names.west;
+          hud.flashMessage(`${winnerName} won the game, swapping side!`, 3200);
+        }
       }
 
       // Fire a DOM event once when the match concludes (parity with local mode)
       if (!didFireMatchOverEvent && anyEv && anyEv.matchOver) {
         didFireMatchOverEvent = true;
         const winner = anyEv.matchOver.winner as 'east' | 'west';
+        const winnerName = winner === 'east' ? names.east : names.west;
+        hud.flashMessage(`${winnerName} won, impressive match!`, 3800);
         canvas.dispatchEvent(
           new CustomEvent('pong:matchOver', {
             detail: {

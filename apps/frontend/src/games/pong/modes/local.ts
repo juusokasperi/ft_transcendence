@@ -142,6 +142,8 @@ export function createLocalApp(canvas: HTMLCanvasElement, preferences?: Preferen
 
   // Intro gate (wall-clock ms until which logic is gated)
   let introUntil = 0;
+  // Mid-game pause gate (e.g., decisive mid-swap message)
+  let pauseUntil = 0;
 
   // HUD diff cache for match boxes
   let lastBestOf = 0;
@@ -152,7 +154,8 @@ export function createLocalApp(canvas: HTMLCanvasElement, preferences?: Preferen
   const loop = createLifecycle(engine, scene, {
     logicHz: 60,
     update: (dtMs) => {
-      if (performance.now() < introUntil) return; // skip physics during intro FX
+      const now = performance.now();
+      if (now < introUntil || now < pauseUntil) return; // skip physics during intro FX or HUD pauses
       const dt = Math.min(0.05, dtMs / 1000);
 
       // 1) Input → paddles
@@ -171,6 +174,7 @@ export function createLocalApp(canvas: HTMLCanvasElement, preferences?: Preferen
       // Fires exactly once per match.
       if (mc.events.matchOver) {
         const { winner } = mc.events.matchOver;
+        hud.flashMessage(`${names[winner]} won, impressive match!`, 3800);
         const snap = match.getSnapshot();
         const historyForHUD = mapHistoryForPlayers(snap.gamesHistory);
         canvas.dispatchEvent(
@@ -186,6 +190,25 @@ export function createLocalApp(canvas: HTMLCanvasElement, preferences?: Preferen
       }
 
       if (mc.events.swapSidesNow) {
+        const midGameSwap = prevPhase === 'rally';
+        if (midGameSwap) {
+          const ms = 3200;
+          hud.flashMessage('Swapping mid-game for decisive game', ms);
+          pauseUntil = Math.max(pauseUntil, performance.now() + ms);
+          blockInputFor(ms);
+        } else {
+          // Use the last finished game's winner from snapshot history (player-pinned)
+          const snapNow = match.getSnapshot();
+          const hist = snapNow.gamesHistory || [];
+          const last = hist[hist.length - 1];
+          if (last?.winner) {
+            const winnerRow = last.winner as 'east' | 'west';
+            const ms = 3200;
+            hud.flashMessage(`${names[winnerRow]} won the game, swapping side!`, ms);
+            pauseUntil = Math.max(pauseUntil, performance.now() + ms);
+            blockInputFor(ms);
+          }
+        }
         // controls follow player
         toggleControlsMirrored();
 
@@ -221,6 +244,7 @@ export function createLocalApp(canvas: HTMLCanvasElement, preferences?: Preferen
         // crossover cue
         paddleAnim.cue(180);
       }
+      // gameOver handled via snapshot history for messaging; no latch required here
 
       // 4) Entered serve? Trigger cues
       const entered = detectEnteredServe(prevPhase, state.phase);
