@@ -16,6 +16,9 @@ interface SetupResponse {
   otpauthUrl: string;
 }
 
+const primaryButtonClass =
+  'inline-flex min-w-[150px] items-center justify-center rounded bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50';
+
 const TwoFactorSettings: React.FC<TwoFactorSettingsProps> = ({ axios, user, setUser }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [isConfirming, setIsConfirming] = useState(false);
@@ -140,7 +143,7 @@ const TwoFactorSettings: React.FC<TwoFactorSettingsProps> = ({ axios, user, setU
         {!enabled && !setupData && (
           <button
             type="button"
-            className="rounded bg-blue-600 px-4 py-2 font-semibold text-white hover:bg-blue-700 disabled:opacity-50"
+            className={primaryButtonClass}
             onClick={startSetup}
             disabled={isLoading}
           >
@@ -194,7 +197,7 @@ const TwoFactorSettings: React.FC<TwoFactorSettingsProps> = ({ axios, user, setU
               <div className="flex gap-2">
                 <button
                   type="button"
-                  className="flex-1 rounded bg-blue-600 px-4 py-2 font-semibold text-white hover:bg-blue-700 disabled:opacity-50"
+                  className={`${primaryButtonClass} flex-1`}
                   onClick={confirmSetup}
                   disabled={isConfirming}
                 >

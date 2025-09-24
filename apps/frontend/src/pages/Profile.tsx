@@ -5,12 +5,7 @@ import toast from 'react-hot-toast';
 import type { AxiosError } from 'axios';
 import { PLACEHOLDER, resolveAvatarUrl } from '../utils/avatarUrl';
 import TwoFactorSettings from '../components/TwoFactorSettings';
-
-interface PasswordState {
-  currentPassword: string;
-  newPassword: string;
-  confirmPassword: string;
-}
+import PasswordSettings from '../components/PasswordSettings';
 
 const Profile: React.FC = () => {
   const { axios, user, setUser } = useAppContext();
@@ -19,15 +14,8 @@ const Profile: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [imagePreview, setImagePreview] = useState<string>(PLACEHOLDER);
   const [username, setUsername] = useState<string>('');
-  const [newPassword, setNewPasswords] = useState<PasswordState>({
-    currentPassword: '',
-    newPassword: '',
-    confirmPassword: '',
-  });
   const [isEditing, setIsEditing] = useState<boolean>(false);
   const usernameRegex = /^(?!-)([a-zA-Z0-9-]+)(?<!-)$/;
-  const passwordRegex =
-    /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()\-=+[\]{};:|,<.>/?`]).{12,}$/;
 
   // Validation helpers
   const getUsernameValidation = () => {
@@ -39,43 +27,16 @@ const Profile: React.FC = () => {
     };
   };
 
-  const getPasswordValidation = () => {
-    if (!newPassword) return { state: '', msg: '' };
-
-    if (newPassword.newPassword.length < 12) {
-      return {
-        state: 'weak',
-        msg: 'Password is too short (minimum 12 characters required).',
-      };
-    }
-
-    if (!passwordRegex.test(newPassword.newPassword)) {
-      return {
-        state: 'invalid',
-        msg: 'Password must have uppercase, lowercase, a digit, and a special character.',
-      };
-    }
-    return { state: 'valid', msg: '' };
-  };
-
   const [loading, setLoading] = useState<boolean>(false);
 
   const baseUsername = user?.username ?? '';
   const isUsernameDirty = isEditing && username !== baseUsername;
-  const isCurrentPasswordDirty = isEditing && newPassword.currentPassword.length > 0;
-  const isNewPasswordDirty = isEditing && newPassword.newPassword.length > 0;
-  const isConfirmPasswordDirty = isEditing && newPassword.confirmPassword.length > 0;
   const isAvatarDirty = isEditing && Boolean(image);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const resetForm = () => {
     setImage(null);
     setUsername(baseUsername);
-    setNewPasswords({
-      currentPassword: '',
-      newPassword: '',
-      confirmPassword: '',
-    });
     setError(null);
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
@@ -85,11 +46,6 @@ const Profile: React.FC = () => {
   const startEditing = () => {
     setError(null);
     setUsername(baseUsername);
-    setNewPasswords({
-      currentPassword: '',
-      newPassword: '',
-      confirmPassword: '',
-    });
     setImage(null);
     setImagePreview(resolveAvatarUrl(user?.avatar, axios.defaults.baseURL));
     setIsEditing(true);
@@ -161,34 +117,6 @@ const Profile: React.FC = () => {
     }
   };
 
-  const handlePasswordChange = async (): Promise<boolean> => {
-    if (!newPassword.newPassword || !newPassword.currentPassword) return true;
-
-    const passVal = getPasswordValidation();
-    if (passVal.state !== 'valid') {
-      setError(passVal.msg);
-      return false;
-    }
-    if (newPassword.newPassword !== newPassword.confirmPassword) {
-      setError('New password and confirmation do not match');
-      return false;
-    }
-
-    try {
-      await axios.patch('/api/users/me/password', {
-        newPassword: newPassword.newPassword,
-        currentPassword: newPassword.currentPassword,
-      });
-      toast.success('Account password changed');
-      return true;
-    } catch (err: any) {
-      const axiosErr = err as AxiosError<{ error?: string }>;
-      const message = axiosErr?.response?.data?.error;
-      toast.error(String(message));
-      return false;
-    }
-  };
-
   const handleUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!isEditing) return;
@@ -198,7 +126,6 @@ const Profile: React.FC = () => {
 
     try {
       const usernameResult = await handleUsernameChange();
-      const passwordResult = await handlePasswordChange();
       let avatarResult = true;
 
       if (image) {
@@ -239,7 +166,7 @@ const Profile: React.FC = () => {
         }
       }
 
-      if (usernameResult && passwordResult && avatarResult) {
+      if (usernameResult && avatarResult) {
         resetForm();
         setIsEditing(false);
       }
@@ -354,62 +281,13 @@ const Profile: React.FC = () => {
             />
           </div>
 
-          {/* Password */}
-          {isEditing && (
-            <>
-              <div>
-                <label className="mb-2 block font-medium">Current Password</label>
-                <input
-                  type="password"
-                  value={newPassword.currentPassword}
-                  onChange={(e) =>
-                    setNewPasswords({
-                      ...newPassword,
-                      currentPassword: e.target.value,
-                    })
-                  }
-                  className={`w-full rounded border p-2 transition ${
-                    isCurrentPasswordDirty ? 'border-green-500 bg-green-50 ring-1 ring-green-400/60' : ''
-                  }`}
-                />
-              </div>
-              <div>
-                <label className="mb-2 block font-medium">New Password</label>
-                <input
-                  type="password"
-                  value={newPassword.newPassword}
-                  onChange={(e) => setNewPasswords({ ...newPassword, newPassword: e.target.value })}
-                  className={`w-full rounded border p-2 transition ${
-                    isNewPasswordDirty ? 'border-green-500 bg-green-50 ring-1 ring-green-400/60' : ''
-                  }`}
-                />
-              </div>
-              <div>
-                <label className="mb-2 block font-medium">Confirm New Password</label>
-                <input
-                  type="password"
-                  value={newPassword.confirmPassword}
-                  onChange={(e) =>
-                    setNewPasswords({
-                      ...newPassword,
-                      confirmPassword: e.target.value,
-                    })
-                  }
-                  className={`w-full rounded border p-2 transition ${
-                    isConfirmPasswordDirty ? 'border-green-500 bg-green-50 ring-1 ring-green-400/60' : ''
-                  }`}
-                />
-              </div>
-            </>
-          )}
-
           {/* Buttons */}
           {isEditing && (
             <div className="flex items-center justify-between">
               <button
                 type="submit"
                 disabled={loading}
-                className="rounded bg-blue-500 px-4 py-2 text-white transition hover:bg-blue-600 disabled:cursor-not-allowed disabled:opacity-50"
+                className="inline-flex min-w-[150px] items-center justify-center rounded bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {loading ? 'Updating...' : 'Save Changes'}
               </button>
@@ -425,6 +303,7 @@ const Profile: React.FC = () => {
           )}
         </form>
       </div>
+      <PasswordSettings axios={axios} active={isEditing} />
       <TwoFactorSettings axios={axios} user={user} setUser={setUser} />
     </div>
   );
