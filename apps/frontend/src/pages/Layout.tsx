@@ -15,7 +15,7 @@ const Layout: React.FC = () => {
   return (
     <div className="flex h-screen">
       <Sidebar />
-      <div className="h-full flex-1 p-4 pt-24 md:px-10">
+      <div className="h-full flex-1 pt-22">
         <Outlet />
       </div>
     </div>

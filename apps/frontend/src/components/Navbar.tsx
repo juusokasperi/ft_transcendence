@@ -1,5 +1,8 @@
+import { useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAppContext } from '../context/AppContext';
+import { useSidebar } from '../context/SidebarContext';
+import { FiMenu, FiX } from 'react-icons/fi';
 
 const navLinks = [
   { label: 'Home', to: '/' },
@@ -9,6 +12,14 @@ const navLinks = [
 const Navbar = () => {
   const { user, logout } = useAppContext();
   const location = useLocation();
+  const { isOpen: sidebarOpen, toggle: toggleSidebar, close: closeSidebar } = useSidebar();
+  const onProfileRoute = location.pathname.startsWith('/profile');
+
+  useEffect(() => {
+    if (!onProfileRoute) {
+      closeSidebar();
+    }
+  }, [onProfileRoute, closeSidebar]);
 
   return (
     <nav
@@ -46,6 +57,19 @@ const Navbar = () => {
         </div>
 
         <div className="flex items-center gap-3">
+          {onProfileRoute && (
+            <button
+              type="button"
+              onClick={toggleSidebar}
+              aria-label="Toggle profile navigation"
+              aria-controls="profile-sidebar"
+              aria-expanded={sidebarOpen}
+              className="inline-flex h-10 w-10 items-center justify-center rounded-2xl border border-white/20 bg-indigo-500/70 text-white shadow-lg shadow-indigo-900/40 backdrop-blur-md transition hover:bg-indigo-400/70 md:hidden"
+            >
+              {sidebarOpen ? <FiX size={22} /> : <FiMenu size={22} />}
+            </button>
+          )}
+
           {user ? (
             <>
               <span className="hidden text-sm font-medium text-indigo-200 sm:inline">
