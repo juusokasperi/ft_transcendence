@@ -204,7 +204,7 @@ const Profile: React.FC = () => {
           {isEditing ? (
             <Button
               type="button"
-              variant="secondary"
+              variant="graybutton"
               onClick={handleCancelEdit}
               withMinWidth={false}
               className="font-medium"
@@ -287,7 +287,7 @@ const Profile: React.FC = () => {
                 {loading ? 'Updating...' : 'Save Changes'}
               </Button>
 
-              <Button type="button" variant="danger" onClick={handleDelete}>
+              <Button type="button" variant="redbutton" onClick={handleDelete}>
                 Delete Account
               </Button>
             </div>
