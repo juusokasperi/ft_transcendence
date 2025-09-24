@@ -26,7 +26,7 @@ const itemVariants: Variants = {
 const heroScreens = [
   {
     src: '/src/assets/background.png',
-    alt: 'Ping Pong showdown screenshot',
+    alt: 'Pong showdown screenshot',
     className: 'z-30 -translate-x-4 -translate-y-6 rotate-1 shadow-indigo-900/40',
   },
   {
@@ -43,7 +43,7 @@ const heroScreens = [
 
 const games = [
   {
-    title: 'Ping Pong',
+    title: 'Pong',
     desc: 'Real-time duels with players across the globe and live leaderboards.',
     available: true,
     accent: 'from-indigo-500 to-purple-500',
@@ -99,7 +99,7 @@ const Hero: React.FC = () => {
               to="/ping-pong"
               className="flex items-center justify-center rounded-full border border-indigo-400/60 px-6 py-3 text-sm font-semibold text-indigo-200 transition hover:border-indigo-300 hover:text-white"
             >
-              Jump into Ping Pong
+              Jump into Pong
             </Link>
           </div>
         </motion.div>
