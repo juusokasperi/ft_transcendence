@@ -39,7 +39,7 @@ const SnackbarViewport: React.FC<{
 
   return (
     <div
-      className="pointer-events-none fixed inset-x-0 bottom-4 z-[1000] flex flex-col items-center gap-3 px-4 sm:bottom-6 sm:left-auto sm:right-6 sm:w-full sm:max-w-sm sm:items-end sm:px-0"
+      className="pointer-events-none fixed inset-x-0 top-24 z-[1000] flex flex-col items-center gap-3 px-4 sm:left-auto sm:right-6 sm:w-full sm:max-w-sm sm:items-end sm:px-0"
       aria-live="polite"
       aria-atomic="true"
     >
