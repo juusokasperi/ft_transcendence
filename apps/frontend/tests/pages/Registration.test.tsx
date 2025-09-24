@@ -2,6 +2,7 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import '@testing-library/jest-dom';
 import { vi } from 'vitest';
+import { SidebarProvider } from '../../src/context/SidebarContext';
 
 // Mock toast so it doesn't actually render toasts
 const successMock = vi.fn();
@@ -40,9 +41,11 @@ describe('Registration page', () => {
     });
 
     render(
-      <MemoryRouter>
-        <Registration />
-      </MemoryRouter>,
+      <SidebarProvider>
+        <MemoryRouter>
+          <Registration />
+        </MemoryRouter>
+      </SidebarProvider>,
     );
 
     fireEvent.change(screen.getByLabelText(/username/i), { target: { value: 'testuser' } });
@@ -72,9 +75,11 @@ describe('Registration page', () => {
     });
 
     render(
-      <MemoryRouter>
-        <Registration />
-      </MemoryRouter>,
+      <SidebarProvider>
+        <MemoryRouter>
+          <Registration />
+        </MemoryRouter>
+      </SidebarProvider>,
     );
 
     fireEvent.change(screen.getByLabelText(/username/i), { target: { value: 'taken' } });

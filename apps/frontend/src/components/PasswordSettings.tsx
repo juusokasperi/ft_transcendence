@@ -2,13 +2,12 @@ import React, { useEffect, useRef, useState } from 'react';
 import toast from 'react-hot-toast';
 import type { AxiosError, AxiosInstance } from 'axios';
 import Button from './Button';
+import { validatePassword } from '../utils/validation';
 
 interface PasswordSettingsProps {
   axios: AxiosInstance;
   active: boolean;
 }
-
-const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()\-=+[\]{};:|,<.>/?`]).{12,}$/;
 
 const PasswordSettings: React.FC<PasswordSettingsProps> = ({ axios, active }) => {
   const [loading, setLoading] = useState<boolean>(false);
@@ -75,13 +74,9 @@ const PasswordSettings: React.FC<PasswordSettingsProps> = ({ axios, active }) =>
       return false;
     }
 
-    if (newPassword.length < 12) {
-      setError('Password is too short (minimum 12 characters).');
-      return false;
-    }
-
-    if (!passwordRegex.test(newPassword)) {
-      setError('Use upper, lower, number, and special characters.');
+    const passwordResult = validatePassword(newPassword);
+    if (passwordResult.state !== 'valid') {
+      setError(passwordResult.msg);
       return false;
     }
 

@@ -7,6 +7,7 @@ import { PLACEHOLDER, resolveAvatarUrl } from '../utils/avatarUrl';
 import TwoFactorSettings from '../components/TwoFactorSettings';
 import PasswordSettings from '../components/PasswordSettings';
 import Button from '../components/Button';
+import { validateUsername } from '../utils/validation';
 
 const Profile: React.FC = () => {
   const { axios, user, setUser } = useAppContext();
@@ -16,17 +17,6 @@ const Profile: React.FC = () => {
   const [imagePreview, setImagePreview] = useState<string>(PLACEHOLDER);
   const [username, setUsername] = useState<string>('');
   const [isEditing, setIsEditing] = useState<boolean>(false);
-  const usernameRegex = /^(?!-)([a-zA-Z0-9-]+)(?<!-)$/;
-
-  // Validation helpers
-  const getUsernameValidation = () => {
-    if (!username) return { state: '', msg: '' };
-    if (usernameRegex.test(username)) return { state: 'valid', msg: '' };
-    return {
-      state: 'invalid',
-      msg: 'Username may only contain letters, numbers, and dashes, and cannot start or end with a dash.',
-    };
-  };
 
   const [loading, setLoading] = useState<boolean>(false);
 
@@ -78,7 +68,7 @@ const Profile: React.FC = () => {
   const handleUsernameChange = async (): Promise<boolean> => {
     if (!username || username === baseUsername) return true;
 
-    const userVal = getUsernameValidation();
+    const userVal = validateUsername(username);
     if (userVal.state !== 'valid') {
       setError(userVal.msg);
       return false;

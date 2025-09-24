@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { validateEmail, validatePassword, validateUsername } from '../utils/validation';
 import Button from './Button';
 import GoogleIcon from './icons/GoogleIcon';
 
@@ -21,41 +22,6 @@ const AuthForm: React.FC<AuthFormProps> = ({ type, onSubmit }) => {
   const [error, setError] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
 
-  const usernameRegex = /^(?!-)([a-zA-Z0-9-]+)(?<!-)$/;
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  const passwordRegex =
-    /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()\-=+[\]{};:|,<.>/?`]).{12,}$/;
-
-  // Validation helpers
-  const getUsernameValidation = () => {
-    if (!username) return { state: '', msg: '' };
-    if (usernameRegex.test(username)) return { state: 'valid', msg: '' };
-    return {
-      state: 'invalid',
-      msg: 'Username may only contain letters, numbers, and dashes, and cannot start or end with a dash.',
-    };
-  };
-
-  const getPasswordValidation = () => {
-    if (!password) return { state: '', msg: '' };
-
-    if (password.length < 12) {
-      return {
-        state: 'weak',
-        msg: 'Password is too short (minimum 12 characters required).',
-      };
-    }
-
-    if (!passwordRegex.test(password)) {
-      return {
-        state: 'invalid',
-        msg: 'Password must have uppercase, lowercase, a digit, and a special character.',
-      };
-    }
-
-    return { state: 'valid', msg: '' };
-  };
-
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
@@ -66,19 +32,19 @@ const AuthForm: React.FC<AuthFormProps> = ({ type, onSubmit }) => {
       return;
     }
 
-    if (!emailRegex.test(email)) {
+    if (!validateEmail(email)) {
       setError('Please enter a valid email address.');
       return;
     }
 
     if (type === 'register') {
-      const userVal = getUsernameValidation();
+      const userVal = validateUsername(username);
       if (userVal.state !== 'valid') {
         setError(userVal.msg);
         return;
       }
 
-      const passVal = getPasswordValidation();
+      const passVal = validatePassword(password);
       if (passVal.state !== 'valid') {
         setError(passVal.msg);
         return;
@@ -106,8 +72,8 @@ const AuthForm: React.FC<AuthFormProps> = ({ type, onSubmit }) => {
     return 'border-gray-300';
   };
 
-  const usernameValidation = getUsernameValidation();
-  const passwordValidation = getPasswordValidation();
+  const usernameValidation = validateUsername(username);
+  const passwordValidation = validatePassword(password);
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
