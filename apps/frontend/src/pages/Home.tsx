@@ -144,9 +144,15 @@ const Hero: React.FC = () => {
               Discover what&apos;s live now and what&apos;s launching next in the arcade.
             </p>
           </div>
-          <Link to="/profile/stats" className="text-sm font-semibold text-indigo-300 hover:text-white">
-            View your stats →
-          </Link>
+          {user ? (
+            <Link to="/profile/stats" className="text-sm font-semibold text-indigo-300 hover:text-white">
+              View your stats →
+            </Link>
+          ) : (
+            <Link to="/login" className="text-sm font-semibold text-indigo-300 hover:text-white">
+              Sign in to track stats →
+            </Link>
+          )}
         </div>
 
         <div className="space-y-6">
