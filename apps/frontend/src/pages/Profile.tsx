@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import type { ChangeEvent } from 'react';
 import { useAppContext } from '../context/AppContext';
-import toast from 'react-hot-toast';
 import type { AxiosError } from 'axios';
 import { PLACEHOLDER, resolveAvatarUrl } from '../utils/avatarUrl';
 import TwoFactorSettings from '../components/TwoFactorSettings';
@@ -9,6 +8,7 @@ import PasswordSettings from '../components/PasswordSettings';
 import Button from '../components/Button';
 import { validateUsername } from '../utils/validation';
 import ConfirmDialog from '../components/ConfirmDialog';
+import { useSnackbar } from '../context/SnackbarContext';
 
 const Profile: React.FC = () => {
   const { axios, user, setUser } = useAppContext();
@@ -22,6 +22,7 @@ const Profile: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState<boolean>(false);
   const [isDeleting, setIsDeleting] = useState<boolean>(false);
+  const { enqueueSnackbar } = useSnackbar();
 
   const baseUsername = user?.username ?? '';
   const isUsernameDirty = isEditing && username !== baseUsername;
@@ -101,12 +102,18 @@ const Profile: React.FC = () => {
               tfaEnabled: Boolean(res.data.tfa ?? res.data.tfaEnabled ?? false),
             },
       );
-      toast.success('Account username changed');
+      enqueueSnackbar({
+        message: 'Account username changed',
+        variant: 'success',
+      });
       return true;
     } catch (err: any) {
       const axiosErr = err as AxiosError<{ error?: string }>;
       const message = axiosErr?.response?.data?.error;
-      toast.error(String(message));
+      enqueueSnackbar({
+        message: String(message ?? 'Unable to change username'),
+        variant: 'error',
+      });
       return false;
     }
   };
@@ -152,10 +159,16 @@ const Profile: React.FC = () => {
                 },
           );
           setImagePreview(resolveAvatarUrl(res.data.avatar, axios.defaults.baseURL));
-          toast.success('Account avatar has been changed');
+          enqueueSnackbar({
+            message: 'Account avatar has been changed',
+            variant: 'success',
+          });
         } catch (err: any) {
           const axiosErr = err as AxiosError<{ error?: string }>;
-          toast.error(String(axiosErr?.response?.data?.error || 'Avatar update failed'));
+          enqueueSnackbar({
+            message: String(axiosErr?.response?.data?.error ?? 'Avatar update failed'),
+            variant: 'error',
+          });
           avatarResult = false;
         }
       }
@@ -166,7 +179,10 @@ const Profile: React.FC = () => {
       }
     } catch (err: any) {
       const axiosErr = err as AxiosError<{ error?: string }>;
-      toast.error(String(axiosErr?.response?.data?.error || 'Update failed'));
+      enqueueSnackbar({
+        message: String(axiosErr?.response?.data?.error ?? 'Update failed'),
+        variant: 'error',
+      });
     } finally {
       setLoading(false);
     }
@@ -184,11 +200,17 @@ const Profile: React.FC = () => {
     setIsDeleting(true);
     try {
       await axios.delete(`/api/users/me`);
-      toast.success('Confirmation email sent');
+      enqueueSnackbar({
+        message: 'Confirmation email sent',
+        variant: 'success',
+      });
       setDeleteDialogOpen(false);
     } catch (err: any) {
       const axiosErr = err as AxiosError<{ message?: string }>;
-      toast.error(axiosErr?.response?.data?.message || 'Delete failed');
+      enqueueSnackbar({
+        message: axiosErr?.response?.data?.message ?? 'Delete failed',
+        variant: 'error',
+      });
     } finally {
       setIsDeleting(false);
     }
