@@ -10,25 +10,25 @@ export type MatchmakingMessage =
   | { type: 'AUTH_OK' }
   | { type: 'QUEUE_JOINED' }
   | {
-    type: 'MATCH_FOUND';
-    matchId: string;
-    opponent: {
-      username: string;
-      mmr: number;
-    };
-  }
+      type: 'MATCH_FOUND';
+      matchId: string;
+      opponent: {
+        username: string;
+        mmr: number;
+      };
+    }
   | { type: 'MATCH_DECLINED'; matchId: string }
   | {
-    type: 'HANDOFF';
-    matchId: string;
-    roomId: string;
-    gameServerWSUrl: string;
-    side: 'east' | 'west';
-    joinToken: string;
-    joinTokenTTLSeconds: number;
-    randomSeed: number;
-    simulationStartTick: number;
-  }
+      type: 'HANDOFF';
+      matchId: string;
+      roomId: string;
+      gameServerWSUrl: string;
+      side: 'east' | 'west';
+      joinToken: string;
+      joinTokenTTLSeconds: number;
+      randomSeed: number;
+      simulationStartTick: number;
+    }
   | { type: 'ERROR'; code: string; message: string }
   | { type: 'lobbyList'; lobbies: Lobby[] }
   | { type: 'lobbyAdded'; lobby: Lobby }
@@ -62,7 +62,7 @@ export function createMatchmakingClient(onMessage: (msg: MatchmakingMessage) => 
       socket.send(JSON.stringify({ type: 'JOIN_QUEUE' }));
     },
     acceptMatch(matchId: string) {
-      socket.send(JSON.stringify({ type: 'ACCEPT_MATCH', matchId}));
+      socket.send(JSON.stringify({ type: 'ACCEPT_MATCH', matchId }));
     },
     declineMatch(matchId: string) {
       socket.send(JSON.stringify({ type: 'DECLINE_MATCH', matchId }));

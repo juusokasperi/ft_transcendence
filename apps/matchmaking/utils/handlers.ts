@@ -1,4 +1,10 @@
-import type { ClientInfo, Lobby, MatchmakingClientMessage, LobbyInfo, PendingMatch } from '../types/types.ts';
+import type {
+  ClientInfo,
+  Lobby,
+  MatchmakingClientMessage,
+  LobbyInfo,
+  PendingMatch,
+} from '../types/types.ts';
 import { GAME_SERVER_URL, LOBBY_TTL_MS, LOBBY_SIZE } from './config.ts';
 import { log } from './log.ts';
 import { broadcastToAll, broadcast } from './broadcast.ts';
@@ -158,13 +164,13 @@ export function parseLobbyInfo(lobby: Lobby): LobbyInfo {
     capacity: lobby.capacity,
     membersCount: lobby.members.size,
   };
-};
+}
 
 export async function handleAuth(client: ClientInfo, token: string): Promise<boolean> {
   log(`Handle auth and token is ${token}`);
   const user = await verifySiteToken(token);
   if (!user) {
-    client.socket.send(JSON.stringify({ type: 'ERROR', code: 'AUTH', message: 'Invalid token'}));
+    client.socket.send(JSON.stringify({ type: 'ERROR', code: 'AUTH', message: 'Invalid token' }));
     client.socket.close();
     return false;
   }
@@ -179,18 +185,17 @@ export async function handleAuth(client: ClientInfo, token: string): Promise<boo
   client.authenticated = true;
   client.mmr = mmr;
   return true;
-};
+}
 
 export async function handleJoinQueue(client: ClientInfo, queue: ClientInfo[]) {
-  if (!isAuthenticated(client))
-    return;
+  if (!isAuthenticated(client)) return;
   client.joinedAt = Date.now();
   queue.push(client);
   client.socket.send(JSON.stringify({ type: 'QUEUE_JOINED' }));
-};
+}
 
 function isAuthenticated(client: ClientInfo): Boolean {
   if (!client.authenticated)
     client.socket.send({ type: 'ERROR', code: 'AUTH', message: 'Not authenticated' });
-  return (client.authenticated);
-};
+  return client.authenticated;
+}

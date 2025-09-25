@@ -52,10 +52,7 @@ export type PongMessage = {
   timestamp?: number;
 };
 
-export type MatchmakingClientMessage =
-  | JoinQueueRequest
-  | ReadyMessage
-  | PingMessage;
+export type MatchmakingClientMessage = JoinQueueRequest | ReadyMessage | PingMessage;
 
 export type GameServerClientMessage =
   | StartMessage

@@ -1,6 +1,6 @@
 import type { ClientInfo, PendingMatch } from '../types/types.ts';
 import { v4 as uuid } from 'uuid';
-import { signJoinToken } from '../../../packages/pong/shared/src/auth/tokenSign.ts';
+import { signJoinToken } from '../../../packages/pong/shared/src/auth/tokenSign.ts'; // fix this import
 import { GAME_SERVER_URL, JOIN_TOKEN_TTL_SECONDS } from './config.ts';
 import { log } from './log.ts';
 import { handleJoinQueue } from './handlers.ts';
@@ -21,9 +21,14 @@ export function tryMatchQueue(queue: ClientInfo[], pendingMatches: Map<string, P
       }
     }
   }
-};
+}
 
-export function addToPendingMatches(a: ClientInfo, b: ClientInfo, pendingMatches: Map<string, PendingMatch>, queue: ClientInfo[]) {
+export function addToPendingMatches(
+  a: ClientInfo,
+  b: ClientInfo,
+  pendingMatches: Map<string, PendingMatch>,
+  queue: ClientInfo[],
+) {
   const matchId = uuid();
   const accepted = new Set<string>();
   const timer = setTimeout(() => {
@@ -31,20 +36,22 @@ export function addToPendingMatches(a: ClientInfo, b: ClientInfo, pendingMatches
     a.socket.send(JSON.stringify(msg));
     b.socket.send(JSON.stringify(msg));
     pendingMatches.delete(matchId);
-    if (accepted.has(a.id))
-      handleJoinQueue(a, queue);
-    if (accepted.has(b.id))
-      handleJoinQueue(b, queue);
+    if (accepted.has(a.id)) handleJoinQueue(a, queue);
+    if (accepted.has(b.id)) handleJoinQueue(b, queue);
   }, 15000);
 
   pendingMatches.set(matchId, { a, b, accepted, timer });
-  const msgA = { type: 'MATCH_FOUND', matchId, opponent: { username: b.username, mmr: b.mmr }};
-  const msgB = { type: 'MATCH_FOUND', matchId, opponent: { username: a.username, mmr: a.mmr }};
+  const msgA = { type: 'MATCH_FOUND', matchId, opponent: { username: b.username, mmr: b.mmr } };
+  const msgB = { type: 'MATCH_FOUND', matchId, opponent: { username: a.username, mmr: a.mmr } };
   a.socket.send(JSON.stringify(msgA));
   b.socket.send(JSON.stringify(msgB));
-};
+}
 
-export function handleAcceptMatch(matchId: string, client: ClientInfo, pendingMatches: Map<string, PendingMatch>) {
+export function handleAcceptMatch(
+  matchId: string,
+  client: ClientInfo,
+  pendingMatches: Map<string, PendingMatch>,
+) {
   const match = pendingMatches.get(matchId);
   if (!match) return;
   match.accepted.add(client.id);
@@ -53,9 +60,14 @@ export function handleAcceptMatch(matchId: string, client: ClientInfo, pendingMa
     pendingMatches.delete(matchId);
     createMatch(match.a, match.b);
   }
-};
+}
 
-export function handleDeclineMatch(matchId: string, client: ClientInfo, pendingMatches: Map<string, PendingMatch>, queue: ClientInfo[]) {
+export function handleDeclineMatch(
+  matchId: string,
+  client: ClientInfo,
+  pendingMatches: Map<string, PendingMatch>,
+  queue: ClientInfo[],
+) {
   const match = pendingMatches.get(matchId);
   if (!match) return;
   const msg = { type: 'MATCH_DECLINED', matchId };
@@ -69,7 +81,7 @@ export function handleDeclineMatch(matchId: string, client: ClientInfo, pendingM
   }
   clearTimeout(match.timer);
   pendingMatches.delete(matchId);
-};
+}
 
 export function createMatch(a: ClientInfo, b: ClientInfo) {
   const matchId = uuid();
@@ -81,23 +93,25 @@ export function createMatch(a: ClientInfo, b: ClientInfo) {
       jti: uuid(),
       exp: Math.floor(Date.now() / 1000) + 45,
       roomId,
-      side: idx === 0 ? 'west' as 'west' : 'east' as 'east',
+      side: idx === 0 ? ('west' as 'west') : ('east' as 'east'),
       startTick: simulationStartTick,
       randomSeed,
       mmTicket: matchId,
     };
     const joinToken = signJoinToken(claims);
-    player.socket.send(JSON.stringify({
-      type: 'HANDOFF',
-      matchId,
-      roomId,
-      gameServerWSUrl: GAME_SERVER_URL,
-      side: claims.side,
-      joinToken,
-      joinTokenTTLSeconds: JOIN_TOKEN_TTL_SECONDS,
-      randomSeed,
-      simulationStartTick,
-    }));
+    player.socket.send(
+      JSON.stringify({
+        type: 'HANDOFF',
+        matchId,
+        roomId,
+        gameServerWSUrl: GAME_SERVER_URL,
+        side: claims.side,
+        joinToken,
+        joinTokenTTLSeconds: JOIN_TOKEN_TTL_SECONDS,
+        randomSeed,
+        simulationStartTick,
+      }),
+    );
   });
   log(`Match created: ${matchId} (${a.username} vs ${b.username})`);
-};
+}

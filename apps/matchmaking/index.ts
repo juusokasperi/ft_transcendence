@@ -29,21 +29,28 @@ log(`Server started on port ${PORT}`);
 
 setInterval(() => {
   tryMatchQueue(queue, pendingMatches);
-  }, 500);
+}, 500);
 
 wss.on('connection', (socket: WebSocket, req) => {
   const token = extractToken(socket, req);
-  if (!token)
-    return;
+  if (!token) return;
   const id = uuid();
-  const client: ClientInfo = { id, socket, ready: false, username: 'Unknown user', joinedAt: Date.now(), uuid: '', mmr: 1000, authenticated: false };
+  const client: ClientInfo = {
+    id,
+    socket,
+    ready: false,
+    username: 'Unknown user',
+    joinedAt: Date.now(),
+    uuid: '',
+    mmr: 1000,
+    authenticated: false,
+  };
   clients.set(id, client);
   log(`Client connected: ${id}`);
-  if (!handleAuth(client, token))
-    return;
+  if (!handleAuth(client, token)) return;
   socket.send(JSON.stringify({ type: 'CONNECTED', clientId: id }));
- // broadcastLobbies(client, lobbies, clients);
- // This will be for tournament system
+  // broadcastLobbies(client, lobbies, clients);
+  // This will be for tournament system
   socket.on('message', (raw: RawData) => {
     let data: MatchmakingClientMessage;
     try {
@@ -88,7 +95,7 @@ wss.on('connection', (socket: WebSocket, req) => {
   socket.on('close', () => {
     log(`Client disconnected: ${id}`);
     removeClient(id, lobbies, clients);
-    const idx = queue.findIndex(c => c.id === id);
+    const idx = queue.findIndex((c) => c.id === id);
     if (idx !== -1) queue.splice(idx, 1);
   });
 });

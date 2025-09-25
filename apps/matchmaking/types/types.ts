@@ -22,7 +22,7 @@ export interface Lobby {
 
 export type MatchmakingClientMessage =
   | { type: 'AUTH'; siteToken: string }
-  | { type: 'JOIN_QUEUE'; }
+  | { type: 'JOIN_QUEUE' }
   | { type: 'ACCEPT_MATCH'; matchId: string }
   | { type: 'DECLINE_MATCH'; matchId: string }
   | { type: 'createLobby'; username: string }
@@ -39,8 +39,8 @@ export interface LobbyInfo {
 }
 
 export interface PendingMatch {
-  a: ClientInfo,
-  b: ClientInfo,
-  accepted: Set<string>,
-  timer: NodeJS.Timeout
-};
+  a: ClientInfo;
+  b: ClientInfo;
+  accepted: Set<string>;
+  timer: NodeJS.Timeout;
+}

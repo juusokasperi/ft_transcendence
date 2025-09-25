@@ -53,11 +53,21 @@ const OnlineGame: React.FC = () => {
   const [clientId, setClientId] = useState('');
   const [lobbyId, setLobbyId] = useState('');
   const [authenticated, setAuthenticated] = useState(false);
-  const [status, setStatus] = useState<'connecting' | 'in_queue' | 'idle' | 'match_found' | 'match_accepted' | 'lobby' | 'starting' | 'playing'>(
-    'connecting',
-  );
+  const [status, setStatus] = useState<
+    | 'connecting'
+    | 'in_queue'
+    | 'idle'
+    | 'match_found'
+    | 'match_accepted'
+    | 'lobby'
+    | 'starting'
+    | 'playing'
+  >('connecting');
 
-  const [opponentInfo, setOpponentInfo] = useState<{ username: string | null, mmr: number}>({username: null, mmr: 0});
+  const [opponentInfo, setOpponentInfo] = useState<{ username: string | null; mmr: number }>({
+    username: null,
+    mmr: 0,
+  });
   const [serverUrl, setServerUrl] = useState('');
   const [matchId, setMatchId] = useState('');
   const [seat, setSeat] = useState<PlayerSeat>('P1');
@@ -101,12 +111,12 @@ const OnlineGame: React.FC = () => {
         case 'MATCH_FOUND':
           setStatus('match_found');
           setMatchId(msg.matchId);
-          setOpponentInfo({username: msg.opponent.username, mmr: msg.opponent.mmr });
+          setOpponentInfo({ username: msg.opponent.username, mmr: msg.opponent.mmr });
           break;
         case 'MATCH_DECLINED':
           setStatus('idle');
           setMatchId('');
-          setOpponentInfo({username: null, mmr: 0});
+          setOpponentInfo({ username: null, mmr: 0 });
           toast.error('Your opponent declined or timed out');
           break;
         case 'HANDOFF':
@@ -118,8 +128,7 @@ const OnlineGame: React.FC = () => {
           client.socket.close();
           break;
         case 'ERROR':
-          if (msg.code === 'AUTH')
-          {
+          if (msg.code === 'AUTH') {
             setAuthenticated(false);
             toast.error(msg.message);
             navigate('/login');
@@ -215,11 +224,11 @@ const OnlineGame: React.FC = () => {
   const handleAcceptMatch = (matchId: string) => {
     setStatus('match_accepted');
     clientRef.current?.acceptMatch(matchId);
-  }
+  };
   const handleDeclineMatch = (matchId: string) => {
     setStatus('idle');
     clientRef.current?.declineMatch(matchId);
-  }
+  };
 
   const handleCreateLobby = () => {
     if (user && user.username) clientRef.current?.createLobby(user.username);
@@ -320,8 +329,9 @@ const OnlineGame: React.FC = () => {
           </div>
 
           {status === 'idle' && (
-            <button onClick={() => clientRef.current?.joinQueue()}
-            className="w-full rounded-lg border-2 border-emerald-400 px-a py-2 font-semibold text-emerald-300 transition hover:bg-emerald-400 hover:text-black"
+            <button
+              onClick={() => clientRef.current?.joinQueue()}
+              className="px-a w-full rounded-lg border-2 border-emerald-400 py-2 font-semibold text-emerald-300 transition hover:bg-emerald-400 hover:text-black"
             >
               Find a Match
             </button>
@@ -329,24 +339,28 @@ const OnlineGame: React.FC = () => {
 
           {status === 'in_queue' && (
             <div>
-            <span className="text-white/60">
-              Looking for an opponent..
-              <span className="ml-2 font-mono">({queueElapsed}s)</span>
-            </span>
+              <span className="text-white/60">
+                Looking for an opponent..
+                <span className="ml-2 font-mono">({queueElapsed}s)</span>
+              </span>
             </div>
           )}
 
           {status === 'match_found' && (
             <div className="mt-2 space-y-3">
               <p>Match Found!</p>
-              <p>Opponent: {opponentInfo.username} (Rating: {opponentInfo.mmr})</p>
-              <button onClick={() => handleAcceptMatch(matchId)}
-                className="w-full rounded-lg border-2 border-emerald-400 px-a py-2 font-semibold text-emerald-300 transition hover:bg-emerald-400 hover:text-black"
+              <p>
+                Opponent: {opponentInfo.username} (Rating: {opponentInfo.mmr})
+              </p>
+              <button
+                onClick={() => handleAcceptMatch(matchId)}
+                className="px-a w-full rounded-lg border-2 border-emerald-400 py-2 font-semibold text-emerald-300 transition hover:bg-emerald-400 hover:text-black"
               >
                 Accept
               </button>
-              <button onClick={() => handleDeclineMatch(matchId)}
-                className="w-full rounded-r border-2 border-emerald-400 px-a py-2 font-semibold text-emerald-300 transition hover:bg-emerald-400 hover:text-black"
+              <button
+                onClick={() => handleDeclineMatch(matchId)}
+                className="px-a w-full rounded-r border-2 border-emerald-400 py-2 font-semibold text-emerald-300 transition hover:bg-emerald-400 hover:text-black"
               >
                 Decline
               </button>
@@ -354,9 +368,7 @@ const OnlineGame: React.FC = () => {
           )}
 
           {status === 'match_accepted' && (
-            <div className="mt-2 space-y-3">
-              Waiting for the other player to respond.
-            </div>
+            <div className="mt-2 space-y-3">Waiting for the other player to respond.</div>
           )}
 
           {lobbyId ? (
@@ -391,20 +403,19 @@ const OnlineGame: React.FC = () => {
               </button>
             </div>
           )}
-          { lobbies.length > 0 && (
+          {lobbies.length > 0 && (
             <div>
-            <p>
-              <span className="text-white/60">Open Tournament Lobbies:</span>
-            </p>
-            <LobbyList
-              lobbies={lobbies}
-              onJoin={(lobbyId) => {
-                handleJoinLobbyDirect(lobbyId);
-              }}
-            />
+              <p>
+                <span className="text-white/60">Open Tournament Lobbies:</span>
+              </p>
+              <LobbyList
+                lobbies={lobbies}
+                onJoin={(lobbyId) => {
+                  handleJoinLobbyDirect(lobbyId);
+                }}
+              />
             </div>
           )}
-
         </div>
       </div>
     </div>

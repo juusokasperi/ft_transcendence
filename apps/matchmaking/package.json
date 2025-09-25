@@ -19,9 +19,12 @@
     "start": "node dist/index.js"
   },
   "dependencies": {
-    "uuid": "^13.0.0",
-    "ws": "^8.18.3",
     "dotenv": "^17.2.2",
-    "jsonwebtoken": "^9.0.2"
+    "jsonwebtoken": "^9.0.2",
+    "uuid": "^13.0.0",
+    "ws": "^8.18.3"
+  },
+  "devDependencies": {
+    "@types/jsonwebtoken": "^9.0.10"
   }
 }
