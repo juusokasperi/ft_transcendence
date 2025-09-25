@@ -8,7 +8,7 @@ import Friends from './pages/Friends';
 import Stats from './pages/Stats';
 import Confirmation from './pages/Confirmation';
 import PingPong from './pages/pong/pong-homepage';
-import LocalGame from './pages/pong/local-game';
+import LocalGame from './pages/pong/local/local-game';
 import DeleteUser from './pages/DeleteUser';
 import OnlineGame from './pages/pong/online-game';
 import { SidebarProvider } from './context/SidebarContext';

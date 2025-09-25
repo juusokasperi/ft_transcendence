@@ -1,30 +1,19 @@
-import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { GameHistoryEntry } from '@pong/shared';
-import type { Ruleset } from '@pong/shared';
 // Reuse in-game HUD styles and DOM builder
 import '@pong/render/ui/tailwind.css';
 import '@pong/render/register';
 import { createScoreboard } from '@pong/render';
-import type { Observation } from '../../games/pong/ai/bot-controller';
-import Navbar from '../../components/Navbar';
-
-type AccessibilitySettings = {
-  colorBlindMode: 'none' | 'protanopia' | 'deuteranopia' | 'tritanopia' | 'highContrast';
-  photoSensitiveMode: 'none' | 'reducedFX' | 'noFlash';
-};
-
-type PlayerSettings = {
-  name: string;
-  paddleColor: string;
-};
-
-type UserSettings = {
-  player1: PlayerSettings;
-  player2: PlayerSettings;
-  accessibility: AccessibilitySettings;
-  rules: Ruleset;
-};
+import type { Observation } from '../../../games/pong/ai/bot-controller';
+import Navbar from '../../../components/Navbar';
+import {
+  clearStoredSettings,
+  getBestOf,
+  readSettingsFromStorage,
+  writeSettingsToStorage,
+} from './utils';
+import type { AccessibilitySettings, UserSettings } from './utils';
 
 const defaultSettings: UserSettings = {
   player1: { name: 'Player 1', paddleColor: '#00ff66' }, // Green (from palette)
@@ -46,6 +35,8 @@ const defaultSettings: UserSettings = {
     },
   },
 };
+
+const STORAGE_KEY = 'pong_local_settings_v1';
 
 const LocalGame: React.FC = () => {
   const navigate = useNavigate();
@@ -77,75 +68,32 @@ const LocalGame: React.FC = () => {
   const appRef = useRef<{ destroy(): void; observe?: () => Observation } | null>(null);
   const botRef = useRef<{ stop(): void } | null>(null);
 
-  const STORAGE_KEY = 'pong_local_settings_v1';
+  const restoreSettingsFromStorage = useCallback(() => {
+    const restored = readSettingsFromStorage(localStorage, STORAGE_KEY, defaultSettings);
+    setSettings(restored);
+  }, [setSettings, defaultSettings]);
+
+  const handleQuit = useCallback(() => {
+    setIsPlaying(false);
+    restoreSettingsFromStorage();
+    navigate('/ping-pong');
+  }, [navigate, restoreSettingsFromStorage]);
 
   // Load settings from localStorage (local-specific key)
   useEffect(() => {
-    const saved = localStorage.getItem(STORAGE_KEY);
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        setSettings({
-          player1: {
-            name: parsed.player1?.name || defaultSettings.player1.name,
-            paddleColor: parsed.player1?.paddleColor || defaultSettings.player1.paddleColor,
-          },
-          player2: {
-            name: parsed.player2?.name || defaultSettings.player2.name,
-            paddleColor: parsed.player2?.paddleColor || defaultSettings.player2.paddleColor,
-          },
-          accessibility: {
-            colorBlindMode:
-              parsed.accessibility?.colorBlindMode || defaultSettings.accessibility.colorBlindMode,
-            photoSensitiveMode:
-              parsed.accessibility?.photoSensitiveMode ||
-              defaultSettings.accessibility.photoSensitiveMode,
-          },
-          rules: {
-            game: {
-              targetScore:
-                parsed.rules?.game?.targetScore ?? defaultSettings.rules.game.targetScore,
-              winBy: parsed.rules?.game?.winBy ?? defaultSettings.rules.game.winBy,
-              servesPerTurn:
-                parsed.rules?.game?.servesPerTurn ?? defaultSettings.rules.game.servesPerTurn,
-              deuceServesPerTurn:
-                parsed.rules?.game?.deuceServesPerTurn ??
-                defaultSettings.rules.game.deuceServesPerTurn,
-              deuceAt: parsed.rules?.game?.deuceAt ?? defaultSettings.rules.game.deuceAt,
-            },
-            match: {
-              bestOf: parsed.rules?.match?.bestOf ?? defaultSettings.rules.match.bestOf,
-              switchEndsEachGame:
-                parsed.rules?.match?.switchEndsEachGame ??
-                defaultSettings.rules.match.switchEndsEachGame,
-              decidingGameMidSwapAtPoints:
-                parsed.rules?.match?.decidingGameMidSwapAtPoints ??
-                defaultSettings.rules.match.decidingGameMidSwapAtPoints,
-              alternateInitialServerEachGame:
-                parsed.rules?.match?.alternateInitialServerEachGame ??
-                defaultSettings.rules.match.alternateInitialServerEachGame,
-            },
-          },
-        });
-      } catch {
-        setSettings(defaultSettings);
-      }
-    } else {
-      // No persisted defaults → ensure in-memory defaults are applied on visit
-      setSettings(defaultSettings);
-    }
-  }, []);
+    restoreSettingsFromStorage();
+  }, [restoreSettingsFromStorage]);
 
   // Persist settings
   const saveSettings = () => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
+    writeSettingsToStorage(localStorage, STORAGE_KEY, settings);
     alert('Settings saved!');
   };
 
   // Reset to defaults
   const resetSettings = () => {
     setSettings(defaultSettings);
-    localStorage.removeItem(STORAGE_KEY);
+    clearStoredSettings(localStorage, STORAGE_KEY);
   };
 
   // Boot game when we enter "playing" and a canvas is present; teardown on exit
@@ -158,7 +106,7 @@ const LocalGame: React.FC = () => {
       // Lazy-load Babylon + host adapter only when starting the game
       //console.log('[LocalGame] Attempting to lazy-load Pong...');
       try {
-        const { bootstrapPong } = await import('../../games/pong/host/dom-embed');
+        const { bootstrapPong } = await import('../../../games/pong/host/dom-embed');
         if (cancelled) {
           //console.log('[LocalGame] Cancelled before bootstrap.');
           return;
@@ -175,7 +123,7 @@ const LocalGame: React.FC = () => {
         // If AI is enabled, start bot controlling Player 2
         if (aiEnabled && canvasRef.current && (app as any).observe) {
           try {
-            const { BotController } = await import('../../games/pong/ai/bot-controller');
+            const { BotController } = await import('../../../games/pong/ai/bot-controller');
             const bot = new BotController(canvasRef.current!, 'P2', (app as any).observe, 'normal');
             bot.start();
             botRef.current = bot;
@@ -229,6 +177,22 @@ const LocalGame: React.FC = () => {
     };
   }, [isPlaying]);
 
+  useEffect(() => {
+    if (!isPlaying) return;
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        handleQuit();
+      }
+    };
+
+    window.addEventListener('keydown', onKeyDown);
+    return () => {
+      window.removeEventListener('keydown', onKeyDown);
+    };
+  }, [isPlaying, handleQuit]);
+
   // Ensure the canvas has keyboard focus whenever play begins
   useLayoutEffect(() => {
     if (!isPlaying || !canvasRef.current) return;
@@ -251,63 +215,6 @@ const LocalGame: React.FC = () => {
   const handlePlay = () => {
     //console.log('[LocalGame] Play button clicked. Settings:', settings);
     setIsPlaying(true);
-  };
-  const handleQuit = () => {
-    //console.log('[LocalGame] Quit button clicked.');
-    setIsPlaying(false);
-    // Revert any unsaved changes back to saved defaults (or built-in defaults)
-    try {
-      const saved = localStorage.getItem(STORAGE_KEY);
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        setSettings({
-          player1: {
-            name: parsed.player1?.name || defaultSettings.player1.name,
-            paddleColor: parsed.player1?.paddleColor || defaultSettings.player1.paddleColor,
-          },
-          player2: {
-            name: parsed.player2?.name || defaultSettings.player2.name,
-            paddleColor: parsed.player2?.paddleColor || defaultSettings.player2.paddleColor,
-          },
-          accessibility: {
-            colorBlindMode:
-              parsed.accessibility?.colorBlindMode || defaultSettings.accessibility.colorBlindMode,
-            photoSensitiveMode:
-              parsed.accessibility?.photoSensitiveMode ||
-              defaultSettings.accessibility.photoSensitiveMode,
-          },
-          rules: {
-            game: {
-              targetScore:
-                parsed.rules?.game?.targetScore ?? defaultSettings.rules.game.targetScore,
-              winBy: parsed.rules?.game?.winBy ?? defaultSettings.rules.game.winBy,
-              servesPerTurn:
-                parsed.rules?.game?.servesPerTurn ?? defaultSettings.rules.game.servesPerTurn,
-              deuceServesPerTurn:
-                parsed.rules?.game?.deuceServesPerTurn ??
-                defaultSettings.rules.game.deuceServesPerTurn,
-              deuceAt: parsed.rules?.game?.deuceAt ?? defaultSettings.rules.game.deuceAt,
-            },
-            match: {
-              bestOf: parsed.rules?.match?.bestOf ?? defaultSettings.rules.match.bestOf,
-              switchEndsEachGame:
-                parsed.rules?.match?.switchEndsEachGame ??
-                defaultSettings.rules.match.switchEndsEachGame,
-              decidingGameMidSwapAtPoints:
-                parsed.rules?.match?.decidingGameMidSwapAtPoints ??
-                defaultSettings.rules.match.decidingGameMidSwapAtPoints,
-              alternateInitialServerEachGame:
-                parsed.rules?.match?.alternateInitialServerEachGame ??
-                defaultSettings.rules.match.alternateInitialServerEachGame,
-            },
-          },
-        });
-      } else {
-        setSettings(defaultSettings);
-      }
-    } catch {
-      setSettings(defaultSettings);
-    }
   };
 
   // Playing view: fullscreen canvas + Quit
@@ -498,7 +405,7 @@ const LocalGame: React.FC = () => {
                               ...settings.rules,
                               match: {
                                 ...settings.rules.match,
-                                bestOf: Number(e.target.value) as Ruleset['match']['bestOf'],
+                                bestOf: getBestOf(e.target.value, settings.rules.match.bestOf),
                               },
                             },
                           })
