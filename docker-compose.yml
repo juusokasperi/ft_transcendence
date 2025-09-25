@@ -8,6 +8,8 @@ volumes:
   render_node_modules: {}
   matchmaking_node_modules: {}
   game_server_node_modules: {}
+  allocator_node_modules: {}
+  redis_data: {}
 
 networks:
   devnet:
@@ -38,6 +40,7 @@ services:
       - render_node_modules:/work/packages/pong/render/node_modules
       - matchmaking_node_modules:/work/apps/matchmaking/node_modules
       - game_server_node_modules:/work/apps/game-server/node_modules
+      - allocator_node_modules:/work/apps/allocator/node_modules
     networks: [devnet]
 
   # 2) Frontend (Vite dev server)
@@ -172,6 +175,47 @@ services:
       options:
         gelf-address: udp://localhost:12201
 
+# 7) Allocator service (HTTP server)
+  image: node:22-bookworm
+  init: true
+  working_dir: /work/apps/allocator
+  env_file:
+    - .env
+  environment:
+    PNPM_STORE_DIR: /pnpm/store
+    CHOKIDAR_USEPOLLING: "true"
+    REDIS_URL: redis://redis:6379
+  #ports:
+  # - "${ALLOCATOR_PORT}:-4000:4000"
+  volumes:
+    - .:/work:cached
+    - pnpm_store:/pnpm/store
+    - node_modules:/work/node_modules:ro
+    - allocator_node_modules:/work/apps/allocator/node_modules:ro
+  command: bash -lc "corepack enable && corepack prepare pnpm@9.12.3 --activate && pnpm dev"
+  depends_on:
+    deps:
+      condition: service_completed_successfully
+  networks: [devnet]
+  logging:
+    driver: gelf
+    options:
+      gelf-address: upd://localhost:12201
+
+# 8) Redis
+  redis:
+    image: redis:8.2.1-alpine
+    init: true
+    restart: unless-stopped
+    #ports:
+    #  - "${REDIS_PORT}:-6379:6379"
+    networks: [devnet]
+    volumes:
+      - redis_data:/data
+    logging:
+      driver: gelf
+      options:
+        gelf-address: upd://localhost:12201
 
 include:
   # stuff in this file will only run with `--profile elk`

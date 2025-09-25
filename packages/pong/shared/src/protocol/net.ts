@@ -69,11 +69,14 @@ export type ErrorMessage = {
 };
 
 export type JoinTokenClaims = {
-  jti: string;
+  iss: string;
+  aud: string;
+  iat: number;
   exp: number;
-  roomId: string;
+  jti: string;
+  roomIdentifier: string;
+  sub: string;
   side: 'west' | 'east';
-  startTick: number;
-  randomSeed: number;
-  mmTicket: string;
+  simulationStartTick: number;
+  region?: string;
 };
