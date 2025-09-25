@@ -15,18 +15,34 @@ services:
   deps:
     networks:  !override [prod-private]
 
-  # 2) Frontend (Vite dev server)
-  frontend:
+  builder:
+    image: node:22-bookworm
+    profiles: ["prod-build"]
+    working_dir: /work/apps/frontend
     command: >
       bash -lc "
         corepack pnpm install --frozen-lockfile &&
         corepack pnpm -F @app/web build
       "
-    ports: !reset []
-    volumes: !override
+    environment:
+      PNPM_STORE_DIR: /pnpm/store
+      CHOKIDAR_USEPOLLING: "true"
+      WATCHPACK_POLLING: "true"
+      COREPACK_ENABLE_DOWNLOAD_PROMPT: "0"
+      COREPACK_HOME: /tmp/corepack
+    depends_on:
+      deps:
+        condition: service_completed_successfully
+    ports:
+      - "${FRONTEND_PORT:-5173}:5173"
+    volumes:
       - .:/work:cached
       - frontend-dist:/work/apps/frontend/dist
-    networks:  !override [prod-private]
+    networks: [prod-private]
+    logging: # needed for logstash (ELK stack)
+      driver: gelf
+      options:
+        gelf-address: udp://localhost:12201
 
   # 3) Backend (Fastify + tsx watch)
   backend:
@@ -39,9 +55,9 @@ services:
       - ./nginx/prod.conf:/etc/nginx/conf.d/default.conf:ro
       - frontend-dist:/usr/share/nginx/html:ro
     networks:  !override [prod-public, prod-private]
-    depends_on:
-      frontend:
-        condition: service_completed_successfully
+    # depends_on:
+    #   builder:
+    #     condition: service_completed_successfully
 
   # 5) Matchmaking service (WebSocket server)
   matchmaking-service:

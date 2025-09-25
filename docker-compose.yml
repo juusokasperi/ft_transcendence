@@ -21,7 +21,7 @@ services:
   # 1) Install deps ONCE for the whole repo (root lockfile)
   deps:
     image: node:22-bookworm
-    profiles: ["dev", "prod"]
+    profiles: ["dev", "prod-build"]
     working_dir: /work
     environment:
       PNPM_STORE_DIR: /pnpm/store
@@ -51,7 +51,7 @@ services:
   # 2) Frontend (Vite dev server)
   frontend:
     image: node:22-bookworm
-    profiles: ["dev", "prod"]
+    profiles: ["dev"]
     init: true
     working_dir: /work/apps/frontend
     environment:
@@ -81,7 +81,7 @@ services:
   # 3) Backend (Fastify + tsx watch)
   backend:
     image: node:22-bookworm
-    profiles: ["dev", "prod"]
+    profiles: ["dev", "prod-run"]
     init: true
     working_dir: /work/apps/backend
     env_file:
@@ -115,7 +115,7 @@ services:
   # 4) Nginx (single-origin dev, optional but convenient)
   nginx:
     image: nginx:1.27-alpine
-    profiles: ["dev", "prod"]
+    profiles: ["dev", "prod-run"]
     depends_on:
       - frontend
       - backend
@@ -132,7 +132,7 @@ services:
 # 5) Matchmaking service (WebSocket server)
   matchmaking-service:
     image: node:22-bookworm
-    profiles: ["dev", "prod"]
+    profiles: ["dev", "prod-run"]
     init: true
     working_dir: /work/apps/matchmaking
     env_file:
@@ -162,7 +162,7 @@ services:
 # 6a) Game server (WebSocket server)
   game-server: &game-server-template
     image: node:22-bookworm
-    profiles: ["dev", "prod"]
+    profiles: ["dev", "prod-run"]
     init: true
     working_dir: /work/apps/game-server
     env_file:
