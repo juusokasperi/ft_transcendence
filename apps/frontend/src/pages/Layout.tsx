@@ -1,5 +1,5 @@
-import Navbar from '../components/Navbar';
 import Sidebar from '../components/Sidebar';
+import Navbar from '../components/Navbar';
 import { Outlet } from 'react-router-dom';
 import { useEffect } from 'react';
 import { useAppContext } from '../context/AppContext';
@@ -14,15 +14,15 @@ const Layout: React.FC = () => {
   }, [user, userReady, navigate]);
 
   return (
-    <div className="flex h-screen flex-col">
+    <>
       <Navbar />
-      <div className="flex h-full">
+      <div className="flex min-h-[calc(100vh-6rem)] bg-slate-950">
         <Sidebar />
-        <div className="h-full flex-1 p-4 pt-10 md:px-10">
+        <div className="flex-1 px-4 pb-10 pt-24 md:px-10">
           <Outlet />
         </div>
       </div>
-    </div>
+    </>
   );
 };
 

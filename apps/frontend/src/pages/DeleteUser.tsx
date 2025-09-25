@@ -1,18 +1,18 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { useAppContext } from '../context/AppContext';
-import toast from 'react-hot-toast';
 import { AxiosError } from 'axios';
+import { useSnackbar } from '../context/SnackbarContext';
 
 const DeleteUser = () => {
   const { confirmationToken } = useParams();
   const { axios, setUser, navigate } = useAppContext();
+  const { enqueueSnackbar } = useSnackbar();
   const [status, setStatus] = useState<'validating' | 'success' | 'error'>('validating');
 
   useEffect(() => {
     const confirmAccount = async () => {
       try {
-        console.log(confirmationToken);
         await axios.post(`/api/users/me/confirm-delete/${confirmationToken}`, {
           token: confirmationToken,
         });
@@ -21,17 +21,19 @@ const DeleteUser = () => {
         setUser(null);
         setTimeout(() => navigate('/'), 1500);
       } catch (err) {
-        console.error(err);
         setStatus('error');
         const axiosErr = err as AxiosError<{ message?: string }>;
-        toast.error(String(axiosErr?.response?.data?.message));
+        enqueueSnackbar({
+          message: String(axiosErr?.response?.data?.message ?? 'Delete confirmation failed'),
+          variant: 'error',
+        });
       }
     };
 
     if (confirmationToken) {
       confirmAccount();
     }
-  }, [confirmationToken, axios, setUser, navigate]);
+  }, [confirmationToken, axios, setUser, navigate, enqueueSnackbar]);
 
   return (
     <div className="flex h-screen items-center justify-center">
