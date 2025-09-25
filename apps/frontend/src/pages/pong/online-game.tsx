@@ -47,6 +47,9 @@ const OnlineGame: React.FC = () => {
   const clientRef = useRef<ReturnType<typeof createMatchmakingClient> | null>(null);
   const { user, navigate } = useAppContext();
 
+  const [queueStart, setQueueStart] = useState<number | null>(null);
+  const [queueElapsed, setQueueElapsed] = useState<number>(0);
+
   const [clientId, setClientId] = useState('');
   const [lobbyId, setLobbyId] = useState('');
   const [authenticated, setAuthenticated] = useState(false);
@@ -54,6 +57,7 @@ const OnlineGame: React.FC = () => {
     'connecting',
   );
 
+  const [opponentInfo, setOpponentInfo] = useState<{ username: string | null, mmr: number}>({username: null, mmr: 0});
   const [serverUrl, setServerUrl] = useState('');
   const [matchId, setMatchId] = useState('');
   const [seat, setSeat] = useState<PlayerSeat>('P1');
@@ -62,6 +66,24 @@ const OnlineGame: React.FC = () => {
   const [lobbies, setLobbies] = useState<Lobby[]>([]);
 
   const inMatchmaking = status !== 'starting' && status !== 'playing';
+
+  useEffect(() => {
+    if (status === 'in_queue') {
+      setQueueStart(Date.now());
+      setQueueElapsed(0);
+    } else {
+      setQueueStart(null);
+      setQueueElapsed(0);
+    }
+  }, [status]);
+
+  useEffect(() => {
+    if (queueStart === null) return;
+    const interval = setInterval(() => {
+      setQueueElapsed(Math.floor((Date.now() - queueStart) / 1000));
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [queueStart]);
 
   useEffect(() => {
     if (!inMatchmaking) return;
@@ -79,9 +101,12 @@ const OnlineGame: React.FC = () => {
         case 'MATCH_FOUND':
           setStatus('match_found');
           setMatchId(msg.matchId);
+          setOpponentInfo({username: msg.opponent.username, mmr: msg.opponent.mmr });
           break;
         case 'MATCH_DECLINED':
           setStatus('idle');
+          setMatchId('');
+          setOpponentInfo({username: null, mmr: 0});
           toast.error('Your opponent declined or timed out');
           break;
         case 'HANDOFF':
@@ -303,13 +328,18 @@ const OnlineGame: React.FC = () => {
           )}
 
           {status === 'in_queue' && (
-            <span className="text-white/60">In queue...</span>
+            <div>
+            <span className="text-white/60">
+              Looking for an opponent..
+              <span className="ml-2 font-mono">({queueElapsed}s)</span>
+            </span>
+            </div>
           )}
 
           {status === 'match_found' && (
             <div className="mt-2 space-y-3">
               <p>Match Found!</p>
-              <span>Id: ${matchId}</span>
+              <p>Opponent: {opponentInfo.username} (Rating: {opponentInfo.mmr})</p>
               <button onClick={() => handleAcceptMatch(matchId)}
                 className="w-full rounded-lg border-2 border-emerald-400 px-a py-2 font-semibold text-emerald-300 transition hover:bg-emerald-400 hover:text-black"
               >
@@ -359,15 +389,22 @@ const OnlineGame: React.FC = () => {
               >
                 Create Tournament
               </button>
-
-              <LobbyList
-                lobbies={lobbies}
-                onJoin={(lobbyId) => {
-                  handleJoinLobbyDirect(lobbyId);
-                }}
-              />
             </div>
           )}
+          { lobbies.length > 0 && (
+            <div>
+            <p>
+              <span className="text-white/60">Open Tournament Lobbies:</span>
+            </p>
+            <LobbyList
+              lobbies={lobbies}
+              onJoin={(lobbyId) => {
+                handleJoinLobbyDirect(lobbyId);
+              }}
+            />
+            </div>
+          )}
+
         </div>
       </div>
     </div>

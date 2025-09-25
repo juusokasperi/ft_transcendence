@@ -9,7 +9,14 @@ export type MatchmakingMessage =
   | { type: 'CONNECTED'; clientId: string }
   | { type: 'AUTH_OK' }
   | { type: 'QUEUE_JOINED' }
-  | { type: 'MATCH_FOUND'; matchId: string }
+  | {
+    type: 'MATCH_FOUND';
+    matchId: string;
+    opponent: {
+      username: string;
+      mmr: number;
+    };
+  }
   | { type: 'MATCH_DECLINED'; matchId: string }
   | {
     type: 'HANDOFF';

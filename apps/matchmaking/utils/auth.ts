@@ -1,5 +1,5 @@
 import jwt from 'jsonwebtoken';
-import { SECRET } from './config.ts';
+import { SECRET, API_URL } from './config.ts';
 import type { WebSocket } from 'ws';
 import type { IncomingMessage } from 'http';
 export async function verifySiteToken(token: string): Promise<{ username: string, uuid: string } | null> {
@@ -14,7 +14,7 @@ export async function verifySiteToken(token: string): Promise<{ username: string
 //fix the fetch url here..
 export async function fetchUserMMR(uuid: string, siteToken: string): Promise<number | null> {
   try {
-    const res = await fetch(`http://backend:3001/api/users/${uuid}`, {
+    const res = await fetch(`${API_URL}/api/users/${uuid}`, {
       headers: { Authorization: `Bearer ${siteToken}`},
     });
     if (!res.ok){

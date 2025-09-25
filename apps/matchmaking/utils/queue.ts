@@ -38,9 +38,10 @@ export function addToPendingMatches(a: ClientInfo, b: ClientInfo, pendingMatches
   }, 15000);
 
   pendingMatches.set(matchId, { a, b, accepted, timer });
-  const msg = { type: 'MATCH_FOUND', matchId };
-  a.socket.send(JSON.stringify(msg));
-  b.socket.send(JSON.stringify(msg));
+  const msgA = { type: 'MATCH_FOUND', matchId, opponent: { username: b.username, mmr: b.mmr }};
+  const msgB = { type: 'MATCH_FOUND', matchId, opponent: { username: a.username, mmr: a.mmr }};
+  a.socket.send(JSON.stringify(msgA));
+  b.socket.send(JSON.stringify(msgB));
 };
 
 export function handleAcceptMatch(matchId: string, client: ClientInfo, pendingMatches: Map<string, PendingMatch>) {

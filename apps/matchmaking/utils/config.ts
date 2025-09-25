@@ -8,3 +8,4 @@ export const LOBBY_TTL_MS = 5 * 60 * 1000; // 5 minutes. We need a timeout to av
 export const LOBBY_SIZE = 2;
 export const JOIN_TOKEN_TTL_SECONDS = 45;
 export const SECRET = process.env.SECRET || 'yourSecretForJWTToken';
+export const API_URL = process.env.API_URL || 'http://backend:3001';
