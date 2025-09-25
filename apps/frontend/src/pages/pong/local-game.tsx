@@ -7,6 +7,7 @@ import '@pong/render/ui/tailwind.css';
 import '@pong/render/register';
 import { createScoreboard } from '@pong/render';
 import type { Observation } from '../../games/pong/ai/bot-controller';
+import Navbar from '../../components/Navbar';
 
 type AccessibilitySettings = {
   colorBlindMode: 'none' | 'protanopia' | 'deuteranopia' | 'tritanopia' | 'highContrast';
@@ -333,6 +334,7 @@ const LocalGame: React.FC = () => {
   if (!postMatch) {
     return (
       <div className="relative min-h-screen w-full overflow-auto">
+        <Navbar />
         {/* Video Background */}
         <video
           autoPlay
@@ -788,6 +790,7 @@ const LocalGame: React.FC = () => {
 
   return (
     <div className="relative min-h-screen w-full overflow-auto">
+      <Navbar />
       {/* Video Background */}
       <video
         autoPlay

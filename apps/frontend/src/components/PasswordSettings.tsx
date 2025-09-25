@@ -1,14 +1,13 @@
 import React, { useEffect, useRef, useState } from 'react';
-import toast from 'react-hot-toast';
 import type { AxiosError, AxiosInstance } from 'axios';
 import Button from './Button';
+import { validatePassword } from '../utils/validation';
+import { useSnackbar } from '../context/SnackbarContext';
 
 interface PasswordSettingsProps {
   axios: AxiosInstance;
   active: boolean;
 }
-
-const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()\-=+[\]{};:|,<.>/?`]).{12,}$/;
 
 const PasswordSettings: React.FC<PasswordSettingsProps> = ({ axios, active }) => {
   const [loading, setLoading] = useState<boolean>(false);
@@ -23,6 +22,7 @@ const PasswordSettings: React.FC<PasswordSettingsProps> = ({ axios, active }) =>
   const [showNew, setShowNew] = useState<boolean>(false);
   const [showConfirm, setShowConfirm] = useState<boolean>(false);
   const [focusedField, setFocusedField] = useState<'current' | 'new' | 'confirm' | null>(null);
+  const { enqueueSnackbar } = useSnackbar();
 
   const currentInputRef = useRef<HTMLInputElement | null>(null);
   const newInputRef = useRef<HTMLInputElement | null>(null);
@@ -42,7 +42,10 @@ const PasswordSettings: React.FC<PasswordSettingsProps> = ({ axios, active }) =>
         setHasPassword(Boolean(data?.hasPass));
       })
       .catch(() => {
-        toast.error('Failed to determine password status');
+        enqueueSnackbar({
+          message: 'Failed to determine password status',
+          variant: 'error',
+        });
       })
       .finally(() => setInitialising(false));
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -75,13 +78,9 @@ const PasswordSettings: React.FC<PasswordSettingsProps> = ({ axios, active }) =>
       return false;
     }
 
-    if (newPassword.length < 12) {
-      setError('Password is too short (minimum 12 characters).');
-      return false;
-    }
-
-    if (!passwordRegex.test(newPassword)) {
-      setError('Use upper, lower, number, and special characters.');
+    const passwordResult = validatePassword(newPassword);
+    if (passwordResult.state !== 'valid') {
+      setError(passwordResult.msg);
       return false;
     }
 
@@ -110,7 +109,10 @@ const PasswordSettings: React.FC<PasswordSettingsProps> = ({ axios, active }) =>
         newPassword,
         ...(hasPassword ? { currentPassword } : {}),
       });
-      toast.success('Password updated');
+      enqueueSnackbar({
+        message: 'Password updated',
+        variant: 'success',
+      });
       setHasPassword(true);
       setIsEditing(false);
       resetForm();
@@ -118,7 +120,10 @@ const PasswordSettings: React.FC<PasswordSettingsProps> = ({ axios, active }) =>
       const axiosErr = err as AxiosError<{ message?: string; error?: string }>;
       const message = axiosErr?.response?.data?.message ?? axiosErr?.response?.data?.error;
       setError(message ?? 'Update failed');
-      toast.error(message ?? 'Failed to update password');
+      enqueueSnackbar({
+        message: message ?? 'Failed to update password',
+        variant: 'error',
+      });
     } finally {
       setLoading(false);
     }
@@ -173,8 +178,8 @@ const PasswordSettings: React.FC<PasswordSettingsProps> = ({ axios, active }) =>
 
   return (
     <div className="rounded border border-gray-200 p-6 shadow-sm">
-      <div className="mb-4 flex items-start justify-between gap-4">
-        <div>
+      <div className="mb-4 grid grid-cols-[1fr_auto] items-start gap-3">
+        <div className="min-w-0">
           <h2 className="text-lg font-semibold">Password</h2>
           <p className="text-sm text-gray-500">
             {initialising
@@ -184,17 +189,15 @@ const PasswordSettings: React.FC<PasswordSettingsProps> = ({ axios, active }) =>
                 : 'Set a password so you can sign in without Google next time.'}
           </p>
         </div>
-        <div className="flex items-center gap-2">
-          {!initialising && (
-            <span
-              className={`rounded-full px-2 py-1 text-xs font-semibold ${
-                hasPassword ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'
-              }`}
-            >
-              {hasPassword ? 'Password enabled' : 'No password yet'}
-            </span>
-          )}
-        </div>
+        {!initialising && (
+          <span
+            className={`justify-self-end rounded-full px-2 py-1 text-xs font-semibold ${
+              hasPassword ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'
+            }`}
+          >
+            {hasPassword ? 'Password enabled' : 'No password yet'}
+          </span>
+        )}
       </div>
 
       {isEditing ? (
@@ -261,7 +264,7 @@ const PasswordSettings: React.FC<PasswordSettingsProps> = ({ axios, active }) =>
           {error && <p className="text-sm text-rose-500">{error}</p>}
 
           <div className="flex items-center justify-end gap-3">
-            <Button type="button" variant="graybutton" onClick={cancelEdit}>
+            <Button type="button" variant="secondary" tone="subtle" onClick={cancelEdit}>
               Cancel
             </Button>
             <Button type="submit" disabled={loading}>
@@ -272,11 +275,7 @@ const PasswordSettings: React.FC<PasswordSettingsProps> = ({ axios, active }) =>
       ) : (
         <div className="space-y-3">
           <div className="text-sm text-gray-600">
-            {initialising
-              ? 'Loading...'
-              : hasPassword
-                ? ''
-                : 'You currently sign in via Google. Add a password for backup access.'}
+            {initialising ? 'Loading...' : hasPassword ? '' : 'You currently sign in via Google.'}
           </div>
           <Button type="button" onClick={beginEdit} disabled={initialising}>
             {hasPassword ? 'Change Password' : 'Set Password'}
