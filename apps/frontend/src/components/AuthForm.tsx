@@ -1,4 +1,6 @@
 import React, { useState } from 'react';
+import Button from './Button';
+import GoogleIcon from './icons/GoogleIcon';
 
 interface AuthFormProps {
   type: 'login' | 'register';
@@ -202,19 +204,24 @@ const AuthForm: React.FC<AuthFormProps> = ({ type, onSubmit }) => {
         </div>
       )}
 
-      <button
+      <Button
         type="submit"
-        className="mb-3 w-full rounded bg-blue-600 py-2 text-white hover:bg-blue-700"
+        fullWidth
+        className="mb-3"
+        variant={type === 'login' ? 'greenbutton' : 'bluebutton'}
       >
         {type === 'login' ? 'Login' : 'Register'}
-      </button>
-      <button
+      </Button>
+      <Button
         type="button"
+        variant="ghost"
+        fullWidth
         onClick={() => (window.location.href = '/api/auth/google')}
-        className="w-full rounded bg-red-600 py-2 text-white hover:bg-red-700"
+        className="gap-3"
       >
-        Sign in with Google
-      </button>
+        <GoogleIcon className="h-5 w-5" />
+        Continue with Google
+      </Button>
     </form>
   );
 };
