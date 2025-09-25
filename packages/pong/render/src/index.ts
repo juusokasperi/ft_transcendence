@@ -29,13 +29,23 @@ export type { AbstractMesh } from '@babylonjs/core/Meshes/abstractMesh';
 export { createScoreboard } from './client/ui/scoreboard';
 export { updateHUD } from './client/ui/hud-binding';
 export type { DomScoreboardAPI } from './client/ui/scoreboard';
+export { createVolumeUI } from './client/ui/volume';
 export type { MatchSnapshot } from '@pong/shared';
 
 // ── App adapters / mappers ────────────────────────────────────────────────────
 export { computeBounds } from './app/bounds';
 export { detectEnteredServe, onEnteredServe } from './app/serve-cue';
-export { applyFrameEvents } from './app/events-to-fx';
+export { applyFrameEventsToFx } from './app/events-to-fx';
 export { mapStateForPlayerRows, mapHistoryForPlayers } from './app/hud-map';
 
 export { decHide, incHide } from './client/fx/utils';
 export type { PlayerSeat, mixOnlineAxes } from './app/seat-router';
+
+// ── Audio ─────────────────────────────────────────────────────────────────────
+export { createAudioManager } from './client/audio/manager';
+export { createAudioBus } from './client/audio/commands';
+export type { AudioCommand, AudioCommandBus } from './client/audio/commands';
+export { DefaultAudioManifest } from './client/audio/manifest';
+export { unlockOnInteraction, resumeAudioContext } from './client/audio/loader';
+export { applyFrameEventsToAudio } from './app/events-to-audio';
+export type { Scene } from '@babylonjs/core/scene';

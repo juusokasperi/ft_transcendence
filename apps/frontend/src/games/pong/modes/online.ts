@@ -5,7 +5,7 @@ import { createWorld } from '@pong/render';
 import { FXManager } from '@pong/render';
 import { createScoreboard } from '@pong/render';
 import { updateHUD } from '@pong/render';
-import { applyFrameEvents } from '@pong/render';
+import { applyFrameEventsToFx } from '@pong/render';
 import { computeBounds } from '@pong/render';
 import { detectEnteredServe, onEnteredServe } from '@pong/render';
 import { mapStateForPlayerRows } from '@pong/render';
@@ -272,7 +272,7 @@ export function createOnlineApp(
         // apply all pending events this frame (they are cheap)
         while (eventQueue.length) {
           const ev = eventQueue.shift();
-          if (ev) applyFrameEvents(fx, ev, y);
+          if (ev) applyFrameEventsToFx(fx, ev, y);
         }
       }
     },

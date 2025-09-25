@@ -21,7 +21,7 @@ import { createPaddleAnimator } from '@pong/render';
 
 import { computeBounds } from '@pong/render';
 import { detectEnteredServe, onEnteredServe } from '@pong/render';
-import { applyFrameEvents } from '@pong/render';
+import { applyFrameEventsToFx } from '@pong/render';
 import { mapStateForPlayerRows, mapHistoryForPlayers } from '@pong/render';
 
 import {
@@ -44,6 +44,8 @@ import {
   handleSwapSidesNow,
 } from './utils';
 import { orbitCameraFor } from '@pong/render';
+import { applyFrameEventsToAudio } from '@pong/render';
+import { createLocalAudioKit, createLocalSfxDetectors } from './audio-utils';
 
 /** Public surface returned by createLocalApp() */
 interface PongInstance {
@@ -80,6 +82,7 @@ export function createLocalApp(canvas: HTMLCanvasElement, preferences?: Preferen
   // HUD (DOM overlay anchored to canvas)
   const hud = createScoreboard();
   hud.attachToCanvas(canvas);
+  // Volume UI will be attached after audio bus is created
 
   // Tracks whether players have crossed sides (affects HUD row mapping & palette)
   let rowsMirrored = false;
@@ -140,6 +143,12 @@ export function createLocalApp(canvas: HTMLCanvasElement, preferences?: Preferen
   // Simple paddle‑centering tween gate (kept in visuals)
   const paddleAnim = createPaddleAnimator(scene, left.mesh, right.mesh);
 
+  // ── Audio helpers (bus/manager/UI + SFX detectors) ─────────────────────
+  const audioKit = createLocalAudioKit(scene, canvas);
+  const audioBus = audioKit.bus;
+  const BASE_Y_FOR_AUDIO = table.tableTop.position.y + bounds.ballRadius / 2;
+  const sfxDetectors = createLocalSfxDetectors(audioBus, BASE_Y_FOR_AUDIO);
+
   // Intro gate (wall‑clock ms) to postpone physics during intro FX
   let introUntil = 0;
   // Mid‑game pause gate (used for decisive mid‑swap and between‑games message)
@@ -175,6 +184,8 @@ export function createLocalApp(canvas: HTMLCanvasElement, preferences?: Preferen
       if (mc.events.matchOver) {
         const { winner } = mc.events.matchOver;
         handleMatchOver(hud, names, winner, () => match.getSnapshot(), canvas);
+        // Stop match playlist when match concludes
+        audioKit.stop();
       }
 
       if (mc.events.swapSidesNow) {
@@ -262,13 +273,21 @@ export function createLocalApp(canvas: HTMLCanvasElement, preferences?: Preferen
         right.mesh.position.z = state.paddles.P2.z;
       }
 
+      // Local-only SFX cues derived from visuals
+      sfxDetectors.update(ballY);
+
       // 7) FX from headless events
-      applyFrameEvents(fx, stepped.events, ballY);
+      applyFrameEventsToFx(fx, stepped.events, ballY);
+      // Audio SFX from events (keeps logic pure)
+      applyFrameEventsToAudio(audioBus, stepped.events);
     },
   });
 
   // One‑stop teardown for all owned resources
   const destroy = () => {
+    try {
+      audioKit.dispose();
+    } catch {}
     disposeWorld({
       loop,
       world, // owns the Scene; disposes it
@@ -280,6 +299,8 @@ export function createLocalApp(canvas: HTMLCanvasElement, preferences?: Preferen
 
   return {
     start() {
+      // Audio boot: resume + preload SFX + start playlist
+      void audioKit.start();
       // Pre‑roll: run serve selection FX, gate input, then arm opening serve
       void import('@pong/render').then(({ incHide }) => {
         incHide(ball.mesh);
