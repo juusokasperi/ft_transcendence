@@ -11,33 +11,59 @@ export interface SpaceBackgroundOptions {
   starDensity?: number;
   /** Multiplier for star brightness */
   starIntensity?: number;
-  /** RGB for stars */
+  /** Primary RGB for stars */
   starColor?: Color3;
+  /** Secondary RGB for star tint variation */
+  starColorSecondary?: Color3;
   /** RGB for “space” */
   backgroundColor?: Color3;
+  /** Intensity multiplier for the nebula layer */
+  nebulaIntensity?: number;
+  /** Controls the scale of the nebula noise */
+  nebulaScale?: number;
+  /** Primary nebula color */
+  nebulaColorA?: Color3;
+  /** Secondary nebula color */
+  nebulaColorB?: Color3;
+  /** Controls the strength of the galactic plane glow */
+  galaxyStrength?: number;
+  /** Sharpness of the galactic plane falloff */
+  galaxySharpness?: number;
+  /** Twinkle animation speed multiplier */
+  twinkleSpeed?: number;
   /** Diameter of the sky sphere */
   diameter?: number;
 }
 
 export function addSpaceBackground(scene: Scene, opts: SpaceBackgroundOptions = {}) {
   const {
-    starDensity = 0.001,
-    starIntensity = 1.0,
-    starColor = new Color3(1, 1, 1),
-    backgroundColor = new Color3(0.01, 0.01, 0.05),
+    starDensity = 0.0015,
+    starIntensity = 1.6,
+    starColor = new Color3(1, 0.96, 0.92),
+    starColorSecondary = new Color3(0.6, 0.78, 1),
+    backgroundColor = new Color3(0.003, 0.003, 0.015),
+    nebulaIntensity = 0.45,
+    nebulaScale = 2.4,
+    nebulaColorA = new Color3(0.22, 0.08, 0.36),
+    nebulaColorB = new Color3(0.02, 0.18, 0.38),
+    galaxyStrength = 0.2,
+    galaxySharpness = 4.5,
+    twinkleSpeed = 1.2,
     diameter = 50,
   } = opts;
 
-  // Register minimal shaders (scoped names)
+  // Register shaders (scoped names per Babylon convention)
   if (!Effect.ShadersStore['spaceBgVertexShader']) {
     Effect.ShadersStore['spaceBgVertexShader'] = `
       precision highp float;
       attribute vec3 position;
       uniform mat4 worldViewProjection;
       varying vec3 vDir;
+
       void main(void) {
-        vDir = normalize(position); // direction on unit sphere
-        gl_Position = worldViewProjection * vec4(position, 1.0);
+        vec3 pos = position;
+        vDir = normalize(pos);
+        gl_Position = worldViewProjection * vec4(pos, 1.0);
       }
     `;
   }
@@ -47,33 +73,90 @@ export function addSpaceBackground(scene: Scene, opts: SpaceBackgroundOptions = 
       precision highp float;
       varying vec3 vDir;
 
-      uniform vec3 uStarColor;
+      uniform vec3 uStarColorA;
+      uniform vec3 uStarColorB;
+      uniform vec3 uNebulaColorA;
+      uniform vec3 uNebulaColorB;
       uniform vec3 uBgColor;
       uniform float uDensity;
       uniform float uIntensity;
+      uniform float uNebulaScale;
+      uniform float uNebulaIntensity;
+      uniform float uGalaxyStrength;
+      uniform float uGalaxySharpness;
+      uniform float uTime;
+      uniform float uTwinkleSpeed;
 
-      // Hash without branches (deterministic for a given vDir)
       float hash31(vec3 p) {
         float h = dot(p, vec3(12.9898, 78.233, 45.164));
         return fract(sin(h) * 43758.5453);
       }
 
+      float valueNoise(vec3 p) {
+        vec3 i = floor(p);
+        vec3 f = fract(p);
+        f = f * f * (3.0 - 2.0 * f);
+
+        float n000 = hash31(i + vec3(0.0, 0.0, 0.0));
+        float n001 = hash31(i + vec3(0.0, 0.0, 1.0));
+        float n010 = hash31(i + vec3(0.0, 1.0, 0.0));
+        float n011 = hash31(i + vec3(0.0, 1.0, 1.0));
+        float n100 = hash31(i + vec3(1.0, 0.0, 0.0));
+        float n101 = hash31(i + vec3(1.0, 0.0, 1.0));
+        float n110 = hash31(i + vec3(1.0, 1.0, 0.0));
+        float n111 = hash31(i + vec3(1.0, 1.0, 1.0));
+
+        float nx00 = mix(n000, n100, f.x);
+        float nx01 = mix(n001, n101, f.x);
+        float nx10 = mix(n010, n110, f.x);
+        float nx11 = mix(n011, n111, f.x);
+
+        float nxy0 = mix(nx00, nx10, f.y);
+        float nxy1 = mix(nx01, nx11, f.y);
+
+        return mix(nxy0, nxy1, f.z);
+      }
+
+      float fbm(vec3 p) {
+        float sum = 0.0;
+        float amp = 0.55;
+        vec3 shift = vec3(13.1, 7.7, 19.3);
+        for (int i = 0; i < 5; ++i) {
+          sum += valueNoise(p) * amp;
+          p = p * 2.02 + shift;
+          amp *= 0.5;
+        }
+        return sum;
+      }
+
       void main(void) {
-        // Base space color
+        vec3 dir = normalize(vDir);
         vec3 col = uBgColor;
 
-        // Star seed: use direction only (stable as camera moves)
-        float seed = hash31(normalize(vDir));
+        // Star distribution driven by hash noise on direction
+        float baseSeed = hash31(dir * 133.3 + 5.3);
+        float starMask = step(1.0 - clamp(uDensity, 0.0, 1.0), baseSeed);
+        float starHue = hash31(dir.zxy * 311.7);
+        vec3 starColor = mix(uStarColorA, uStarColorB, starHue);
 
-        // Star threshold from density: lower density -> rarer stars
-        float star = step(1.0 - uDensity, seed);
+        float intensityVariation = 0.5 + 0.5 * hash31(dir.xyz * 17.0);
+        float pulseSeed = hash31(dir * 21.0) * 6.28318;
+        float twinkle = 0.5 + 0.5 * sin(uTime * uTwinkleSpeed + pulseSeed);
+        float starBrightness = starMask * intensityVariation * twinkle * uIntensity;
+        col = mix(col, starColor, starBrightness);
 
-        // Use a second hash to vary intensity a bit (static, no time)
-        float sparkle = hash31(vDir.zxy * 1.7 + 3.14159);
+        // Procedural nebula using fractal noise
+        float nebulaNoise = fbm(dir * uNebulaScale + vec3(0.0, uTime * 0.05, 0.0));
+        nebulaNoise = pow(clamp(nebulaNoise, 0.0, 1.0), 1.6);
+        vec3 nebulaColor = mix(uNebulaColorA, uNebulaColorB, nebulaNoise);
+        col = mix(col, nebulaColor, nebulaNoise * uNebulaIntensity);
 
-        float brightness = star * (0.6 + 0.4 * sparkle) * uIntensity;
-        col = mix(col, uStarColor, brightness);
+        // Galactic plane glow emphasised near horizon (low |y|)
+        float plane = pow(1.0 - abs(dir.y), uGalaxySharpness);
+        float planeNoise = 0.7 + 0.3 * hash31(dir.yzx * 51.0);
+        col += uGalaxyStrength * plane * planeNoise;
 
+        col = clamp(col, 0.0, 1.0);
         gl_FragColor = vec4(col, 1.0);
       }
     `;
@@ -85,23 +168,47 @@ export function addSpaceBackground(scene: Scene, opts: SpaceBackgroundOptions = 
     { vertex: 'spaceBg', fragment: 'spaceBg' },
     {
       attributes: ['position'],
-      uniforms: ['worldViewProjection', 'uStarColor', 'uBgColor', 'uDensity', 'uIntensity'],
+      uniforms: [
+        'worldViewProjection',
+        'uStarColorA',
+        'uStarColorB',
+        'uNebulaColorA',
+        'uNebulaColorB',
+        'uBgColor',
+        'uDensity',
+        'uIntensity',
+        'uNebulaScale',
+        'uNebulaIntensity',
+        'uGalaxyStrength',
+        'uGalaxySharpness',
+        'uTwinkleSpeed',
+        'uTime',
+      ],
       needAlphaBlending: false,
       needAlphaTesting: false,
     },
   );
 
   material.backFaceCulling = false;
-  // material.disableLighting = true;
+  material.disableDepthWrite = true;
 
-  material.setColor3('uStarColor', starColor);
+  material.setColor3('uStarColorA', starColor);
+  material.setColor3('uStarColorB', starColorSecondary);
+  material.setColor3('uNebulaColorA', nebulaColorA);
+  material.setColor3('uNebulaColorB', nebulaColorB);
   material.setColor3('uBgColor', backgroundColor);
   material.setFloat('uDensity', clamp01(starDensity));
   material.setFloat('uIntensity', Math.max(0.0, starIntensity));
+  material.setFloat('uNebulaScale', Math.max(0.01, nebulaScale));
+  material.setFloat('uNebulaIntensity', Math.max(0.0, nebulaIntensity));
+  material.setFloat('uGalaxyStrength', Math.max(0.0, galaxyStrength));
+  material.setFloat('uGalaxySharpness', Math.max(0.5, galaxySharpness));
+  material.setFloat('uTwinkleSpeed', Math.max(0.0, twinkleSpeed));
+  material.setFloat('uTime', 0);
 
   const sky = MeshBuilder.CreateSphere(
     'spaceSkySphere',
-    { diameter, segments: 32, sideOrientation: 1 /* BACKSIDE */ },
+    { diameter, segments: 48, sideOrientation: 1 /* BACKSIDE */ },
     scene,
   );
   sky.material = material;
@@ -109,7 +216,16 @@ export function addSpaceBackground(scene: Scene, opts: SpaceBackgroundOptions = 
   sky.infiniteDistance = true; // keep centered on camera
   sky.doNotSyncBoundingInfo = true;
 
+  let elapsed = 0;
+  const beforeRenderObserver = scene.onBeforeRenderObservable.add(() => {
+    elapsed += scene.getEngine().getDeltaTime() * 0.001;
+    material.setFloat('uTime', elapsed);
+  });
+
   const dispose = () => {
+    if (beforeRenderObserver) {
+      scene.onBeforeRenderObservable.remove(beforeRenderObserver);
+    }
     sky.dispose(false, true);
     material.dispose(true, true);
   };
