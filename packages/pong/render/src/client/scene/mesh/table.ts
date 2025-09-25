@@ -4,6 +4,7 @@ import { TransformNode } from '@babylonjs/core/Meshes/transformNode';
 import type { AbstractMesh } from '@babylonjs/core/Meshes/abstractMesh';
 import { Colors } from '../color';
 import { makeNeonGlass, makeNeonLine } from '../materials/neon-glass';
+import { makeGlass } from '../materials/glass';
 
 export type TableHandle = {
   root: TransformNode;
@@ -42,10 +43,21 @@ export function addTable(scene: Scene): TableHandle {
     rimScale: 1.6,
     emissiveScale: 0.2,
   });
-  const topMat = makeNeonGlass(scene, neonBase, {
-    alpha: 0.18,
-    rimScale: 1.8,
-    emissiveScale: 0.2,
+  // Reflective glass top using PBR when possible (fallbacks to simple glass otherwise).
+  const topMat = makeGlass(scene, neonBase, {
+    // Slightly more opaque to make reflections more visible
+    opacity: 0.1,
+    // Glossy surface for nice reflections
+    roughness: 0.03,
+    clearCoat: 0.5,
+    // Subsurface tinting: slightly denser
+    tintDistance: 0.28,
+    thickness: 0.06,
+    tintStrength: 1.0,
+    // Keep glassy refractive look subtle to avoid distortion of gameplay visuals
+    refraction: 10,
+    ior: 1.5,
+    backFaceCulling: false,
   });
   const lineMat = makeNeonLine(scene, neonBase, {
     alpha: 1.0,

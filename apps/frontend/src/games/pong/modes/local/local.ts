@@ -210,17 +210,6 @@ export function createLocalApp(canvas: HTMLCanvasElement, preferences?: Preferen
               paddleAnim.cue(180);
             },
           });
-/*         } else {
-          // Fallback: apply immediately if we have no spin window
-          toggleControlsMirrored();
-          swapPaddleMaterials(left.mesh, right.mesh);
-          rowsMirrored = !rowsMirrored;
-          applyPreferences(preferences, {
-            setNames: (n) => (names = n),
-            leftMaterial: left.mesh.material,
-            rightMaterial: right.mesh.material,
-            rowsMirrored,
-          }); */
           if (preferences) setHudAndPaletteColorsFromPrefs(hud, preferences, rowsMirrored);
           paddleAnim.cue(180);
         }
