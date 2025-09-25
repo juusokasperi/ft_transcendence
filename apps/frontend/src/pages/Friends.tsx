@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useAppContext } from '../context/AppContext';
-import toast from 'react-hot-toast';
 import { AxiosError } from 'axios';
 import { resolveAvatarUrl } from '../utils/avatarUrl';
+import { useSnackbar } from '../context/SnackbarContext';
 
 interface FriendRequest {
   username: string;
@@ -14,10 +14,18 @@ type Friend = {
   online: boolean;
 };
 
+const tabs = [
+  { key: 'all', label: 'All', description: 'Entire roster' },
+  { key: 'online', label: 'Online', description: 'Ready to play' },
+  { key: 'offline', label: 'Offline', description: 'Away for now' },
+  { key: 'pending', label: 'Pending', description: 'Awaiting action' },
+  { key: 'add', label: 'Add', description: 'Send invitation' },
+] as const;
+
+type TabKey = (typeof tabs)[number]['key'];
+
 const Friends: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<'all' | 'online' | 'offline' | 'pending' | 'add'>(
-    'online',
-  );
+  const [activeTab, setActiveTab] = useState<TabKey>('online');
   const [friendName, setFriendName] = useState('');
 
   const [pendingSent, setPendingSent] = useState<FriendRequest[]>([]);
@@ -28,6 +36,7 @@ const Friends: React.FC = () => {
   const [offlineFriends, setOfflineFriends] = useState<Friend[]>([]);
 
   const { axios } = useAppContext();
+  const { enqueueSnackbar } = useSnackbar();
 
   // Add friend
   const handleAddFriend = async (e: React.FormEvent) => {
@@ -36,12 +45,18 @@ const Friends: React.FC = () => {
 
     try {
       await axios.post('/api/friends', { username: friendName });
-      toast.success(`Friend request sent to ${friendName}`);
+      enqueueSnackbar({
+        message: `Friend request sent to ${friendName}`,
+        variant: 'success',
+      });
       setFriendName('');
-      fetchSentPendingFriends(); // refresh sent pending list
+      fetchSentPendingFriends();
     } catch (err) {
       const axiosErr = err as AxiosError<{ message?: string }>;
-      toast.error(String(axiosErr?.response?.data?.message));
+      enqueueSnackbar({
+        message: String(axiosErr?.response?.data?.message ?? 'Failed to send friend request'),
+        variant: 'error',
+      });
     }
   };
 
@@ -54,65 +69,80 @@ const Friends: React.FC = () => {
         avatar: resolveAvatarUrl(f.avatar, axios.defaults.baseURL),
       }));
 
-      // Removed debug logging of avatar URLs
       setFriends(friendsWithAvatar);
-
       setOnlineFriends(friendsWithAvatar.filter((f) => f.online));
       setOfflineFriends(friendsWithAvatar.filter((f) => !f.online));
     } catch (err) {
       const axiosErr = err as AxiosError<{ message?: string }>;
-      toast.error(String(axiosErr?.response?.data?.message));
+      enqueueSnackbar({
+        message: String(axiosErr?.response?.data?.message ?? 'Failed to load friends'),
+        variant: 'error',
+      });
     }
   };
 
-  // Fetch sent pending friend requests
   const fetchSentPendingFriends = async () => {
     try {
       const res = await axios.get<FriendRequest[]>('/api/friends/pending/sent');
       setPendingSent(res.data);
     } catch (err) {
       const axiosErr = err as AxiosError<{ message?: string }>;
-      toast.error(String(axiosErr?.response?.data?.message));
+      enqueueSnackbar({
+        message: String(axiosErr?.response?.data?.message ?? 'Failed to load sent requests'),
+        variant: 'error',
+      });
     }
   };
 
-  // Fetch received pending friend requests
   const fetchReceivedPendingFriends = async () => {
     try {
       const res = await axios.get<FriendRequest[]>('/api/friends/pending/received');
       setPendingReceived(res.data);
     } catch (err) {
       const axiosErr = err as AxiosError<{ message?: string }>;
-      toast.error(String(axiosErr?.response?.data?.message));
+      enqueueSnackbar({
+        message: String(axiosErr?.response?.data?.message ?? 'Failed to load received requests'),
+        variant: 'error',
+      });
     }
   };
 
-  // Accept a received friend request
   const handleAcceptFriend = async (senderUuid: string) => {
     try {
       await axios.patch(`/api/friends/respond/${senderUuid}`, { accept: true });
-      toast.success('Friend request accepted!');
+      enqueueSnackbar({
+        message: 'Friend request accepted!',
+        variant: 'success',
+      });
       fetchSentPendingFriends();
       fetchReceivedPendingFriends();
+      fetchAllFriends();
     } catch (err) {
       const axiosErr = err as AxiosError<{ message?: string }>;
-      toast.error(String(axiosErr?.response?.data?.message));
+      enqueueSnackbar({
+        message: String(axiosErr?.response?.data?.message ?? 'Failed to accept request'),
+        variant: 'error',
+      });
     }
   };
 
-  // Reject a received friend request
   const handleRejectFriend = async (senderUuid: string) => {
     try {
       await axios.patch(`/api/friends/respond/${senderUuid}`, { accept: false });
-      toast.success('Friend request rejected!');
+      enqueueSnackbar({
+        message: 'Friend request rejected!',
+        variant: 'info',
+      });
       fetchReceivedPendingFriends();
     } catch (err) {
       const axiosErr = err as AxiosError<{ message?: string }>;
-      toast.error(String(axiosErr?.response?.data?.message));
+      enqueueSnackbar({
+        message: String(axiosErr?.response?.data?.message ?? 'Failed to reject request'),
+        variant: 'error',
+      });
     }
   };
 
-  // Fetch pending requests when switching to pending tab
   useEffect(() => {
     if (activeTab === 'pending') {
       fetchSentPendingFriends();
@@ -123,143 +153,231 @@ const Friends: React.FC = () => {
     }
   }, [activeTab]);
 
-  return (
-    <div className="mt-12 p-6">
-      {/* Tabs */}
-      <div className="mb-6 flex space-x-4 border-b border-gray-300">
-        {['all', 'online', 'offline', 'pending', 'add'].map((tab) => (
-          <button
-            key={tab}
-            onClick={() => setActiveTab(tab as any)}
-            className={`px-4 pb-2 capitalize ${
-              activeTab === tab
-                ? 'border-b-2 border-blue-500 font-semibold text-blue-500'
-                : 'text-gray-500 hover:text-gray-700'
-            }`}
+  const renderFriendList = (list: Friend[], emptyMessage: string, accent?: string) => (
+    <div className="space-y-3">
+      {list.length > 0 ? (
+        list.map((friend) => (
+          <div
+            key={friend.username}
+            className="flex items-center justify-between rounded-2xl border border-white/10 bg-white/5 px-4 py-3 shadow-sm shadow-indigo-950/20 backdrop-blur"
           >
-            {tab}
-          </button>
-        ))}
+            <div className="flex items-center gap-3">
+              <span
+                className={`relative flex h-10 w-10 items-center justify-center rounded-full ring-2 ring-white/20 ${accent ?? ''}`}
+              >
+                <img
+                  src={friend.avatar}
+                  alt={friend.username}
+                  className="h-9 w-9 rounded-full object-cover"
+                />
+              </span>
+              <div>
+                <p className="text-sm font-medium text-white">{friend.username}</p>
+                <p className="text-xs uppercase tracking-[0.25em] text-slate-400">
+                  {friend.online ? 'Online' : 'Offline'}
+                </p>
+              </div>
+            </div>
+            <span
+              className={`h-2 w-2 rounded-full ${friend.online ? 'bg-emerald-400' : 'bg-slate-500'}`}
+              aria-hidden
+            />
+          </div>
+        ))
+      ) : (
+        <p className="rounded-2xl border border-dashed border-white/15 bg-white/5 px-4 py-6 text-center text-sm text-slate-300/70">
+          {emptyMessage}
+        </p>
+      )}
+    </div>
+  );
+
+  return (
+    <div className="relative min-h-[calc(100vh-6rem)] text-white">
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-40 bg-gradient-to-b from-indigo-600/30 via-purple-500/10 to-transparent blur-3xl" />
+      <div className="pointer-events-none absolute inset-0 overflow-hidden">
+        <div className="absolute -left-24 top-48 h-48 w-48 rounded-full bg-indigo-500/10 blur-3xl" />
+        <div className="absolute bottom-0 right-0 h-52 w-52 rounded-full bg-purple-500/10 blur-3xl" />
       </div>
 
-      {/* Content */}
-      <div>
-        {activeTab === 'all' && (
-          <div className="text-purple-600">
-            <h2 className="mb-4 text-xl font-bold">All Friends</h2>
-            <ul className="list-disc space-y-2 pl-5">
-              {friends.length > 0 ? (
-                friends.map((f) => (
-                  <li key={f.username} className="flex items-center space-x-2">
-                    <img src={f.avatar} alt={f.username} className="h-10 w-10 rounded-full" />
-                    <span>{f.username}</span>
-                  </li>
-                ))
-              ) : (
-                <li>You have no friends</li>
-              )}
-            </ul>
-          </div>
-        )}
-
-        {activeTab === 'online' && (
-          <div className="text-green-600">
-            <h2 className="mb-4 text-xl font-bold">Online Friends</h2>
-            <ul className="list-disc space-y-2 pl-5">
-              {onlineFriends.length > 0 ? (
-                onlineFriends.map((f) => (
-                  <li key={f.username} className="flex items-center space-x-2">
-                    <img src={f.avatar} alt={f.username} className="h-10 w-10 rounded-full" />
-                    <span>{f.username}</span>
-                  </li>
-                ))
-              ) : (
-                <li>You have no online friends</li>
-              )}
-            </ul>
-          </div>
-        )}
-
-        {activeTab === 'offline' && (
-          <div className="text-gray-600">
-            <h2 className="mb-4 text-xl font-bold">Offline Friends</h2>
-            <ul className="list-disc space-y-2 pl-5">
-              {offlineFriends.length > 0 ? (
-                offlineFriends.map((f) => (
-                  <li key={f.username} className="flex items-center space-x-2">
-                    <img src={f.avatar} alt={f.username} className="h-10 w-10 rounded-full" />
-                    <span>{f.username}</span>
-                  </li>
-                ))
-              ) : (
-                <li>You have no offline friends</li>
-              )}
-            </ul>
-          </div>
-        )}
-
-        {activeTab === 'pending' && (
-          <div className="text-yellow-600">
-            <h2 className="mb-4 text-xl font-bold">Pending Requests</h2>
-
-            <h3 className="mb-2 font-semibold">Sent</h3>
-            <ul className="mb-4 list-disc pl-5">
-              {pendingSent.length > 0 ? (
-                pendingSent.map((f) => <li key={f.uuid}>{f.username}</li>)
-              ) : (
-                <li>No sent requests</li>
-              )}
-            </ul>
-
-            <h3 className="mb-2 font-semibold">Received</h3>
-            <ul className="list-disc pl-5">
-              {pendingReceived.length > 0 ? (
-                pendingReceived.map((f) => (
-                  <li key={f.uuid} className="flex items-center justify-between">
-                    <span>{f.username}</span>
-                    <div className="flex space-x-2">
-                      <button
-                        onClick={() => handleAcceptFriend(f.uuid)}
-                        className="rounded bg-green-500 px-2 py-1 text-sm text-white hover:bg-green-600"
-                      >
-                        Accept
-                      </button>
-                      <button
-                        onClick={() => handleRejectFriend(f.uuid)}
-                        className="rounded bg-red-500 px-2 py-1 text-sm text-white hover:bg-red-600"
-                      >
-                        Reject
-                      </button>
-                    </div>
-                  </li>
-                ))
-              ) : (
-                <li>No received requests</li>
-              )}
-            </ul>
-          </div>
-        )}
-
-        {activeTab === 'add' && (
+      <div className="relative mx-auto flex w-full max-w-5xl flex-col gap-8 px-4 pb-16 pt-6 sm:px-6 lg:px-10">
+        <header className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <h2 className="mb-4 text-xl font-bold">Add a Friend</h2>
-            <form onSubmit={handleAddFriend} className="flex space-x-2">
-              <input
-                type="text"
-                value={friendName}
-                onChange={(e) => setFriendName(e.target.value)}
-                placeholder="Enter username or email"
-                className="flex-1 rounded-lg border px-3 py-2"
-              />
-              <button
-                type="submit"
-                className="rounded-lg bg-blue-500 px-4 py-2 text-white hover:bg-blue-600"
-              >
-                Add
-              </button>
-            </form>
+            <h1 className="text-3xl font-semibold sm:text-4xl">Your friends hub</h1>
+            <p className="text-sm text-slate-300/80">
+              Manage connections, track requests, and invite new players to the arcade.
+            </p>
           </div>
-        )}
+          <div className="flex gap-2 rounded-full border border-indigo-400/30 bg-indigo-400/10 px-4 py-2 text-xs uppercase tracking-[0.3em] text-indigo-200">
+            <span>Total {friends.length}</span>
+            <span>•</span>
+            <span>Online {onlineFriends.length}</span>
+          </div>
+        </header>
+
+        <nav className="flex flex-wrap gap-2">
+          {tabs.map((tab) => {
+            const isActive = activeTab === tab.key;
+            return (
+              <button
+                key={tab.key}
+                onClick={() => setActiveTab(tab.key)}
+                className={`group inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-medium transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 ${
+                  isActive
+                    ? 'border-indigo-300/50 bg-indigo-500/20 text-white shadow shadow-indigo-900/40'
+                    : 'border-white/10 bg-white/5 text-slate-200 hover:border-indigo-300/30 hover:bg-indigo-400/10 hover:text-white'
+                }`}
+                type="button"
+                aria-pressed={isActive}
+              >
+                {tab.label}
+                <span className="text-xs font-normal uppercase tracking-[0.3em] text-slate-400 group-hover:text-indigo-200">
+                  {tab.description}
+                </span>
+              </button>
+            );
+          })}
+        </nav>
+
+        <section className="rounded-3xl border border-white/10 bg-slate-900/60 p-6 shadow-xl shadow-indigo-950/30 backdrop-blur">
+          {activeTab === 'all' && (
+            <div className="space-y-4">
+              <div>
+                <h2 className="text-xl font-semibold">All friends</h2>
+                <p className="text-sm text-slate-300/80">Everyone you follow and play with.</p>
+              </div>
+              {renderFriendList(friends, 'No friends found yet. Invite someone to start playing!')}
+            </div>
+          )}
+
+          {activeTab === 'online' && (
+            <div className="space-y-4">
+              <div>
+                <h2 className="text-xl font-semibold text-emerald-300">Online now</h2>
+                <p className="text-sm text-slate-300/80">
+                  Friends currently available for matches.
+                </p>
+              </div>
+              {renderFriendList(
+                onlineFriends,
+                'No friends are online right now. Check back soon or send a ping!',
+                'ring-emerald-400/40',
+              )}
+            </div>
+          )}
+
+          {activeTab === 'offline' && (
+            <div className="space-y-4">
+              <div>
+                <h2 className="text-xl font-semibold text-slate-300">Offline</h2>
+                <p className="text-sm text-slate-300/80">Players who are currently away.</p>
+              </div>
+              {renderFriendList(
+                offlineFriends,
+                'No offline friends at the moment. Everyone is online or unadded!',
+                'ring-slate-500/30',
+              )}
+            </div>
+          )}
+
+          {activeTab === 'pending' && (
+            <div className="space-y-6">
+              <div>
+                <h2 className="text-xl font-semibold text-amber-300">Pending requests</h2>
+                <p className="text-sm text-slate-300/80">
+                  Respond to incoming invitations or track requests you&apos;ve sent.
+                </p>
+              </div>
+
+              <div className="grid gap-6 md:grid-cols-2">
+                <div className="space-y-3 rounded-2xl border border-white/10 bg-white/5 p-4">
+                  <h3 className="text-sm font-semibold text-indigo-200">Sent requests</h3>
+                  {pendingSent.length > 0 ? (
+                    <ul className="space-y-2 text-sm text-slate-200">
+                      {pendingSent.map((f) => (
+                        <li
+                          key={f.uuid}
+                          className="flex items-center justify-between rounded-lg border border-white/10 bg-slate-900/60 px-3 py-2"
+                        >
+                          <span>{f.username}</span>
+                          <span className="text-xs uppercase tracking-[0.3em] text-slate-500">
+                            pending
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p className="rounded-lg border border-dashed border-white/15 bg-white/5 px-3 py-4 text-xs text-slate-300/70">
+                      No sent requests.
+                    </p>
+                  )}
+                </div>
+
+                <div className="space-y-3 rounded-2xl border border-white/10 bg-white/5 p-4">
+                  <h3 className="text-sm font-semibold text-indigo-200">Received requests</h3>
+                  {pendingReceived.length > 0 ? (
+                    <ul className="space-y-3 text-sm text-slate-200">
+                      {pendingReceived.map((f) => (
+                        <li
+                          key={f.uuid}
+                          className="flex items-center justify-between gap-3 rounded-lg border border-white/10 bg-slate-900/60 px-3 py-3"
+                        >
+                          <span className="font-medium">{f.username}</span>
+                          <div className="flex gap-2">
+                            <button
+                              onClick={() => handleAcceptFriend(f.uuid)}
+                              className="rounded-full bg-gradient-to-r from-emerald-500 to-teal-500 px-3 py-1 text-xs font-semibold text-white shadow shadow-emerald-900/40 transition hover:from-emerald-400 hover:to-teal-400"
+                            >
+                              Accept
+                            </button>
+                            <button
+                              onClick={() => handleRejectFriend(f.uuid)}
+                              className="rounded-full border border-rose-400/60 px-3 py-1 text-xs font-semibold text-rose-200 transition hover:border-rose-300 hover:text-white"
+                            >
+                              Reject
+                            </button>
+                          </div>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p className="rounded-lg border border-dashed border-white/15 bg-white/5 px-3 py-4 text-xs text-slate-300/70">
+                      No incoming requests.
+                    </p>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'add' && (
+            <div className="space-y-4">
+              <div>
+                <h2 className="text-xl font-semibold text-indigo-200">Add a friend</h2>
+                <p className="text-sm text-slate-300/80">
+                  Invite someone by their username or email address. We&apos;ll send a pending
+                  request right away.
+                </p>
+              </div>
+              <form onSubmit={handleAddFriend} className="flex flex-col gap-3 sm:flex-row">
+                <input
+                  type="text"
+                  value={friendName}
+                  onChange={(e) => setFriendName(e.target.value)}
+                  placeholder="Enter username or email"
+                  className="flex-1 rounded-2xl border border-white/15 bg-white/5 px-4 py-3 text-sm text-white placeholder:text-slate-400 focus:border-indigo-300 focus:outline-none focus:ring-2 focus:ring-indigo-400/50"
+                />
+                <button
+                  type="submit"
+                  className="inline-flex items-center justify-center rounded-2xl bg-gradient-to-r from-indigo-500 to-purple-500 px-5 py-3 text-sm font-semibold text-white shadow shadow-indigo-900/40 transition hover:from-indigo-400 hover:to-purple-400 disabled:cursor-not-allowed disabled:opacity-60"
+                  disabled={!friendName.trim()}
+                >
+                  Send request
+                </button>
+              </form>
+            </div>
+          )}
+        </section>
       </div>
     </div>
   );
