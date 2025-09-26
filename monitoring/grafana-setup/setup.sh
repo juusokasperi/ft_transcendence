@@ -10,7 +10,7 @@ echo "Waiting for Grafana to start..."
 until curl -s "${GRAFANA_URL}/api/health" > /dev/null; do
   sleep 2
   now=$(date +%s)
-  if (( now - start >= timeout )); then
+  if [ $(( now - start )) -ge $timeout ]; then
     echo "Timed out after waiting for Grafana"
     exit 1
   fi
