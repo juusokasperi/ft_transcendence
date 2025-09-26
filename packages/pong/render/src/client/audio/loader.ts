@@ -66,7 +66,10 @@ export async function preloadSfx(
         return;
       }
       while (inFlight < Math.max(1, concurrency) && i < total) {
-        const asset: SfxAsset = toLoad[i++]!;
+        const asset = toLoad[i++];
+        if (!asset) {
+          continue;
+        }
         inFlight++;
         void SfxPool.create(scene, asset)
           .then((pool) => {

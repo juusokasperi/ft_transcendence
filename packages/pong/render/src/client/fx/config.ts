@@ -29,6 +29,8 @@ export type FXConfig = {
     thicknessMul: number; // across
     heightMul: number; // Y
     emissiveScale: number;
+    /** max segments we attempt to spawn in a single tick catch-up */
+    maxEmitsPerTick: number;
     /** spawn cadence mapped from speed (lerp max→min by speed curve) */
     spawnMsMin: number;
     spawnMsMax: number;
@@ -115,6 +117,7 @@ export const DEFAULT_FX_CONFIG: FXConfig = {
     thicknessMul: 0.9,
     heightMul: 0.6,
     emissiveScale: 0.9,
+    maxEmitsPerTick: 3,
     spawnMsMin: 12,
     spawnMsMax: 32,
     speedKnee: 7.5,
