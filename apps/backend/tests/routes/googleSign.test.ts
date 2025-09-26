@@ -7,6 +7,7 @@ vi.mock('../../utils/config.ts', () => ({
   SECRET: 'testsecret',
   DATABASE_PATH: ':memory:',
   JWT_ACCESS_TTL: '4h',
+  JWT_REFRESH_TTL: '30d',
   JWT_2FA_TTL: '10m',
   TFA_CODE_DIGITS: 6,
   TFA_ISSUER: 'TestApp',
@@ -22,6 +23,14 @@ const usersMock = vi.hoisted(() => ({
   getUser: vi.fn(),
 }));
 vi.mock('../../db/queries/users.ts', () => usersMock);
+
+const { issueTokensForUserMock } = vi.hoisted(() => ({
+  issueTokensForUserMock: vi.fn(),
+}));
+
+vi.mock('../../utils/authTokens.ts', () => ({
+  issueTokensForUser: issueTokensForUserMock,
+}));
 
 // Now import the route under test (it will see the mocks)
 import googleSign from '../../routes/googleSign';
@@ -164,3 +173,8 @@ describe('Google OAuth flow', () => {
     expect(res.json().error).toBe('invalid_state');
   });
 });
+    issueTokensForUserMock.mockReturnValue({
+      accessToken: 'access-token',
+      refreshToken: 'refresh-token',
+      refreshCookieMaxAge: 3600,
+    });

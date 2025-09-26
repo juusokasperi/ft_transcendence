@@ -7,6 +7,7 @@ vi.mock('../../utils/config.ts', () => ({
   SECRET: 'testsecret',
   DATABASE_PATH: ':memory:',
   JWT_ACCESS_TTL: '4h',
+  JWT_REFRESH_TTL: '30d',
   JWT_2FA_TTL: '10m',
   TFA_CODE_DIGITS: 6,
   TFA_ISSUER: 'TestApp',
@@ -17,6 +18,14 @@ const usersMock = vi.hoisted(() => ({
   updateLastSeen: vi.fn(),
 }));
 vi.mock('../../db/queries/users.ts', () => usersMock);
+
+const { issueTokensForUserMock } = vi.hoisted(() => ({
+  issueTokensForUserMock: vi.fn(),
+}));
+
+vi.mock('../../utils/authTokens.ts', () => ({
+  issueTokensForUser: issueTokensForUserMock,
+}));
 
 import { loginRoutes } from '../../routes/login.ts';
 
@@ -39,6 +48,11 @@ describe('POST /api/login', () => {
   const app = buildApp();
 
   beforeAll(async () => {
+    issueTokensForUserMock.mockReturnValue({
+      accessToken: 'access-token',
+      refreshToken: 'refresh-token',
+      refreshCookieMaxAge: 3600,
+    });
     usersMock.getUserByEmail.mockReturnValue({
       uuid: USER_UUID,
       username: 'alice',

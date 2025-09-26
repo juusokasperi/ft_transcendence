@@ -14,8 +14,10 @@ export function authPreHandler(req: FastifyRequest, res: FastifyReply, done: Fun
     token = req.cookies.token as string;
   }
   if (!token) {
-    res.clearCookie('token', { path: '/' });
-    res.clearCookie('refresh_token', { path: '/' });
+    if (typeof res.clearCookie === 'function') {
+      res.clearCookie('token', { path: '/' });
+      res.clearCookie('refresh_token', { path: '/' });
+    }
     res.status(401).send({ message: 'Missing or invalid token', code: 'token_invalid' });
     return;
   }
@@ -24,13 +26,14 @@ export function authPreHandler(req: FastifyRequest, res: FastifyReply, done: Fun
     req.user = payload as any; // keep minimal; or type-narrow with your JWTPayload
     done();
   } catch (err) {
-    const isExpired = err instanceof jwt.TokenExpiredError;
-    const message = isExpired ? 'Token expired' : 'Invalid token';
-    if (isExpired) {
+    const name = typeof err === 'object' && err ? (err as { name?: string }).name : undefined;
+    const isExpired = name === 'TokenExpiredError';
+    const message = isExpired ? 'Token expired' : 'Invalid or expired token';
+    if (typeof res.clearCookie === 'function') {
       res.clearCookie('token', { path: '/' });
-    } else {
-      res.clearCookie('token', { path: '/' });
-      res.clearCookie('refresh_token', { path: '/' });
+      if (!isExpired) {
+        res.clearCookie('refresh_token', { path: '/' });
+      }
     }
     res.status(401).send({ message, code: isExpired ? 'token_expired' : 'token_invalid' });
   }
