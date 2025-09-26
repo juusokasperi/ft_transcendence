@@ -1,5 +1,6 @@
 import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { updateLastSeen } from '../db/queries/users.ts';
+import { deleteRefreshTokensByUser } from '../db/queries/refreshTokens.ts';
 import { authPreHandler, tokenUuidCheck } from '../hooks/auth.ts';
 import { logoutSchema } from '../schemas/authSchemas.ts';
 
@@ -21,7 +22,9 @@ export async function logoutRoutes(app: FastifyInstance) {
           res.status(500).send({ message: 'Failed to logout user' });
           return;
         }
+        deleteRefreshTokensByUser(uuid);
         res.clearCookie('token', { path: '/' });
+        res.clearCookie('refresh_token', { path: '/' });
         res.status(200).send({ success: 'Successfully logged out.' });
       } catch (error) {
         res.status(500).send({ message: 'Failed to logout user' });
