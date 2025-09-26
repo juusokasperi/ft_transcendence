@@ -9,9 +9,10 @@ declare module 'fastify' {
 export interface JWTPayload {
   uuid: string;
   username: string;
+  tokenId?: string; // for refresh tokens to allow revocation (stateful)
   iat?: number;
   exp?: number;
-  purpose?: 'access' | 'two-factor';
+  purpose?: 'access' | 'two-factor' | 'refresh';
 }
 
 export interface User {
