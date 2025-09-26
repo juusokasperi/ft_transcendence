@@ -5,7 +5,7 @@ import type { GameHistoryEntry } from '@pong/shared';
 import '@pong/render/ui/tailwind.css';
 import '@pong/render/register';
 import { createScoreboard } from '@pong/render';
-import type { Observation } from '../../../games/pong/ai/bot-controller';
+import type { BotDifficulty, Observation } from '../../../games/pong/ai/bot-controller';
 import Navbar from '../../../components/Navbar';
 import {
   clearStoredSettings,
@@ -43,6 +43,8 @@ const LocalGame: React.FC = () => {
   const [settings, setSettings] = useState<UserSettings>(defaultSettings);
   const [isPlaying, setIsPlaying] = useState(false);
   const [aiEnabled, setAiEnabled] = useState(false); // Player 2 as AI
+  const [botDifficulty, setBotDifficulty] = useState<BotDifficulty>('normal');
+  const [isGameReady, setIsGameReady] = useState(false);
   const [postMatch, setPostMatch] = useState<{
     winner: 'east' | 'west';
     bestOf: number;
@@ -66,7 +68,7 @@ const LocalGame: React.FC = () => {
 
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const appRef = useRef<{ destroy(): void; observe?: () => Observation } | null>(null);
-  const botRef = useRef<{ stop(): void } | null>(null);
+  const botRef = useRef<{ stop(): void; setDifficulty: (d: BotDifficulty) => void } | null>(null);
 
   const restoreSettingsFromStorage = useCallback(() => {
     const restored = readSettingsFromStorage(localStorage, STORAGE_KEY, defaultSettings);
@@ -119,18 +121,8 @@ const LocalGame: React.FC = () => {
           rules: settings.rules,
         });
         appRef.current = app;
+        setIsGameReady(true);
 
-        // If AI is enabled, start bot controlling Player 2
-        if (aiEnabled && canvasRef.current && (app as any).observe) {
-          try {
-            const { BotController } = await import('../../../games/pong/ai/bot-controller');
-            const bot = new BotController(canvasRef.current!, 'P2', (app as any).observe, 'normal');
-            bot.start();
-            botRef.current = bot;
-          } catch (e) {
-            console.error('[LocalGame] Failed to start AI bot', e);
-          }
-        }
       } catch (e) {
         console.error('[LocalGame] Failed to start Pong', e);
         setIsPlaying(false);
@@ -148,8 +140,59 @@ const LocalGame: React.FC = () => {
         appRef.current.destroy();
         appRef.current = null;
       }
+      setIsGameReady(false);
     };
   }, [isPlaying]);
+
+  useEffect(() => {
+    if (!isPlaying) {
+      if (botRef.current) {
+        botRef.current.stop();
+        botRef.current = null;
+      }
+      return;
+    }
+
+    if (!aiEnabled) {
+      if (botRef.current) {
+        botRef.current.stop();
+        botRef.current = null;
+      }
+      return;
+    }
+
+    if (botRef.current) {
+      botRef.current.setDifficulty(botDifficulty);
+      return;
+    }
+
+    if (!isGameReady) {
+      return;
+    }
+
+    const canvas = canvasRef.current;
+    const observer = (appRef.current as any)?.observe;
+    if (!canvas || typeof observer !== 'function') {
+      return;
+    }
+
+    let cancelled = false;
+    (async () => {
+      try {
+        const { BotController } = await import('../../../games/pong/ai/bot-controller');
+        if (cancelled || botRef.current) return;
+        const bot = new BotController(canvas, 'P2', observer, botDifficulty);
+        bot.start();
+        botRef.current = bot;
+      } catch (error) {
+        console.error('[LocalGame] Failed to start AI bot', error);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [isPlaying, aiEnabled, botDifficulty, isGameReady]);
 
   // When the in-canvas game dispatches matchOver, capture summary and exit after 3 seconds
   useEffect(() => {
@@ -647,14 +690,29 @@ const LocalGame: React.FC = () => {
             </div>
 
             {/* AI Toggle */}
-            <div className="flex justify-center pb-2">
-              <label className="flex items-center gap-2 text-white/90">
+            <div className="flex flex-col items-center gap-3 pb-2 text-white/90">
+              <label className="flex items-center gap-2">
                 <input
                   type="checkbox"
                   checked={aiEnabled}
                   onChange={(e) => setAiEnabled(e.target.checked)}
                 />
                 <span>Play vs AI (Player 2)</span>
+              </label>
+              <label className="flex items-center gap-3 text-sm">
+                <span>AI difficulty</span>
+                <select
+                  value={botDifficulty}
+                  onChange={(event) =>
+                    setBotDifficulty(event.target.value as BotDifficulty)
+                  }
+                  disabled={!aiEnabled}
+                  className="rounded bg-gray-800 px-3 py-1 text-white/90 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  <option value="easy">Easy</option>
+                  <option value="normal">Normal</option>
+                  <option value="hard">Hard</option>
+                </select>
               </label>
             </div>
 
