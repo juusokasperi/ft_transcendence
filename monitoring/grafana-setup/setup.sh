@@ -5,7 +5,7 @@ apk add --no-cache curl jq
 set -eu
 
 start=$(date +%s)
-timeout=30
+timeout=90
 echo "Waiting for Grafana to start..."
 until curl -s "${GRAFANA_URL}/api/health" > /dev/null; do
   sleep 2
