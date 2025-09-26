@@ -1,4 +1,6 @@
 import type { AudioCommandBus } from '../audio/commands';
+import speakerOnRaw from './icons/speaker-on.svg?raw';
+import speakerOffRaw from './icons/speaker-off.svg?raw';
 
 export type VolumeUI = {
   attachToCanvas: (canvas: HTMLCanvasElement) => void;
@@ -9,11 +11,9 @@ export type VolumeUI = {
 function createEl<K extends keyof HTMLElementTagNameMap>(
   tag: K,
   cls?: string,
-  html?: string,
 ): HTMLElementTagNameMap[K] {
   const el = document.createElement(tag);
   if (cls) el.className = cls;
-  if (html != null) el.innerHTML = html;
   return el;
 }
 
@@ -27,14 +27,18 @@ export function createVolumeUI(bus: AudioCommandBus, initialVolume = 1): VolumeU
   let muted = volume === 0;
 
   // Button
-  const btn = createEl('button', 'pong-audio-btn', svgSpeaker(muted));
+  const btn = createEl('button', 'pong-audio-btn');
   btn.title = muted ? 'Unmute' : 'Mute';
   btn.style.position = 'absolute';
   btn.style.zIndex = '1010';
   parent.appendChild(btn);
+  // Pre-parse icons and clone on use for performance
+  const iconOn = svgFromRaw(speakerOnRaw);
+  const iconOff = svgFromRaw(speakerOffRaw);
+  btn.appendChild((muted ? iconOff : iconOn).cloneNode(true));
 
   const applyMuteVisual = () => {
-    btn.innerHTML = svgSpeaker(muted);
+    btn.replaceChildren((muted ? iconOff : iconOn).cloneNode(true));
     btn.title = muted ? 'Unmute' : 'Mute';
   };
 
@@ -107,19 +111,11 @@ export function createVolumeUI(bus: AudioCommandBus, initialVolume = 1): VolumeU
   return { attachToCanvas, attachToElement, dispose };
 }
 
-function svgSpeaker(muted: boolean): string {
-  if (!muted) {
-    return `
-<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-  <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
-  <path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path>
-  <path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path>
-</svg>`;
+function svgFromRaw(raw: string): SVGSVGElement {
+  const doc = new DOMParser().parseFromString(raw, 'image/svg+xml');
+  const svg = doc.querySelector<SVGSVGElement>('svg');
+  if (!svg) {
+    throw new Error('Invalid SVG markup for volume icon.');
   }
-  return `
-<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-  <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
-  <line x1="23" y1="9" x2="17" y2="15"></line>
-  <line x1="17" y1="9" x2="23" y2="15"></line>
-</svg>`;
+  return svg;
 }

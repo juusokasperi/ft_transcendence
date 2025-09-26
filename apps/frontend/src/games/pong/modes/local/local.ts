@@ -303,6 +303,8 @@ export function createLocalApp(canvas: HTMLCanvasElement, preferences?: Preferen
       void audioKit.start();
       // Pre‑roll: run serve selection FX, gate input, then arm opening serve
       void import('@pong/render').then(({ incHide }) => {
+        // Keep the ball hidden while the serve-selection pre-roll runs; we drain
+        // the hide ref(s) once the FX resolves just below.
         incHide(ball.mesh);
       });
 
@@ -319,6 +321,7 @@ export function createLocalApp(canvas: HTMLCanvasElement, preferences?: Preferen
         Bounces.scheduleServe(dir);
 
         const { decHide } = await import('@pong/render');
+        // Release any outstanding hide refs (manual above + potential FX bumps).
         decHide(ball.mesh);
         decHide(ball.mesh);
       });

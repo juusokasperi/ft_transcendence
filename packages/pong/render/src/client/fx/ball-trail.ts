@@ -37,6 +37,7 @@ export function createBallTrailFX(
 ) {
   const { scene } = ctx;
   const T = cfg.trail;
+  const maxEmitsPerTick = Math.max(1, T.maxEmitsPerTick);
 
   // Global knobs
   const S = Math.max(0.0001, cfg.intensity.sizeMul ?? 1);
@@ -149,8 +150,8 @@ export function createBallTrailFX(
       const emitEvery = maxMs + (minMs - maxMs) * norm;
 
       if (spd >= T.speedMin && spawnAccMs >= emitEvery) {
-        // Avoid runaway catch-up under big dt; cap to 3 per tick.
-        let emits = Math.min(3, Math.floor(spawnAccMs / emitEvery));
+        // Avoid runaway catch-up under big dt; cap to config-defined max.
+        let emits = Math.min(maxEmitsPerTick, Math.floor(spawnAccMs / emitEvery));
         spawnAccMs -= emits * emitEvery;
         while (emits-- > 0) spawnOne(dx, dz, norm);
       }
