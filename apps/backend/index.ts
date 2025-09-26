@@ -26,6 +26,7 @@ import { friendsRoutes } from './routes/friends.ts';
 import { matchRoutes } from './routes/matches.ts';
 import { debugRoutes } from './routes/debug.ts';
 import { resetPasswordRoutes } from './routes/resetPassword.ts';
+import { refreshRoutes } from './routes/refresh.ts';
 import { runMigrations } from './db/migrations.ts';
 import { prettierErrorMessages } from './utils/errorHandler.ts';
 import './types/types.ts';
@@ -87,6 +88,7 @@ app.register(matchRoutes, { prefix: '/api/matches' });
 app.register(loginRoutes, { prefix: '/api/login' });
 app.register(logoutRoutes, { prefix: '/api/logout' });
 app.register(signupRoutes, { prefix: '/api/signup' });
+app.register(refreshRoutes, { prefix: '/api/auth' });
 app.register(resetPasswordRoutes, { prefix: '/api/reset-password' });
 app.register(debugRoutes, { prefix: '/debug' });
 
