@@ -3,7 +3,8 @@ import { getUserByEmail, updateLastSeen, getUserByUuid } from '../db/queries/use
 import bcrypt from 'bcrypt';
 import { normalizeCredentials } from '../hooks/auth.ts';
 import { loginSchema, loginTwoFactorSchema } from '../schemas/authSchemas.ts';
-import { signAccessToken, signTwoFactorToken, verifyTwoFactorToken } from '../utils/jwt.ts';
+import { signTwoFactorToken, verifyTwoFactorToken } from '../utils/jwt.ts';
+import { issueTokensForUser } from '../utils/authTokens.ts';
 import { verifyTotpToken } from '../utils/twoFactor.ts';
 
 // TODO:
@@ -41,13 +42,27 @@ export async function loginRoutes(app: FastifyInstance) {
 
         updateLastSeen(userInDb.uuid);
 
-        const token = signAccessToken(userForToken);
-        res.setCookie('token', token, {
+        let issued;
+        try {
+          issued = issueTokensForUser(userForToken);
+        } catch {
+          return res.status(500).send({ message: 'Failed to issue auth tokens.' });
+        }
+
+        res.setCookie('token', issued.accessToken, {
           httpOnly: true,
           sameSite: 'strict',
           secure: process.env.NODE_ENV === 'production',
           path: '/',
           maxAge: 60 * 60 * 4, // 4h
+        });
+
+        res.setCookie('refresh_token', issued.refreshToken, {
+          httpOnly: true,
+          sameSite: 'strict',
+          secure: process.env.NODE_ENV === 'production',
+          path: '/',
+          maxAge: issued.refreshCookieMaxAge,
         });
         res.status(200).send({
           user: {
@@ -98,13 +113,27 @@ export async function loginRoutes(app: FastifyInstance) {
         }
 
         updateLastSeen(user.uuid);
-        const accessToken = signAccessToken({ username: user.username, uuid: user.uuid });
-        res.setCookie('token', accessToken, {
+        let issued;
+        try {
+          issued = issueTokensForUser({ username: user.username, uuid: user.uuid });
+        } catch {
+          return res.status(500).send({ message: 'Failed to issue auth tokens.' });
+        }
+
+        res.setCookie('token', issued.accessToken, {
           httpOnly: true,
           sameSite: 'strict',
           secure: process.env.NODE_ENV === 'production',
           path: '/',
           maxAge: 60 * 60 * 4,
+        });
+
+        res.setCookie('refresh_token', issued.refreshToken, {
+          httpOnly: true,
+          sameSite: 'strict',
+          secure: process.env.NODE_ENV === 'production',
+          path: '/',
+          maxAge: issued.refreshCookieMaxAge,
         });
 
         res.status(200).send({

@@ -9,7 +9,7 @@ import {
 } from '../db/queries/unconfirmedUsers.ts';
 import bcrypt from 'bcrypt';
 import crypto from 'crypto';
-import { signAccessToken } from '../utils/jwt.ts';
+import { issueTokensForUser } from '../utils/authTokens.ts';
 import { v4 as uuidv4 } from 'uuid';
 import { sendConfirmationEmail } from '../utils/nodemailer/index.ts';
 import { normalizeCredentials } from '../hooks/auth.ts';
@@ -73,15 +73,27 @@ export async function signupRoutes(app: FastifyInstance) {
 
         const username = user.username;
         const userForToken = { username, uuid };
-        const jwtoken = signAccessToken(userForToken);
+        let issued;
+        try {
+          issued = issueTokensForUser(userForToken);
+        } catch {
+          return res.status(500).send({ message: 'Failed to issue auth tokens.' });
+        }
 
-        // Does the front need UUID anymore?
-        res.setCookie('token', jwtoken, {
+        res.setCookie('token', issued.accessToken, {
           httpOnly: true,
           sameSite: 'strict',
           secure: process.env.NODE_ENV === 'production',
           path: '/',
           maxAge: 60 * 60 * 4,
+        });
+
+        res.setCookie('refresh_token', issued.refreshToken, {
+          httpOnly: true,
+          sameSite: 'strict',
+          secure: process.env.NODE_ENV === 'production',
+          path: '/',
+          maxAge: issued.refreshCookieMaxAge,
         });
 
         res.status(200).send({ user: { username, uuid, avatar: null, tfa: false } });
