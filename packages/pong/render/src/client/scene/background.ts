@@ -37,19 +37,19 @@ export interface SpaceBackgroundOptions {
 
 export function addSpaceBackground(scene: Scene, opts: SpaceBackgroundOptions = {}) {
   const {
-    starDensity = 0.0015,
-    starIntensity = 1.6,
-    starColor = new Color3(1, 0.96, 0.92),
-    starColorSecondary = new Color3(0.6, 0.78, 1),
-    backgroundColor = new Color3(0.003, 0.003, 0.015),
-    nebulaIntensity = 0.45,
-    nebulaScale = 2.4,
-    nebulaColorA = new Color3(0.22, 0.08, 0.36),
-    nebulaColorB = new Color3(0.02, 0.18, 0.38),
-    galaxyStrength = 0.2,
-    galaxySharpness = 4.5,
-    twinkleSpeed = 1.2,
-    diameter = 50,
+    starDensity = 0.0015, // fraction of pixels that become stars
+    starIntensity = 1.6, // overall brightness multiplier
+    starColor = new Color3(1, 0.96, 0.92), // warm white
+    starColorSecondary = new Color3(0.6, 0.78, 1), // slight blue tint
+    backgroundColor = new Color3(0.003, 0.003, 0.015), // very dark blue
+    nebulaIntensity = 0.45, // controls overall brightness of nebula
+    nebulaScale = 2.4, // controls the "size" of nebula features
+    nebulaColorA = new Color3(0.22, 0.08, 0.36), // purple
+    nebulaColorB = new Color3(0.02, 0.18, 0.38), // dark blue
+    galaxyStrength = 0.2, // controls the strength of the galactic plane glow
+    galaxySharpness = 4.5, // controls the sharpness of the galactic plane falloff
+    twinkleSpeed = 1.2, // twinkle animation speed multiplier
+    diameter = 50, // sky sphere diameter
   } = opts;
 
   // Register shaders (scoped names per Babylon convention)
