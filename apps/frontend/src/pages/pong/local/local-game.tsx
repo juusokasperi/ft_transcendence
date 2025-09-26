@@ -60,6 +60,12 @@ const LocalGame: React.FC = () => {
   const [rulesOpen, setRulesOpen] = useState(false);
   const [accessOpen, setAccessOpen] = useState(false);
 
+  const arrowSeatLabel = settings.player1.controller === 'arrows' ? 'Player 1' : 'Player 2';
+  const arrowSeatName =
+    settings.player1.controller === 'arrows'
+      ? settings.player1.name.trim() || 'Player 1'
+      : settings.player2.name.trim() || 'Player 2';
+
   // Scoreboard mount target for post-match HUD reuse
   const resultsHudRef = useRef<HTMLDivElement | null>(null);
   useEffect(() => {
@@ -506,6 +512,46 @@ const LocalGame: React.FC = () => {
               </div>
             </div>
 
+            {/* AI Settings */}
+            <div className="rounded-md border border-white/10 p-4 text-white/90">
+              <div className="flex flex-col items-center text-center space-y-4">
+                <label className="flex w-full items-center justify-center gap-3 text-base">
+                  <input
+                    type="checkbox"
+                    checked={aiEnabled}
+                    onChange={(e) => setAiEnabled(e.target.checked)}
+                  />
+                  <h3 className="text-xl font-semibold">AI Opponent ({arrowSeatLabel})</h3>
+                </label>
+
+                <p className="text-sm text-white/60">
+                  The AI always drives the Arrow Up / Arrow Down controls.
+                </p>
+
+                <div className="flex items-center justify-center gap-4">
+                  <label
+                    htmlFor="botDifficulty"
+                    className="text-sm font-semibold md:text-base text-white/100"
+                  >
+                    Difficulty
+                  </label>
+
+                  <select
+                    id="botDifficulty"
+                    value={botDifficulty}
+                    onChange={(e) => setBotDifficulty(e.target.value as BotDifficulty)}
+                    disabled={!aiEnabled}
+                    className="w-48 rounded border border-white/20 bg-black/40 px-3 py-2 text-base outline-none transition focus:border-white/40 disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    <option value="easy">Easy</option>
+                    <option value="normal">Normal</option>
+                    <option value="hard">Hard</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+
             {/* Match Rules */}
             <div className="rounded-md border border-white/10 p-4">
               <button
@@ -772,33 +818,6 @@ const LocalGame: React.FC = () => {
                   </div>
                 </div>
               )}
-            </div>
-
-            {/* AI Toggle */}
-            <div className="flex flex-col items-center gap-3 pb-2 text-white/90">
-              <label className="flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  checked={aiEnabled}
-                  onChange={(e) => setAiEnabled(e.target.checked)}
-                />
-                <span>Play vs AI (Player 2)</span>
-              </label>
-              <label className="flex items-center gap-3 text-sm">
-                <span>AI difficulty</span>
-                <select
-                  value={botDifficulty}
-                  onChange={(event) =>
-                    setBotDifficulty(event.target.value as BotDifficulty)
-                  }
-                  disabled={!aiEnabled}
-                  className="rounded bg-gray-800 px-3 py-1 text-white/90 disabled:cursor-not-allowed disabled:opacity-60"
-                >
-                  <option value="easy">Easy</option>
-                  <option value="normal">Normal</option>
-                  <option value="hard">Hard</option>
-                </select>
-              </label>
             </div>
 
             {/* Buttons */}
