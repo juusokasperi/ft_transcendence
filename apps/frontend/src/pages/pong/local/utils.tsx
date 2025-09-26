@@ -1,4 +1,5 @@
 import type { Ruleset } from '@pong/shared';
+import type { ControllerScheme } from '../../../games/pong/modes/preferences';
 
 export type AccessibilitySettings = {
   colorBlindMode: 'none' | 'protanopia' | 'deuteranopia' | 'tritanopia' | 'highContrast';
@@ -8,6 +9,7 @@ export type AccessibilitySettings = {
 export type PlayerSettings = {
   name: string;
   paddleColor: string;
+  controller: ControllerScheme;
 };
 
 export type UserSettings = {
@@ -30,6 +32,8 @@ const photoSensitiveModes: AccessibilitySettings['photoSensitiveMode'][] = [
   'reducedFX',
   'noFlash',
 ];
+
+const controllerSchemes: ControllerScheme[] = ['wasd', 'arrows'];
 
 const bestOfModes: Ruleset['match']['bestOf'][] = [3, 5, 7];
 
@@ -61,9 +65,20 @@ export function clearStoredSettings(storage: Storage, key: string): void {
 function parseStoredSettings(raw: string, defaults: UserSettings): UserSettings {
   try {
     const parsed = JSON.parse(raw);
+    const player1 = normalizePlayerSettings(parsed?.player1, defaults.player1);
+    const player2 = normalizePlayerSettings(parsed?.player2, defaults.player2);
+    let adjustedP1 = player1;
+    let adjustedP2 = player2;
+    if (player1.controller === player2.controller) {
+      if (player1.controller === 'wasd') {
+        adjustedP2 = { ...player2, controller: 'arrows' };
+      } else {
+        adjustedP1 = { ...player1, controller: 'wasd' };
+      }
+    }
     return {
-      player1: normalizePlayerSettings(parsed?.player1, defaults.player1),
-      player2: normalizePlayerSettings(parsed?.player2, defaults.player2),
+      player1: adjustedP1,
+      player2: adjustedP2,
       accessibility: normalizeAccessibility(parsed?.accessibility, defaults.accessibility),
       rules: normalizeRules(parsed?.rules, defaults.rules),
     };
@@ -83,10 +98,14 @@ function normalizePlayerSettings(value: unknown, fallback: PlayerSettings): Play
     typeof record.paddleColor === 'string' && record.paddleColor.trim()
       ? record.paddleColor
       : fallback.paddleColor;
+  const controller = controllerSchemes.includes(record.controller as ControllerScheme)
+    ? (record.controller as ControllerScheme)
+    : fallback.controller;
 
   return {
     name,
     paddleColor,
+    controller,
   };
 }
 

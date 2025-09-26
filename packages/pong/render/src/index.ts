@@ -17,6 +17,7 @@ export {
   toggleControlsMirrored,
   blockInputFor,
   setBindingProfile,
+  overrideBindings,
 } from './client/input/aggregate';
 
 // ── FX / Visuals ───────────────────────────────────────────────────────────────

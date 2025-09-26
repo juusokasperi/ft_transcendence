@@ -6,6 +6,7 @@ import '@pong/render/ui/tailwind.css';
 import '@pong/render/register';
 import { createScoreboard } from '@pong/render';
 import type { BotDifficulty, Observation } from '../../../games/pong/ai/bot-controller';
+import type { ControllerScheme, Preferences } from '../../../games/pong/modes/preferences';
 import Navbar from '../../../components/Navbar';
 import {
   clearStoredSettings,
@@ -16,8 +17,8 @@ import {
 import type { AccessibilitySettings, UserSettings } from './utils';
 
 const defaultSettings: UserSettings = {
-  player1: { name: 'Player 1', paddleColor: '#00ff66' }, // Green (from palette)
-  player2: { name: 'Player 2', paddleColor: '#bf5fff' }, // Violet (from palette)
+  player1: { name: 'Player 1', paddleColor: '#00ff66', controller: 'wasd' }, // Green
+  player2: { name: 'Player 2', paddleColor: '#bf5fff', controller: 'arrows' }, // Violet
   accessibility: { colorBlindMode: 'none', photoSensitiveMode: 'none' },
   rules: {
     game: {
@@ -37,6 +38,11 @@ const defaultSettings: UserSettings = {
 };
 
 const STORAGE_KEY = 'pong_local_settings_v1';
+
+const controllerOptions: { value: ControllerScheme; label: string }[] = [
+  { value: 'wasd', label: 'W / S' },
+  { value: 'arrows', label: 'Arrow Up / Arrow Down' },
+];
 
 const LocalGame: React.FC = () => {
   const navigate = useNavigate();
@@ -67,7 +73,9 @@ const LocalGame: React.FC = () => {
   }, [postMatch, isPlaying]);
 
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
-  const appRef = useRef<{ destroy(): void; observe?: () => Observation } | null>(null);
+  const appRef = useRef<
+    { destroy(): void; observe?: () => Observation; updatePreferences?: (p: Preferences) => void } | null
+  >(null);
   const botRef = useRef<{ stop(): void; setDifficulty: (d: BotDifficulty) => void } | null>(null);
 
   const restoreSettingsFromStorage = useCallback(() => {
@@ -193,6 +201,25 @@ const LocalGame: React.FC = () => {
       cancelled = true;
     };
   }, [isPlaying, aiEnabled, botDifficulty, isGameReady]);
+
+  useEffect(() => {
+    if (!isPlaying) return;
+    const app = appRef.current;
+    if (!app?.updatePreferences) return;
+    app.updatePreferences({
+      player1: settings.player1,
+      player2: settings.player2,
+      rules: settings.rules,
+    });
+  }, [
+    isPlaying,
+    settings.player1.name,
+    settings.player1.paddleColor,
+    settings.player1.controller,
+    settings.player2.name,
+    settings.player2.paddleColor,
+    settings.player2.controller,
+  ]);
 
   // When the in-canvas game dispatches matchOver, capture summary and exit after 3 seconds
   useEffect(() => {
@@ -360,6 +387,35 @@ const LocalGame: React.FC = () => {
                     );
                   })}
                 </div>
+                <label className="block w-full pt-2 text-center text-sm font-semibold md:text-base">
+                  Choose controls
+                </label>
+                <select
+                  value={settings.player1.controller}
+                  onChange={(event) => {
+                    const next = event.target.value as ControllerScheme;
+                    setSettings((prev) => {
+                      if (next === prev.player2.controller) {
+                        return {
+                          ...prev,
+                          player1: { ...prev.player1, controller: next },
+                          player2: { ...prev.player2, controller: prev.player1.controller },
+                        };
+                      }
+                      return {
+                        ...prev,
+                        player1: { ...prev.player1, controller: next },
+                      };
+                    });
+                  }}
+                  className="w-64 rounded border border-white/20 bg-black/40 px-3 py-2 text-base outline-none focus:border-white/40"
+                >
+                  {controllerOptions.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
               </div>
 
               {/* Player 2 Settings */}
@@ -418,6 +474,35 @@ const LocalGame: React.FC = () => {
                     );
                   })}
                 </div>
+                <label className="block w-full pt-2 text-center text-sm font-semibold md:text-base">
+                  Choose controls
+                </label>
+                <select
+                  value={settings.player2.controller}
+                  onChange={(event) => {
+                    const next = event.target.value as ControllerScheme;
+                    setSettings((prev) => {
+                      if (next === prev.player1.controller) {
+                        return {
+                          ...prev,
+                          player2: { ...prev.player2, controller: next },
+                          player1: { ...prev.player1, controller: prev.player2.controller },
+                        };
+                      }
+                      return {
+                        ...prev,
+                        player2: { ...prev.player2, controller: next },
+                      };
+                    });
+                  }}
+                  className="w-64 rounded border border-white/20 bg-black/40 px-3 py-2 text-base outline-none focus:border-white/40"
+                >
+                  {controllerOptions.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
               </div>
             </div>
 
