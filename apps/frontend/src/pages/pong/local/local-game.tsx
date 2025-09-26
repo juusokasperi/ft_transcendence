@@ -79,9 +79,11 @@ const LocalGame: React.FC = () => {
   }, [postMatch, isPlaying]);
 
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
-  const appRef = useRef<
-    { destroy(): void; observe?: () => Observation; updatePreferences?: (p: Preferences) => void } | null
-  >(null);
+  const appRef = useRef<{
+    destroy(): void;
+    observe?: () => Observation;
+    updatePreferences?: (p: Preferences) => void;
+  } | null>(null);
   const botRef = useRef<{ stop(): void; setDifficulty: (d: BotDifficulty) => void } | null>(null);
 
   const restoreSettingsFromStorage = useCallback(() => {
@@ -136,7 +138,6 @@ const LocalGame: React.FC = () => {
         });
         appRef.current = app;
         setIsGameReady(true);
-
       } catch (e) {
         console.error('[LocalGame] Failed to start Pong', e);
         setIsPlaying(false);
@@ -514,7 +515,7 @@ const LocalGame: React.FC = () => {
 
             {/* AI Settings */}
             <div className="rounded-md border border-white/10 p-4 text-white/90">
-              <div className="flex flex-col items-center text-center space-y-4">
+              <div className="flex flex-col items-center space-y-4 text-center">
                 <label className="flex w-full items-center justify-center gap-3 text-base">
                   <input
                     type="checkbox"
@@ -531,7 +532,7 @@ const LocalGame: React.FC = () => {
                 <div className="flex items-center justify-center gap-4">
                   <label
                     htmlFor="botDifficulty"
-                    className="text-sm font-semibold md:text-base text-white/100"
+                    className="text-sm font-semibold text-white/100 md:text-base"
                   >
                     Difficulty
                   </label>
@@ -550,7 +551,6 @@ const LocalGame: React.FC = () => {
                 </div>
               </div>
             </div>
-
 
             {/* Match Rules */}
             <div className="rounded-md border border-white/10 p-4">

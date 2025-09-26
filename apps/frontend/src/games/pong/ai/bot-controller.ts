@@ -156,11 +156,7 @@ function integrateZ(
   return clamp(z, -zMax, zMax);
 }
 
-function buildPlan(
-  obs: Observation,
-  seat: BotSeat,
-  profile: DifficultyProfile,
-): MovementPlan {
+function buildPlan(obs: Observation, seat: BotSeat, profile: DifficultyProfile): MovementPlan {
   const prediction = predictImpact(obs, seat, profile.maxLookahead);
   const paddleZ = seat === 'P1' ? obs.paddles.P1.z : obs.paddles.P2.z;
   const zLimit = obs.bounds.halfWidthZ - obs.bounds.ballRadius;
