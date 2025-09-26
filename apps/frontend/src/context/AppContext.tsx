@@ -1,7 +1,7 @@
 // src/context/AppContext.tsx
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
 import axios from 'axios';
-import type { AxiosInstance } from 'axios';
+import type { AxiosError, AxiosInstance, AxiosRequestConfig } from 'axios';
 import { useNavigate } from 'react-router-dom';
 import { useUser } from '../hooks/useUser';
 import type { User } from '../types';
@@ -26,6 +26,20 @@ export const AppProvider: React.FC<React.PropsWithChildren> = ({ children }) => 
   const navigate = useNavigate();
   const { user, setUser } = useUser();
   const [userReady, setUserReady] = useState<boolean>(false);
+  const refreshPromiseRef = useRef<Promise<void> | null>(null);
+
+  const performClientLogout = useCallback(() => {
+    setUser(null);
+    setUserReady(true);
+    navigate('/');
+  }, [navigate, setUser, setUserReady]);
+
+  const logout = useCallback(async () => {
+    try {
+      await axios.post('/api/logout');
+    } catch (err) {}
+    performClientLogout();
+  }, [performClientLogout]);
 
   const buildUser = (payload: unknown): User => {
     const source = (payload ?? {}) as Record<string, unknown>;
@@ -48,22 +62,67 @@ export const AppProvider: React.FC<React.PropsWithChildren> = ({ children }) => 
       .then(({ data }) => {
         setUser(buildUser(data));
       })
-      .catch(() => {})
+      .catch((error: AxiosError) => {
+        if (axios.isAxiosError(error) && error.response?.status === 401) {
+          setUser(null);
+        }
+      })
       .finally(() => setUserReady(true));
   }, []);
+
+  useEffect(() => {
+    const responseInterceptor = axios.interceptors.response.use(
+      (response) => response,
+      async (error: AxiosError<{ code?: string }>) => {
+        if (!error.response) return Promise.reject(error);
+
+        const { status, data } = error.response;
+        if (status !== 401) return Promise.reject(error);
+
+        const originalConfig = error.config as (AxiosRequestConfig & { _retry?: boolean }) | undefined;
+
+        if (data?.code === 'token_expired' && originalConfig) {
+          if (originalConfig._retry) {
+            performClientLogout();
+            return Promise.reject(error);
+          }
+
+          originalConfig._retry = true;
+
+          if (!refreshPromiseRef.current) {
+            refreshPromiseRef.current = axios
+              .post('/api/auth/refresh')
+              .then(() => {})
+              .catch((refreshErr) => {
+                performClientLogout();
+                throw refreshErr;
+              })
+              .finally(() => {
+                refreshPromiseRef.current = null;
+              });
+          }
+
+          try {
+            await refreshPromiseRef.current;
+            return axios(originalConfig);
+          } catch (refreshErr) {
+            return Promise.reject(refreshErr);
+          }
+        }
+
+        performClientLogout();
+        return Promise.reject(error);
+      },
+    );
+
+    return () => {
+      axios.interceptors.response.eject(responseInterceptor);
+    };
+  }, [performClientLogout]);
 
   const login = (data: User) => {
     setUser(buildUser(data));
     setUserReady(true);
-  };
-
-  const logout = async () => {
-    try {
-      await axios.post('/api/logout');
-    } catch (err) {}
-    setUser(null);
-    setUserReady(true);
-    navigate('/');
   };
 
   return (
