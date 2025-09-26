@@ -95,7 +95,10 @@ describe('POST /api/auth/refresh', () => {
     expect(res.statusCode).toBe(200);
     expect(res.json()).toEqual({ success: true });
     expect(mocks.deleteRefreshToken).toHaveBeenCalledWith(payload.tokenId);
-    expect(mocks.issueTokensForUser).toHaveBeenCalledWith({ uuid: payload.uuid, username: payload.username });
+    expect(mocks.issueTokensForUser).toHaveBeenCalledWith({
+      uuid: payload.uuid,
+      username: payload.username,
+    });
     const tokenCookie = parseCookie(res.headers['set-cookie'], 'token');
     const refreshCookie = parseCookie(res.headers['set-cookie'], 'refresh_token');
     expect(tokenCookie).toBe('newAccess');

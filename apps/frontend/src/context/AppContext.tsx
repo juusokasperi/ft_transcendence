@@ -79,7 +79,9 @@ export const AppProvider: React.FC<React.PropsWithChildren> = ({ children }) => 
         const { status, data } = error.response;
         if (status !== 401) return Promise.reject(error);
 
-        const originalConfig = error.config as (AxiosRequestConfig & { _retry?: boolean }) | undefined;
+        const originalConfig = error.config as
+          | (AxiosRequestConfig & { _retry?: boolean })
+          | undefined;
 
         if (data?.code === 'token_expired' && originalConfig) {
           if (originalConfig._retry) {

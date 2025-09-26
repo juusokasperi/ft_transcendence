@@ -173,8 +173,8 @@ describe('Google OAuth flow', () => {
     expect(res.json().error).toBe('invalid_state');
   });
 });
-    issueTokensForUserMock.mockReturnValue({
-      accessToken: 'access-token',
-      refreshToken: 'refresh-token',
-      refreshCookieMaxAge: 3600,
-    });
+issueTokensForUserMock.mockReturnValue({
+  accessToken: 'access-token',
+  refreshToken: 'refresh-token',
+  refreshCookieMaxAge: 3600,
+});

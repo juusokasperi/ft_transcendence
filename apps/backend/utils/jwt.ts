@@ -14,7 +14,9 @@ export type RefreshTokenPayload = JWTPayload & { purpose: 'refresh'; tokenId: st
 
 export type AccessTokenInputPayload = Omit<JWTPayload, 'purpose'>;
 export type TwoFactorTokenInputPayload = Omit<JWTPayload, 'purpose'>;
-export type RefreshTokenInputPayload = Omit<JWTPayload, 'purpose' | 'tokenId'> & { tokenId: string };
+export type RefreshTokenInputPayload = Omit<JWTPayload, 'purpose' | 'tokenId'> & {
+  tokenId: string;
+};
 
 // Sign a JWT access token with 'access' purpose
 export function signAccessToken(payload: AccessTokenInputPayload): string {

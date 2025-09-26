@@ -156,6 +156,7 @@ The goal of this minor module is to introduce GDPR compliance options that allow
 - [ ] Allow users to set their preferred language as the default for subsequent visits.
 
 ## Server-Side Pong — Major module: Replace Basic Pong with Server-Side Pong and Implementing an API.
+
 - [ ] Develop server-side logic for the Pong game to handle gameplay, ball movement, scoring, and player interactions.
 - [ ] Create an API that exposes the necessary resources and endpoints to interact with the Pong game, allowing partial usage of the game via the Command-Line Interface (CLI) and web interface.
 - [ ] Design and implement the API endpoints to support game initialization, player controls, and game state updates.

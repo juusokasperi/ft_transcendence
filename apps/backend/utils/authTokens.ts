@@ -34,10 +34,7 @@ export function issueTokensForUser(user: UserIdentity): IssuedTokens {
 
   if (!stored) throw new Error('Failed to persist refresh token');
 
-  const secondsUntilExpiry = Math.max(
-    1,
-    Math.floor(refreshPayload.exp - Date.now() / 1000),
-  );
+  const secondsUntilExpiry = Math.max(1, Math.floor(refreshPayload.exp - Date.now() / 1000));
 
   return {
     accessToken,
