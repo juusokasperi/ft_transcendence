@@ -12,31 +12,28 @@ export interface ClientInfo {
   joinedAt: number;
 }
 
-export interface Lobby {
-  id: string;
-  members: Set<string>;
-  timeout: NodeJS.Timeout;
-  hostName: string;
-  capacity: number;
-}
+// export interface Lobby {
+//   id: string;
+//   members: Set<string>;
+//   timeout: NodeJS.Timeout;
+//   hostName: string;
+//   capacity: number;
+// }
 
-export type MatchmakingClientMessage =
-  | { type: 'AUTH'; siteToken: string }
-  | { type: 'JOIN_QUEUE' }
-  | { type: 'ACCEPT_MATCH'; matchId: string }
-  | { type: 'DECLINE_MATCH'; matchId: string }
-  | { type: 'createLobby'; username: string }
-  | { type: 'invite'; targetId: string; lobbyId: string }
-  | { type: 'acceptInvite'; lobbyId: string }
-  | { type: 'declineInvite'; lobbyId: string }
-  | { type: 'ready'; lobbyId: string; ready: boolean };
+// Old version
+// export type MatchmakingClientMessage =
+//   | { type: 'createLobby'; username: string }
+//   | { type: 'invite'; targetId: string; lobbyId: string }
+//   | { type: 'acceptInvite'; lobbyId: string }
+//   | { type: 'declineInvite'; lobbyId: string }
+//   | { type: 'ready'; lobbyId: string; ready: boolean };
 
-export interface LobbyInfo {
-  lobbyId: string;
-  hostName: string;
-  capacity: number;
-  membersCount: number;
-}
+// export interface LobbyInfo {
+//   lobbyId: string;
+//   hostName: string;
+//   capacity: number;
+//   membersCount: number;
+// }
 
 export interface PendingMatch {
   a: ClientInfo;

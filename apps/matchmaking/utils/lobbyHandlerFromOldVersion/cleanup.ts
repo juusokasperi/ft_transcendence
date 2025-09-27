@@ -1,6 +1,6 @@
 import type { ClientInfo, Lobby } from '../types/types.ts';
 import { broadcastToAll } from './broadcast.ts';
-import { parseLobbyInfo } from './handlers.ts';
+import { parseLobbyInfo } from './lobbyHandlers.ts';
 
 export function cleanupLobby(
   id: string,

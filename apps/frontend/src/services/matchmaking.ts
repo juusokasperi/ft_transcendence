@@ -1,3 +1,5 @@
+import type { MatchmakingMessage } from '@pong/shared/protocol/net';
+
 export type Lobby = {
   lobbyId: string;
   hostName: string;
@@ -5,41 +7,17 @@ export type Lobby = {
   membersCount: number;
 };
 
-export type MatchmakingMessage =
-  | { type: 'CONNECTED'; clientId: string }
-  | { type: 'AUTH_OK' }
-  | { type: 'QUEUE_JOINED' }
-  | {
-      type: 'MATCH_FOUND';
-      matchId: string;
-      opponent: {
-        username: string;
-        mmr: number;
-      };
-    }
-  | { type: 'MATCH_DECLINED'; matchId: string }
-  | {
-      type: 'HANDOFF';
-      matchId: string;
-      roomId: string;
-      gameServerWSUrl: string;
-      side: 'east' | 'west';
-      joinToken: string;
-      joinTokenTTLSeconds: number;
-      randomSeed: number;
-      simulationStartTick: number;
-    }
-  | { type: 'ERROR'; code: string; message: string }
-  | { type: 'lobbyList'; lobbies: Lobby[] }
-  | { type: 'lobbyAdded'; lobby: Lobby }
-  | { type: 'lobbyUpdated'; lobby: Lobby }
-  | { type: 'lobbyCreated'; lobbyId: string }
-  | { type: 'lobbyRemoved'; lobbyId: string }
-  | { type: 'invited'; lobbyId: string; from: string }
-  | { type: 'inviteAccepted'; memberId: string }
-  | { type: 'inviteDeclined'; memberId: string }
-  | { type: 'memberReady'; memberId: string; ready: boolean }
-  | { type: 'lobbyReady'; lobbyId: string };
+// export type MatchmakingMessage =
+// | { type: 'lobbyList'; lobbies: Lobby[] }
+// | { type: 'lobbyAdded'; lobby: Lobby }
+// | { type: 'lobbyUpdated'; lobby: Lobby }
+// | { type: 'lobbyCreated'; lobbyId: string }
+// | { type: 'lobbyRemoved'; lobbyId: string }
+// | { type: 'invited'; lobbyId: string; from: string }
+// | { type: 'inviteAccepted'; memberId: string }
+// | { type: 'inviteDeclined'; memberId: string }
+// | { type: 'memberReady'; memberId: string; ready: boolean }
+// | { type: 'lobbyReady'; lobbyId: string };
 
 import { wsUrl } from '../utils/url';
 
@@ -60,6 +38,9 @@ export function createMatchmakingClient(onMessage: (msg: MatchmakingMessage) => 
     },
     joinQueue() {
       socket.send(JSON.stringify({ type: 'JOIN_QUEUE' }));
+    },
+    leaveQueue() {
+      socket.send(JSON.stringify({ type: 'LEAVE_QUEUE' }));
     },
     acceptMatch(matchId: string) {
       socket.send(JSON.stringify({ type: 'ACCEPT_MATCH', matchId }));

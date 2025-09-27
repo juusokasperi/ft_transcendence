@@ -1,16 +1,16 @@
 import type { ClientInfo, PendingMatch } from '../types/types.ts';
 import { v4 as uuid } from 'uuid';
-import { signJoinToken } from '../../../packages/pong/shared/src/auth/tokenSign.ts'; // fix this import
-import { GAME_SERVER_URL, JOIN_TOKEN_TTL_SECONDS } from './config.ts';
+import { JOIN_TOKEN_TTL_SECONDS, ALLOCATOR_URL } from './config.ts';
 import { log } from './log.ts';
-import { handleJoinQueue } from './handlers.ts';
+import axios from 'axios';
+import { isAuthenticated } from '../auth/auth.ts';
 
 export function tryMatchQueue(queue: ClientInfo[], pendingMatches: Map<string, PendingMatch>) {
   queue.sort((a, b) => a.joinedAt - b.joinedAt);
   for (let i = 0; i < queue.length; ++i) {
     const a = queue[i]!;
     const waitedMs = Date.now() - a.joinedAt;
-    const window = 100 + Math.floor(waitedMs / 2500) * 50;
+    const window = Math.min(500, 50 + Math.floor(waitedMs / 2500) * 50);
     for (let j = i + 1; j < queue.length; ++j) {
       const b = queue[j]!;
       if (Math.abs(a.mmr - b.mmr) <= window) {
@@ -21,6 +21,21 @@ export function tryMatchQueue(queue: ClientInfo[], pendingMatches: Map<string, P
       }
     }
   }
+}
+
+export function handleLeaveQueue(client: ClientInfo, queue: ClientInfo[]) {
+  const idx = queue.findIndex((c) => c.id === client.id);
+  if (idx !== -1) {
+    queue.splice(idx, 1);
+    client.socket.send(JSON.stringify({ type: 'QUEUE_LEFT' }));
+  }
+}
+
+export async function handleJoinQueue(client: ClientInfo, queue: ClientInfo[]) {
+  if (!isAuthenticated(client)) return;
+  client.joinedAt = Date.now();
+  queue.push(client);
+  client.socket.send(JSON.stringify({ type: 'QUEUE_JOINED' }));
 }
 
 export function addToPendingMatches(
@@ -58,7 +73,12 @@ export function handleAcceptMatch(
   if (match.accepted.has(match.a.id) && match.accepted.has(match.b.id)) {
     clearTimeout(match.timer);
     pendingMatches.delete(matchId);
-    createMatch(match.a, match.b);
+    try {
+      createMatch(match.a, match.b);
+    } catch (err) {
+      log('Failed to create a match', err);
+      client.socket.close();
+    }
   }
 }
 
@@ -83,30 +103,35 @@ export function handleDeclineMatch(
   pendingMatches.delete(matchId);
 }
 
-export function createMatch(a: ClientInfo, b: ClientInfo) {
+export async function createMatch(a: ClientInfo, b: ClientInfo) {
   const matchId = uuid();
-  const roomId = uuid();
   const randomSeed = Math.floor(Math.random() * 0x100000000);
   const simulationStartTick = Date.now() + 5000;
+
+  const allocatorRes = await axios.post(`${ALLOCATOR_URL}/allocate`, {
+    idempotencyKey: matchId,
+    mode: 'ranked',
+    region: 'default',
+    players: [
+      { playerIdentifier: a.id, side: 'west' },
+      { playerIdentifier: b.id, side: 'east' },
+    ],
+    randomSeed,
+    simulationStartTick,
+  });
+
+  const { roomIdentifier, endpointUrl, perPlayerJoinTokens } = allocatorRes.data;
+
   [a, b].forEach((player, idx) => {
-    const claims = {
-      jti: uuid(),
-      exp: Math.floor(Date.now() / 1000) + 45,
-      roomId,
-      side: idx === 0 ? ('west' as 'west') : ('east' as 'east'),
-      startTick: simulationStartTick,
-      randomSeed,
-      mmTicket: matchId,
-    };
-    const joinToken = signJoinToken(claims);
+    const side = idx === 0 ? 'west' : 'east';
     player.socket.send(
       JSON.stringify({
         type: 'HANDOFF',
         matchId,
-        roomId,
-        gameServerWSUrl: GAME_SERVER_URL,
-        side: claims.side,
-        joinToken,
+        roomIdentifier,
+        gameServerWSUrl: endpointUrl,
+        side,
+        joinToken: perPlayerJoinTokens[player.id],
         joinTokenTTLSeconds: JOIN_TOKEN_TTL_SECONDS,
         randomSeed,
         simulationStartTick,

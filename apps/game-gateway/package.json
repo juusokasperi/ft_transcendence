@@ -1,5 +1,5 @@
 {
-  "name": "@app/game-server",
+  "name": "@app/game-gateway",
   "version": "1.0.0",
   "description": "",
   "license": "ISC",
@@ -19,11 +19,15 @@
     "start": "node dist/index.js"
   },
   "dependencies": {
-    "@pong/game-logic": "workspace:*",
-    "@pong/shared": "workspace:*",
     "dotenv": "^17.2.2",
-    "fastify": "^5.6.0",
+    "http-proxy": "^1.18.1",
+    "ioredis": "^5.8.0",
     "uuid": "^13.0.0",
     "ws": "^8.18.3"
+  },
+  "devDependencies": {
+    "@types/http-proxy": "^1.17.16",
+    "@types/node": "^24.4.0",
+    "@types/ws": "^8.18.1"
   }
 }

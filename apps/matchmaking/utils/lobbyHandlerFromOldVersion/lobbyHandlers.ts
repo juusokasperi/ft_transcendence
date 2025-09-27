@@ -10,8 +10,7 @@ import { log } from './log.ts';
 import { broadcastToAll, broadcast } from './broadcast.ts';
 import { v4 as uuid } from 'uuid';
 import { cleanupLobby, removeClientFromLobby } from './cleanup.ts';
-import { verifySiteToken, fetchUserMMR } from './auth.ts';
-import { tryMatchQueue } from './queue.ts';
+import { verifySiteToken, fetchUserMMR } from '../auth/auth.ts';
 
 export function checkLobbyReady(
   lobbyId: string,
@@ -164,38 +163,4 @@ export function parseLobbyInfo(lobby: Lobby): LobbyInfo {
     capacity: lobby.capacity,
     membersCount: lobby.members.size,
   };
-}
-
-export async function handleAuth(client: ClientInfo, token: string): Promise<boolean> {
-  log(`Handle auth and token is ${token}`);
-  const user = await verifySiteToken(token);
-  if (!user) {
-    client.socket.send(JSON.stringify({ type: 'ERROR', code: 'AUTH', message: 'Invalid token' }));
-    client.socket.close();
-    return false;
-  }
-  const mmr = await fetchUserMMR(user.uuid, token);
-  if (typeof mmr !== 'number') {
-    client.socket.send(JSON.stringify({ type: 'ERROR', code: 'AUTH', message: 'MMR not found' }));
-    client.socket.close();
-    return false;
-  }
-  client.username = user.username;
-  client.uuid = user.uuid;
-  client.authenticated = true;
-  client.mmr = mmr;
-  return true;
-}
-
-export async function handleJoinQueue(client: ClientInfo, queue: ClientInfo[]) {
-  if (!isAuthenticated(client)) return;
-  client.joinedAt = Date.now();
-  queue.push(client);
-  client.socket.send(JSON.stringify({ type: 'QUEUE_JOINED' }));
-}
-
-function isAuthenticated(client: ClientInfo): Boolean {
-  if (!client.authenticated)
-    client.socket.send({ type: 'ERROR', code: 'AUTH', message: 'Not authenticated' });
-  return client.authenticated;
 }

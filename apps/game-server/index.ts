@@ -11,9 +11,12 @@ import {
 } from '@pong/game-logic';
 import type { FrameEvents } from '@pong/shared';
 import type { MatchSnapshot } from '@pong/shared';
+import { createHttpServer } from './utils/httpServer.ts';
 
 dotenv.config();
 
+const ADMIN_SECRET = process.env.ADMIN_SECRET || 'fix-this';
+const HTTP_PORT = Number(process.env.HTTP_PORT || 55554);
 const PORT = Number(process.env.GAME_SERVER_PORT || 55553);
 
 interface Player {
@@ -28,7 +31,7 @@ type ControllerEvents = ReturnType<
 >['events'];
 type ServerEvents = FrameEvents & ControllerEvents;
 
-interface Match {
+export interface Match {
   id: string;
   players: { P1?: Player; P2?: Player };
   state: GameState;
@@ -38,8 +41,18 @@ interface Match {
   lastMatch?: MatchSnapshot;
 }
 
-const wss = new WebSocketServer({ port: PORT });
+const wss = new WebSocketServer({ port: PORT, host: '0.0.0.0' });
 const matches = new Map<string, Match>();
+
+createHttpServer({
+  ADMIN_SECRET,
+  HTTP_PORT,
+  matches,
+  onCreateRoom: async (body) => {
+    // createroomlogic...
+    return { status: 'room created' };
+  },
+});
 
 function createBounds(): GameState['bounds'] {
   return {

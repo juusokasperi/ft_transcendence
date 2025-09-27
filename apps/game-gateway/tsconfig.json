@@ -1,13 +1,13 @@
 {
   "extends": "../../.config/tsconfig.base.json",
   "compilerOptions": {
-    "baseUrl": "../../",
-    "module": "EsNext",
+    "module": "ESNext",
     "moduleResolution": "bundler",
     "types": ["node"],
     "outDir": "dist",
     "noEmit": true,
-    "isolatedModules": true
+    "isolatedModules": true,
+    "baseUrl": "../../"
   },
-  "include": ["index.ts", "ws.d.ts"]
+  "include": ["**/*.ts"]
 }

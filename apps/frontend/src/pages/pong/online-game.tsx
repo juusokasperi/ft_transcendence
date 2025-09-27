@@ -1,10 +1,13 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { createMatchmakingClient, type MatchmakingMessage } from '../../services/matchmaking';
+import { createMatchmakingClient } from '../../services/matchmaking';
+import type { MatchmakingMessage } from '@pong/shared/protocol/net';
 import type { PlayerSeat } from '@pong/render';
 import { useLayoutEffect } from 'react';
 import { useAppContext } from '../../context/AppContext';
 import type { Lobby } from '../../services/matchmaking';
 import Navbar from '../../components/Navbar';
+import { useSnackbar } from '../../context/SnackbarContext';
+import Button from '../../components/Button';
 
 interface LobbyListProps {
   lobbies: Lobby[];
@@ -46,11 +49,13 @@ const OnlineGame: React.FC = () => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const appRef = useRef<{ destroy(): void } | null>(null);
   const clientRef = useRef<ReturnType<typeof createMatchmakingClient> | null>(null);
+  const { enqueueSnackbar } = useSnackbar();
   const { user, navigate } = useAppContext();
 
   const [queueStart, setQueueStart] = useState<number | null>(null);
   const [queueElapsed, setQueueElapsed] = useState<number>(0);
 
+  const [joinToken, setJoinToken] = useState<string | null>(null);
   const [clientId, setClientId] = useState('');
   const [lobbyId, setLobbyId] = useState('');
   const [authenticated, setAuthenticated] = useState(false);
@@ -109,6 +114,9 @@ const OnlineGame: React.FC = () => {
         case 'QUEUE_JOINED':
           setStatus('in_queue');
           break;
+        case 'QUEUE_LEFT':
+          setStatus('idle');
+          break;
         case 'MATCH_FOUND':
           setStatus('match_found');
           setMatchId(msg.matchId);
@@ -118,50 +126,58 @@ const OnlineGame: React.FC = () => {
           setStatus('idle');
           setMatchId('');
           setOpponentInfo({ username: null, mmr: 0 });
-          toast.error('Your opponent declined or timed out');
+          enqueueSnackbar({
+            message: 'Your opponent declined or timed out',
+            variant: 'error',
+          });
           break;
         case 'HANDOFF':
+          console.log(msg.gameServerWSUrl);
           setServerUrl(msg.gameServerWSUrl);
           setMatchId(msg.matchId);
           setSeat(msg.side === 'east' ? 'P1' : 'P2');
           setStatus('starting');
+          setJoinToken(msg.joinToken);
           // Close only after handshake with gameserver complete
           client.socket.close();
           break;
         case 'ERROR':
           if (msg.code === 'AUTH') {
             setAuthenticated(false);
-            toast.error(msg.message);
+            enqueueSnackbar({
+              message: msg.message ? msg.message : 'Unknown authenticatinon error',
+              variant: 'error',
+            });
             navigate('/login');
           }
           break;
-        case 'lobbyList':
-          setLobbies(msg.lobbies);
-          break;
-        case 'lobbyCreated':
-          setLobbyId(msg.lobbyId);
-          setStatus('lobby');
-          break;
-        case 'lobbyAdded':
-          setLobbies((prev: Lobby[]) => [...prev, msg.lobby]);
-          break;
-        case 'lobbyUpdated':
-          setLobbies((prev: Lobby[]) => {
-            const idx = prev.findIndex((l) => l.lobbyId === msg.lobby.lobbyId);
-            if (idx !== -1) {
-              const updated = [...prev];
-              updated[idx] = { ...updated[idx], ...msg.lobby };
-              return updated;
-            } else {
-              return [...prev, msg.lobby];
-            }
-          });
-          break;
-        case 'lobbyRemoved':
-          removeLobby(msg.lobbyId);
-          break;
+        // case 'lobbyList':
+        //   setLobbies(msg.lobbies);
+        //   break;
+        // case 'lobbyCreated':
+        //   setLobbyId(msg.lobbyId);
+        //   setStatus('lobby');
+        //   break;
+        // case 'lobbyAdded':
+        //   setLobbies((prev: Lobby[]) => [...prev, msg.lobby]);
+        //   break;
+        // case 'lobbyUpdated':
+        //   setLobbies((prev: Lobby[]) => {
+        //     const idx = prev.findIndex((l) => l.lobbyId === msg.lobby.lobbyId);
+        //     if (idx !== -1) {
+        //       const updated = [...prev];
+        //       updated[idx] = { ...updated[idx], ...msg.lobby };
+        //       return updated;
+        //     } else {
+        //       return [...prev, msg.lobby];
+        //     }
+        //   });
+        //   break;
+        // case 'lobbyRemoved':
+        //   removeLobby(msg.lobbyId);
+        //   break;
         default:
-          console.error('Unknown message type:', msg.type);
+          console.error('Unknown message type:', (msg as any).type);
       }
     });
     clientRef.current = client;
@@ -222,10 +238,19 @@ const OnlineGame: React.FC = () => {
     return lobby ? `${lobby.membersCount}/${lobby.capacity}` : 'N/A';
   };
 
+  const handleJoinQueue = () => {
+    clientRef.current?.joinQueue();
+  };
+
+  const handleLeaveQueue = () => {
+    clientRef.current?.leaveQueue();
+  };
+
   const handleAcceptMatch = (matchId: string) => {
     setStatus('match_accepted');
     clientRef.current?.acceptMatch(matchId);
   };
+
   const handleDeclineMatch = (matchId: string) => {
     setStatus('idle');
     clientRef.current?.declineMatch(matchId);
@@ -332,94 +357,115 @@ const OnlineGame: React.FC = () => {
               </span>
             </div>
 
-          {status === 'idle' && (
-            <button
-              onClick={() => clientRef.current?.joinQueue()}
-              className="px-a w-full rounded-lg border-2 border-emerald-400 py-2 font-semibold text-emerald-300 transition hover:bg-emerald-400 hover:text-black"
-            >
-              Find a Match
-            </button>
-          )}
-
-          {status === 'in_queue' && (
-            <div>
-              <span className="text-white/60">
-                Looking for an opponent..
-                <span className="ml-2 font-mono">({queueElapsed}s)</span>
-              </span>
-            </div>
-          )}
-
-          {status === 'match_found' && (
-            <div className="mt-2 space-y-3">
-              <p>Match Found!</p>
-              <p>
-                Opponent: {opponentInfo.username} (Rating: {opponentInfo.mmr})
-              </p>
-              <button
-                onClick={() => handleAcceptMatch(matchId)}
-                className="px-a w-full rounded-lg border-2 border-emerald-400 py-2 font-semibold text-emerald-300 transition hover:bg-emerald-400 hover:text-black"
+            {status === 'idle' && (
+              <Button
+                type="button"
+                variant="primary"
+                fullWidth
+                onClick={handleJoinQueue}
+                className="gap-3"
               >
-                Accept
-              </button>
-              <button
-                onClick={() => handleDeclineMatch(matchId)}
-                className="px-a w-full rounded-r border-2 border-emerald-400 py-2 font-semibold text-emerald-300 transition hover:bg-emerald-400 hover:text-black"
-              >
-                Decline
-              </button>
-            </div>
-          )}
+                Find a Match
+              </Button>
+            )}
 
-          {status === 'match_accepted' && (
-            <div className="mt-2 space-y-3">Waiting for the other player to respond.</div>
-          )}
+            {status === 'in_queue' && (
+              <div>
+                <p className="text-white/60">
+                  Looking for an opponent..
+                  <span className="ml-2 font-mono">({queueElapsed}s)</span>
+                </p>
 
-          {lobbyId ? (
-            <div className="mt-2 space-y-3">
-              <p>
-                <span className="text-white/60">Lobby:</span>{' '}
-                <span className="font-mono">{lobbyId}</span>
-              </p>
-              <p>
-                <span className="text-white/60">Players: </span>
-                <span className="font-mono">{getLobbyPlayerCount(lobbyId)}</span>
-              </p>
-              <button
-                onClick={handleReady}
-                disabled={ready}
-                className={
-                  ready
-                    ? 'w-full cursor-default rounded-lg border-2 border-green-400 bg-green-900/80 px-4 py-2 font-semibold text-green-300'
-                    : 'w-full rounded-lg border-2 border-emerald-400 px-4 py-2 font-semibold text-emerald-300 transition hover:bg-emerald-400 hover:text-black'
-                }
-              >
-                {ready ? 'Ready! ✅' : 'I’m Ready ✅'}
-              </button>
-            </div>
-          ) : (
-            <div className="mt-2 space-y-3">
-              <button
-                onClick={handleCreateLobby}
-                className="w-full rounded-lg border-2 border-pink-500 px-4 py-2 font-semibold text-pink-400 transition hover:bg-pink-500 hover:text-black"
-              >
-                Create Tournament
-              </button>
-            </div>
-          )}
-          {lobbies.length > 0 && (
-            <div>
-              <p>
-                <span className="text-white/60">Open Tournament Lobbies:</span>
-              </p>
-              <LobbyList
-                lobbies={lobbies}
-                onJoin={(lobbyId) => {
-                  handleJoinLobbyDirect(lobbyId);
-                }}
-              />
-            </div>
-          )}
+                <Button
+                  type="button"
+                  variant="secondary"
+                  fullWidth
+                  onClick={handleLeaveQueue}
+                  className="gap-3"
+                >
+                  Leave Queue
+                </Button>
+              </div>
+            )}
+
+            {status === 'match_found' && (
+              <div className="mt-2 space-y-3">
+                <p>Match Found!</p>
+                <p>
+                  Opponent: {opponentInfo.username} (Rating: {opponentInfo.mmr})
+                </p>
+
+                <Button
+                  type="button"
+                  variant="success"
+                  fullWidth
+                  onClick={() => handleAcceptMatch(matchId)}
+                  className="gap-3"
+                >
+                  Accept
+                </Button>
+                <Button
+                  type="button"
+                  variant="danger"
+                  fullWidth
+                  onClick={() => handleDeclineMatch(matchId)}
+                  className="gap-3"
+                >
+                  Decline
+                </Button>
+              </div>
+            )}
+
+            {status === 'match_accepted' && (
+              <div className="mt-2 space-y-3">Waiting for the other player to respond.</div>
+            )}
+
+            {lobbyId ? (
+              <div className="mt-2 space-y-3">
+                <p>
+                  <span className="text-white/60">Lobby:</span>{' '}
+                  <span className="font-mono">{lobbyId}</span>
+                </p>
+                <p>
+                  <span className="text-white/60">Players: </span>
+                  <span className="font-mono">{getLobbyPlayerCount(lobbyId)}</span>
+                </p>
+                <button
+                  onClick={handleReady}
+                  disabled={ready}
+                  className={
+                    ready
+                      ? 'w-full cursor-default rounded-lg border-2 border-green-400 bg-green-900/80 px-4 py-2 font-semibold text-green-300'
+                      : 'w-full rounded-lg border-2 border-emerald-400 px-4 py-2 font-semibold text-emerald-300 transition hover:bg-emerald-400 hover:text-black'
+                  }
+                >
+                  {ready ? 'Ready! ✅' : 'I’m Ready ✅'}
+                </button>
+              </div>
+            ) : (
+              <div className="mt-2 space-y-3">
+                <button
+                  onClick={handleCreateLobby}
+                  className="w-full rounded-lg border-2 border-pink-500 px-4 py-2 font-semibold text-pink-400 transition hover:bg-pink-500 hover:text-black"
+                >
+                  Create Tournament
+                </button>
+              </div>
+            )}
+            {lobbies.length > 0 && (
+              <div>
+                <p>
+                  <span className="text-white/60">Open Tournament Lobbies:</span>
+                </p>
+                <LobbyList
+                  lobbies={lobbies}
+                  onJoin={(lobbyId) => {
+                    handleJoinLobbyDirect(lobbyId);
+                  }}
+                />
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </div>
