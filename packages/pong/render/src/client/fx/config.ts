@@ -18,6 +18,27 @@ export type FXConfig = {
     speedKnee: number;
   };
 
+  /** Ball trailing effect (continuous, speed-reactive) */
+  trail: {
+    lifeMs: number;
+    poolSize: number;
+    /** base alpha peak, scaled by intensity.alphaMul and speed response */
+    alphaPeak: number;
+    /** scale multipliers relative to ball radius */
+    lengthMul: number; // along movement direction
+    thicknessMul: number; // across
+    heightMul: number; // Y
+    emissiveScale: number;
+    /** max segments we attempt to spawn in a single tick catch-up */
+    maxEmitsPerTick: number;
+    /** spawn cadence mapped from speed (lerp max→min by speed curve) */
+    spawnMsMin: number;
+    spawnMsMax: number;
+    /** knee for speed normalization (units/sec) */
+    speedKnee: number;
+    /** minimal speed to start spawning (units/sec) */
+    speedMin: number;
+  };
   burst: {
     flashMs: number;
     ringMs: number;
@@ -71,7 +92,7 @@ export type FXConfig = {
 };
 
 export const DEFAULT_FX_CONFIG: FXConfig = {
-  // ==== Force-field (unchanged look) ====
+  // ==== Force-field ====
   forceField: {
     lifeMs: 360,
     poolSize: 8,
@@ -87,21 +108,37 @@ export const DEFAULT_FX_CONFIG: FXConfig = {
     speedKnee: 10.0,
   },
 
-  // ==== Burst (as before) ====
+  // ==== Ball Trail ====
+  trail: {
+    lifeMs: 260,
+    poolSize: 48,
+    alphaPeak: 0.3,
+    lengthMul: 2.2,
+    thicknessMul: 0.9,
+    heightMul: 0.6,
+    emissiveScale: 0.9,
+    maxEmitsPerTick: 3,
+    spawnMsMin: 12,
+    spawnMsMax: 32,
+    speedKnee: 7.5,
+    speedMin: 0.1,
+  },
+
+  // ==== Burst ====
   burst: {
     flashMs: 312,
     ringMs: 432,
     sparkMs: 504,
-    sparkCount: 6,
+    sparkCount: 40,
     poolSize: 6,
     flash: {
-      diameterMul: 2.0,
+      diameterMul: 1.0,
       alphaPeak: 0.65,
       grow: { x: 1.1, y: 0.6, z: 0.3 },
       segments: 12,
     },
     ring: {
-      diameterMul: 5.0,
+      diameterMul: 1.8,
       thicknessMul: 0.05,
       alphaPeak: 0.35,
       scaleStart: 0.2,
@@ -109,7 +146,7 @@ export const DEFAULT_FX_CONFIG: FXConfig = {
       tessellation: 48,
     },
     sparks: {
-      sizeMul: 0.22,
+      sizeMul: 0.11,
       speedMul: 22,
       gravityMul: -60,
       alphaPeak: 0.9,
@@ -120,7 +157,7 @@ export const DEFAULT_FX_CONFIG: FXConfig = {
     emissiveScale: { flash: 1.0, ring: 1.2, spark: 1.0 },
   },
 
-  // ==== Camera shake (as before) ====
+  // ==== Camera shake ====
   cameraShake: {
     lifeMs: 320,
     ampRad: 0.006,
@@ -129,7 +166,7 @@ export const DEFAULT_FX_CONFIG: FXConfig = {
     clampMul: 2.5,
   },
 
-  // ==== NEW: Serve-select (matches your current 120/1000/0.35) ====
+  // ==== Serve-select ====
   serveSelect: {
     beatMs: 120,
     holdMs: 1000,

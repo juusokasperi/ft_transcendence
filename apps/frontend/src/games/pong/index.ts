@@ -14,7 +14,7 @@ export type CreateAppOptions = {
 // Narrow public surface; only orchestrates the right mode.
 export async function createPongApp({ mode, canvas, net, preferences }: CreateAppOptions) {
   if (mode === 'local') {
-    const { createLocalApp } = await import('./modes/local');
+    const { createLocalApp } = await import('./modes/local/local');
     return createLocalApp(canvas, preferences);
   }
 

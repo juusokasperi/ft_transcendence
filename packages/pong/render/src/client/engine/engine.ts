@@ -19,6 +19,8 @@ export function createEngine(canvas: HTMLCanvasElement): EngineKit {
     premultipliedAlpha: true,
     powerPreference: 'high-performance',
     adaptToDeviceRatio: true,
+    // Use AudioEngineV2 elsewhere; do not initialize legacy audio engine
+    audioEngine: false,
   };
 
   // Antialias: disable on mobile for perf/battery;
