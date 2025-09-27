@@ -145,7 +145,7 @@ const OnlineGame: React.FC = () => {
           if (msg.code === 'AUTH') {
             setAuthenticated(false);
             enqueueSnackbar({
-              message: msg.message ? msg.message : 'Unknown authenticatinon error',
+              message: msg.message ? msg.message : 'Unknown authentication error',
               variant: 'error',
             });
             navigate('/login');
