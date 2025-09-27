@@ -89,7 +89,7 @@ function isUserAlreadyConnected(uuid: string, clients: Map<string, ClientInfo>):
   return false;
 }
 
-export function isAuthenticated(client: ClientInfo): Boolean {
+export function isAuthenticated(client: ClientInfo): boolean {
   if (!client.authenticated)
     client.socket.send({ type: 'ERROR', code: 'AUTH', message: 'Not authenticated' });
   return client.authenticated;
