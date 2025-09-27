@@ -31,7 +31,13 @@ export function collideWalls(
   return { s: { ...s, ball: { x, z, vx, vz } }, wallHit };
 }
 
-export function collidePaddle(s: GameState, dt: number): GameState {
+export function collidePaddle(
+  s: GameState,
+  dt: number,
+): {
+  s: GameState;
+  paddleHit?: { side: 'left' | 'right'; x: number; z: number; vxAbs: number; vzAbs: number };
+} {
   const { ball, paddles, bounds, params } = s;
   const { x, z, vx, vz } = ball;
   const nextX = x + vx * dt;
@@ -41,7 +47,7 @@ export function collidePaddle(s: GameState, dt: number): GameState {
   const clampMin = -(bounds.halfWidthZ - bounds.ballRadius);
   const clampMax = +(bounds.halfWidthZ - bounds.ballRadius);
   const denom = nextX - x;
-  if (Math.abs(denom) < 1e-9) return s; // no horizontal travel
+  if (Math.abs(denom) < 1e-9) return { s }; // no horizontal travel
 
   // Check collision with left paddle plane
   {
@@ -52,12 +58,21 @@ export function collidePaddle(s: GameState, dt: number): GameState {
         if (Math.abs(z - paddles.P1.z) <= halfDepth) {
           const zHit = z + vz * dt * t;
           return {
-            ...s,
-            ball: {
+            s: {
+              ...s,
+              ball: {
+                x: plane,
+                z: clampZ(zHit, clampMin, clampMax),
+                vx: -vx,
+                vz: vz + paddles.P1.vz * params.zEnglish,
+              },
+            },
+            paddleHit: {
+              side: 'left',
               x: plane,
               z: clampZ(zHit, clampMin, clampMax),
-              vx: -vx,
-              vz: vz + paddles.P1.vz * params.zEnglish,
+              vxAbs: Math.abs(vx),
+              vzAbs: Math.abs(vz),
             },
           };
         }
@@ -74,12 +89,21 @@ export function collidePaddle(s: GameState, dt: number): GameState {
         if (Math.abs(z - paddles.P2.z) <= halfDepth) {
           const zHit = z + vz * dt * t;
           return {
-            ...s,
-            ball: {
+            s: {
+              ...s,
+              ball: {
+                x: plane,
+                z: clampZ(zHit, clampMin, clampMax),
+                vx: -vx,
+                vz: vz + paddles.P2.vz * params.zEnglish,
+              },
+            },
+            paddleHit: {
+              side: 'right',
               x: plane,
               z: clampZ(zHit, clampMin, clampMax),
-              vx: -vx,
-              vz: vz + paddles.P2.vz * params.zEnglish,
+              vxAbs: Math.abs(vx),
+              vzAbs: Math.abs(vz),
             },
           };
         }
@@ -87,5 +111,5 @@ export function collidePaddle(s: GameState, dt: number): GameState {
     }
   }
 
-  return s;
+  return { s };
 }

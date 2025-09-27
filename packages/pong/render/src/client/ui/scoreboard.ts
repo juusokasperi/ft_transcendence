@@ -6,6 +6,13 @@ export type DomScoreboardAPI = {
   setServer: (end: TableEnd) => void; // blue orb left of the name
   setDeuce: (flag: boolean) => void;
   setPlayerNames: (eastName: string, westName: string) => void;
+  /** Set CSS colors for player names (e.g., to match paddles). */
+  setPlayerNameColors: (eastCss: string, westCss: string) => void;
+  /**
+   * Show a short message under the scoreboard.
+   * Pass null/empty to clear. Duration auto-clears after ms if provided.
+   */
+  flashMessage: (text: string, ms?: number) => void;
   setGames: (history: GameHistoryEntry[], bestOf: number, currentGameIndex?: number) => void;
   attachToCanvas: (canvas: HTMLCanvasElement) => void;
   attachToElement: (el: HTMLElement) => void;
@@ -94,6 +101,11 @@ export function createScoreboard(): DomScoreboardAPI {
   const deuce = createEl('div', 'pong-hud-deuce', 'Deuce');
   deuce.style.opacity = '0';
   wrap.appendChild(deuce);
+
+  // Context message under the scoreboard (game/match win, swaps)
+  const msg = createEl('div', 'pong-hud-msg');
+  msg.style.opacity = '0';
+  wrap.appendChild(msg);
 
   // ----- live points
   let lastPoints = { east: 0, west: 0 };
@@ -198,6 +210,36 @@ export function createScoreboard(): DomScoreboardAPI {
     setPoints(lastPoints.east, lastPoints.west);
   };
 
+  const setPlayerNameColors = (eastCss: string, westCss: string) => {
+    names.east.name.style.color = eastCss;
+    names.west.name.style.color = westCss;
+  };
+
+  // Timed message display
+  let msgTimer: number | null = null;
+  const flashMessage = (text: string, ms = 2800) => {
+    if (!text) {
+      msg.style.opacity = '0';
+      msg.textContent = '';
+      if (msgTimer !== null) {
+        clearTimeout(msgTimer);
+        msgTimer = null;
+      }
+      return;
+    }
+    msg.textContent = text;
+    msg.style.opacity = '1';
+    if (msgTimer !== null) clearTimeout(msgTimer);
+    msgTimer = window.setTimeout(
+      () => {
+        msg.style.opacity = '0';
+        msg.textContent = '';
+        msgTimer = null;
+      },
+      Math.max(500, ms | 0),
+    );
+  };
+
   // Element anchoring (with ResizeObserver)
   let boundCanvas: HTMLElement | null = null;
   let ro: ResizeObserver | null = null;
@@ -245,6 +287,10 @@ export function createScoreboard(): DomScoreboardAPI {
       cancelAnimationFrame(rafId);
       rafId = null;
     }
+    if (msgTimer !== null) {
+      clearTimeout(msgTimer);
+      msgTimer = null;
+    }
     if (ro) {
       ro.disconnect();
       ro = null;
@@ -259,6 +305,8 @@ export function createScoreboard(): DomScoreboardAPI {
     setServer,
     setDeuce,
     setPlayerNames,
+    setPlayerNameColors,
+    flashMessage,
     setGames,
     attachToCanvas,
     attachToElement,

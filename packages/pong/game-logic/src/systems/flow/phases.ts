@@ -29,7 +29,9 @@ export function handleSteps(
     s = w.s;
     if (w.wallHit) events.wallHit = w.wallHit;
 
-    s = collidePaddle(s, dt);
+    const p = collidePaddle(s, dt);
+    s = p.s;
+    if (p.paddleHit) events.paddleHit = p.paddleHit;
     s = { ...s, ball: { ...s.ball, x: s.ball.x + s.ball.vx * dt } };
 
     // Check for goal → freeze ball & enter pause to next game
