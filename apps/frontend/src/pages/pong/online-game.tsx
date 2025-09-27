@@ -420,7 +420,7 @@ const OnlineGame: React.FC = () => {
               <div className="mt-2 space-y-3">Waiting for the other player to respond.</div>
             )}
 
-            {lobbyId ? (
+            {/* {lobbyId ? (
               <div className="mt-2 space-y-3">
                 <p>
                   <span className="text-white/60">Lobby:</span>{' '}
@@ -451,7 +451,7 @@ const OnlineGame: React.FC = () => {
                   Create Tournament
                 </button>
               </div>
-            )}
+            )} */}
             {lobbies.length > 0 && (
               <div>
                 <p>
