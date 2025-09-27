@@ -1,19 +1,19 @@
 import Redis from 'ioredis';
 import axios from 'axios';
-import { REDIS_URL, GAME_NODES } from './config';
+import { REDIS_URL, GAME_NODES_AMOUNT, GAME_SERVER_HTTP, GAME_SERVER_PORT, GAME_SERVER_SERVICE } from './config';
 
 const redis = new Redis(REDIS_URL);
-const nodes = (GAME_NODES || '')
-  .split(',')
-  .filter(Boolean)
-  .map((addr: string) => {
-    const [host, wsPort, httpPort] = addr.split(':');
-    return {
-      id: `${host}:${wsPort}`,
-      http: `http://${host}:${httpPort}`,
-      ws: `ws://${host}:${wsPort}`,
-    };
-  });
+
+const nodes = Array.from({ length: GAME_NODES_AMOUNT }, (_, i) => {
+  let host = GAME_SERVER_SERVICE;
+  if (i > 0)
+    host += `-${i + 1}`;
+  return {
+      id: `${host}:${GAME_SERVER_PORT}`,
+      http: `http://${host}:${GAME_SERVER_HTTP}`,
+      ws: `ws://${host}:${GAME_SERVER_PORT}`,
+  };
+});
 
 async function updateScores() {
   for (const node of nodes) {
@@ -37,7 +37,7 @@ async function updateScores() {
   }
 }
 
-console.log(`[Scorer] Running scorer`);
+console.log(`[Scorer] Running scorer with nodes:`, nodes.map(n => n.id));
 
 setInterval(updateScores, 5000);
 updateScores();

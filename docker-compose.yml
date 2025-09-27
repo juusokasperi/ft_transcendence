@@ -146,14 +146,16 @@ services:
     depends_on:
       deps:
         condition: service_completed_successfully
+      allocator:
+        condition: service_started
     networks: [devnet]
     logging: # needed for logstash (ELK stack) #Ask Leon about this
       driver: gelf
       options:
         gelf-address: udp://localhost:12201
 
-# 6) Game server (WebSocket server)
-  game-server:
+# 6a) Game server (WebSocket server)
+  game-server: &game-server-template
     image: node:22-bookworm
     init: true
     working_dir: /work/apps/game-server
@@ -179,6 +181,10 @@ services:
       options:
         gelf-address: udp://localhost:12201
 
+# 6b) Game server 2
+  game-server-2:
+    <<: *game-server-template
+
 # 7) Allocator service (HTTP server)
   allocator:
     image: node:22-bookworm
@@ -201,6 +207,8 @@ services:
     depends_on:
       deps:
         condition: service_completed_successfully
+      redis:
+        condition: service_started
     networks: [devnet]
     logging:
       driver: gelf
@@ -247,6 +255,8 @@ services:
       redis:
         condition: service_started
       game-server:
+        condition: service_started
+      game-server-2:
         condition: service_started
     networks: [devnet]
     logging:
