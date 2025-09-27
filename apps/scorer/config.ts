@@ -2,7 +2,12 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
-const REQUIRED = ['REDIS_URL', 'GAME_NODES_AMOUNT', 'GAME_SERVER_PORT', 'GAME_SERVER_HTTP'] as const;
+const REQUIRED = [
+  'REDIS_URL',
+  'GAME_NODES_AMOUNT',
+  'GAME_SERVER_PORT',
+  'GAME_SERVER_HTTP',
+] as const;
 for (const k of REQUIRED) {
   if (!process.env[k]) throw new Error(`Missing env: ${k}`);
 }
