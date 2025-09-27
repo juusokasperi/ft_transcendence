@@ -22,6 +22,15 @@ export function hexToRgb(hex: string): { r: number; g: number; b: number } | nul
   return { r, g, b };
 }
 
+// Convert normalized RGB (0..1) to CSS rgb() string
+export function rgb01ToCss(c: { r: number; g: number; b: number }): string {
+  const clamp = (x: number) => (x < 0 ? 0 : x > 1 ? 1 : x);
+  const r = Math.round(clamp(c.r) * 255);
+  const g = Math.round(clamp(c.g) * 255);
+  const b = Math.round(clamp(c.b) * 255);
+  return `rgb(${r}, ${g}, ${b})`;
+}
+
 // Try to update a Babylon material's tint color in a version-agnostic way
 export function setGlassTint(mat: unknown, rgb: { r: number; g: number; b: number }) {
   const m: any = mat as any;

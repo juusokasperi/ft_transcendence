@@ -5,7 +5,7 @@ import { createWorld } from '@pong/render';
 import { FXManager } from '@pong/render';
 import { createScoreboard } from '@pong/render';
 import { updateHUD } from '@pong/render';
-import { applyFrameEvents } from '@pong/render';
+import { applyFrameEventsToFx } from '@pong/render';
 import { computeBounds } from '@pong/render';
 import { detectEnteredServe, onEnteredServe } from '@pong/render';
 import { mapStateForPlayerRows } from '@pong/render';
@@ -24,6 +24,7 @@ import { disposeWorld } from '@pong/render';
 import type { GameState } from '@pong/game-logic';
 import type { FrameEvents, MatchSnapshot } from '@pong/shared';
 import { SERVE_SELECT_TOTAL_MS } from '@pong/shared';
+import { rgb01ToCss } from './preferences';
 import { clamp01 } from '@pong/shared';
 
 import { wsUrl } from '../../../utils/url';
@@ -151,6 +152,21 @@ export function createOnlineApp(
     camera: world.camera,
   });
 
+  // Helper: derive CSS color from a paddle mesh's material tint
+  const matColorCss = (mat: any): string => {
+    const c = mat?.subSurface?.tintColor ?? mat?.diffuseColor ?? mat?.albedoColor;
+    return rgb01ToCss({ r: c?.r ?? 1, g: c?.g ?? 1, b: c?.b ?? 1 });
+  };
+  const syncHudNameColors = () => {
+    const leftMat: any = left.mesh.material as any;
+    const rightMat: any = right.mesh.material as any;
+    // Top row = east; east starts on right side by convention
+    const eastCss = matColorCss(rightMat);
+    const westCss = matColorCss(leftMat);
+    hud.setPlayerNameColors(eastCss, westCss);
+  };
+  syncHudNameColors();
+
   // Visual bounce helper — deterministic per match (visual-only)
   function hash32(s: string): number {
     // FNV-1a 32-bit hash (deterministic enough for seed)
@@ -256,7 +272,7 @@ export function createOnlineApp(
         // apply all pending events this frame (they are cheap)
         while (eventQueue.length) {
           const ev = eventQueue.shift();
-          if (ev) applyFrameEvents(fx, ev, y);
+          if (ev) applyFrameEventsToFx(fx, ev, y);
         }
       }
     },
@@ -314,13 +330,22 @@ export function createOnlineApp(
         const m = left.mesh.material;
         left.mesh.material = right.mesh.material;
         right.mesh.material = m;
+        // Names follow player colors across swaps
+        syncHudNameColors();
         paddleAnim.cue(180);
+        const last = latestMatch?.gamesHistory?.[latestMatch.gamesHistory.length - 1];
+        if (last?.winner) {
+          const winnerName = last.winner === 'east' ? names.east : names.west;
+          hud.flashMessage(`${winnerName} won the game, swapping side!`, 3200);
+        }
       }
 
       // Fire a DOM event once when the match concludes (parity with local mode)
       if (!didFireMatchOverEvent && anyEv && anyEv.matchOver) {
         didFireMatchOverEvent = true;
         const winner = anyEv.matchOver.winner as 'east' | 'west';
+        const winnerName = winner === 'east' ? names.east : names.west;
+        hud.flashMessage(`${winnerName} won, impressive match!`, 3800);
         canvas.dispatchEvent(
           new CustomEvent('pong:matchOver', {
             detail: {

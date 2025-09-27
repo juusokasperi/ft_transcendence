@@ -1,7 +1,7 @@
 import type { FrameEvents } from '@pong/shared';
 import type { FXManager } from '../client/fx/manager';
 
-export function applyFrameEvents(fx: FXManager, ev: FrameEvents, ballY: number) {
+export function applyFrameEventsToFx(fx: FXManager, ev: FrameEvents, ballY: number) {
   if (ev.wallHit) {
     const { side, x, vzAbs } = ev.wallHit;
     fx.wallPulse(side, x, ballY, vzAbs);

@@ -1,15 +1,16 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { MemoryRouter } from 'react-router-dom';
 import '@testing-library/jest-dom';
 import { vi } from 'vitest';
+import { SidebarProvider } from '../../src/context/SidebarContext';
 
-// Mock toast so it doesn't actually render toasts
-const successMock = vi.fn();
-const errorMock = vi.fn();
-vi.mock('react-hot-toast', () => ({
-  toast: {
-    success: (...args: any[]) => successMock(...args),
-    error: (...args: any[]) => errorMock(...args),
-  },
+const enqueueMock = vi.fn();
+
+vi.mock('../../src/context/SnackbarContext', () => ({
+  useSnackbar: () => ({
+    enqueueSnackbar: enqueueMock,
+    dismissSnackbar: vi.fn(),
+  }),
 }));
 
 // Context mocks
@@ -31,6 +32,7 @@ import Registration from '../../src/pages/Registration';
 describe('Registration page', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    enqueueMock.mockReset();
   });
 
   it('shows success and navigates to /login when signup succeeds (email confirmation flow)', async () => {
@@ -38,7 +40,13 @@ describe('Registration page', () => {
       data: { success: 'Confirmation link sent to email.' },
     });
 
-    render(<Registration />);
+    render(
+      <SidebarProvider>
+        <MemoryRouter>
+          <Registration />
+        </MemoryRouter>
+      </SidebarProvider>,
+    );
 
     fireEvent.change(screen.getByLabelText(/username/i), { target: { value: 'testuser' } });
     fireEvent.change(screen.getByLabelText(/email/i), { target: { value: 'e@e.e' } });
@@ -56,7 +64,10 @@ describe('Registration page', () => {
       });
       // no auto-login in email confirmation flow
       expect(loginMock).not.toHaveBeenCalled();
-      expect(successMock).toHaveBeenCalledWith('Confirmation link sent to email.');
+      expect(enqueueMock).toHaveBeenCalledWith({
+        message: 'Confirmation link sent to email.',
+        variant: 'success',
+      });
       expect(navigateMock).toHaveBeenCalledWith('/login');
     });
   });
@@ -66,7 +77,13 @@ describe('Registration page', () => {
       response: { data: { message: 'Username already taken' } },
     });
 
-    render(<Registration />);
+    render(
+      <SidebarProvider>
+        <MemoryRouter>
+          <Registration />
+        </MemoryRouter>
+      </SidebarProvider>,
+    );
 
     fireEvent.change(screen.getByLabelText(/username/i), { target: { value: 'taken' } });
     fireEvent.change(screen.getByLabelText(/email/i), { target: { value: 'e@e.e' } });
@@ -78,7 +95,10 @@ describe('Registration page', () => {
 
     await waitFor(() => {
       expect(axiosMock.post).toHaveBeenCalled();
-      expect(errorMock).toHaveBeenCalledWith('Username already taken');
+      expect(enqueueMock).toHaveBeenCalledWith({
+        message: 'Username already taken',
+        variant: 'error',
+      });
       expect(loginMock).not.toHaveBeenCalled();
       expect(navigateMock).not.toHaveBeenCalled();
     });

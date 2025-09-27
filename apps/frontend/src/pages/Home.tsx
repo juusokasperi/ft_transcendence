@@ -5,44 +5,64 @@ import { useAppContext } from '../context/AppContext';
 import { Link } from 'react-router-dom';
 import Chat from '../components/Chat';
 import SplitButton from '../components/ui/SplitButton';
+import Navbar from '../components/Navbar';
 
 const containerVariants: Variants = {
   hidden: {},
   visible: {
     transition: {
-      staggerChildren: 0.3,
-      delayChildren: 0.4,
+      staggerChildren: 0.25,
+      delayChildren: 0.2,
     },
   },
 };
 
 const itemVariants: Variants = {
-  hidden: { opacity: 0, y: 20 },
+  hidden: { opacity: 0, y: 24 },
   visible: {
     opacity: 1,
     y: 0,
-    transition: { duration: 0.3, ease: 'easeOut' },
+    transition: { duration: 0.35, ease: 'easeOut' },
   },
 };
 
+const heroScreens = [
+  {
+    src: '/src/assets/background.png',
+    alt: 'Pong showdown screenshot',
+    className: 'z-30 -translate-x-4 -translate-y-6 rotate-1 shadow-indigo-900/40',
+  },
+  {
+    src: '/src/assets/tetrist.jpg',
+    alt: 'Tetris game teaser',
+    className: 'z-20 translate-x-6 translate-y-4 -rotate-3 shadow-purple-900/40',
+  },
+  {
+    src: '/src/assets/snake.jpeg',
+    alt: 'Snake classic preview',
+    className: 'z-10 -translate-x-2 translate-y-12 rotate-6 shadow-blue-900/40',
+  },
+];
+
 const games = [
   {
-    title: 'Ping Pong',
-    desc: 'Play against others in real-time ping pong battles.',
+    title: 'Pong',
+    desc: 'Real-time duels with players across the globe and live leaderboards.',
     available: true,
-    image: '/src/assets/background.png',
+    accent: 'from-indigo-500 to-purple-500',
+    link: '/ping-pong',
   },
   {
     title: 'Tetris',
-    desc: 'Stack and clear blocks — coming soon!',
+    desc: 'The classic block-dropper reimagined with competitive seasons. Coming soon.',
     available: false,
-    image: '/src/assets/tetrist.jpg',
+    accent: 'from-fuchsia-500 to-rose-500',
   },
   {
     title: 'Snake',
-    desc: 'Eat, grow, and survive — coming soon!',
+    desc: 'Retro snake with modern twists, power-ups, and shared scoreboards. Coming soon.',
     available: false,
-    image: '/src/assets/snake.jpeg',
+    accent: 'from-emerald-500 to-teal-500',
   },
 ];
 
@@ -52,76 +72,131 @@ const Hero: React.FC = () => {
 
   return (
     <>
+      <Navbar />
       <motion.div
-        className="flex min-h-screen flex-col items-center justify-start overflow-auto bg-gradient-to-br from-gray-900 via-indigo-950 to-black px-4 pt-24 text-white sm:px-6 sm:pt-20 md:px-16 md:pt-24 lg:px-24 xl:px-32"
+        className="min-h-[calc(100vh-6rem)] bg-slate-950 text-white"
         variants={containerVariants}
         initial="hidden"
         animate="visible"
-      >
-        <motion.p
-          className="rounded-sm border border-white/30 bg-white/10 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-white backdrop-blur-md sm:text-sm"
-          variants={itemVariants}
         >
-          Welcome to
-        </motion.p>
+        <div className="relative">
+          <div className="pointer-events-none absolute inset-x-0 top-0 h-80 bg-gradient-to-b from-indigo-600/30 via-indigo-400/10 to-transparent blur-3xl" />
+        </div>
 
-        <motion.img
-          src="/src/assets/arcade.png"
-          className="mt-2 w-40 sm:mt-4 sm:w-48 md:w-64"
-          variants={itemVariants}
-        />
+        <div className="mx-auto flex w-full max-w-6xl flex-col gap-12 px-4 pb-20 pt-28 sm:px-6 lg:grid lg:grid-cols-2 lg:items-center lg:gap-16 lg:px-12">
+          <motion.div className="space-y-6" variants={itemVariants}>
+            <span className="inline-flex items-center gap-2 rounded-full border border-indigo-500/40 bg-indigo-500/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-indigo-200">
+              Arcade hub
+            </span>
+            <h1 className="text-3xl font-semibold leading-tight sm:text-4xl md:text-5xl">
+              Compete, climb, and conquer the arcade.
+            </h1>
+            <p className="max-w-xl text-base text-slate-200/80 sm:text-lg">
+              Pick a game, challenge friends, and keep track of every win. Multiple classics are on
+              the way, each with competitive ladders and seasonal rewards.
+            </p>
+            <div className="flex flex-col gap-3 sm:flex-row">
+              <Link
+                to={user ? '/profile' : '/signup'}
+                className="flex items-center justify-center rounded-full bg-gradient-to-r from-indigo-500 to-purple-500 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-indigo-900/40 transition hover:from-indigo-400 hover:to-purple-400"
+              >
+                {user ? 'Go to your profile' : 'Create your arcade account'}
+              </Link>
+              <Link
+                to="/ping-pong"
+                className="flex items-center justify-center rounded-full border border-indigo-400/60 px-6 py-3 text-sm font-semibold text-indigo-200 transition hover:border-indigo-300 hover:text-white"
+              >
+                Jump into Pong
+              </Link>
+            </div>
+          </motion.div>
 
-        <motion.h1
-          className="mt-2 text-center font-serif text-2xl sm:mt-4 sm:text-3xl md:text-5xl md:leading-tight"
-          variants={itemVariants}
-        >
-          Choose your game and start playing!
-        </motion.h1>
+          <motion.div
+            className="mx-auto flex w-full max-w-sm flex-col items-center gap-8 sm:max-w-md lg:max-w-lg"
+            variants={itemVariants}
+          >
+            <div className="relative flex h-64 w-full items-center justify-center sm:h-72 lg:h-[22rem]">
+              <div className="absolute inset-0 rounded-[3rem] bg-gradient-to-br from-indigo-500/30 via-transparent to-purple-500/20 blur-3xl" />
+              {heroScreens.map((screen, index) => (
+                <motion.img
+                  key={screen.src}
+                  src={screen.src}
+                  alt={screen.alt}
+                  className={`absolute h-44 w-72 rounded-3xl border border-white/5 object-cover shadow-2xl sm:h-52 sm:w-80 lg:h-60 lg:w-[22rem] ${screen.className}`}
+                  initial={{ opacity: 0, scale: 0.92 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ delay: 0.2 + index * 0.12, duration: 0.45, ease: 'easeOut' }}
+                />
+              ))}
+            </div>
+            <div className="mt-2 flex w-full items-center justify-between rounded-2xl border border-white/10 bg-slate-900/80 px-4 py-3 text-xs font-medium text-slate-200 shadow-lg shadow-indigo-900/40 backdrop-blur sm:mt-6">
+              <span className="flex items-center gap-2">
+                <span className="h-2 w-2 rounded-full bg-emerald-400" />
+                Live matches
+              </span>
+              <span className="text-slate-400">12 active</span>
+            </div>
+          </motion.div>
+        </div>
 
         <motion.div
-          className="mt-8 grid w-full max-w-5xl grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-6 md:grid-cols-3"
+          className="mx-auto w-full max-w-5xl px-4 pb-24 sm:px-6 lg:px-12"
           variants={itemVariants}
         >
-          {games.map((game, i) => (
-            <motion.div
-              key={i}
-              className={`flex transform flex-col overflow-hidden rounded-2xl border bg-white/10 shadow-lg backdrop-blur-md transition duration-300 hover:-translate-y-2 ${
-                game.available ? 'hover:shadow-indigo-500/40' : 'opacity-80'
-              }`}
-              variants={itemVariants}
-              whileHover={game.available ? { scale: 1.05 } : {}}
-            >
-              <div className="h-36 w-full bg-gray-900 sm:h-40">
-                <img src={game.image} alt={game.title} className="h-full w-full object-cover" />
-              </div>
-              <div className="flex flex-1 flex-col p-3 sm:p-4">
-                <h2 className="flex items-center gap-2 text-lg font-bold sm:text-xl">
-                  {game.title}
-                  {game.available && (
-                    <span className="h-2 w-2 animate-pulse rounded-full bg-green-400"></span>
-                  )}
-                </h2>
-                <p className="mt-2 text-sm text-white/80 sm:text-base">{game.desc}</p>
-                <div className="mt-auto pt-3 sm:pt-4">
-                  {game.available ? (
-                    <Link
-                      to={'/ping-pong'}
-                      className="inline-block w-full rounded bg-gradient-to-r from-indigo-600 to-purple-600 px-3 py-2 text-center font-semibold text-white transition hover:from-indigo-500 hover:to-purple-500 sm:px-4 sm:py-2"
-                    >
-                      Play Now
-                    </Link>
-                  ) : (
-                    <button
-                      disabled
-                      className="inline-block w-full cursor-not-allowed rounded bg-gray-700/60 px-3 py-2 text-center font-semibold text-white opacity-60 sm:px-4 sm:py-2"
-                    >
-                      Coming Soon
-                    </button>
-                  )}
+          <div className="mb-8 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+              <h2 className="text-2xl font-semibold">Featured games</h2>
+              <p className="text-sm text-slate-300/70">
+                Discover what&apos;s live now and what&apos;s launching next in the arcade.
+              </p>
+            </div>
+            {user ? (
+              <Link
+                to="/profile/stats"
+                className="text-sm font-semibold text-indigo-300 hover:text-white"
+              >
+                View your stats →
+              </Link>
+            ) : (
+              <Link to="/login" className="text-sm font-semibold text-indigo-300 hover:text-white">
+                Sign in to track stats →
+              </Link>
+            )}
+          </div>
+
+          <div className="space-y-6">
+            {games.map((game) => (
+              <div
+                key={game.title}
+                className="flex flex-col overflow-hidden rounded-3xl border border-white/10 bg-slate-900/60 shadow-lg shadow-indigo-950/20 ring-1 ring-white/5 transition hover:shadow-indigo-900/30 sm:flex-row"
+              >
+                <div className={`h-1 w-full bg-gradient-to-r ${game.accent} sm:h-auto sm:w-1`} />
+                <div className="flex flex-1 flex-col gap-4 p-6 sm:p-8">
+                  <div>
+                    <h3 className="text-xl font-semibold sm:text-2xl">{game.title}</h3>
+                    <p className="mt-2 text-sm text-slate-200/80 sm:text-base">{game.desc}</p>
+                  </div>
+                  <div className="mt-auto flex flex-col gap-2 sm:flex-row sm:items-center">
+                    {game.available ? (
+                      <Link
+                        to={game.link ?? '#'}
+                        className="inline-flex items-center justify-center rounded-full bg-gradient-to-r from-indigo-500 to-purple-500 px-5 py-2 text-sm font-semibold text-white shadow-sm shadow-indigo-900/40 transition hover:from-indigo-400 hover:to-purple-400"
+                      >
+                        Play now
+                      </Link>
+                    ) : (
+                      <span className="inline-flex items-center justify-center rounded-full border border-white/10 px-5 py-2 text-sm font-semibold text-slate-300/70">
+                        Coming soon
+                      </span>
+                    )}
+                    <span className="text-xs uppercase tracking-[0.25em] text-slate-500">
+                      {game.available ? 'Live' : 'In development'}
+                    </span>
+                  </div>
                 </div>
               </div>
-            </motion.div>
-          ))}
+            ))}
+          </div>
         </motion.div>
       </motion.div>
 

@@ -9,6 +9,7 @@ import { createFXContext, type FXContext } from './context';
 import { createForceFieldFX } from './force-field';
 import { createGlowBurstFX } from './burst';
 import { createServeSelectionFX } from './serve-select';
+import { createBallTrailFX } from './ball-trail';
 import { createCameraShakeFX } from './camera-shake';
 import type { FXConfig } from './config';
 import { DEFAULT_FX_CONFIG } from './config';
@@ -30,6 +31,7 @@ export class FXManager {
   private burst: ReturnType<typeof createGlowBurstFX>;
   private serveSelect: ReturnType<typeof createServeSelectionFX>;
   private camShake: ReturnType<typeof createCameraShakeFX>;
+  private trail: ReturnType<typeof createBallTrailFX>;
 
   // --- central tick infra ---
   private readonly _tickers = new Set<(dt: number) => boolean | void>();
@@ -53,6 +55,15 @@ export class FXManager {
 
     // Burst (pooled; ball-tinted)
     this.burst = createGlowBurstFX(
+      this.ctx,
+      opts.ballMesh,
+      opts.ballRadius,
+      (fn) => this.addTicker(fn),
+      this.config,
+    );
+
+    // Ball trail (continuous; speed-reactive)
+    this.trail = createBallTrailFX(
       this.ctx,
       opts.ballMesh,
       opts.ballRadius,
@@ -140,5 +151,6 @@ export class FXManager {
     this.burst?.dispose?.();
     this.serveSelect?.dispose?.();
     this.camShake?.dispose?.();
+    this.trail?.dispose?.();
   }
 }

@@ -29,3 +29,5 @@ import '@babylonjs/core/Shaders/glowMapGeneration.fragment';
 import '@babylonjs/core/Shaders/glowMapMerge.vertex';
 import '@babylonjs/core/Shaders/glowMapMerge.fragment';
 import '@babylonjs/core/Shaders/glowBlurPostProcess.fragment';
+
+// Audio V2 is created explicitly by the AudioManager when needed.
