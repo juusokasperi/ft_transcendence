@@ -62,23 +62,28 @@ app.post(
       const wsNodeUrl = `${bestNodeInfo.ws}`;
       await redis.set(`room-to-node:${roomIdentifier}`, wsNodeUrl, 'EX', 900);
 
-      await axios.post(
-        `${nodeUrl}/admin/rooms`,
-        {
-          idempotencyKey,
-          roomIdentifier,
-          capacity: players.length,
-          expectedPlayers: players,
-          randomSeed,
-          simulationStartTick,
-          joinDeadlineAtEpochMs,
-        },
-        {
-          headers: {
-            'X-Admin-Secret': ADMIN_SECRET,
+      try {
+        await axios.post(
+          `${nodeUrl}/admin/rooms`,
+          {
+            idempotencyKey,
+            roomIdentifier,
+            capacity: players.length,
+            expectedPlayers: players,
+            randomSeed,
+            simulationStartTick,
+            joinDeadlineAtEpochMs,
           },
-        },
-      );
+          {
+            headers: {
+              'X-Admin-Secret': ADMIN_SECRET,
+            },
+          },
+        );
+      } catch (err) {
+        log('Failed to allocate a game server');
+        return reply.status(503).send({ message: "Server's are busy." });
+      }
 
       const perPlayerJoinTokens: Record<string, string> = {};
       const nowSec = Math.floor(Date.now() / 1000);

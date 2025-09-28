@@ -108,19 +108,32 @@ export async function createMatch(a: ClientInfo, b: ClientInfo) {
   const randomSeed = Math.floor(Math.random() * 0x100000000);
   const simulationStartTick = Date.now() + 5000;
 
-  const allocatorRes = await axios.post(`${ALLOCATOR_URL}/allocate`, {
-    idempotencyKey: matchId,
-    mode: 'ranked',
-    region: 'default',
-    players: [
-      { playerIdentifier: a.id, side: 'west' },
-      { playerIdentifier: b.id, side: 'east' },
-    ],
-    randomSeed,
-    simulationStartTick,
-  });
+  let allocatorRes;
+  try {
+    allocatorRes = await axios.post(`${ALLOCATOR_URL}/allocate`, {
+      idempotencyKey: matchId,
+      mode: 'ranked',
+      region: 'default',
+      players: [
+        { playerIdentifier: a.id, side: 'west' },
+        { playerIdentifier: b.id, side: 'east' },
+      ],
+      randomSeed,
+      simulationStartTick,
+    });
+  } catch (err) {
+    log('Allocator failed, sending error msg to client');
+    const msg = {
+      type: 'ERROR',
+      code: 'ALLOCATOR',
+      message: 'Game servers are currently busy, try again later.',
+    };
+    a.socket.send(JSON.stringify(msg));
+    b.socket.send(JSON.stringify(msg));
+    return;
+  }
 
-  const { roomIdentifier, endpointUrl, perPlayerJoinTokens } = allocatorRes.data;
+  const { roomIdentifier, endpointUrl, perPlayerJoinTokens } = allocatorRes!.data;
 
   [a, b].forEach((player, idx) => {
     const side = idx === 0 ? 'west' : 'east';

@@ -150,6 +150,13 @@ const OnlineGame: React.FC = () => {
             });
             navigate('/login');
           }
+          if (msg.code === 'ALLOCATOR') {
+            setStatus('idle');
+            enqueueSnackbar({
+              message: msg.message ? msg.message : 'Unknown allocator error',
+              variant: 'error',
+            });
+          }
           break;
         // case 'lobbyList':
         //   setLobbies(msg.lobbies);
