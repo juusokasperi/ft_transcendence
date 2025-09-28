@@ -1,7 +1,12 @@
 import type { Engine } from '@babylonjs/core/Engines/engine';
 import type { Scene } from '@babylonjs/core/scene';
 
-export function createRenderLoop(engine: Engine, scene: Scene, preRender?: () => void, targetFps = 60) {
+export function createRenderLoop(
+  engine: Engine,
+  scene: Scene,
+  preRender?: () => void,
+  targetFps = 60,
+) {
   let loop: (() => void) | null = null;
   const frameInterval = targetFps > 0 ? 1000 / targetFps : 0;
   let lastRenderAt = performance.now();
