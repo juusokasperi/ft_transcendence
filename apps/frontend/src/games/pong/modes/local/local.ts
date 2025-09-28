@@ -14,6 +14,7 @@ import { createWorld } from '@pong/render';
 import {
   attachLocalInput,
   readIntent,
+  setControlsMirrored,
   toggleControlsMirrored,
   blockInputFor,
   setBindingProfile,
@@ -177,6 +178,8 @@ export function createLocalApp(canvas: HTMLCanvasElement, preferences?: Preferen
   applyControllerBindingsFromPrefs(preferences);
   const detachInput = attachLocalInput(canvas);
   scene.onDisposeObservable.add(detachInput);
+  // Ensure new matches always start with canonical control orientation
+  setControlsMirrored(false);
 
   // Simple paddle‑centering tween gate (kept in visuals)
   const paddleAnim = createPaddleAnimator(scene, left.mesh, right.mesh);
@@ -323,6 +326,8 @@ export function createLocalApp(canvas: HTMLCanvasElement, preferences?: Preferen
 
   // One‑stop teardown for all owned resources
   const destroy = () => {
+    // Reset mirrored controls so subsequent matches inherit the default layout
+    setControlsMirrored(false);
     try {
       audioKit.dispose();
     } catch {}
