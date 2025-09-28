@@ -84,11 +84,43 @@ export type DeclineMatchRequest = {
   matchId: string;
 };
 
+export type TournamentSize = 4 | 8 | 16;
+
+export type CreateTournamentRequest = {
+  type: 'CREATE_TOURNAMENT';
+  size: TournamentSize;
+  name?: string;
+};
+
+export type JoinTournamentRequest = {
+  type: 'JOIN_TOURNAMENT';
+  tournamentId: string;
+};
+
+export type LeaveTournamentRequest = {
+  type: 'LEAVE_TOURNAMENT';
+  tournamentId: string;
+};
+
+export type ForfeitTournamentRequest = {
+  type: 'FORFEIT_TOURNAMENT';
+  tournamentId: string;
+};
+
+export type AcceptScheduledRequest = {
+  type: 'ACCEPT_SCHEDULED';
+};
+
 export type MatchmakingClientMessage =
   | JoinQueueRequest
   | LeaveQueueRequest
   | AcceptMatchRequest
-  | DeclineMatchRequest;
+  | DeclineMatchRequest
+  | CreateTournamentRequest
+  | JoinTournamentRequest
+  | LeaveTournamentRequest
+  | ForfeitTournamentRequest
+  | AcceptScheduledRequest;
 
 // Types that were in blueprint but not implemented:
 

@@ -273,7 +273,6 @@ services:
       - .env
     environment:
       PNPM_STORE_DIR: /pnpm/store
-      REDIS_URL: redis://redis:6379
       CHOKIDAR_USEPOLLING: "true"
     command: bash -lc "corepack enable && corepack prepare pnpm@9.12.3 --activate && pnpm dev"
     volumes:

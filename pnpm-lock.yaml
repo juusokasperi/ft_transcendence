@@ -321,6 +321,9 @@ importers:
       dotenv:
         specifier: ^17.2.2
         version: 17.2.2
+      ioredis:
+        specifier: ^5.8.0
+        version: 5.8.0
       jsonwebtoken:
         specifier: ^9.0.2
         version: 9.0.2

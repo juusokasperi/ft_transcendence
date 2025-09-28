@@ -55,13 +55,13 @@ export async function handleAuth(
 ): Promise<boolean> {
   const user = await verifySiteToken(token);
   if (!user) {
-    log('Error: Invalid token');
+    log('Error: Invalid token', { clientId: client.id });
     client.socket.send(JSON.stringify({ type: 'ERROR', code: 'AUTH', message: 'Invalid token' }));
     client.socket.close();
     return false;
   }
   if (isUserAlreadyConnected(user.uuid, clients)) {
-    log('Error: User already connected, closing socket');
+    log('Error: User already connected, closing socket', { clientId: client.id });
     client.socket.send(
       JSON.stringify({ type: 'ERROR', code: 'AUTH', message: 'User already connected' }),
     );
@@ -70,7 +70,7 @@ export async function handleAuth(
   }
   const mmr = await fetchUserMMR(user.uuid, token);
   if (typeof mmr !== 'number') {
-    log("Error: Couldn't fetch users MMR");
+    log("Error: Couldn't fetch users MMR", { clientId: client.id });
     client.socket.send(JSON.stringify({ type: 'ERROR', code: 'AUTH', message: 'MMR not found' }));
     client.socket.close();
     return false;
@@ -79,6 +79,10 @@ export async function handleAuth(
   client.uuid = user.uuid;
   client.authenticated = true;
   client.mmr = mmr;
+  log(`Client authenticated, admitting to MM service`, {
+    id: client.id,
+    username: client.username,
+  });
   return true;
 }
 

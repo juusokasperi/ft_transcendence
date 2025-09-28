@@ -1,11 +1,14 @@
-import type { ClientInfo, PendingMatch } from '../types/types.ts';
+import type { ClientInfo, MatchMode, PendingMatch } from '../types/types.ts';
 import { v4 as uuid } from 'uuid';
 import { JOIN_TOKEN_TTL_SECONDS, ALLOCATOR_URL } from './config.ts';
 import { log } from './log.ts';
 import axios from 'axios';
 import { isAuthenticated } from '../auth/auth.ts';
+import { handleHandoff } from './pendingHandoffs.ts';
 
-export function tryMatchQueue(queue: ClientInfo[], pendingMatches: Map<string, PendingMatch>) {
+const queue: ClientInfo[] = [];
+
+export function tryMatchQueue(pendingMatches: Map<string, PendingMatch>) {
   queue.sort((a, b) => a.joinedAt - b.joinedAt);
   for (let i = 0; i < queue.length; ++i) {
     const a = queue[i]!;
@@ -16,25 +19,25 @@ export function tryMatchQueue(queue: ClientInfo[], pendingMatches: Map<string, P
       if (Math.abs(a.mmr - b.mmr) <= window) {
         queue.splice(j, 1);
         queue.splice(i, 1);
-        addToPendingMatches(a, b, pendingMatches, queue);
+        addToPendingMatches(a, b, pendingMatches);
         return;
       }
     }
   }
 }
 
-export function handleLeaveQueue(client: ClientInfo, queue: ClientInfo[]) {
-  const idx = queue.findIndex((c) => c.id === client.id);
-  if (idx !== -1) {
-    queue.splice(idx, 1);
+export function handleLeaveQueue(client: ClientInfo) {
+  if (removeFromQueue(client.id)) {
     client.socket.send(JSON.stringify({ type: 'QUEUE_LEFT' }));
+    log(`Client left queue`, { clientId: client.id });
   }
 }
 
-export async function handleJoinQueue(client: ClientInfo, queue: ClientInfo[]) {
+export async function handleJoinQueue(client: ClientInfo) {
   if (!isAuthenticated(client)) return;
   client.joinedAt = Date.now();
   queue.push(client);
+  log(`Client joined queue`, { clientId: client.id });
   client.socket.send(JSON.stringify({ type: 'QUEUE_JOINED' }));
 }
 
@@ -42,7 +45,6 @@ export function addToPendingMatches(
   a: ClientInfo,
   b: ClientInfo,
   pendingMatches: Map<string, PendingMatch>,
-  queue: ClientInfo[],
 ) {
   const matchId = uuid();
   const accepted = new Set<string>();
@@ -51,8 +53,8 @@ export function addToPendingMatches(
     a.socket.send(JSON.stringify(msg));
     b.socket.send(JSON.stringify(msg));
     pendingMatches.delete(matchId);
-    if (accepted.has(a.id)) handleJoinQueue(a, queue);
-    if (accepted.has(b.id)) handleJoinQueue(b, queue);
+    if (accepted.has(a.id)) handleJoinQueue(a);
+    if (accepted.has(b.id)) handleJoinQueue(b);
   }, 15000);
 
   pendingMatches.set(matchId, { a, b, accepted, timer });
@@ -70,13 +72,16 @@ export function handleAcceptMatch(
   const match = pendingMatches.get(matchId);
   if (!match) return;
   match.accepted.add(client.id);
+  log(`Match accepted`, { matchId, clientId: client.id });
   if (match.accepted.has(match.a.id) && match.accepted.has(match.b.id)) {
     clearTimeout(match.timer);
     pendingMatches.delete(matchId);
     try {
-      createMatch(match.a, match.b);
+      createMatch(match.a, match.b, 'ranked');
     } catch (err) {
-      log('Failed to create a match', err);
+      log('Failed to create a match', {
+        error: err instanceof Error ? err.message : 'Unknown error',
+      });
       client.socket.close();
     }
   }
@@ -86,24 +91,24 @@ export function handleDeclineMatch(
   matchId: string,
   client: ClientInfo,
   pendingMatches: Map<string, PendingMatch>,
-  queue: ClientInfo[],
 ) {
   const match = pendingMatches.get(matchId);
   if (!match) return;
   const msg = { type: 'MATCH_DECLINED', matchId };
+  log(`Match declined`, { matchId, clientId: client.id });
   if (match.a.id !== client.id) {
     match.a.socket.send(JSON.stringify(msg));
-    handleJoinQueue(match.a, queue);
+    handleJoinQueue(match.a);
   }
   if (match.b.id !== client.id) {
     match.b.socket.send(JSON.stringify(msg));
-    handleJoinQueue(match.b, queue);
+    handleJoinQueue(match.b);
   }
   clearTimeout(match.timer);
   pendingMatches.delete(matchId);
 }
 
-export async function createMatch(a: ClientInfo, b: ClientInfo) {
+export async function createMatch(a: ClientInfo, b: ClientInfo, mode: MatchMode) {
   const matchId = uuid();
   const randomSeed = Math.floor(Math.random() * 0x100000000);
   const simulationStartTick = Date.now() + 5000;
@@ -112,7 +117,7 @@ export async function createMatch(a: ClientInfo, b: ClientInfo) {
   try {
     allocatorRes = await axios.post(`${ALLOCATOR_URL}/allocate`, {
       idempotencyKey: matchId,
-      mode: 'ranked',
+      mode,
       region: 'default',
       players: [
         { playerIdentifier: a.id, side: 'west' },
@@ -122,7 +127,9 @@ export async function createMatch(a: ClientInfo, b: ClientInfo) {
       simulationStartTick,
     });
   } catch (err) {
-    log('Allocator failed, sending error msg to client');
+    log('Allocator failed, sending error msg to client', {
+      error: err instanceof Error ? err.message : 'Unknown error',
+    });
     const msg = {
       type: 'ERROR',
       code: 'ALLOCATOR',
@@ -151,5 +158,23 @@ export async function createMatch(a: ClientInfo, b: ClientInfo) {
       }),
     );
   });
-  log(`Match created: ${matchId} (${a.username} vs ${b.username})`);
+  handleHandoff(perPlayerJoinTokens, matchId, mode);
+  log(`Match created`, {
+    matchId,
+    playerA: { username: a.username, id: a.id },
+    playerB: { username: b.username, id: b.id },
+  });
+}
+
+export function removeFromQueue(id: string): boolean {
+  const idx = queue.findIndex((c) => c.id === id);
+  if (idx !== -1) {
+    queue.splice(idx, 1);
+    return true;
+  }
+  return false;
+}
+
+export function clearQueue() {
+  queue.length = 0;
 }
