@@ -74,6 +74,12 @@ describe('Google OAuth flow', () => {
     process.env.GOOGLE_CLIENT_ID = 'client';
     process.env.GOOGLE_CLIENT_SECRET = 'secret';
 
+    issueTokensForUserMock.mockReturnValue({
+      accessToken: 'access-token',
+      refreshToken: 'refresh-token',
+      refreshCookieMaxAge: 3600,
+    });
+
     // Mock DB behavior
     usersMock.getUserByGoogleId.mockImplementation((sub: string) =>
       sub === 'sub-123' ? { ...user } : null,
@@ -180,9 +186,4 @@ describe('Google OAuth flow', () => {
     expect(res.statusCode).toBe(400);
     expect(res.json().error).toBe('invalid_state');
   });
-});
-issueTokensForUserMock.mockReturnValue({
-  accessToken: 'access-token',
-  refreshToken: 'refresh-token',
-  refreshCookieMaxAge: 3600,
 });
