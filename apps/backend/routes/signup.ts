@@ -14,6 +14,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { sendConfirmationEmail } from '../utils/nodemailer/index.ts';
 import { normalizeCredentials } from '../hooks/auth.ts';
 import { signupSchema, signupConfirmSchema } from '../schemas/authSchemas.ts';
+import { ACCESS_TOKEN_COOKIE_NAME, REFRESH_TOKEN_COOKIE_NAME } from '../utils/config.ts';
 
 export async function signupRoutes(app: FastifyInstance) {
   // Post a new user and logs them in
@@ -80,7 +81,7 @@ export async function signupRoutes(app: FastifyInstance) {
           return res.status(500).send({ message: 'Failed to issue auth tokens.' });
         }
 
-        res.setCookie('token', issued.accessToken, {
+        res.setCookie(ACCESS_TOKEN_COOKIE_NAME, issued.accessToken, {
           httpOnly: true,
           sameSite: 'strict',
           secure: process.env.NODE_ENV === 'production',
@@ -88,7 +89,7 @@ export async function signupRoutes(app: FastifyInstance) {
           maxAge: 60 * 60 * 4,
         });
 
-        res.setCookie('refresh_token', issued.refreshToken, {
+        res.setCookie(REFRESH_TOKEN_COOKIE_NAME, issued.refreshToken, {
           httpOnly: true,
           sameSite: 'strict',
           secure: process.env.NODE_ENV === 'production',

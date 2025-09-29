@@ -49,6 +49,19 @@ export const TFA_ISSUER = process.env.TFA_ISSUER || 'BabylonPong';
 export const TFA_CODE_DIGITS = Number(process.env.TFA_CODE_DIGITS || '6');
 export const ENABLE_SQLITE_METRICS = process.env.ENABLE_SQLITE_METRICS as string;
 
+const accessTokenCookieEnv = process.env.ACCESS_TOKEN_COOKIE_NAME?.trim();
+const refreshTokenCookieEnv = process.env.REFRESH_TOKEN_COOKIE_NAME?.trim();
+const refreshSecretEnv = process.env.REFRESH_SECRET?.trim();
+
+export const ACCESS_TOKEN_COOKIE_NAME =
+  accessTokenCookieEnv && accessTokenCookieEnv.length > 0 ? accessTokenCookieEnv : 'token';
+export const REFRESH_TOKEN_COOKIE_NAME =
+  refreshTokenCookieEnv && refreshTokenCookieEnv.length > 0
+    ? refreshTokenCookieEnv
+    : 'refresh_token';
+export const REFRESH_SECRET =
+  refreshSecretEnv && refreshSecretEnv.length > 0 ? refreshSecretEnv : SECRET;
+
 type MailTransportConfig = {
   host: string;
   port: number;
@@ -112,9 +125,8 @@ export const swaggerConfig: SwaggerOptions = {
         tokenAuth: {
           type: 'apiKey',
           in: 'cookie',
-          name: 'token',
-          description:
-            'Primary browser auth uses the httpOnly "token" cookie issued by the backend.',
+          name: ACCESS_TOKEN_COOKIE_NAME,
+          description: `Primary browser auth uses the httpOnly "${ACCESS_TOKEN_COOKIE_NAME}" cookie issued by the backend.`,
         },
       },
     },

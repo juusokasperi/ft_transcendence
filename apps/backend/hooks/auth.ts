@@ -1,6 +1,10 @@
 import jwt from 'jsonwebtoken';
 import type { FastifyReply, FastifyRequest } from 'fastify';
-import { MATCH_SECRET } from '../utils/config.ts';
+import {
+  ACCESS_TOKEN_COOKIE_NAME,
+  MATCH_SECRET,
+  REFRESH_TOKEN_COOKIE_NAME,
+} from '../utils/config.ts';
 import { verifyAccessToken } from '../utils/jwt.ts';
 
 // Checks that the request came with an authorization (for protected routes)
@@ -10,13 +14,13 @@ export function authPreHandler(req: FastifyRequest, res: FastifyReply, done: Fun
   let token: string | undefined;
   if (authHeader && authHeader.toLowerCase().startsWith('bearer ')) {
     token = authHeader.split(' ')[1];
-  } else if (req.cookies?.token) {
-    token = req.cookies.token as string;
+  } else if (req.cookies?.[ACCESS_TOKEN_COOKIE_NAME]) {
+    token = req.cookies[ACCESS_TOKEN_COOKIE_NAME] as string;
   }
   if (!token) {
     if (typeof res.clearCookie === 'function') {
-      res.clearCookie('token', { path: '/' });
-      res.clearCookie('refresh_token', { path: '/' });
+      res.clearCookie(ACCESS_TOKEN_COOKIE_NAME, { path: '/' });
+      res.clearCookie(REFRESH_TOKEN_COOKIE_NAME, { path: '/' });
     }
     res.status(401).send({ message: 'Missing or invalid token', code: 'token_invalid' });
     return;
@@ -30,9 +34,9 @@ export function authPreHandler(req: FastifyRequest, res: FastifyReply, done: Fun
     const isExpired = name === 'TokenExpiredError';
     const message = isExpired ? 'Token expired' : 'Invalid or expired token';
     if (typeof res.clearCookie === 'function') {
-      res.clearCookie('token', { path: '/' });
+      res.clearCookie(ACCESS_TOKEN_COOKIE_NAME, { path: '/' });
       if (!isExpired) {
-        res.clearCookie('refresh_token', { path: '/' });
+        res.clearCookie(REFRESH_TOKEN_COOKIE_NAME, { path: '/' });
       }
     }
     res.status(401).send({ message, code: isExpired ? 'token_expired' : 'token_invalid' });

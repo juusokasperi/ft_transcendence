@@ -1,8 +1,9 @@
 import jwt from 'jsonwebtoken';
-import { JWT_ACCESS_TTL, JWT_REFRESH_TTL, JWT_2FA_TTL, SECRET } from './config.ts';
+import { JWT_ACCESS_TTL, JWT_REFRESH_TTL, JWT_2FA_TTL, SECRET, REFRESH_SECRET } from './config.ts';
 import type { JWTPayload } from '../types/types.ts';
 
 const JWT_SECRET = SECRET as jwt.Secret;
+const REFRESH_JWT_SECRET = REFRESH_SECRET as jwt.Secret;
 const ACCESS_TOKEN_EXP = JWT_ACCESS_TTL as unknown as jwt.SignOptions['expiresIn'];
 const REFRESH_TOKEN_EXP = JWT_REFRESH_TTL as unknown as jwt.SignOptions['expiresIn'];
 const TWO_FACTOR_EXP = JWT_2FA_TTL as unknown as jwt.SignOptions['expiresIn'];
@@ -33,7 +34,7 @@ export function signTwoFactorToken(payload: TwoFactorTokenInputPayload): string 
 // Sign a JWT refresh token with 'refresh' purpose
 export function signRefreshToken(payload: RefreshTokenInputPayload): string {
   const tokenPayload: RefreshTokenPayload = { ...payload, purpose: 'refresh' };
-  return jwt.sign(tokenPayload, JWT_SECRET, { expiresIn: REFRESH_TOKEN_EXP });
+  return jwt.sign(tokenPayload, REFRESH_JWT_SECRET, { expiresIn: REFRESH_TOKEN_EXP });
 }
 
 // Verify and decode an access token, ensuring correct purpose
@@ -55,7 +56,7 @@ export function verifyRefreshToken(
   token: string,
   options?: jwt.VerifyOptions,
 ): RefreshTokenPayload {
-  const decoded = jwt.verify(token, JWT_SECRET, options) as RefreshTokenPayload;
+  const decoded = jwt.verify(token, REFRESH_JWT_SECRET, options) as RefreshTokenPayload;
   if (decoded.purpose !== 'refresh') throw new Error('Invalid token purpose');
   if (!decoded.tokenId) throw new Error('Missing refresh token id');
   return decoded;

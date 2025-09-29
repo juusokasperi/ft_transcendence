@@ -5,6 +5,7 @@ import { normalizeCredentials } from '../hooks/auth.ts';
 import { loginSchema, loginTwoFactorSchema } from '../schemas/authSchemas.ts';
 import { signTwoFactorToken, verifyTwoFactorToken } from '../utils/jwt.ts';
 import { issueTokensForUser } from '../utils/authTokens.ts';
+import { ACCESS_TOKEN_COOKIE_NAME, REFRESH_TOKEN_COOKIE_NAME } from '../utils/config.ts';
 import { verifyTotpToken } from '../utils/twoFactor.ts';
 
 // TODO:
@@ -49,7 +50,7 @@ export async function loginRoutes(app: FastifyInstance) {
           return res.status(500).send({ message: 'Failed to issue auth tokens.' });
         }
 
-        res.setCookie('token', issued.accessToken, {
+        res.setCookie(ACCESS_TOKEN_COOKIE_NAME, issued.accessToken, {
           httpOnly: true,
           sameSite: 'strict',
           secure: process.env.NODE_ENV === 'production',
@@ -57,7 +58,7 @@ export async function loginRoutes(app: FastifyInstance) {
           maxAge: 60 * 60 * 4, // 4h
         });
 
-        res.setCookie('refresh_token', issued.refreshToken, {
+        res.setCookie(REFRESH_TOKEN_COOKIE_NAME, issued.refreshToken, {
           httpOnly: true,
           sameSite: 'strict',
           secure: process.env.NODE_ENV === 'production',
@@ -120,7 +121,7 @@ export async function loginRoutes(app: FastifyInstance) {
           return res.status(500).send({ message: 'Failed to issue auth tokens.' });
         }
 
-        res.setCookie('token', issued.accessToken, {
+        res.setCookie(ACCESS_TOKEN_COOKIE_NAME, issued.accessToken, {
           httpOnly: true,
           sameSite: 'strict',
           secure: process.env.NODE_ENV === 'production',
@@ -128,7 +129,7 @@ export async function loginRoutes(app: FastifyInstance) {
           maxAge: 60 * 60 * 4,
         });
 
-        res.setCookie('refresh_token', issued.refreshToken, {
+        res.setCookie(REFRESH_TOKEN_COOKIE_NAME, issued.refreshToken, {
           httpOnly: true,
           sameSite: 'strict',
           secure: process.env.NODE_ENV === 'production',

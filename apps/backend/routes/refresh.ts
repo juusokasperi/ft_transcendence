@@ -6,9 +6,10 @@ import {
 } from '../db/queries/refreshTokens.ts';
 import { verifyRefreshToken } from '../utils/jwt.ts';
 import { issueTokensForUser } from '../utils/authTokens.ts';
+import { ACCESS_TOKEN_COOKIE_NAME, REFRESH_TOKEN_COOKIE_NAME } from '../utils/config.ts';
 
-const ACCESS_COOKIE = 'token';
-const REFRESH_COOKIE = 'refresh_token';
+const ACCESS_COOKIE = ACCESS_TOKEN_COOKIE_NAME;
+const REFRESH_COOKIE = REFRESH_TOKEN_COOKIE_NAME;
 const COOKIE_BASE = {
   httpOnly: true,
   sameSite: 'strict' as const,
