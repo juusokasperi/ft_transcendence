@@ -23,11 +23,22 @@ import { disposeWorld } from '@pong/render';
 
 import type { GameState } from '@pong/game-logic';
 import type { FrameEvents, MatchSnapshot } from '@pong/shared';
+import type { RoomStateMessage, StartMessage } from '@pong/shared/protocol/net';
 import { SERVE_SELECT_TOTAL_MS } from '@pong/shared';
 import { rgb01ToCss } from './preferences';
 import { clamp01 } from '@pong/shared';
 
 import { wsUrl } from '../../../utils/url';
+
+// Render/update cadence we expect from the authoritative node.
+const CLIENT_TICK_RATE_HZ = 60;
+
+// Normalised payload we await before starting the local loop.
+type StartSignal = {
+  startAtEpochMs: number;
+  randomSeed: number;
+  tickRateHz: number;
+};
 
 // --- Net placeholders (wire your transport here) -----------------------------------
 type OnlineClient = {
@@ -36,40 +47,108 @@ type OnlineClient = {
   onOpponentAxis(cb: (axis: number) => void): void; // scalar [-1..1]
   sendLocalAxis(axis: number): void; // called every tick
   disconnect(): void;
+  onRoomState(cb: (state: RoomStateMessage) => void): void;
+  onStart(cb: (payload: StartSignal) => void): void;
+  awaitStart(): Promise<StartSignal>;
 };
 
-// Resolve this with your WebSocket/RTC layer.
+// Resolve this with your WebSocket/RTC layer (gateway today, potentially RTC later).
 async function connectOnline(cfg: {
   serverUrl: string;
   matchId: string;
+  roomIdentifier: string;
   seat: PlayerSeat;
+  joinToken: string;
+  randomSeed: number;
 }): Promise<OnlineClient> {
-  const { serverUrl, matchId, seat } = cfg;
-  console.log('[OnlineGame] Connecting to server:', serverUrl, 'matchId:', matchId, 'seat:', seat);
-  const gameWs = new WebSocket(wsUrl(`/game-server/${matchId}?seat=${seat}`));
+  const { serverUrl, matchId, seat, joinToken, roomIdentifier } = cfg;
+  const resolvedUrl = serverUrl.startsWith('ws') ? serverUrl : wsUrl(serverUrl);
+  console.log(
+    '[OnlineGame] Connecting to server:',
+    resolvedUrl,
+    'room:',
+    roomIdentifier,
+    'matchId:',
+    matchId,
+    'seat:',
+    seat,
+  );
+  const gameWs = new WebSocket(resolvedUrl, ['bearer', joinToken]);
 
   return await new Promise<OnlineClient>((resolve, reject) => {
-    gameWs.addEventListener('error', (err) => {
-      console.error('[OnlineGame] WebSocket error:', err);
-      reject(err);
+    let settled = false;
+    const fail = (reason: unknown) => {
+      if (settled) return;
+      settled = true;
+      console.error('[OnlineGame] WebSocket failed before open:', reason);
+      try {
+        gameWs.close();
+      } catch {
+        /* ignore */
+      }
+      reject(reason instanceof Error ? reason : new Error(String(reason)));
+    };
+
+    gameWs.addEventListener('error', (err) => fail(err));
+    gameWs.addEventListener('close', (evt) => {
+      if (!settled && gameWs.readyState !== WebSocket.OPEN) {
+        fail(new Error(`WebSocket closed (${evt.code})`));
+      }
     });
 
     gameWs.addEventListener('open', () => {
+      settled = true;
       console.log('[OnlineGame] WebSocket connection opened');
       const snapshotListeners = new Set<
         (s: GameState, ev: FrameEvents, m?: MatchSnapshot) => void
       >();
       const opponentAxisListeners = new Set<(axis: number) => void>();
+      const roomStateListeners = new Set<(state: RoomStateMessage) => void>();
+      const startListeners = new Set<(payload: StartSignal) => void>();
+      const startResolvers: Array<(payload: StartSignal) => void> = [];
+      let startPayload: StartSignal | null = null;
+
+      // Fan-out helper so listeners and awaiting promises see the same START payload.
+      const notifyStart = (payload: StartSignal) => {
+        startPayload = payload;
+        startListeners.forEach((cb) => cb(payload));
+        while (startResolvers.length) {
+          const resolveStart = startResolvers.shift();
+          resolveStart?.(payload);
+        }
+      };
 
       gameWs.addEventListener('message', (ev) => {
-        const data = JSON.parse(ev.data as string) as any;
-        //console.log('[OnlineGame] Received message:', data);
+        let data: any;
+        try {
+          data = JSON.parse(ev.data as string);
+        } catch (err) {
+          console.warn('[OnlineGame] Failed to parse message', err);
+          return;
+        }
+
         switch (data.type) {
           case 'snapshot':
             snapshotListeners.forEach((cb) => cb(data.state, data.events, data.match));
             break;
           case 'opponentAxis':
             opponentAxisListeners.forEach((cb) => cb(data.axis));
+            break;
+          case 'ROOM_STATE':
+            console.debug('[OnlineGame] Room state message', data);
+            roomStateListeners.forEach((cb) => cb(data as RoomStateMessage));
+            break;
+          case 'START':
+            const startMsg = data as StartMessage;
+            const payload: StartSignal = {
+              startAtEpochMs:
+                typeof startMsg.startAtEpochMs === 'number' ? startMsg.startAtEpochMs : Date.now(),
+              randomSeed:
+                typeof startMsg.randomSeed === 'number' ? startMsg.randomSeed : cfg.randomSeed,
+              tickRateHz:
+                typeof startMsg.tickRateHz === 'number' ? startMsg.tickRateHz : CLIENT_TICK_RATE_HZ,
+            };
+            notifyStart(payload);
             break;
           default:
             console.warn('[OnlineGame] Unknown message type:', data.type);
@@ -85,15 +164,36 @@ async function connectOnline(cfg: {
         onOpponentAxis(cb) {
           opponentAxisListeners.add(cb);
         },
+        onRoomState(cb) {
+          roomStateListeners.add(cb);
+        },
+        onStart(cb) {
+          startListeners.add(cb);
+          if (startPayload) cb(startPayload);
+        },
+        awaitStart() {
+          if (startPayload) return Promise.resolve(startPayload);
+          return new Promise<StartSignal>((resolveStart) => {
+            startResolvers.push(resolveStart);
+          });
+        },
         sendLocalAxis(axis: number) {
           if (gameWs.readyState === WebSocket.OPEN) {
-            //console.log('[OnlineGame] Sending axis:', axis);
             gameWs.send(JSON.stringify({ type: 'axis', axis }));
           }
         },
         disconnect() {
           console.log('[OnlineGame] Disconnecting WebSocket');
-          gameWs.close();
+          startResolvers.length = 0;
+          startListeners.clear();
+          roomStateListeners.clear();
+          snapshotListeners.clear();
+          opponentAxisListeners.clear();
+          try {
+            gameWs.close();
+          } catch {
+            /* ignore */
+          }
         },
       };
 
@@ -117,7 +217,14 @@ interface PongInstance {
  */
 export function createOnlineApp(
   canvas: HTMLCanvasElement,
-  cfg: { serverUrl: string; matchId: string; seat: PlayerSeat },
+  cfg: {
+    serverUrl: string;
+    matchId: string;
+    roomIdentifier: string;
+    seat: PlayerSeat;
+    joinToken: string;
+    randomSeed: number;
+  },
 ): PongInstance {
   // Engine/scene/world (identical to local)
   const { engine, engineDisposable } = createEngine(canvas);
@@ -177,7 +284,8 @@ export function createOnlineApp(
     }
     return h >>> 0;
   }
-  const matchSeed = hash32(cfg.matchId);
+  const matchSeed = cfg.randomSeed ?? hash32(cfg.roomIdentifier ?? cfg.matchId);
+
   const Bounces = createBounces(
     ball.mesh,
     table.tableTop.position.y,
@@ -220,7 +328,7 @@ export function createOnlineApp(
 
   // --- Lifecycle (same cadence & structure as local) --------------------------------
   const loop = createLifecycle(engine, scene, {
-    logicHz: 60,
+    logicHz: CLIENT_TICK_RATE_HZ,
     update: () => {
       // 1) Input: read a single local axis and uplink it
       //    (reuse the aggregator merge of keyboard+touch, but take my seat’s stick)
@@ -286,6 +394,16 @@ export function createOnlineApp(
     net = await connectOnline(cfg);
     mySeat = net.mySeat;
     console.log('[OnlineGame] Connected. My seat:', mySeat);
+
+    net.onRoomState((state) => {
+      console.log('[OnlineGame] Room state update:', state);
+      if (state.state === 'READY' && typeof state.startAtEpochMs === 'number') {
+        const etaMs = Math.max(0, state.startAtEpochMs - Date.now());
+        if (etaMs > 0) hud.flashMessage(`Match starting in ${(etaMs / 1000).toFixed(1)}s`, 1800);
+      }
+    });
+
+    const startPromise = net.awaitStart();
 
     net.onOpponentAxis((axis) => {
       oppAxis = axis;
@@ -371,6 +489,20 @@ export function createOnlineApp(
         eventQueue.push(ev);
       }
     });
+
+    const startInfo = await startPromise;
+    if (startInfo.randomSeed !== cfg.randomSeed) {
+      console.warn('[OnlineGame] Server randomSeed differs from handoff seed', {
+        handoff: cfg.randomSeed,
+        server: startInfo.randomSeed,
+      });
+    }
+
+    const waitMs = Math.max(0, startInfo.startAtEpochMs - Date.now());
+    if (waitMs > 0) {
+      console.log(`[OnlineGame] Waiting ${waitMs}ms for server start tick`);
+      await new Promise<void>((resolve) => setTimeout(resolve, waitMs));
+    }
 
     loop.start();
     console.log('[OnlineGame] Game loop started');
