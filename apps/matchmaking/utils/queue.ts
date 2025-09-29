@@ -86,10 +86,13 @@ export function handleAcceptMatch(
       log('Both players accepted math', { matchId });
       createMatch(match.a, match.b, 'ranked');
     } catch (err) {
-      log('Failed to create a match', {
-        error: err instanceof Error ? err.message : 'Unknown error',
-      });
-      client.socket.close();
+      log(
+        'Failed to create a match',
+        {
+          error: err instanceof Error ? err.message : 'Unknown error',
+        },
+        'error',
+      );
     }
   }
 }
@@ -141,9 +144,13 @@ export async function createMatch(a: ClientInfo, b: ClientInfo, mode: MatchMode)
       simulationStartTick,
     });
   } catch (err) {
-    log('Allocator failed, sending error msg to client', {
-      error: err instanceof Error ? err.message : 'Unknown error',
-    });
+    log(
+      'Allocator failed, sending error msg to client',
+      {
+        error: err instanceof Error ? err.message : 'Unknown error',
+      },
+      'error',
+    );
     const msg = {
       type: 'ERROR',
       code: 'ALLOCATOR',
@@ -171,7 +178,7 @@ export async function createMatch(a: ClientInfo, b: ClientInfo, mode: MatchMode)
         simulationStartTick,
       }),
     );
-    handleHandoff(perPlayerJoinTokens, matchId, mode);
+    handleHandoff(player, roomIdentifier, mode);
   });
   log(`Match created`, {
     matchId,
