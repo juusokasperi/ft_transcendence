@@ -54,7 +54,7 @@ app.post(
       }
 
       if (!bestNodeInfo) {
-        log('No available game nodes', idempotencyKey);
+        log('No available game nodes', { idempotencyKey }, 'error');
         return reply.status(503).send({ message: 'No available game nodes' });
       }
 
@@ -81,7 +81,11 @@ app.post(
           },
         );
       } catch (err) {
-        log('Failed to allocate a game server');
+        log(
+          'Failed to allocate a game server',
+          { error: err instanceof Error ? err.message : 'Unknown error' },
+          'error',
+        );
         return reply.status(503).send({ message: "Server's are busy." });
       }
 
@@ -121,11 +125,15 @@ app.post(
 
       return reply.send(response);
     } catch (err) {
-      log('Error in /allocate', {
-        error: err instanceof Error ? err.message : 'Unknown error',
-        idempotencyKey: (request.body as { idempotencyKey?: string })?.idempotencyKey,
-        requestBody: request.body,
-      });
+      log(
+        'Error in /allocate',
+        {
+          error: err instanceof Error ? err.message : 'Unknown error',
+          idempotencyKey: (request.body as { idempotencyKey?: string })?.idempotencyKey,
+          requestBody: request.body,
+        },
+        'error',
+      );
       return reply.status(500).send({ message: 'Internal server error' });
     }
   },
