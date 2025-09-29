@@ -11,6 +11,8 @@ import PingPong from './pages/pong/pong-homepage';
 import LocalGame from './pages/pong/local/local-game';
 import DeleteUser from './pages/DeleteUser';
 import OnlineGame from './pages/pong/online-game';
+import ForgotPassword from './pages/ForgotPassword';
+import ResetPassword from './pages/ResetPassword';
 import { SidebarProvider } from './context/SidebarContext';
 import { SnackbarProvider } from './context/SnackbarContext';
 
@@ -23,6 +25,8 @@ function App() {
             <Route path={'/'} element={<Home />} />
             <Route path={'/signup'} element={<Registration />} />
             <Route path={'/login'} element={<Login />} />
+            <Route path={'/forgot-password'} element={<ForgotPassword />} />
+            <Route path={'/reset-password/:token'} element={<ResetPassword />} />
             <Route path={'/ping-pong'} element={<PingPong />} />
             <Route path={'/ping-pong/local'} element={<LocalGame />} />
             <Route path={'/ping-pong/online'} element={<OnlineGame />} />
