@@ -61,6 +61,7 @@ const OnlineGame: React.FC = () => {
   const [clientId, setClientId] = useState('');
   const [lobbyId, setLobbyId] = useState('');
   const [authenticated, setAuthenticated] = useState(false);
+  const [shouldReconnect, setShouldReconnect] = useState(0);
   const [status, setStatus] = useState<
     | 'connecting'
     | 'in_queue'
@@ -83,8 +84,6 @@ const OnlineGame: React.FC = () => {
   const [ready, setReady] = useState(false);
   const [lobbies, setLobbies] = useState<Lobby[]>([]);
 
-  const inMatchmaking = status !== 'starting' && status !== 'playing';
-
   useEffect(() => {
     if (status === 'in_queue') {
       setQueueStart(Date.now());
@@ -104,7 +103,6 @@ const OnlineGame: React.FC = () => {
   }, [queueStart]);
 
   useEffect(() => {
-    if (!inMatchmaking) return;
     const client = createMatchmakingClient((msg: MatchmakingMessage) => {
       switch (msg.type) {
         case 'CONNECTED':
@@ -207,8 +205,10 @@ const OnlineGame: React.FC = () => {
       }
     });
     clientRef.current = client;
-    return () => client.socket.close();
-  }, [inMatchmaking]);
+    return () => {
+      client.socket.close()
+    };
+  }, [shouldReconnect]);
 
   // Auto-focus canvas when starting/playing
   useLayoutEffect(() => {
@@ -322,6 +322,7 @@ const OnlineGame: React.FC = () => {
     setJoinToken(null);
     setRandomSeed(null);
     setStatus('connecting');
+    setShouldReconnect(prev => prev + 1);
   };
 
   // End-of-match handling: listen for in-canvas event and exit back to lobby
