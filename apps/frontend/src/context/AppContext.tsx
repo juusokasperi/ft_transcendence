@@ -112,7 +112,10 @@ export const AppProvider: React.FC<React.PropsWithChildren> = ({ children }) => 
           }
         }
 
-        performClientLogout();
+        if (data?.code === 'token_invalid') {
+          performClientLogout();
+        }
+
         return Promise.reject(error);
       },
     );
