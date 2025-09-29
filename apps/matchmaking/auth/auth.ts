@@ -1,9 +1,9 @@
 import jwt from 'jsonwebtoken';
-import { SECRET, API_URL } from '../utils/config.ts';
+import { SECRET, API_URL } from '../utils/config';
 import type { WebSocket } from 'ws';
 import type { IncomingMessage } from 'http';
-import type { ClientInfo } from '../types/types.ts';
-import { log } from '../utils/log.ts';
+import type { ClientInfo } from '../types/types';
+import { log } from '../utils/log';
 
 export async function verifySiteToken(
   token: string,

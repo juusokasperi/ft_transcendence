@@ -1,4 +1,4 @@
-import type { ClientInfo } from '../types/types.ts';
+import type { ClientInfo } from '../types/types';
 
 export function broadcastToAll(data: any, clients: Map<string, ClientInfo>) {
   const msg = JSON.stringify(data);

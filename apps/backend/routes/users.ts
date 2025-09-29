@@ -13,18 +13,18 @@ import {
   getUserByUsername,
   getUserSettings,
   updateUserSettings,
-} from '../db/queries/users.ts';
+} from '../db/queries/users';
 import {
   deleteUser,
   markUserForDelete,
   removeTokenFromDelete,
   findUserToDeleteAndClear,
-} from '../db/queries/userDelete.ts';
-import { authPreHandler, tokenUuidCheck } from '../hooks/auth.ts';
-import { sendDeleteEmail } from '../utils/nodemailer/index.ts';
-import { normalizeCredentials } from '../hooks/auth.ts';
-import { updateLastSeenHandler } from '../hooks/updateLastSeen.ts';
-import { UPLOAD_DIR } from '../utils/config.ts';
+} from '../db/queries/userDelete';
+import { authPreHandler, tokenUuidCheck } from '../hooks/auth';
+import { sendDeleteEmail } from '../utils/nodemailer/index';
+import { normalizeCredentials } from '../hooks/auth';
+import { updateLastSeenHandler } from '../hooks/updateLastSeen';
+import { UPLOAD_DIR } from '../utils/config';
 import {
   getAllUsersSchema,
   getUserSchema,
@@ -40,16 +40,16 @@ import {
   twoFactorSetupSchema,
   twoFactorConfirmSchema,
   twoFactorDisableSchema,
-} from '../schemas/userSchemas.ts';
-import { getUserMatchesSchema, getMyStatsSchema } from '../schemas/matchSchemas.ts';
+} from '../schemas/userSchemas';
+import { getUserMatchesSchema, getMyStatsSchema } from '../schemas/matchSchemas';
 import {
   beginTwoFactorEnrollment,
   completeTwoFactorEnrollment,
   disableTwoFactor,
-} from '../db/queries/twoFactor.ts';
-import { generateAuthenticatorSecret, verifyTotpToken } from '../utils/twoFactor.ts';
-import { getMatchesWithPlayersForUser } from '../db/queries/matches.ts';
-import { getTotalStatsForUser } from '../db/queries/matchPlayerStats.ts';
+} from '../db/queries/twoFactor';
+import { generateAuthenticatorSecret, verifyTotpToken } from '../utils/twoFactor';
+import { getMatchesWithPlayersForUser } from '../db/queries/matches';
+import { getTotalStatsForUser } from '../db/queries/matchPlayerStats';
 
 /*
 	TO DO:

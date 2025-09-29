@@ -1,6 +1,6 @@
 import Database from 'better-sqlite3';
 import type { Database as DatabaseType } from 'better-sqlite3';
-import { DATABASE_PATH } from '../utils/config.ts';
+import { DATABASE_PATH } from '../utils/config';
 
 const db: DatabaseType = new Database(DATABASE_PATH);
 

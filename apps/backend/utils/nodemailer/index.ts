@@ -1,6 +1,6 @@
 import nodemailer, { type Transporter } from 'nodemailer';
-import { confirmationEmailHtml, resetPasswordHtml, deleteUserHtml } from './emailHtml.ts';
-import { FRONTEND_URL, MAIL_TRANSPORT_CONFIG, MAIL_FROM } from '../config.ts';
+import { confirmationEmailHtml, resetPasswordHtml, deleteUserHtml } from './emailHtml';
+import { FRONTEND_URL, MAIL_TRANSPORT_CONFIG, MAIL_FROM } from '../config';
 
 /*
 	Falls back to nodemailer's Ethereal test account when no SMTP

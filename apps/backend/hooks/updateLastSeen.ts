@@ -1,5 +1,5 @@
 import type { FastifyReply, FastifyRequest } from 'fastify';
-import { updateLastSeen } from '../db/queries/users.ts';
+import { updateLastSeen } from '../db/queries/users';
 
 export function updateLastSeenHandler(req: FastifyRequest, res: FastifyReply, done: Function) {
   try {

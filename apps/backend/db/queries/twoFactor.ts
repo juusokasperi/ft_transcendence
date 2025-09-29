@@ -1,4 +1,4 @@
-import db from '../client.ts';
+import db from '../client';
 
 export function beginTwoFactorEnrollment(uuid: string, secret: string | null): boolean {
   const result = db

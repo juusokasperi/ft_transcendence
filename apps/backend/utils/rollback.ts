@@ -1,3 +1,3 @@
-import { rollbackMigration } from '../db/migrations.ts';
+import { rollbackMigration } from '../db/migrations';
 
 rollbackMigration();

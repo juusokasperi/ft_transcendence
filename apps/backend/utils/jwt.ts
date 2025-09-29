@@ -1,6 +1,6 @@
 import jwt from 'jsonwebtoken';
-import { JWT_ACCESS_TTL, JWT_2FA_TTL, SECRET } from './config.ts';
-import type { JWTPayload } from '../types/types.ts';
+import { JWT_ACCESS_TTL, JWT_2FA_TTL, SECRET } from './config';
+import type { JWTPayload } from '../types/types';
 
 const JWT_SECRET = SECRET as jwt.Secret;
 const ACCESS_TOKEN_EXP = JWT_ACCESS_TTL as unknown as jwt.SignOptions['expiresIn'];

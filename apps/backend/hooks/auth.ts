@@ -1,7 +1,7 @@
 import jwt from 'jsonwebtoken';
 import type { FastifyReply, FastifyRequest } from 'fastify';
-import { MATCH_SECRET } from '../utils/config.ts';
-import { verifyAccessToken } from '../utils/jwt.ts';
+import { MATCH_SECRET } from '../utils/config';
+import { verifyAccessToken } from '../utils/jwt';
 
 // Checks that the request came with an authorization (for protected routes)
 // and that the token is valid.

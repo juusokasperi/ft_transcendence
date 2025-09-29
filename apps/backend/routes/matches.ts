@@ -1,20 +1,20 @@
 import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
-import type { UserStats } from '../types/types.ts';
-import db from '../db/client.ts';
-import { getUserStats, updateUserRanking } from '../db/queries/users.ts';
+import type { UserStats } from '../types/types';
+import db from '../db/client';
+import { getUserStats, updateUserRanking } from '../db/queries/users';
 import {
   addMatch,
   getMatchesWithPlayersForUser,
   getMatchWithPlayers,
-} from '../db/queries/matches.ts';
-import { authPreHandler, matchAuthPreHandler, tokenUuidCheck } from '../hooks/auth.ts';
+} from '../db/queries/matches';
+import { authPreHandler, matchAuthPreHandler, tokenUuidCheck } from '../hooks/auth';
 import {
   addMatchSchema,
   getMatchSchema,
   getMyMatchesSchema,
   addMatchStatsSchema,
-} from '../schemas/matchSchemas.ts';
-import { upsertMatchPlayerStats } from '../db/queries/matchPlayerStats.ts';
+} from '../schemas/matchSchemas';
+import { upsertMatchPlayerStats } from '../db/queries/matchPlayerStats';
 
 // Different stages of tournament can affect ELO ranking more
 function getTournamentMultiplier(tournamentStage?: string): number {

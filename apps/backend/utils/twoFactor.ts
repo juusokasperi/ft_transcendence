@@ -1,5 +1,5 @@
 import { authenticator } from 'otplib';
-import { TFA_CODE_DIGITS, TFA_ISSUER } from './config.ts';
+import { TFA_CODE_DIGITS, TFA_ISSUER } from './config';
 
 const AUTH_DIGITS = Math.min(Math.max(TFA_CODE_DIGITS, 4), 10);
 authenticator.options = {

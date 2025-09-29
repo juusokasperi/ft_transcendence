@@ -11,7 +11,7 @@ import {
 } from '@pong/game-logic';
 import type { FrameEvents, MatchSnapshot, TableEnd } from '@pong/shared';
 import { pickInitialServer } from '@pong/shared';
-import { createHttpServer } from './utils/httpServer.ts';
+import { createHttpServer } from './utils/httpServer';
 import { verifyJoinToken } from '@pong/shared/auth/tokenSign';
 import type { RoomState } from '@pong/shared/protocol/net';
 

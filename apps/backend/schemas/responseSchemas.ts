@@ -4,7 +4,7 @@ import {
   PaddleColorSchema,
   ColorBlindSchema,
   PhotoSensitiveSchema,
-} from './fieldSchemas.ts';
+} from './fieldSchemas';
 
 export const SuccessResponseSchema = {
   type: 'object',

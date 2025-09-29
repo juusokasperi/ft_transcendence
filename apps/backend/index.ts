@@ -1,6 +1,6 @@
 import { register } from 'prom-client';
-import { initSqliteMetrics } from './metrics/sqlite-patch.ts';
-import { registerMetrics } from './metrics/fastify-metrics.ts';
+import { initSqliteMetrics } from './metrics/sqlite-patch';
+import { registerMetrics } from './metrics/fastify-metrics';
 import fastify from 'fastify';
 import cors from '@fastify/cors';
 import fastifyMultipart from '@fastify/multipart';
@@ -8,7 +8,7 @@ import fastifyStatic from '@fastify/static';
 import swagger from '@fastify/swagger';
 import swaggerUi from '@fastify/swagger-ui';
 import cookie from '@fastify/cookie';
-import googleSign from './routes/googleSign.ts';
+import googleSign from './routes/googleSign';
 import {
   UPLOAD_DIR,
   BACKEND_HOST,
@@ -17,18 +17,18 @@ import {
   NGINX_PORT,
   ENABLE_SQLITE_METRICS,
   swaggerConfig,
-} from './utils/config.ts';
-import { userRoutes } from './routes/users.ts';
-import { loginRoutes } from './routes/login.ts';
-import { logoutRoutes } from './routes/logout.ts';
-import { signupRoutes } from './routes/signup.ts';
-import { friendsRoutes } from './routes/friends.ts';
-import { matchRoutes } from './routes/matches.ts';
-import { debugRoutes } from './routes/debug.ts';
-import { resetPasswordRoutes } from './routes/resetPassword.ts';
-import { runMigrations } from './db/migrations.ts';
-import { prettierErrorMessages } from './utils/errorHandler.ts';
-import './types/types.ts';
+} from './utils/config';
+import { userRoutes } from './routes/users';
+import { loginRoutes } from './routes/login';
+import { logoutRoutes } from './routes/logout';
+import { signupRoutes } from './routes/signup';
+import { friendsRoutes } from './routes/friends';
+import { matchRoutes } from './routes/matches';
+import { debugRoutes } from './routes/debug';
+import { resetPasswordRoutes } from './routes/resetPassword';
+import { runMigrations } from './db/migrations';
+import { prettierErrorMessages } from './utils/errorHandler';
+import './types/types';
 
 if (ENABLE_SQLITE_METRICS === 'true') initSqliteMetrics();
 

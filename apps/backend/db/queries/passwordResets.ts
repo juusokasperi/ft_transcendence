@@ -1,4 +1,4 @@
-import db from '../client.ts';
+import db from '../client';
 
 export function clearResetTokensForId(uuid: string): void {
   db.prepare(`DELETE FROM PasswordResets WHERE user_uuid = ?`).run(uuid);

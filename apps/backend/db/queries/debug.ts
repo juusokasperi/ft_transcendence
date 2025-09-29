@@ -1,4 +1,4 @@
-import db from '../client.ts';
+import db from '../client';
 
 // for debugging sql query counter
 export function goodSql() {

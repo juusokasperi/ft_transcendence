@@ -1,6 +1,6 @@
 import fastify from 'fastify';
 import type { FastifyRequest, FastifyReply } from 'fastify';
-import type { Match } from '../index.ts';
+import type { Match } from '../index';
 
 export function createHttpServer({
   ADMIN_SECRET,

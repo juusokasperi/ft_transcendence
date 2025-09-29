@@ -1,10 +1,10 @@
 import { WebSocketServer, type WebSocket, type RawData } from 'ws';
 import { v4 as uuid } from 'uuid';
-import { PORT, REDIS_URL } from './utils/config.ts';
-import type { ClientInfo, PendingMatch } from './types/types.ts';
+import { PORT, REDIS_URL } from './utils/config';
+import type { ClientInfo, PendingMatch } from './types/types';
 import type { MatchmakingClientMessage } from '@pong/shared/protocol/net';
-import { log } from './utils/log.ts';
-import { extractToken, handleAuth } from './auth/auth.ts';
+import { log } from './utils/log';
+import { extractToken, handleAuth } from './auth/auth';
 import {
   handleAcceptMatch,
   handleDeclineMatch,
@@ -12,17 +12,17 @@ import {
   tryMatchQueue,
   removeFromQueue,
   clearQueue,
-} from './utils/queue.ts';
+} from './utils/queue';
 import {
   handleCreateTournament,
   handleJoinTournament,
   handleLeaveTournament,
   handleForfeitTournament,
   handleAcceptScheduled,
-} from './utils/scheduledMatches.ts';
-import { handleJoinQueue } from './utils/queue.ts';
+} from './utils/scheduledMatches';
+import { handleJoinQueue } from './utils/queue';
 import Redis from 'ioredis';
-import { handleAdmitConfirmed } from './utils/pendingHandoffs.ts';
+import { handleAdmitConfirmed } from './utils/pendingHandoffs';
 
 const redisSub = new Redis(REDIS_URL);
 

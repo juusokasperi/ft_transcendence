@@ -6,14 +6,14 @@ import {
   deleteExpiredUsers,
   removeFromPending,
   confirmUser,
-} from '../db/queries/unconfirmedUsers.ts';
+} from '../db/queries/unconfirmedUsers';
 import bcrypt from 'bcrypt';
 import crypto from 'crypto';
-import { signAccessToken } from '../utils/jwt.ts';
+import { signAccessToken } from '../utils/jwt';
 import { v4 as uuidv4 } from 'uuid';
-import { sendConfirmationEmail } from '../utils/nodemailer/index.ts';
-import { normalizeCredentials } from '../hooks/auth.ts';
-import { signupSchema, signupConfirmSchema } from '../schemas/authSchemas.ts';
+import { sendConfirmationEmail } from '../utils/nodemailer/index';
+import { normalizeCredentials } from '../hooks/auth';
+import { signupSchema, signupConfirmSchema } from '../schemas/authSchemas';
 
 export async function signupRoutes(app: FastifyInstance) {
   // Post a new user and logs them in

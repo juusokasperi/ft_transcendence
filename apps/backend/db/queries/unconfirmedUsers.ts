@@ -1,6 +1,6 @@
-import db from '../client.ts';
-import type { PendingUserDb } from '../../types/dbtypes.ts';
-import { addUser } from './users.ts';
+import db from '../client';
+import type { PendingUserDb } from '../../types/dbtypes';
+import { addUser } from './users';
 
 export function checkUserExists(username: string, email: string): boolean {
   const result = db

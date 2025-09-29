@@ -1,5 +1,5 @@
-import { log } from './utils/log.ts';
-import { ADMIN_SECRET, PORT, REDIS_URL, IDEMPOTENCY_PREFIX } from './utils/config.ts';
+import { log } from './utils/log';
+import { ADMIN_SECRET, PORT, REDIS_URL, IDEMPOTENCY_PREFIX } from './utils/config';
 import fastify from 'fastify';
 import { v4 as uuid } from 'uuid';
 import type { FastifyRequest, FastifyReply } from 'fastify';
@@ -7,7 +7,7 @@ import { signJoinToken } from '@pong/shared/auth/tokenSign';
 import type { JoinTokenClaims } from '@pong/shared/protocol/net';
 import axios from 'axios';
 import Redis from 'ioredis';
-import { AllocateSchema } from './utils/schema.ts';
+import { AllocateSchema } from './utils/schema';
 
 const redis = new Redis(REDIS_URL);
 

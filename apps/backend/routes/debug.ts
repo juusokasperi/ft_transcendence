@@ -1,6 +1,6 @@
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
-import { badSqlPrepare, badSqlExecute, goodSql } from '../db/queries/debug.ts';
-import { getAllUsersSchema } from '../schemas/userSchemas.ts';
+import { badSqlPrepare, badSqlExecute, goodSql } from '../db/queries/debug';
+import { getAllUsersSchema } from '../schemas/userSchemas';
 
 export async function debugRoutes(app: FastifyInstance) {
   // debug endpoint to generate successful SQL query

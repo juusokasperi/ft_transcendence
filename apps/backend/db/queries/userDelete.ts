@@ -1,4 +1,4 @@
-import db from '../client.ts';
+import db from '../client';
 
 export function deleteUser(uuid: string): Boolean {
   const result = db.prepare('DELETE FROM Users WHERE uuid = ?').run(uuid);

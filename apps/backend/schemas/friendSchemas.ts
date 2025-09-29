@@ -3,8 +3,8 @@ import {
   SuccessResponseSchema,
   UsersSchema,
   PublicUsersSchema,
-} from './responseSchemas.ts';
-import { UsernameSchema, UuidSchema, EmailSchema } from './fieldSchemas.ts';
+} from './responseSchemas';
+import { UsernameSchema, UuidSchema, EmailSchema } from './fieldSchemas';
 
 const FRIEND_ROUTE_SECURITY: ReadonlyArray<Record<string, readonly string[]>> = [
   { bearerAuth: [] as readonly string[] },

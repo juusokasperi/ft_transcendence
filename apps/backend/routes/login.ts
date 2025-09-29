@@ -1,10 +1,10 @@
 import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
-import { getUserByEmail, updateLastSeen, getUserByUuid } from '../db/queries/users.ts';
+import { getUserByEmail, updateLastSeen, getUserByUuid } from '../db/queries/users';
 import bcrypt from 'bcrypt';
-import { normalizeCredentials } from '../hooks/auth.ts';
-import { loginSchema, loginTwoFactorSchema } from '../schemas/authSchemas.ts';
-import { signAccessToken, signTwoFactorToken, verifyTwoFactorToken } from '../utils/jwt.ts';
-import { verifyTotpToken } from '../utils/twoFactor.ts';
+import { normalizeCredentials } from '../hooks/auth';
+import { loginSchema, loginTwoFactorSchema } from '../schemas/authSchemas';
+import { signAccessToken, signTwoFactorToken, verifyTwoFactorToken } from '../utils/jwt';
+import { verifyTotpToken } from '../utils/twoFactor';
 
 // TODO:
 // Extra checks and route for 2FA
