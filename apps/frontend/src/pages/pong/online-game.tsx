@@ -322,7 +322,7 @@ const OnlineGame: React.FC = () => {
     setJoinToken(null);
     setRandomSeed(null);
     setStatus('connecting');
-    setShouldReconnect((prev) => prev + 1);
+    setShouldReconnect((prev) => (prev + 1) % 2);
   };
 
   // End-of-match handling: listen for in-canvas event and exit back to lobby
