@@ -3,14 +3,22 @@ import fastify from 'fastify';
 import cookie from '@fastify/cookie';
 import bcrypt from 'bcrypt';
 
+const { ACCESS_COOKIE, REFRESH_COOKIE } = vi.hoisted(() => ({
+  ACCESS_COOKIE: 'accessTokenCookie',
+  REFRESH_COOKIE: 'refreshTokenCookie',
+}));
+
 vi.mock('../../utils/config.ts', () => ({
   SECRET: 'testsecret',
+  REFRESH_SECRET: 'refreshsecret',
   DATABASE_PATH: ':memory:',
   JWT_ACCESS_TTL: '4h',
   JWT_REFRESH_TTL: '30d',
   JWT_2FA_TTL: '10m',
   TFA_CODE_DIGITS: 6,
   TFA_ISSUER: 'TestApp',
+  ACCESS_TOKEN_COOKIE_NAME: ACCESS_COOKIE,
+  REFRESH_TOKEN_COOKIE_NAME: REFRESH_COOKIE,
 }));
 
 const usersMock = vi.hoisted(() => ({
@@ -77,7 +85,7 @@ describe('POST /api/login', () => {
     });
 
     expect(res.statusCode).toBe(200);
-    const tokenCookie = parseSetCookie(res.headers['set-cookie'], 'token');
+    const tokenCookie = parseSetCookie(res.headers['set-cookie'], ACCESS_COOKIE);
     expect(tokenCookie).toBeTruthy();
     expect(res.json()).toEqual({
       user: { username: 'alice', uuid: USER_UUID, avatar: null, tfa: false },

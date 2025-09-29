@@ -3,14 +3,22 @@ import fastify from 'fastify';
 import cookie from '@fastify/cookie';
 import { createHash } from 'crypto';
 
+const { ACCESS_COOKIE, REFRESH_COOKIE } = vi.hoisted(() => ({
+  ACCESS_COOKIE: 'accessTokenCookie',
+  REFRESH_COOKIE: 'refreshTokenCookie',
+}));
+
 vi.mock('../../utils/config.ts', () => ({
   SECRET: 'testsecret',
+  REFRESH_SECRET: 'refreshsecret',
   DATABASE_PATH: ':memory:',
   JWT_ACCESS_TTL: '4h',
   JWT_REFRESH_TTL: '30d',
   JWT_2FA_TTL: '10m',
   TFA_CODE_DIGITS: 6,
   TFA_ISSUER: 'TestApp',
+  ACCESS_TOKEN_COOKIE_NAME: ACCESS_COOKIE,
+  REFRESH_TOKEN_COOKIE_NAME: REFRESH_COOKIE,
 }));
 
 const mocks = vi.hoisted(() => ({
@@ -89,7 +97,7 @@ describe('POST /api/auth/refresh', () => {
     const res = await app.inject({
       method: 'POST',
       url: '/api/auth/refresh',
-      cookies: { refresh_token: refreshToken },
+      cookies: { [REFRESH_COOKIE]: refreshToken },
     });
 
     expect(res.statusCode).toBe(200);
@@ -99,8 +107,8 @@ describe('POST /api/auth/refresh', () => {
       uuid: payload.uuid,
       username: payload.username,
     });
-    const tokenCookie = parseCookie(res.headers['set-cookie'], 'token');
-    const refreshCookie = parseCookie(res.headers['set-cookie'], 'refresh_token');
+    const tokenCookie = parseCookie(res.headers['set-cookie'], ACCESS_COOKIE);
+    const refreshCookie = parseCookie(res.headers['set-cookie'], REFRESH_COOKIE);
     expect(tokenCookie).toBe('newAccess');
     expect(refreshCookie).toBe('newRefresh');
   });
@@ -121,13 +129,13 @@ describe('POST /api/auth/refresh', () => {
     const res = await app.inject({
       method: 'POST',
       url: '/api/auth/refresh',
-      cookies: { refresh_token: refreshToken },
+      cookies: { [REFRESH_COOKIE]: refreshToken },
     });
 
     expect(res.statusCode).toBe(401);
     expect(mocks.deleteRefreshToken).toHaveBeenCalledWith(payload.tokenId);
-    expect(parseCookie(res.headers['set-cookie'], 'token')).toBe('');
-    expect(parseCookie(res.headers['set-cookie'], 'refresh_token')).toBe('');
+    expect(parseCookie(res.headers['set-cookie'], ACCESS_COOKIE)).toBe('');
+    expect(parseCookie(res.headers['set-cookie'], REFRESH_COOKIE)).toBe('');
   });
 
   it('returns 401 when stored hash mismatches', async () => {
@@ -145,7 +153,7 @@ describe('POST /api/auth/refresh', () => {
     const res = await app.inject({
       method: 'POST',
       url: '/api/auth/refresh',
-      cookies: { refresh_token: refreshToken },
+      cookies: { [REFRESH_COOKIE]: refreshToken },
     });
 
     expect(res.statusCode).toBe(401);

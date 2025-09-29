@@ -1,14 +1,22 @@
 import { describe, it, expect, vi } from 'vitest';
 
+const { ACCESS_COOKIE, REFRESH_COOKIE } = vi.hoisted(() => ({
+  ACCESS_COOKIE: 'accessTokenCookie',
+  REFRESH_COOKIE: 'refreshTokenCookie',
+}));
+
 // Mock config to avoid env checks
 vi.mock('../../utils/config.ts', () => ({
   SECRET: 'testsecret',
+  REFRESH_SECRET: 'refreshsecret',
   DATABASE_PATH: ':memory:',
   JWT_ACCESS_TTL: '4h',
   JWT_REFRESH_TTL: '30d',
   JWT_2FA_TTL: '10m',
   TFA_CODE_DIGITS: 6,
   TFA_ISSUER: 'TestApp',
+  ACCESS_TOKEN_COOKIE_NAME: ACCESS_COOKIE,
+  REFRESH_TOKEN_COOKIE_NAME: REFRESH_COOKIE,
 }));
 
 // Mock updateLastSeen to control its return value
@@ -79,8 +87,8 @@ describe('logout route', () => {
     await handler(req, res);
 
     expect(deleteRefreshTokensByUserMock).toHaveBeenCalledWith('u-456');
-    expect(res.clearCookie).toHaveBeenCalledWith('token', { path: '/' });
-    expect(res.clearCookie).toHaveBeenCalledWith('refresh_token', { path: '/' });
+    expect(res.clearCookie).toHaveBeenCalledWith(ACCESS_COOKIE, { path: '/' });
+    expect(res.clearCookie).toHaveBeenCalledWith(REFRESH_COOKIE, { path: '/' });
     expect(res.status).toHaveBeenCalledWith(200);
     expect(send).toHaveBeenCalledWith({ success: 'Successfully logged out.' });
   });

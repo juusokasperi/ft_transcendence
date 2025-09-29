@@ -7,12 +7,15 @@ import cookie from '@fastify/cookie';
 vi.mock('../../utils/config.ts', () => ({
   MATCH_SECRET: 'testsecret',
   SECRET: 'testsecret',
+  REFRESH_SECRET: 'refreshsecret',
   DATABASE_PATH: ':memory:',
   JWT_ACCESS_TTL: '4h',
   JWT_REFRESH_TTL: '30d',
   JWT_2FA_TTL: '10m',
   TFA_CODE_DIGITS: 6,
   TFA_ISSUER: 'TestApp',
+  ACCESS_TOKEN_COOKIE_NAME: 'token',
+  REFRESH_TOKEN_COOKIE_NAME: 'refresh_token',
 }));
 
 vi.mock('../../db/client.ts', () => ({
