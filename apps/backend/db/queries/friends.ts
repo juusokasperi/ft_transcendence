@@ -1,6 +1,6 @@
-import db from '../client';
-import type { PublicUser, UserStats } from '../../types/types';
-import type { PublicUserDb, UserStatsDb } from '../../types/dbtypes';
+import db from '../client.ts';
+import type { PublicUser, UserStats } from '../../types/types.ts';
+import type { PublicUserDb, UserStatsDb } from '../../types/dbtypes.ts';
 
 export function getFriends(user1Uuid: string): UserStats[] {
   try {

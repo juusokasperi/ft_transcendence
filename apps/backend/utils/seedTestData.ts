@@ -1,5 +1,5 @@
-import './config';
-import { runMigrations } from '../db/migrations';
+import './config.ts';
+import { runMigrations } from '../db/migrations.ts';
 import {
   addUser,
   updateUserSettings,
@@ -7,15 +7,15 @@ import {
   getUserByUsername,
   getUserStats,
   updateUserRanking,
-} from '../db/queries/users';
-import { upsertMatchPlayerStats } from '../db/queries/matchPlayerStats';
-import db from '../db/client';
+} from '../db/queries/users.ts';
+import { upsertMatchPlayerStats } from '../db/queries/matchPlayerStats.ts';
+import db from '../db/client.ts';
 import { v4 as uuidv4 } from 'uuid';
 import bcrypt from 'bcrypt';
-import { addFriend, respondToFriendReq } from '../db/queries/friends';
-import { addMatch } from '../db/queries/matches';
-import { createSettings } from '../db/queries/unconfirmedUsers';
-import { deleteUser } from '../db/queries/userDelete';
+import { addFriend, respondToFriendReq } from '../db/queries/friends.ts';
+import { addMatch } from '../db/queries/matches.ts';
+import { createSettings } from '../db/queries/unconfirmedUsers.ts';
+import { deleteUser } from '../db/queries/userDelete.ts';
 
 // Run migrations first
 await runMigrations();

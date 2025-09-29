@@ -1,7 +1,7 @@
 import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
-import { updateLastSeen } from '../db/queries/users';
-import { authPreHandler, tokenUuidCheck } from '../hooks/auth';
-import { logoutSchema } from '../schemas/authSchemas';
+import { updateLastSeen } from '../db/queries/users.ts';
+import { authPreHandler, tokenUuidCheck } from '../hooks/auth.ts';
+import { logoutSchema } from '../schemas/authSchemas.ts';
 
 // Sets user's last_seen status back 10 minutes, making them
 // appear offline.

@@ -1,6 +1,6 @@
 import { Umzug, JSONStorage } from 'umzug';
 import path from 'path';
-import db from './client';
+import db from './client.ts';
 import type { Database } from 'better-sqlite3';
 
 const silentLogger = {

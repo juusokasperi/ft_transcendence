@@ -1,7 +1,7 @@
 import type { FastifyInstance } from 'fastify';
 import type { FastifyRequest } from 'fastify';
 import crypto from 'crypto';
-import { signAccessToken, signTwoFactorToken } from '../utils/jwt';
+import { signAccessToken, signTwoFactorToken } from '../utils/jwt.ts';
 import {
   getUserByGoogleId,
   createUserFromGoogle,
@@ -9,7 +9,7 @@ import {
   getUser,
   updateGoogleUser,
   linkGoogleToUser,
-} from '../db/queries/users';
+} from '../db/queries/users.ts';
 
 // Google OAuth2 endpoints
 const GOOGLE_AUTH = 'https://accounts.google.com/o/oauth2/v2/auth';

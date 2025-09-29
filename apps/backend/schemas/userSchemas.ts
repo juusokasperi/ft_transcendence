@@ -4,7 +4,7 @@ import {
   SuccessResponseSchema,
   UsersSchema,
   SettingsSchema,
-} from './responseSchemas';
+} from './responseSchemas.ts';
 
 import {
   UsernameSchema,
@@ -13,7 +13,7 @@ import {
   PaddleColorSchema,
   ColorBlindSchema,
   PhotoSensitiveSchema,
-} from './fieldSchemas';
+} from './fieldSchemas.ts';
 
 const TwoFactorSetupResponseSchema = {
   type: 'object',

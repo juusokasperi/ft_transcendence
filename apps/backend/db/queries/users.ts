@@ -1,6 +1,6 @@
-import db from '../client';
-import type { User, UserStats, UserSettings } from '../../types/types';
-import type { UserDb, UserStatsDb, UserSettingsDb } from '../../types/dbtypes';
+import db from '../client.ts';
+import type { User, UserStats, UserSettings } from '../../types/types.ts';
+import type { UserDb, UserStatsDb, UserSettingsDb } from '../../types/dbtypes.ts';
 import crypto from 'crypto';
 
 function mapUserRecord(user: UserDb): User {

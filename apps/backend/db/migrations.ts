@@ -1,4 +1,4 @@
-import umzug from './umzug';
+import umzug from './umzug.ts';
 
 export const runMigrations = async () => {
   const migrations = await umzug.up();

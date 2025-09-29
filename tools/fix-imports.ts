@@ -1,15 +1,8 @@
 import { Project } from "ts-morph";
 import path from "path";
 import fs from "fs";
-// import { fileURLToPath } from "url";
-//
-// // ES module version of __dirname
-// const __filename = fileURLToPath(import.meta.url);
-// const __dirname = path.dirname(__filename);
-//
-// const ROOT = path.resolve(__dirname, ".."); // adjust if script is deeper
 
-const ROOT = process.cwd();
+const ROOT = path.resolve(__dirname, ".."); // adjust if script is deeper
 
 // Gather all tsconfig.json files under apps/* and packages/*
 function findTsconfigs(dir: string): string[] {

@@ -6,17 +6,17 @@ import {
   getFriends,
   getPendingFriendRequestsSent,
   getPendingFriendRequestsReceived,
-} from '../db/queries/friends';
-import { getUser } from '../db/queries/users';
-import { authPreHandler, tokenUuidCheck } from '../hooks/auth';
-import { updateLastSeenHandler } from '../hooks/updateLastSeen';
+} from '../db/queries/friends.ts';
+import { getUser } from '../db/queries/users.ts';
+import { authPreHandler, tokenUuidCheck } from '../hooks/auth.ts';
+import { updateLastSeenHandler } from '../hooks/updateLastSeen.ts';
 import {
   friendsSchema,
   pendingSchema,
   respondFriendSchema,
   sendFriendSchema,
   deleteFriendSchema,
-} from '../schemas/friendSchemas';
+} from '../schemas/friendSchemas.ts';
 
 export async function friendsRoutes(app: FastifyInstance) {
   // Get all (accepted) friends of user

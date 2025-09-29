@@ -1,16 +1,16 @@
 import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
-import { getUserByEmail, updatePassword } from '../db/queries/users';
+import { getUserByEmail, updatePassword } from '../db/queries/users.ts';
 import {
   clearResetTokensForId,
   createResetToken,
   clearExpiredTokens,
   findAndClearResetToken,
-} from '../db/queries/passwordResets';
+} from '../db/queries/passwordResets.ts';
 import bcrypt from 'bcrypt';
 import crypto from 'crypto';
-import { sendResetPasswordEmail } from '../utils/nodemailer/index';
-import { normalizeCredentials } from '../hooks/auth';
-import { resetPassSchema, resetPassConfirmSchema } from '../schemas/authSchemas';
+import { sendResetPasswordEmail } from '../utils/nodemailer/index.ts';
+import { normalizeCredentials } from '../hooks/auth.ts';
+import { resetPassSchema, resetPassConfirmSchema } from '../schemas/authSchemas.ts';
 
 export async function resetPasswordRoutes(app: FastifyInstance) {
   // Request a password reset email

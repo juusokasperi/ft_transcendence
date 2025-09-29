@@ -1,10 +1,10 @@
-import type { ClientInfo, MatchMode, PendingMatch } from '../types/types';
+import type { ClientInfo, MatchMode, PendingMatch } from '../types/types.ts';
 import { v4 as uuid } from 'uuid';
-import { JOIN_TOKEN_TTL_SECONDS, ALLOCATOR_URL } from './config';
-import { log } from './log';
+import { JOIN_TOKEN_TTL_SECONDS, ALLOCATOR_URL } from './config.ts';
+import { log } from './log.ts';
 import axios from 'axios';
-import { isAuthenticated } from '../auth/auth';
-import { handleHandoff } from './pendingHandoffs';
+import { isAuthenticated } from '../auth/auth.ts';
+import { handleHandoff } from './pendingHandoffs.ts';
 
 const queue: ClientInfo[] = [];
 

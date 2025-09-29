@@ -2,14 +2,14 @@ import {
   SuccessResponseSchema,
   ErrorResponseSchema,
   ValidationErrorResponseSchema,
-} from './responseSchemas';
+} from './responseSchemas.ts';
 import {
   PassSchema,
   UsernameSchema,
   EmailSchema,
   UuidSchema,
   AvatarSchema,
-} from './fieldSchemas';
+} from './fieldSchemas.ts';
 
 const SignupBodySchema = {
   type: 'object',

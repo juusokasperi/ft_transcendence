@@ -1,4 +1,4 @@
-import { ErrorResponseSchema } from './responseSchemas';
+import { ErrorResponseSchema } from './responseSchemas.ts';
 import {
   MatchSchema,
   TournamentIDSchema,
@@ -6,8 +6,8 @@ import {
   UuidSchema,
   MatchPlayerStatsArraySchema,
   MyStatsSchema,
-} from './fieldSchemas';
-import { USER_ROUTE_SECURITY } from './userSchemas';
+} from './fieldSchemas.ts';
+import { USER_ROUTE_SECURITY } from './userSchemas.ts';
 
 const MATCH_ROUTE_SECURITY = [
   { bearerAuth: [] as readonly string[] } as Record<string, readonly string[]>,

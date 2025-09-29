@@ -1,8 +1,8 @@
 import type { GameState } from '../../model/state';
 import { isRallyPhase, isServePhase } from '../utils';
 import { collideWalls, collidePaddle } from '../physics/collisions';
-import { maybeScoreAndFreeze } from './scoring';
-import { stepPause } from './pause';
+import { maybeScoreAndFreeze } from './scoring.ts';
+import { stepPause } from './pause.ts';
 import type { FrameEvents } from '@pong/shared';
 
 export function handleSteps(
