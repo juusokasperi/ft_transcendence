@@ -37,7 +37,7 @@ redisSub.on('message', (channel: string, message: string) => {
       const { roomIdentifier } = JSON.parse(message);
       handleAdmitConfirmed(roomIdentifier);
     } catch (err) {
-      log('Error parsing playerId from redis', {
+      log('Error parsing roomIdentifier from redis', {
         error: err instanceof Error ? err.message : 'Unknown error',
       });
     }
