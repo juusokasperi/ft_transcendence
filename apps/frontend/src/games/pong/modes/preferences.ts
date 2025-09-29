@@ -2,9 +2,17 @@
 
 import type { Ruleset } from '@pong/shared';
 
+export type ControllerScheme = 'wasd' | 'arrows';
+
+export type PlayerPreferences = {
+  name: string;
+  paddleColor: string;
+  controller: ControllerScheme;
+};
+
 export type Preferences = {
-  player1: { name: string; paddleColor: string };
-  player2: { name: string; paddleColor: string };
+  player1: PlayerPreferences;
+  player2: PlayerPreferences;
   /** Optional per-user match rules overrides for local mode. */
   rules?: Partial<Ruleset>;
 };

@@ -1,34 +1,24 @@
-import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { GameHistoryEntry } from '@pong/shared';
-import type { Ruleset } from '@pong/shared';
 // Reuse in-game HUD styles and DOM builder
 import '@pong/render/ui/tailwind.css';
 import '@pong/render/register';
 import { createScoreboard } from '@pong/render';
-import type { Observation } from '../../games/pong/ai/bot-controller';
-import Navbar from '../../components/Navbar';
-
-type AccessibilitySettings = {
-  colorBlindMode: 'none' | 'protanopia' | 'deuteranopia' | 'tritanopia' | 'highContrast';
-  photoSensitiveMode: 'none' | 'reducedFX' | 'noFlash';
-};
-
-type PlayerSettings = {
-  name: string;
-  paddleColor: string;
-};
-
-type UserSettings = {
-  player1: PlayerSettings;
-  player2: PlayerSettings;
-  accessibility: AccessibilitySettings;
-  rules: Ruleset;
-};
+import type { BotDifficulty, Observation } from '../../../games/pong/ai/bot-controller';
+import type { ControllerScheme, Preferences } from '../../../games/pong/modes/preferences';
+import Navbar from '../../../components/Navbar';
+import {
+  clearStoredSettings,
+  getBestOf,
+  readSettingsFromStorage,
+  writeSettingsToStorage,
+} from './utils';
+import type { AccessibilitySettings, UserSettings } from './utils';
 
 const defaultSettings: UserSettings = {
-  player1: { name: 'Player 1', paddleColor: '#00ff66' }, // Green (from palette)
-  player2: { name: 'Player 2', paddleColor: '#bf5fff' }, // Violet (from palette)
+  player1: { name: 'Player 1', paddleColor: '#00ff66', controller: 'wasd' }, // Green
+  player2: { name: 'Player 2', paddleColor: '#bf5fff', controller: 'arrows' }, // Violet
   accessibility: { colorBlindMode: 'none', photoSensitiveMode: 'none' },
   rules: {
     game: {
@@ -47,11 +37,20 @@ const defaultSettings: UserSettings = {
   },
 };
 
+const STORAGE_KEY = 'pong_local_settings_v1';
+
+const controllerOptions: { value: ControllerScheme; label: string }[] = [
+  { value: 'wasd', label: 'W / S' },
+  { value: 'arrows', label: 'Arrow Up / Arrow Down' },
+];
+
 const LocalGame: React.FC = () => {
   const navigate = useNavigate();
   const [settings, setSettings] = useState<UserSettings>(defaultSettings);
   const [isPlaying, setIsPlaying] = useState(false);
   const [aiEnabled, setAiEnabled] = useState(false); // Player 2 as AI
+  const [botDifficulty, setBotDifficulty] = useState<BotDifficulty>('normal');
+  const [isGameReady, setIsGameReady] = useState(false);
   const [postMatch, setPostMatch] = useState<{
     winner: 'east' | 'west';
     bestOf: number;
@@ -60,6 +59,12 @@ const LocalGame: React.FC = () => {
   } | null>(null);
   const [rulesOpen, setRulesOpen] = useState(false);
   const [accessOpen, setAccessOpen] = useState(false);
+
+  const arrowSeatLabel = settings.player1.controller === 'arrows' ? 'Player 1' : 'Player 2';
+  const arrowSeatName =
+    settings.player1.controller === 'arrows'
+      ? settings.player1.name.trim() || 'Player 1'
+      : settings.player2.name.trim() || 'Player 2';
 
   // Scoreboard mount target for post-match HUD reuse
   const resultsHudRef = useRef<HTMLDivElement | null>(null);
@@ -74,78 +79,39 @@ const LocalGame: React.FC = () => {
   }, [postMatch, isPlaying]);
 
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
-  const appRef = useRef<{ destroy(): void; observe?: () => Observation } | null>(null);
-  const botRef = useRef<{ stop(): void } | null>(null);
+  const appRef = useRef<{
+    destroy(): void;
+    observe?: () => Observation;
+    updatePreferences?: (p: Preferences) => void;
+  } | null>(null);
+  const botRef = useRef<{ stop(): void; setDifficulty: (d: BotDifficulty) => void } | null>(null);
 
-  const STORAGE_KEY = 'pong_local_settings_v1';
+  const restoreSettingsFromStorage = useCallback(() => {
+    const restored = readSettingsFromStorage(localStorage, STORAGE_KEY, defaultSettings);
+    setSettings(restored);
+  }, [setSettings, defaultSettings]);
+
+  const handleQuit = useCallback(() => {
+    setIsPlaying(false);
+    restoreSettingsFromStorage();
+    navigate('/ping-pong');
+  }, [navigate, restoreSettingsFromStorage]);
 
   // Load settings from localStorage (local-specific key)
   useEffect(() => {
-    const saved = localStorage.getItem(STORAGE_KEY);
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        setSettings({
-          player1: {
-            name: parsed.player1?.name || defaultSettings.player1.name,
-            paddleColor: parsed.player1?.paddleColor || defaultSettings.player1.paddleColor,
-          },
-          player2: {
-            name: parsed.player2?.name || defaultSettings.player2.name,
-            paddleColor: parsed.player2?.paddleColor || defaultSettings.player2.paddleColor,
-          },
-          accessibility: {
-            colorBlindMode:
-              parsed.accessibility?.colorBlindMode || defaultSettings.accessibility.colorBlindMode,
-            photoSensitiveMode:
-              parsed.accessibility?.photoSensitiveMode ||
-              defaultSettings.accessibility.photoSensitiveMode,
-          },
-          rules: {
-            game: {
-              targetScore:
-                parsed.rules?.game?.targetScore ?? defaultSettings.rules.game.targetScore,
-              winBy: parsed.rules?.game?.winBy ?? defaultSettings.rules.game.winBy,
-              servesPerTurn:
-                parsed.rules?.game?.servesPerTurn ?? defaultSettings.rules.game.servesPerTurn,
-              deuceServesPerTurn:
-                parsed.rules?.game?.deuceServesPerTurn ??
-                defaultSettings.rules.game.deuceServesPerTurn,
-              deuceAt: parsed.rules?.game?.deuceAt ?? defaultSettings.rules.game.deuceAt,
-            },
-            match: {
-              bestOf: parsed.rules?.match?.bestOf ?? defaultSettings.rules.match.bestOf,
-              switchEndsEachGame:
-                parsed.rules?.match?.switchEndsEachGame ??
-                defaultSettings.rules.match.switchEndsEachGame,
-              decidingGameMidSwapAtPoints:
-                parsed.rules?.match?.decidingGameMidSwapAtPoints ??
-                defaultSettings.rules.match.decidingGameMidSwapAtPoints,
-              alternateInitialServerEachGame:
-                parsed.rules?.match?.alternateInitialServerEachGame ??
-                defaultSettings.rules.match.alternateInitialServerEachGame,
-            },
-          },
-        });
-      } catch {
-        setSettings(defaultSettings);
-      }
-    } else {
-      // No persisted defaults → ensure in-memory defaults are applied on visit
-      setSettings(defaultSettings);
-    }
-  }, []);
+    restoreSettingsFromStorage();
+  }, [restoreSettingsFromStorage]);
 
   // Persist settings
   const saveSettings = () => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
+    writeSettingsToStorage(localStorage, STORAGE_KEY, settings);
     alert('Settings saved!');
   };
 
   // Reset to defaults
   const resetSettings = () => {
     setSettings(defaultSettings);
-    localStorage.removeItem(STORAGE_KEY);
+    clearStoredSettings(localStorage, STORAGE_KEY);
   };
 
   // Boot game when we enter "playing" and a canvas is present; teardown on exit
@@ -158,7 +124,7 @@ const LocalGame: React.FC = () => {
       // Lazy-load Babylon + host adapter only when starting the game
       //console.log('[LocalGame] Attempting to lazy-load Pong...');
       try {
-        const { bootstrapPong } = await import('../../games/pong/host/dom-embed');
+        const { bootstrapPong } = await import('../../../games/pong/host/dom-embed');
         if (cancelled) {
           //console.log('[LocalGame] Cancelled before bootstrap.');
           return;
@@ -171,18 +137,7 @@ const LocalGame: React.FC = () => {
           rules: settings.rules,
         });
         appRef.current = app;
-
-        // If AI is enabled, start bot controlling Player 2
-        if (aiEnabled && canvasRef.current && (app as any).observe) {
-          try {
-            const { BotController } = await import('../../games/pong/ai/bot-controller');
-            const bot = new BotController(canvasRef.current!, 'P2', (app as any).observe, 'normal');
-            bot.start();
-            botRef.current = bot;
-          } catch (e) {
-            console.error('[LocalGame] Failed to start AI bot', e);
-          }
-        }
+        setIsGameReady(true);
       } catch (e) {
         console.error('[LocalGame] Failed to start Pong', e);
         setIsPlaying(false);
@@ -200,8 +155,78 @@ const LocalGame: React.FC = () => {
         appRef.current.destroy();
         appRef.current = null;
       }
+      setIsGameReady(false);
     };
   }, [isPlaying]);
+
+  useEffect(() => {
+    if (!isPlaying) {
+      if (botRef.current) {
+        botRef.current.stop();
+        botRef.current = null;
+      }
+      return;
+    }
+
+    if (!aiEnabled) {
+      if (botRef.current) {
+        botRef.current.stop();
+        botRef.current = null;
+      }
+      return;
+    }
+
+    if (botRef.current) {
+      botRef.current.setDifficulty(botDifficulty);
+      return;
+    }
+
+    if (!isGameReady) {
+      return;
+    }
+
+    const canvas = canvasRef.current;
+    const observer = (appRef.current as any)?.observe;
+    if (!canvas || typeof observer !== 'function') {
+      return;
+    }
+
+    let cancelled = false;
+    (async () => {
+      try {
+        const { BotController } = await import('../../../games/pong/ai/bot-controller');
+        if (cancelled || botRef.current) return;
+        const bot = new BotController(canvas, 'P2', observer, botDifficulty);
+        bot.start();
+        botRef.current = bot;
+      } catch (error) {
+        console.error('[LocalGame] Failed to start AI bot', error);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [isPlaying, aiEnabled, botDifficulty, isGameReady]);
+
+  useEffect(() => {
+    if (!isPlaying) return;
+    const app = appRef.current;
+    if (!app?.updatePreferences) return;
+    app.updatePreferences({
+      player1: settings.player1,
+      player2: settings.player2,
+      rules: settings.rules,
+    });
+  }, [
+    isPlaying,
+    settings.player1.name,
+    settings.player1.paddleColor,
+    settings.player1.controller,
+    settings.player2.name,
+    settings.player2.paddleColor,
+    settings.player2.controller,
+  ]);
 
   // When the in-canvas game dispatches matchOver, capture summary and exit after 3 seconds
   useEffect(() => {
@@ -229,6 +254,22 @@ const LocalGame: React.FC = () => {
     };
   }, [isPlaying]);
 
+  useEffect(() => {
+    if (!isPlaying) return;
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        handleQuit();
+      }
+    };
+
+    window.addEventListener('keydown', onKeyDown);
+    return () => {
+      window.removeEventListener('keydown', onKeyDown);
+    };
+  }, [isPlaying, handleQuit]);
+
   // Ensure the canvas has keyboard focus whenever play begins
   useLayoutEffect(() => {
     if (!isPlaying || !canvasRef.current) return;
@@ -251,63 +292,6 @@ const LocalGame: React.FC = () => {
   const handlePlay = () => {
     //console.log('[LocalGame] Play button clicked. Settings:', settings);
     setIsPlaying(true);
-  };
-  const handleQuit = () => {
-    //console.log('[LocalGame] Quit button clicked.');
-    setIsPlaying(false);
-    // Revert any unsaved changes back to saved defaults (or built-in defaults)
-    try {
-      const saved = localStorage.getItem(STORAGE_KEY);
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        setSettings({
-          player1: {
-            name: parsed.player1?.name || defaultSettings.player1.name,
-            paddleColor: parsed.player1?.paddleColor || defaultSettings.player1.paddleColor,
-          },
-          player2: {
-            name: parsed.player2?.name || defaultSettings.player2.name,
-            paddleColor: parsed.player2?.paddleColor || defaultSettings.player2.paddleColor,
-          },
-          accessibility: {
-            colorBlindMode:
-              parsed.accessibility?.colorBlindMode || defaultSettings.accessibility.colorBlindMode,
-            photoSensitiveMode:
-              parsed.accessibility?.photoSensitiveMode ||
-              defaultSettings.accessibility.photoSensitiveMode,
-          },
-          rules: {
-            game: {
-              targetScore:
-                parsed.rules?.game?.targetScore ?? defaultSettings.rules.game.targetScore,
-              winBy: parsed.rules?.game?.winBy ?? defaultSettings.rules.game.winBy,
-              servesPerTurn:
-                parsed.rules?.game?.servesPerTurn ?? defaultSettings.rules.game.servesPerTurn,
-              deuceServesPerTurn:
-                parsed.rules?.game?.deuceServesPerTurn ??
-                defaultSettings.rules.game.deuceServesPerTurn,
-              deuceAt: parsed.rules?.game?.deuceAt ?? defaultSettings.rules.game.deuceAt,
-            },
-            match: {
-              bestOf: parsed.rules?.match?.bestOf ?? defaultSettings.rules.match.bestOf,
-              switchEndsEachGame:
-                parsed.rules?.match?.switchEndsEachGame ??
-                defaultSettings.rules.match.switchEndsEachGame,
-              decidingGameMidSwapAtPoints:
-                parsed.rules?.match?.decidingGameMidSwapAtPoints ??
-                defaultSettings.rules.match.decidingGameMidSwapAtPoints,
-              alternateInitialServerEachGame:
-                parsed.rules?.match?.alternateInitialServerEachGame ??
-                defaultSettings.rules.match.alternateInitialServerEachGame,
-            },
-          },
-        });
-      } else {
-        setSettings(defaultSettings);
-      }
-    } catch {
-      setSettings(defaultSettings);
-    }
   };
 
   // Playing view: fullscreen canvas + Quit
@@ -410,6 +394,35 @@ const LocalGame: React.FC = () => {
                     );
                   })}
                 </div>
+                <label className="block w-full pt-2 text-center text-sm font-semibold md:text-base">
+                  Choose controls
+                </label>
+                <select
+                  value={settings.player1.controller}
+                  onChange={(event) => {
+                    const next = event.target.value as ControllerScheme;
+                    setSettings((prev) => {
+                      if (next === prev.player2.controller) {
+                        return {
+                          ...prev,
+                          player1: { ...prev.player1, controller: next },
+                          player2: { ...prev.player2, controller: prev.player1.controller },
+                        };
+                      }
+                      return {
+                        ...prev,
+                        player1: { ...prev.player1, controller: next },
+                      };
+                    });
+                  }}
+                  className="w-64 rounded border border-white/20 bg-black/40 px-3 py-2 text-base outline-none focus:border-white/40"
+                >
+                  {controllerOptions.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
               </div>
 
               {/* Player 2 Settings */}
@@ -468,6 +481,74 @@ const LocalGame: React.FC = () => {
                     );
                   })}
                 </div>
+                <label className="block w-full pt-2 text-center text-sm font-semibold md:text-base">
+                  Choose controls
+                </label>
+                <select
+                  value={settings.player2.controller}
+                  onChange={(event) => {
+                    const next = event.target.value as ControllerScheme;
+                    setSettings((prev) => {
+                      if (next === prev.player1.controller) {
+                        return {
+                          ...prev,
+                          player2: { ...prev.player2, controller: next },
+                          player1: { ...prev.player1, controller: prev.player2.controller },
+                        };
+                      }
+                      return {
+                        ...prev,
+                        player2: { ...prev.player2, controller: next },
+                      };
+                    });
+                  }}
+                  className="w-64 rounded border border-white/20 bg-black/40 px-3 py-2 text-base outline-none focus:border-white/40"
+                >
+                  {controllerOptions.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            {/* AI Settings */}
+            <div className="rounded-md border border-white/10 p-4 text-white/90">
+              <div className="flex flex-col items-center space-y-4 text-center">
+                <label className="flex w-full items-center justify-center gap-3 text-base">
+                  <input
+                    type="checkbox"
+                    checked={aiEnabled}
+                    onChange={(e) => setAiEnabled(e.target.checked)}
+                  />
+                  <h3 className="text-xl font-semibold">AI Opponent ({arrowSeatLabel})</h3>
+                </label>
+
+                <p className="text-sm text-white/60">
+                  The AI always drives the Arrow Up / Arrow Down controls.
+                </p>
+
+                <div className="flex items-center justify-center gap-4">
+                  <label
+                    htmlFor="botDifficulty"
+                    className="text-sm font-semibold text-white/100 md:text-base"
+                  >
+                    Difficulty
+                  </label>
+
+                  <select
+                    id="botDifficulty"
+                    value={botDifficulty}
+                    onChange={(e) => setBotDifficulty(e.target.value as BotDifficulty)}
+                    disabled={!aiEnabled}
+                    className="w-48 rounded border border-white/20 bg-black/40 px-3 py-2 text-base outline-none transition focus:border-white/40 disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    <option value="easy">Easy</option>
+                    <option value="normal">Normal</option>
+                    <option value="hard">Hard</option>
+                  </select>
+                </div>
               </div>
             </div>
 
@@ -498,7 +579,7 @@ const LocalGame: React.FC = () => {
                               ...settings.rules,
                               match: {
                                 ...settings.rules.match,
-                                bestOf: Number(e.target.value) as Ruleset['match']['bestOf'],
+                                bestOf: getBestOf(e.target.value, settings.rules.match.bestOf),
                               },
                             },
                           })
@@ -737,18 +818,6 @@ const LocalGame: React.FC = () => {
                   </div>
                 </div>
               )}
-            </div>
-
-            {/* AI Toggle */}
-            <div className="flex justify-center pb-2">
-              <label className="flex items-center gap-2 text-white/90">
-                <input
-                  type="checkbox"
-                  checked={aiEnabled}
-                  onChange={(e) => setAiEnabled(e.target.checked)}
-                />
-                <span>Play vs AI (Player 2)</span>
-              </label>
             </div>
 
             {/* Buttons */}
