@@ -50,7 +50,8 @@ const REQUIRED_VARS = [
   'GAME_NODES_AMOUNT',
 ];
 
-const help = `Usage: check-env.mjs [--file <path>] [--print-exports] [--quiet]\n\n` +
+const help =
+  `Usage: check-env.mjs [--file <path>] [--print-exports] [--quiet]\n\n` +
   `Checks that all required environment variables exist in the specified .env file.\n` +
   `Arguments:\n` +
   `  --file <path>       Path to the .env file (default: repo/.env)\n` +
@@ -106,7 +107,8 @@ function decodeValue(raw) {
   const singleQuoted = trimmed.startsWith("'") && trimmed.endsWith("'");
 
   if (doubleQuoted) {
-    const inner = trimmed.slice(1, -1)
+    const inner = trimmed
+      .slice(1, -1)
       .replace(/\\n/g, '\n')
       .replace(/\\r/g, '\r')
       .replace(/\\t/g, '\t')
