@@ -150,7 +150,7 @@ const OnlineGame: React.FC = () => {
             message: 'Pending match timed out.',
             variant: 'error',
           });
-          setOpponentInfo({ username: null, mmr: 0});
+          setOpponentInfo({ username: null, mmr: 0 });
           setMatchId('');
           setStatus('idle');
           break;
@@ -206,7 +206,7 @@ const OnlineGame: React.FC = () => {
     });
     clientRef.current = client;
     return () => {
-      client.socket.close()
+      client.socket.close();
     };
   }, [shouldReconnect]);
 
@@ -322,7 +322,7 @@ const OnlineGame: React.FC = () => {
     setJoinToken(null);
     setRandomSeed(null);
     setStatus('connecting');
-    setShouldReconnect(prev => prev + 1);
+    setShouldReconnect((prev) => prev + 1);
   };
 
   // End-of-match handling: listen for in-canvas event and exit back to lobby

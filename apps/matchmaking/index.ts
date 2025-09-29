@@ -31,7 +31,7 @@ redisSub.on('connect', () => {
   log('Redis pub/sub connected');
 });
 redisSub.on('message', (channel: string, message: string) => {
-  console.log(`[MM] Redis: ${channel}: ${message}`)
+  console.log(`[MM] Redis: ${channel}: ${message}`);
   if (channel === 'room_ready') {
     try {
       const { roomIdentifier } = JSON.parse(message);

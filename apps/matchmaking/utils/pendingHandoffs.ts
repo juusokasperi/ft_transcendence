@@ -16,12 +16,15 @@ export function handleHandoff(player: ClientInfo, roomIdentifier: string, mode?:
   if (!handoff) {
     handoff = { timers: {}, players: {}, roomIdentifier, mode } as PendingHandoff;
     pendingHandoffs.set(roomIdentifier, handoff);
-  };
+  }
   handoff.players[player.uuid] = player;
 
   const timer = setTimeout(() => {
     if (!player || !player.socket) {
-      log('Player socket missing on handoff timeout', { uuid: player?.uuid ?? 'Unknown', roomIdentifier });
+      log('Player socket missing on handoff timeout', {
+        uuid: player?.uuid ?? 'Unknown',
+        roomIdentifier,
+      });
       return;
     }
     if (mode === 'tournament' || mode === 'invite') {
@@ -45,8 +48,7 @@ export function handleHandoff(player: ClientInfo, roomIdentifier: string, mode?:
     clearTimeout(handoff.timers[player.uuid]);
     delete handoff.timers[player.uuid];
     delete handoff.players[player.uuid];
-    if (Object.keys(handoff.players).length === 0)
-      pendingHandoffs.delete(roomIdentifier);
+    if (Object.keys(handoff.players).length === 0) pendingHandoffs.delete(roomIdentifier);
   }, 15000);
 
   handoff.timers[player.uuid] = timer;
@@ -57,12 +59,12 @@ export function handleAdmitConfirmed(roomIdentifier: string) {
   const handoff = pendingHandoffs.get(roomIdentifier);
   if (handoff) {
     Object.values(handoff.timers).forEach(clearTimeout);
-    Object.values(handoff.players).forEach(player => {
+    Object.values(handoff.players).forEach((player) => {
       player.socket.close();
-    })
+    });
     log('Match started, closing connections', {
       roomIdentifier,
-      playerUuids: Object.keys(handoff.players)
+      playerUuids: Object.keys(handoff.players),
     });
     pendingHandoffs.delete(roomIdentifier);
   }
