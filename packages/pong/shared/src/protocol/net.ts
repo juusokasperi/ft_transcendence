@@ -37,6 +37,10 @@ export type QueueLeftMessage = {
   type: 'QUEUE_LEFT';
 };
 
+export type MatchTimeoutMessage = {
+  type: 'MATCH_TIMEOUT';
+};
+
 export type MatchmakingMessage =
   | ConnectedMessage
   | QueueJoinedMessage
@@ -44,6 +48,7 @@ export type MatchmakingMessage =
   | MatchFoundMessage
   | MatchDeclinedMessage
   | HandoffMessage
+  | MatchTimeoutMessage
   | ErrorMessage;
 
 export type JoinTokenClaims = {

@@ -210,6 +210,14 @@ function scheduleMatchStart(match: Match) {
   }, delay);
 
   broadcastRoomState(match, 'READY');
+
+  console.log(`[GameServer] Publishing to redis 'room_ready' ${match.id}`);
+  redis.publish(
+    'room_ready',
+    JSON.stringify({
+      roomIdentifier: match.id,
+    }),
+  );
 }
 
 function createBounds(): GameState['bounds'] {

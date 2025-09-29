@@ -3,54 +3,67 @@ import { handleJoinQueue } from './queue';
 import { log } from './log';
 
 interface PendingHandoff {
-  timer: NodeJS.Timeout;
-  player: ClientInfo;
-  matchId: string;
+  timers: Record<string, NodeJS.Timeout>;
+  players: Record<string, ClientInfo>;
+  roomIdentifier: string;
   mode?: MatchMode;
 }
 
 const pendingHandoffs = new Map<string, PendingHandoff>();
 
-export function handleHandoff(player: ClientInfo, matchId: string, mode?: MatchMode) {
+export function handleHandoff(player: ClientInfo, roomIdentifier: string, mode?: MatchMode) {
+  let handoff = pendingHandoffs.get(roomIdentifier);
+  if (!handoff) {
+    handoff = { timers: {}, players: {}, roomIdentifier, mode } as PendingHandoff;
+    pendingHandoffs.set(roomIdentifier, handoff);
+  };
+  handoff.players[player.uuid] = player;
+
   const timer = setTimeout(() => {
     if (!player || !player.socket) {
-      if (!player) log('Player socket missing on hanoff timeout');
-      else
-        log('Player socket missing on handoff timeout', {
-          uuid: player.uuid ?? 'Unknown',
-          matchId,
-        });
+      log('Player socket missing on handoff timeout', { uuid: player?.uuid ?? 'Unknown', roomIdentifier });
       return;
     }
     if (mode === 'tournament' || mode === 'invite') {
       player.socket.send(
         JSON.stringify({
-          type: 'MATCH_FORFEIT',
-          matchId,
-          message: 'Opponent did not join in time. Match forfeited.',
+          type: 'HANDOFF_TIMEOUT',
+          roomIdentifier,
+          message: 'Failed to join scheduled match in time.',
         }),
       );
     } else {
       player.socket.send(
         JSON.stringify({
           type: 'HANDOFF_TIMEOUT',
-          matchId,
+          roomIdentifier,
           message: 'Failed to join game server in time. Rejoining queue.',
         }),
       );
       handleJoinQueue(player);
     }
-    pendingHandoffs.delete(player.id);
+    clearTimeout(handoff.timers[player.uuid]);
+    delete handoff.timers[player.uuid];
+    delete handoff.players[player.uuid];
+    if (Object.keys(handoff.players).length === 0)
+      pendingHandoffs.delete(roomIdentifier);
   }, 15000);
 
-  log('Adding to pending handoffs map', { clientId: player.id, matchId, mode });
-  pendingHandoffs.set(player.id, { timer, player, matchId, mode });
+  handoff.timers[player.uuid] = timer;
+  log('Added player to pending handoffs map', { uuid: player.uuid, roomIdentifier, mode });
 }
 
-export function handleAdmitConfirmed(playerId: string) {
-  const handoff = pendingHandoffs.get(playerId);
+export function handleAdmitConfirmed(roomIdentifier: string) {
+  const handoff = pendingHandoffs.get(roomIdentifier);
   if (handoff) {
-    clearTimeout(handoff.timer);
-    pendingHandoffs.delete(playerId);
+    Object.values(handoff.timers).forEach(clearTimeout);
+    Object.values(handoff.players).forEach(player => {
+      player.socket.close();
+    })
+    log('Match started, closing connections', {
+      roomIdentifier,
+      playerUuids: Object.keys(handoff.players)
+    });
+    pendingHandoffs.delete(roomIdentifier);
   }
 }

@@ -146,8 +146,15 @@ const OnlineGame: React.FC = () => {
           setRandomSeed(msg.randomSeed);
           setJoinToken(msg.joinToken);
           setStatus('starting');
-          // Close only after handshake with gameserver complete
-          client.socket.close();
+          break;
+        case 'MATCH_TIMEOUT':
+          enqueueSnackbar({
+            message: 'Pending match timed out.',
+            variant: 'error',
+          });
+          setOpponentInfo({ username: null, mmr: 0});
+          setMatchId('');
+          setStatus('idle');
           break;
         case 'ERROR':
           if (msg.code === 'AUTH') {

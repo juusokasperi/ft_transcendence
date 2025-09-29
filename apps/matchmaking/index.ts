@@ -26,15 +26,16 @@ import { handleAdmitConfirmed } from './utils/pendingHandoffs.ts';
 
 const redisSub = new Redis(REDIS_URL);
 
-redisSub.subscribe('player_admitted');
+redisSub.subscribe('room_ready');
 redisSub.on('connect', () => {
   log('Redis pub/sub connected');
 });
 redisSub.on('message', (channel: string, message: string) => {
-  if (channel === 'player_admitted') {
+  console.log(`[MM] Redis: ${channel}: ${message}`)
+  if (channel === 'room_ready') {
     try {
-      const { playerIdentifier } = JSON.parse(message);
-      handleAdmitConfirmed(playerIdentifier);
+      const { roomIdentifier } = JSON.parse(message);
+      handleAdmitConfirmed(roomIdentifier);
     } catch (err) {
       log('Error parsing playerId from redis', {
         error: err instanceof Error ? err.message : 'Unknown error',

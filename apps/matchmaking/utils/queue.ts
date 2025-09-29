@@ -89,7 +89,6 @@ export function handleAcceptMatch(
       log('Failed to create a match', {
         error: err instanceof Error ? err.message : 'Unknown error',
       });
-      client.socket.close();
     }
   }
 }
@@ -171,7 +170,7 @@ export async function createMatch(a: ClientInfo, b: ClientInfo, mode: MatchMode)
         simulationStartTick,
       }),
     );
-    handleHandoff(perPlayerJoinTokens, matchId, mode);
+    handleHandoff(player, roomIdentifier, mode);
   });
   log(`Match created`, {
     matchId,
