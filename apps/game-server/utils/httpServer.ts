@@ -46,14 +46,20 @@ export function createHttpServer({
     '/admin/rooms',
     { preHandler: [authPreHandler] },
     async (request: FastifyRequest, reply: FastifyReply) => {
-      // create a new room with the request body info
+      try {
+        const result = await onCreateRoom(request.body);
+        console.log('[GameServer] /admin/rooms', result);
+        reply.send(result ?? { status: 'ok' });
+      } catch (err) {
+        const message = err instanceof Error ? err.message : 'unknown error';
+        reply.status(400).send({ error: message });
+      }
       reply.send({ status: 'room created' });
     },
   );
 
   app.listen({ port: HTTP_PORT, host: '0.0.0.0' }, (err: Error | null, address: string) => {
     if (err) {
-      //log(error);
       console.error(err);
       process.exit(1);
     }

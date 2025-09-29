@@ -1,7 +1,7 @@
 export type HandoffMessage = {
   type: 'HANDOFF';
   matchId: string;
-  roomId: string;
+  roomIdentifier: string;
   gameServerWSUrl: string;
   side: 'west' | 'east';
   joinToken: string;
@@ -121,6 +121,28 @@ export type MatchmakingClientMessage =
   | LeaveTournamentRequest
   | ForfeitTournamentRequest
   | AcceptScheduledRequest;
+
+export type RoomState = 'WAITING_FOR_OPPONENT' | 'READY' | 'PLAYING';
+
+export type RoomStateMessage = {
+  type: 'ROOM_STATE';
+  roomIdentifier: string;
+  state: RoomState;
+  seat?: 'P1' | 'P2';
+  startAtEpochMs?: number;
+  randomSeed?: number;
+  tickRateHz?: number;
+};
+
+export type StartMessage = {
+  type: 'START';
+  roomIdentifier: string;
+  startAtEpochMs: number;
+  randomSeed: number;
+  tickRateHz: number;
+};
+
+export type GameServerControlMessage = RoomStateMessage | StartMessage;
 
 // Types that were in blueprint but not implemented:
 

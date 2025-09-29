@@ -7,7 +7,14 @@ export type { Preferences } from './modes/preferences';
 export type CreateAppOptions = {
   mode: AppMode;
   canvas: HTMLCanvasElement;
-  net?: { serverUrl: string; matchId: string; seat: PlayerSeat };
+  net?: {
+    serverUrl: string;
+    matchId: string;
+    roomIdentifier: string;
+    seat: PlayerSeat;
+    joinToken: string;
+    randomSeed: number;
+  };
   preferences?: Preferences;
 };
 
@@ -15,11 +22,16 @@ export type CreateAppOptions = {
 export async function createPongApp({ mode, canvas, net, preferences }: CreateAppOptions) {
   if (mode === 'local') {
     const { createLocalApp } = await import('./modes/local/local');
+    console.info('[Pong] Booting local mode');
     return createLocalApp(canvas, preferences);
   }
 
   if (mode === 'online') {
     const { createOnlineApp } = await import('./modes/online');
+    console.info('[Pong] Booting online mode', {
+      matchId: net?.matchId,
+      roomIdentifier: net?.roomIdentifier,
+    });
     return createOnlineApp(canvas, net!);
   }
 

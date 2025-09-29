@@ -30,7 +30,7 @@ redisSub.subscribe('player_admitted');
 redisSub.on('connect', () => {
   log('Redis pub/sub connected');
 });
-redisSub.on('message', (channel, message) => {
+redisSub.on('message', (channel: string, message: string) => {
   if (channel === 'player_admitted') {
     try {
       const { playerIdentifier } = JSON.parse(message);
@@ -42,7 +42,7 @@ redisSub.on('message', (channel, message) => {
     }
   }
 });
-redisSub.on('error', (err) => {
+redisSub.on('error', (err: Error) => {
   log('Redis pub/sub error:', { error: err instanceof Error ? err.message : 'Unknown error' });
 });
 
@@ -57,7 +57,7 @@ setInterval(() => {
   tryMatchQueue(pendingMatches);
 }, 500);
 
-wss.on('connection', (socket: WebSocket, req) => {
+wss.on('connection', async (socket: WebSocket, req) => {
   const token = extractToken(socket, req);
   if (!token) return;
 
@@ -73,7 +73,8 @@ wss.on('connection', (socket: WebSocket, req) => {
     authenticated: false,
   };
   log(`Client connected, validating.`, { clientId: client.id });
-  if (!handleAuth(client, token, clients)) return;
+  const authenticated = await handleAuth(client, token, clients);
+  if (!authenticated) return;
   clients.set(id, client);
 
   socket.send(JSON.stringify({ type: 'CONNECTED', clientId: id }));

@@ -13,6 +13,15 @@ const pendingHandoffs = new Map<string, PendingHandoff>();
 
 export function handleHandoff(player: ClientInfo, matchId: string, mode?: MatchMode) {
   const timer = setTimeout(() => {
+    if (!player || !player.socket) {
+      if (!player) log('Player socket missing on hanoff timeout');
+      else
+        log('Player socket missing on handoff timeout', {
+          uuid: player.uuid ?? 'Unknown',
+          matchId,
+        });
+      return;
+    }
     if (mode === 'tournament' || mode === 'invite') {
       player.socket.send(
         JSON.stringify({

@@ -19,6 +19,7 @@ export function tryMatchQueue(pendingMatches: Map<string, PendingMatch>) {
       if (Math.abs(a.mmr - b.mmr) <= window) {
         queue.splice(j, 1);
         queue.splice(i, 1);
+        log('Pair found in queue', { a: a.uuid, b: b.uuid, window });
         addToPendingMatches(a, b, pendingMatches);
         return;
       }
@@ -29,7 +30,7 @@ export function tryMatchQueue(pendingMatches: Map<string, PendingMatch>) {
 export function handleLeaveQueue(client: ClientInfo) {
   if (removeFromQueue(client.id)) {
     client.socket.send(JSON.stringify({ type: 'QUEUE_LEFT' }));
-    log(`Client left queue`, { clientId: client.id });
+    log('Client left queue', { uuid: client.uuid, queueSize: queue.length });
   }
 }
 
@@ -37,7 +38,7 @@ export async function handleJoinQueue(client: ClientInfo) {
   if (!isAuthenticated(client)) return;
   client.joinedAt = Date.now();
   queue.push(client);
-  log(`Client joined queue`, { clientId: client.id });
+  log(`Client joined queue`, { uuid: client.uuid, queueSize: queue.length });
   client.socket.send(JSON.stringify({ type: 'QUEUE_JOINED' }));
 }
 
@@ -53,11 +54,16 @@ export function addToPendingMatches(
     a.socket.send(JSON.stringify(msg));
     b.socket.send(JSON.stringify(msg));
     pendingMatches.delete(matchId);
+    log('Match timed out waiting for accepts', {
+      matchId,
+      accepted: Array.from(accepted),
+    });
     if (accepted.has(a.id)) handleJoinQueue(a);
     if (accepted.has(b.id)) handleJoinQueue(b);
   }, 15000);
 
   pendingMatches.set(matchId, { a, b, accepted, timer });
+  log('Match found awaiting confirmation', { matchId, players: [a.uuid, b.uuid] });
   const msgA = { type: 'MATCH_FOUND', matchId, opponent: { username: b.username, mmr: b.mmr } };
   const msgB = { type: 'MATCH_FOUND', matchId, opponent: { username: a.username, mmr: a.mmr } };
   a.socket.send(JSON.stringify(msgA));
@@ -72,11 +78,12 @@ export function handleAcceptMatch(
   const match = pendingMatches.get(matchId);
   if (!match) return;
   match.accepted.add(client.id);
-  log(`Match accepted`, { matchId, clientId: client.id });
+  log(`Match accepted`, { matchId, uuid: client.uuid });
   if (match.accepted.has(match.a.id) && match.accepted.has(match.b.id)) {
     clearTimeout(match.timer);
     pendingMatches.delete(matchId);
     try {
+      log('Both players accepted math', { matchId });
       createMatch(match.a, match.b, 'ranked');
     } catch (err) {
       log('Failed to create a match', {
@@ -95,7 +102,7 @@ export function handleDeclineMatch(
   const match = pendingMatches.get(matchId);
   if (!match) return;
   const msg = { type: 'MATCH_DECLINED', matchId };
-  log(`Match declined`, { matchId, clientId: client.id });
+  log(`Player declined match`, { matchId, uuid: client.uuid });
   if (match.a.id !== client.id) {
     match.a.socket.send(JSON.stringify(msg));
     handleJoinQueue(match.a);
@@ -115,13 +122,20 @@ export async function createMatch(a: ClientInfo, b: ClientInfo, mode: MatchMode)
 
   let allocatorRes;
   try {
+    log('Requesting allocation', {
+      matchId,
+      players: [a.uuid, b.uuid],
+      randomSeed,
+      simulationStartTick,
+    });
+
     allocatorRes = await axios.post(`${ALLOCATOR_URL}/allocate`, {
       idempotencyKey: matchId,
       mode,
       region: 'default',
       players: [
-        { playerIdentifier: a.id, side: 'west' },
-        { playerIdentifier: b.id, side: 'east' },
+        { playerIdentifier: a.uuid, side: 'west' },
+        { playerIdentifier: b.uuid, side: 'east' },
       ],
       randomSeed,
       simulationStartTick,
@@ -151,18 +165,18 @@ export async function createMatch(a: ClientInfo, b: ClientInfo, mode: MatchMode)
         roomIdentifier,
         gameServerWSUrl: endpointUrl,
         side,
-        joinToken: perPlayerJoinTokens[player.id],
+        joinToken: perPlayerJoinTokens[player.uuid],
         joinTokenTTLSeconds: JOIN_TOKEN_TTL_SECONDS,
         randomSeed,
         simulationStartTick,
       }),
     );
+    handleHandoff(perPlayerJoinTokens, matchId, mode);
   });
-  handleHandoff(perPlayerJoinTokens, matchId, mode);
   log(`Match created`, {
     matchId,
-    playerA: { username: a.username, id: a.id },
-    playerB: { username: b.username, id: b.id },
+    playerA: { username: a.username, uuid: a.uuid },
+    playerB: { username: b.username, uuid: b.uuid },
   });
 }
 

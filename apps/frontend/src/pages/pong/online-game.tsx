@@ -56,6 +56,8 @@ const OnlineGame: React.FC = () => {
   const [queueElapsed, setQueueElapsed] = useState<number>(0);
 
   const [joinToken, setJoinToken] = useState<string | null>(null);
+  const [randomSeed, setRandomSeed] = useState<number | null>(null);
+  const [roomIdentifier, setRoomIdentifier] = useState('');
   const [clientId, setClientId] = useState('');
   const [lobbyId, setLobbyId] = useState('');
   const [authenticated, setAuthenticated] = useState(false);
@@ -125,6 +127,10 @@ const OnlineGame: React.FC = () => {
         case 'MATCH_DECLINED':
           setStatus('idle');
           setMatchId('');
+          setRoomIdentifier('');
+          setServerUrl('');
+          setJoinToken(null);
+          setRandomSeed(null);
           setOpponentInfo({ username: null, mmr: 0 });
           enqueueSnackbar({
             message: 'Your opponent declined or timed out',
@@ -135,9 +141,11 @@ const OnlineGame: React.FC = () => {
           console.log(msg.gameServerWSUrl);
           setServerUrl(msg.gameServerWSUrl);
           setMatchId(msg.matchId);
+          setRoomIdentifier(msg.roomIdentifier);
           setSeat(msg.side === 'east' ? 'P1' : 'P2');
-          setStatus('starting');
+          setRandomSeed(msg.randomSeed);
           setJoinToken(msg.joinToken);
+          setStatus('starting');
           // Close only after handshake with gameserver complete
           client.socket.close();
           break;
@@ -152,6 +160,10 @@ const OnlineGame: React.FC = () => {
           }
           if (msg.code === 'ALLOCATOR') {
             setStatus('idle');
+            setServerUrl('');
+            setRoomIdentifier('');
+            setJoinToken(null);
+            setRandomSeed(null);
             enqueueSnackbar({
               message: msg.message ? msg.message : 'Unknown allocator error',
               variant: 'error',
@@ -209,8 +221,8 @@ const OnlineGame: React.FC = () => {
   }, [status]);
 
   useEffect(() => {
-    if (status === 'playing') return;
-    if (status !== 'starting' || !canvasRef.current) return;
+    if (status !== 'starting' || !canvasRef.current || !joinToken || !serverUrl) return;
+    if (randomSeed === null) return;
 
     let cancelled = false;
     (async () => {
@@ -220,7 +232,10 @@ const OnlineGame: React.FC = () => {
         const app = await bootstrapOnlinePong(canvasRef.current!, {
           serverUrl,
           matchId,
+          roomIdentifier,
           seat,
+          joinToken,
+          randomSeed,
         });
         appRef.current = app;
         setStatus('playing');
@@ -234,7 +249,7 @@ const OnlineGame: React.FC = () => {
       appRef.current?.destroy();
       appRef.current = null;
     };
-  }, [serverUrl, matchId, seat]);
+  }, [serverUrl, matchId, seat, joinToken, roomIdentifier, randomSeed]);
 
   const removeLobby = (lobbyId: string) => {
     setLobbies((prev: Lobby[]) => prev.filter((l) => l.lobbyId !== lobbyId));
@@ -246,14 +261,17 @@ const OnlineGame: React.FC = () => {
   };
 
   const handleJoinQueue = () => {
+    console.info('[Matchmaking] Join queue request');
     clientRef.current?.joinQueue();
   };
 
   const handleLeaveQueue = () => {
+    console.info('[Matchmaking] Leave queue request');
     clientRef.current?.leaveQueue();
   };
 
   const handleAcceptMatch = (matchId: string) => {
+    console.info('[Matchmaking] Accepting match', matchId);
     setStatus('match_accepted');
     clientRef.current?.acceptMatch(matchId);
   };
@@ -291,6 +309,11 @@ const OnlineGame: React.FC = () => {
     appRef.current = null;
     setLobbyId('');
     setReady(false);
+    setServerUrl('');
+    setMatchId('');
+    setRoomIdentifier('');
+    setJoinToken(null);
+    setRandomSeed(null);
     setStatus('connecting');
   };
 

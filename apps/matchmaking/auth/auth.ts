@@ -12,6 +12,7 @@ export async function verifySiteToken(
     const payload = jwt.verify(token, SECRET) as { username: string; uuid: string };
     return { uuid: payload.uuid, username: payload.username };
   } catch {
+    log('Auth: token verification failed');
     return null;
   }
 }
@@ -23,11 +24,13 @@ export async function fetchUserMMR(uuid: string, siteToken: string): Promise<num
       headers: { Authorization: `Bearer ${siteToken}` },
     });
     if (!res.ok) {
+      log('Auth: /api/users/:uuid responded non-200', { status: res.status });
       return null;
     }
     const data = await res.json();
     return typeof data.ranking === 'number' ? data.ranking : null;
   } catch {
+    log('Auth: failed to fetch MMR');
     return null;
   }
 }
@@ -35,12 +38,14 @@ export async function fetchUserMMR(uuid: string, siteToken: string): Promise<num
 export function extractToken(socket: WebSocket, req: IncomingMessage): string | undefined {
   const cookieHeader = req.headers.cookie;
   if (!cookieHeader) {
+    log('Auth: cookie header missing');
     socket.send(JSON.stringify({ type: 'ERROR', code: 'AUTH', message: 'Token missing' }));
     socket.close();
     return undefined;
   }
   const match = cookieHeader.match(new RegExp('(^|;)\\s*token=([^;]*)'));
   if (!match || !match[2]) {
+    log('Auth: token cookie missing');
     socket.send(JSON.stringify({ type: 'ERROR', code: 'AUTH', message: 'Token missing' }));
     socket.close();
     return undefined;
@@ -53,6 +58,7 @@ export async function handleAuth(
   token: string,
   clients: Map<string, ClientInfo>,
 ): Promise<boolean> {
+  log('Auth: attempt', { remoteId: client.id });
   const user = await verifySiteToken(token);
   if (!user) {
     log('Error: Invalid token', { clientId: client.id });
@@ -80,8 +86,8 @@ export async function handleAuth(
   client.authenticated = true;
   client.mmr = mmr;
   log(`Client authenticated, admitting to MM service`, {
-    id: client.id,
-    username: client.username,
+    uuid: client.uuid,
+    mmr: client.mmr,
   });
   return true;
 }
