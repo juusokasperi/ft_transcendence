@@ -6,9 +6,7 @@ ROOT_COMPOSE     = --profile dev -f docker-compose.yml
 # TODO: have separate NAME variable for prod? need to clean dev and prod
 # separately?
 # order of the `-f` options matters when docker merges compose files
-PROD_RUN_COMPOSE     = --profile prod-run -f docker-compose.yml -f docker-compose-prod.yml
-PROD_BUILD_COMPOSE     = --profile prod-build -f docker-compose.yml -f docker-compose-prod.yml
-PROD_PROD_COMPOSE     =  -f docker-compose-prod-prod.yml
+PROD_COMPOSE     =  -f docker-compose-prod.yml
 
 # DEV_PROFILE = --profile dev
 # PROD_PROFILE = --profile prod
@@ -75,33 +73,15 @@ detached:
 	@echo ">> Starting default stack (detached)"
 	docker compose -p $(NAME) $(ROOT_COMPOSE) $(ENV_ROOT) up --build -d
 
-prod-prod:
+prod:
 	$(ensure_dirs)
 	$(ensure_builder)
 	@echo ">> Starting default stack (attached)"
-	docker compose -p $(NAME_PROD) $(PROD_PROD_COMPOSE) $(ENV_ROOT) up --build
+	docker compose -p $(NAME_PROD) $(PROD_COMPOSE) $(ENV_ROOT) up --build
 
 prod-down:
 	@echo ">> Stopping & removing default stack (volumes, local images, orphans)"
-	docker compose -p $(NAME_PROD) $(PROD_PROD_COMPOSE) $(ENV_ROOT) down -v --rmi local --remove-orphans
-
-build-prod:
-	$(ensure_dirs)
-	$(ensure_builder)
-	@echo ">> Starting default stack (attached)"
-	docker compose -p $(NAME) $(PROD_BUILD_COMPOSE) $(ENV_ROOT) up --build
-
-up-prod:
-	$(ensure_dirs)
-	$(ensure_builder)
-	@echo ">> Starting default stack (attached)"
-	docker compose -p $(NAME) $(PROD_RUN_COMPOSE) $(ENV_ROOT) up --build
-
-detached-prod:
-	$(ensure_dirs)
-	$(ensure_builder)
-	@echo ">> Starting default stack (detached)"
-	docker compose -p $(NAME) $(PROD_COMPOSE) $(ENV_ROOT) up --build -d
+	docker compose -p $(NAME_PROD) $(PROD_COMPOSE) $(ENV_ROOT) down -v --rmi local --remove-orphans
 
 elk:
 	$(ensure_dirs)
