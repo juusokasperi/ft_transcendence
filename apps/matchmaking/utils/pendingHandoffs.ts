@@ -21,10 +21,14 @@ export function handleHandoff(player: ClientInfo, roomIdentifier: string, mode?:
 
   const timer = setTimeout(() => {
     if (!player || !player.socket) {
-      log('Player socket missing on handoff timeout', {
-        uuid: player?.uuid ?? 'Unknown',
-        roomIdentifier,
-      });
+      log(
+        'Player socket missing on handoff timeout',
+        {
+          uuid: player?.uuid ?? 'Unknown',
+          roomIdentifier,
+        },
+        'error',
+      );
       return;
     }
     if (mode === 'tournament' || mode === 'invite') {

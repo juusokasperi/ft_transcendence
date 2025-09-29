@@ -37,14 +37,22 @@ redisSub.on('message', (channel: string, message: string) => {
       const { roomIdentifier } = JSON.parse(message);
       handleAdmitConfirmed(roomIdentifier);
     } catch (err) {
-      log('Error parsing roomIdentifier from redis', {
-        error: err instanceof Error ? err.message : 'Unknown error',
-      });
+      log(
+        'Error parsing roomIdentifier from redis',
+        {
+          error: err instanceof Error ? err.message : 'Unknown error',
+        },
+        'error',
+      );
     }
   }
 });
 redisSub.on('error', (err: Error) => {
-  log('Redis pub/sub error:', { error: err instanceof Error ? err.message : 'Unknown error' });
+  log(
+    'Redis pub/sub error:',
+    { error: err instanceof Error ? err.message : 'Unknown error' },
+    'error',
+  );
 });
 
 const wss = new WebSocketServer({ port: PORT });
@@ -85,7 +93,7 @@ wss.on('connection', async (socket: WebSocket, req) => {
     try {
       data = JSON.parse(raw.toString());
     } catch {
-      log(`Invalid message from ${id}:`, raw.toString());
+      log(`Invalid message from ${id}:`, raw.toString(), 'warn');
       return;
     }
     switch (data.type) {
