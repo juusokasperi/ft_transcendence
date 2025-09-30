@@ -1,5 +1,10 @@
 import nodemailer, { type Transporter } from 'nodemailer';
-import { confirmationEmailHtml, resetPasswordHtml, deleteUserHtml } from './emailHtml.ts';
+import {
+  confirmationEmailHtml,
+  resetPasswordHtml,
+  deleteUserHtml,
+  emailChangeHtml,
+} from './emailHtml.ts';
 import { FRONTEND_URL, MAIL_TRANSPORT_CONFIG, MAIL_FROM } from '../config.ts';
 
 /*
@@ -92,6 +97,21 @@ export async function sendDeleteEmail(recipientEmail: string, token: string) {
     });
   } catch (error) {
     console.error('\x1b[0;31mError sending delete account email\x1b[0m:', error);
+    return false;
+  }
+}
+
+export async function sendEmailChangeEmail(recipientEmail: string, token: string) {
+  try {
+    const url = `${FRONTEND_URL}/confirm-email/${token}`;
+    const html = emailChangeHtml(url, FRONTEND_URL);
+    return await dispatchEmail({
+      to: recipientEmail,
+      subject: 'Confirm your new email for BabylonPong',
+      html,
+    });
+  } catch (error) {
+    console.error('\x1b[0;31mError sending email change confirmation email\x1b[0m:', error);
     return false;
   }
 }
