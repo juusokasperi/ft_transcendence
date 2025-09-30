@@ -181,12 +181,12 @@ export const resetPassConfirmSchema = {
   summary: "Resets user's password.",
   params: {
     type: 'object',
-    required: ['token'],
+    required: ['resetToken'],
     properties: {
-      token: {
+      resetToken: {
         type: 'string',
-        minLength: 32,
-        maxLength: 32,
+        minLength: 64,
+        maxLength: 64,
         pattern: '^[a-f0-9]+$',
         description: 'Password reset token from email',
       },
