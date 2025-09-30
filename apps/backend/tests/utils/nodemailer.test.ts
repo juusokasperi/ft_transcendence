@@ -67,7 +67,9 @@ describe('sendEmailChangeEmail', () => {
       from: 'test@example.com',
       to: recipientEmail,
       subject: 'Confirm your new email for BabylonPong',
-      html: expect.stringContaining('confirm-email/abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890'),
+      html: expect.stringContaining(
+        'confirm-email/abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890',
+      ),
     });
   });
 
