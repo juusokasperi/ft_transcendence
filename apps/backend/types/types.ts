@@ -60,6 +60,7 @@ export interface MatchPlayerStatsMe extends MatchPlayerStats {
   matchesWon: number;
   matchesLost: number;
   ranking: number;
+  createdAt: string;
 }
 
 // Public user info within the context of a match.
