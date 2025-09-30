@@ -4,13 +4,20 @@ import { AxiosError } from 'axios';
 import { resolveAvatarUrl } from '../utils/avatarUrl';
 import Navbar from '../components/Navbar';
 import { useSnackbar } from '../context/SnackbarContext';
-import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer } from 'recharts';
+import { PieChart, Pie, Cell, BarChart, Bar, XAxis, ResponsiveContainer } from 'recharts';
 
 interface StatBarChartCardProps {
   label: string;
   accent?: string;
   data: { name: string; value: number }[];
   total?: boolean;
+}
+
+interface PieChartCardProps {
+  label: string;
+  accent?: string;
+  data: {name: string; value: number}[];
+  total: number;
 }
 
 interface MatchPlayerPublic {
@@ -124,8 +131,8 @@ const Stats: React.FC = () => {
   const matchesPlayed = stats ? stats.matchesWon! + stats.matchesLost! : 0;
   const avgDelta = matchesPlayed > 0 ? Number((rankingDeltaTotal / matchesPlayed).toFixed(2)) : 0;
   const winRate =
-    stats && stats.gamesWon + stats.gamesLost > 0
-      ? Math.round((stats.gamesWon / (stats.gamesWon + stats.gamesLost)) * 100)
+    stats && stats.matchesWon! + stats.matchesLost! > 0
+      ? Math.round((stats.matchesWon! / (stats.matchesWon! + stats.matchesLost!)) * 100)
       : 0;
 
   const renderTeam = (team: (MatchPlayerPublic | null)[], teamName: string, colorClass: string) => (
@@ -228,6 +235,16 @@ const Stats: React.FC = () => {
                   total={true}
                 />
 
+                <PieChartCard
+                  label="Win Rate"
+                  accent="from-sky-400 to-indigo-500"
+                  data={[
+                    { name: 'Won', value: stats.matchesWon ?? 0 },
+                    { name: 'Lost', value: stats.matchesLost ?? 0},
+                  ]}
+                  total={winRate ?? 0}
+                />
+
                 <StatBarChartCard
                   label="Points Overview"
                   accent="from-indigo-400 to-purple-500"
@@ -235,7 +252,6 @@ const Stats: React.FC = () => {
                     { name: 'Scored', value: stats.pointsScored },
                     { name: 'Conceded', value: stats.pointsConceded },
                   ]}
-                  total={true}
                 />
 
                 <StatBarChartCard
@@ -245,7 +261,6 @@ const Stats: React.FC = () => {
                     { name: 'Won', value: stats.gamesWon ?? 0 },
                     { name: 'Lost', value: stats.gamesLost ?? 0 },
                   ]}
-                  total={true}
                 />
 
                 <StatCard
@@ -376,7 +391,7 @@ const CustomXAxisTick = (props: any) => {
         fill="#94a3b8"
         fontSize={12}
         fontWeight={400}
-        letterSpacing="0.05em"
+        letterSpacing="0.1em"
       >
         {value}
       </text>
@@ -388,13 +403,44 @@ const CustomXAxisTick = (props: any) => {
         fill="#9b9b9bff"
         fontSize={12}
         fontWeight={400}
-        letterSpacing="0.05em"
+        letterSpacing="0.1em"
       >
         {barValue}
       </text>
     </g>
   );
 };
+
+const PieChartCard: React.FC<PieChartCardProps> = ({ label, accent, data, total }) => {
+  const COLORS = ['#1a3715ff', '#690e1dff'];
+  return (
+    <div className="relative overflow-hidden rounded-2xl border border-white/10 bg-slate-950/60 p-5 shadow shadow-indigo-950/20 flex flex-col">
+      {accent && <div className={`absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r ${accent}`} />}
+      <p className="text-xs uppercase tracking-[0.25em] text-slate-400 mb-2">{label}</p>
+      <p className="flex flex-col mb-3">
+        <span className="text-xs text-slate-400 uppercase tracking-[0.15em]">Wins: {total}%</span>
+      </p>
+      <div className="flex-1 flex items-center justify-center min-w-[180px]">
+        <ResponsiveContainer width="100%" height={120}>
+          <PieChart>
+            <Pie
+              data={data}
+              dataKey="value"
+              nameKey="name"
+              cx="50%"
+              cy="50%"
+              outerRadius={40}
+            >
+              {data.map((entry, index) => (
+                <Cell key={`cell-{index}`} fill={COLORS[index]} />
+              ))}
+            </Pie>
+          </PieChart>
+        </ResponsiveContainer>
+      </div>
+    </div>
+  )
+}
 
 const StatBarChartCard: React.FC<StatBarChartCardProps> = ({ label, accent, data, total }) => {
   const totalValue = total ? data.reduce((sum, item) => sum + item.value, 0) : null;
@@ -408,7 +454,7 @@ const StatBarChartCard: React.FC<StatBarChartCardProps> = ({ label, accent, data
           <span className="text-xs text-slate-400 uppercase tracking-[0.15em]">Total: {totalValue}</span>
         </p>
       )}
-      <div className="flex-1 flex items-center justify-center min-w-[80px] overflow-x-auto">
+      <div className="flex-1 flex items-center justify-center min-w-[180px]">
         <ResponsiveContainer width="100%" height={120}>
           <BarChart data={data} margin={{ top: 10, right: 5, left: 5, bottom: 10 }}>
             <XAxis
@@ -416,12 +462,6 @@ const StatBarChartCard: React.FC<StatBarChartCardProps> = ({ label, accent, data
               axisLine={false}
               tickLine={false}
               tick={(tickProps) => <CustomXAxisTick {...tickProps} data={data} />}
-            />
-            <YAxis
-              axisLine={false}
-              tickLine={false}
-              tick={{ fill: "#a5b4fc", fontSize: 13, fontWeight: 500 }}
-              width={32}
             />
             <Bar dataKey="value" fill="#6366f1" radius={[8, 8, 8, 8]} barSize={28} />
           </BarChart>
