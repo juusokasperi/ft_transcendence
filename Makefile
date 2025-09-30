@@ -30,6 +30,13 @@ define ensure_dirs
 	fi
 endef
 
+
+# Verify required env variables are present before starting services
+define ensure_env
+	@echo ">> Validating required environment variables (.env)"
+	@node scripts/check-env.mjs --quiet
+endef
+
 # Ensure a project-scoped buildx builder exists and is selected
 define ensure_builder
 	@echo ">> Using buildx builder '$(BUILDER)'"
@@ -53,6 +60,7 @@ all: up
 
 up:
 	$(ensure_dirs)
+	$(ensure_env)
 	$(ensure_builder)
 	@echo ">> Starting default stack (attached)"
 	docker compose -p $(NAME) $(ROOT_COMPOSE) $(ENV_ROOT) up --build
@@ -60,29 +68,34 @@ up:
 
 detached:
 	$(ensure_dirs)
+	$(ensure_env)
 	$(ensure_builder)
 	@echo ">> Starting default stack (detached)"
 	docker compose -p $(NAME) $(ROOT_COMPOSE) $(ENV_ROOT) up --build -d
 
 elk:
 	$(ensure_dirs)
+	$(ensure_env)
 	$(ensure_builder)
 	@echo ">> Starting profile 'elk' (attached)"
 	docker compose -p $(NAME) --profile elk up --build
 
 elk-detached:
 	$(ensure_dirs)
+	$(ensure_env)
 	$(ensure_builder)
 	@echo ">> Starting profile 'elk' (detached)"
 	docker compose -p $(NAME) --profile elk up --build -d
 
 mon:
 	$(ensure_dirs)
+	$(ensure_env)
 	$(ensure_builder)
 	docker compose -p $(NAME)  --profile monitoring up --build
 
 mon-detached:
 	$(ensure_dirs)
+	$(ensure_env)
 	$(ensure_builder)
 	docker compose -p $(NAME)  --profile monitoring up --build -d
 
@@ -157,17 +170,21 @@ stop:
 	docker compose -p $(NAME) stop
 
 restart:
+	$(ensure_env)
 	@echo ">> Restarting services in default stack"
 	docker compose -p $(NAME) $(ROOT_COMPOSE) $(ENV_ROOT) restart
 
 restart-elk:
+	$(ensure_env)
 	@echo ">> Restarting services in profile 'elk'"
 	docker compose -p $(NAME) --profile elk restart
 
 restart-mon:
+	$(ensure_env)
 	docker compose -p $(NAME) --profile monitoring restart
 
 restart-%:
+	$(ensure_env)
 	@echo ">> Restarting service '$*' (if present in any compose file)"
 	@if echo "$(SERVICES)" | grep -qw "$*"; then \
 		docker compose -p $(NAME) -f docker-compose.yml restart $* || true; \
