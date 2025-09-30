@@ -1,8 +1,8 @@
 {
   "extends": "../../.config/tsconfig.base.json",
   "compilerOptions": {
-    "emitDeclarationOnly": false,
-	"allowImportingTsExtensions": false,
+    "emitDeclarationOnly": true,
+    "allowImportingTsExtensions": true,
     "declaration": true,
     "noEmit": false,
     "module": "NodeNext",

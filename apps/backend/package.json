@@ -12,6 +12,8 @@
   "main": "dist/index.js",
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
+    "build:prod": "tsc -p tsconfig.build.prod.json",
+    "build:vite": "vite build",
     "db:reset": "rm -rf data/",
     "db:seed": "tsx utils/seedTestData.ts",
     "dev": "tsx --tsconfig ./tsconfig.json --watch index.ts",
@@ -41,7 +43,11 @@
     "otplib": "^12.0.1",
     "nodemailer": "^7.0.6",
     "umzug": "^3.8.2",
-    "uuid": "^13.0.0"
+    "fastify-metrics": "^12.1.0",
+    "prom-client": "^15.1.3",
+    "uuid": "^13.0.0",
+    "vite": "^7.1.5",
+    "vite-tsconfig-paths": "^5.1.4"
   },
   "devDependencies": {
     "@types/bcrypt": "^6.0.0",

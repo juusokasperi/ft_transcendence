@@ -1,0 +1,12 @@
+{
+  "extends": "./tsconfig.build.json",
+  "compilerOptions": {
+    "outDir": "dist",
+    "rootDir": "dist",
+    "emitDeclarationOnly": false, // produce JS for Node
+    "allowImportingTsExtensions": false, // required when emitting JS
+    "declaration": true
+  },
+  "include": ["dist/**/*"],
+  "exclude": ["node_modules"]
+}
