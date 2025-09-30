@@ -80,7 +80,8 @@ export function getTotalStatsForUser(uuid: string): MatchPlayerStatsMe | null {
               OR (mp.team_number = 2 AND m.team_2_score < m.team_1_score)
             THEN 1 ELSE 0 END
         ) as matchesLost,
-        COALESCE(u.ranking, 0) as ranking
+        COALESCE(u.ranking, 0) as ranking,
+        u.created_at as createdAt
       FROM Users u
       LEFT JOIN MatchPlayers mp ON mp.user_uuid = u.uuid
       LEFT JOIN MatchPlayerStats s ON s.match_player_id = mp.id
