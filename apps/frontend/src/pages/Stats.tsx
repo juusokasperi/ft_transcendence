@@ -4,12 +4,13 @@ import { AxiosError } from 'axios';
 import { resolveAvatarUrl } from '../utils/avatarUrl';
 import Navbar from '../components/Navbar';
 import { useSnackbar } from '../context/SnackbarContext';
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer } from 'recharts';
 
 interface StatBarChartCardProps {
   label: string;
   accent?: string;
   data: { name: string; value: number }[];
+  total?: boolean;
 }
 
 interface MatchPlayerPublic {
@@ -217,43 +218,34 @@ const Stats: React.FC = () => {
               <div className="absolute -left-10 bottom-0 h-32 w-32 rounded-full bg-purple-500/10 blur-3xl" />
 
               <div className="relative grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-                <StatCard
-                  label="Matches played"
-                  value={matchesPlayed}
+                <StatBarChartCard
+                  label="Matches Overview"
                   accent="from-indigo-400 to-purple-500"
-                />
-                <StatCard
-                  label="Wins"
-                  value={stats.matchesWon ?? 0}
-                  accent="from-emerald-400 to-teal-500"
-                />
-                <StatCard
-                  label="Losses"
-                  value={stats.matchesLost ?? 0}
-                  accent="from-rose-400 to-red-500"
-                />
-                <StatCard
-                  label="Win rate"
-                  value={`${winRate}%`}
-                  accent="from-sky-400 to-indigo-500"
+                  data={[
+                    { name: 'Won', value: stats.matchesWon ?? 0},
+                    { name: 'Lost', value: stats.matchesLost ?? 0},
+                  ]}
+                  total={true}
                 />
 
-                <StatBarCharCard
+                <StatBarChartCard
                   label="Points Overview"
                   accent="from-indigo-400 to-purple-500"
                   data={[
                     { name: 'Scored', value: stats.pointsScored },
                     { name: 'Conceded', value: stats.pointsConceded },
                   ]}
+                  total={true}
                 />
 
-                <StatBarCharCard
+                <StatBarChartCard
                   label="Games Overview"
                   accent="from-indigo-400 to-purple-500"
                   data={[
-                    { name: 'Won', value: stats.gamesWon },
-                    { name: 'Lost', value: stats.gamesLost },
+                    { name: 'Won', value: stats.gamesWon ?? 0 },
+                    { name: 'Lost', value: stats.gamesLost ?? 0 },
                   ]}
+                  total={true}
                 />
 
                 <StatCard
@@ -369,29 +361,61 @@ const StatCard: React.FC<{
   </div>
 );
 
-const CustomBarTooltip = ({ active, payload, label }: any) => {
-  if (!active || !payload || !payload.length) return null;
+const CustomXAxisTick = (props: any) => {
+  const { x, y, payload, data } = props;
+  const value = payload.value;
+  const index = payload.index;
+  const barValue = data && data[index] ? data[index].value : '';
   return (
-    <div className="rounded-xl bg-slate-900/90 px-4 py-2 shadow-lg border border-indigo-500/30">
-      <p className="text-xs font-semibold text-indigo-300">{label}</p>
-      <p className="text-lg font-bold text-white mt-1">{payload[0].value.toLocaleString()}</p>
-    </div>
-  )
-}
+    <g transform={`translate(${x},${y})`}>
+      <text
+        x={0}
+        y={0}
+        dy={16}
+        textAnchor="middle"
+        fill="#94a3b8"
+        fontSize={12}
+        fontWeight={400}
+        letterSpacing="0.05em"
+      >
+        {value}
+      </text>
+      <text
+        x={0}
+        y={0}
+        dy={30}
+        textAnchor="middle"
+        fill="#9b9b9bff"
+        fontSize={12}
+        fontWeight={400}
+        letterSpacing="0.05em"
+      >
+        {barValue}
+      </text>
+    </g>
+  );
+};
 
-const StatBarCharCard: React.FC<StatBarChartCardProps> = ({ label, accent, data }) => {
+const StatBarChartCard: React.FC<StatBarChartCardProps> = ({ label, accent, data, total }) => {
+  const totalValue = total ? data.reduce((sum, item) => sum + item.value, 0) : null;
+
   return (
     <div className="relative overflow-hidden rounded-2xl border border-white/10 bg-slate-950/60 p-5 shadow shadow-indigo-950/20 flex flex-col">
       {accent && <div className={`absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r ${accent}`} />}
       <p className="text-xs uppercase tracking-[0.25em] text-slate-400 mb-2">{label}</p>
-      <div className="flex-1 flex items-center justify-center min-w-[180px]">
+      {total && (
+        <p className="flex flex-col mb-3">
+          <span className="text-xs text-slate-400 uppercase tracking-[0.15em]">Total: {totalValue}</span>
+        </p>
+      )}
+      <div className="flex-1 flex items-center justify-center min-w-[80px] overflow-x-auto">
         <ResponsiveContainer width="100%" height={120}>
-          <BarChart data={data} margin={{ top: 10, right: 10, left: 10, bottom: 10 }}>
+          <BarChart data={data} margin={{ top: 10, right: 5, left: 5, bottom: 10 }}>
             <XAxis
               dataKey="name"
               axisLine={false}
               tickLine={false}
-              tick={{ fill: "#a5b4fc", fontSize: 13, fontWeight: 600 }}
+              tick={(tickProps) => <CustomXAxisTick {...tickProps} data={data} />}
             />
             <YAxis
               axisLine={false}
@@ -399,8 +423,7 @@ const StatBarCharCard: React.FC<StatBarChartCardProps> = ({ label, accent, data 
               tick={{ fill: "#a5b4fc", fontSize: 13, fontWeight: 500 }}
               width={32}
             />
-            <Tooltip content={<CustomBarTooltip />} cursor={{ fill: "rgba(99,102,241,0.08)" }} />
-            <Bar dataKey="value" fill="#6366f1" radius={[8, 8, 8, 8]} barSize={24} />
+            <Bar dataKey="value" fill="#6366f1" radius={[8, 8, 8, 8]} barSize={28} />
           </BarChart>
         </ResponsiveContainer>
       </div>
