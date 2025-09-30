@@ -469,9 +469,17 @@ wss.on('connection', (socket, req) => {
           if (currentMatch.startTimeout) {
             clearTimeout(currentMatch.startTimeout);
             currentMatch.startTimeout = undefined;
-            currentMatch.startAtEpochMs = undefined;
-            currentMatch.started = false;
           }
+          if (currentMatch.loop) {
+            clearInterval(currentMatch.loop);
+            currentMatch.loop = undefined;
+            console.log(`[GameServer] Pausing match ${roomIdentifier} waiting for opponent`);
+            // Inform remaining player that opponent disconnected and match is paused?
+            // Check what the client does with this...
+            // Review Juuso and Iurii
+          }
+          currentMatch.startAtEpochMs = undefined;
+          currentMatch.started = false;
         }
         if (!currentMatch.players.P1 && !currentMatch.players.P2) {
           if (currentMatch.loop) {
