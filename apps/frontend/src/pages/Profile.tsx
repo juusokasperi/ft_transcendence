@@ -6,7 +6,7 @@ import { PLACEHOLDER, resolveAvatarUrl } from '../utils/avatarUrl';
 import TwoFactorSettings from '../components/TwoFactorSettings';
 import PasswordSettings from '../components/PasswordSettings';
 import Button from '../components/Button';
-import { validateUsername } from '../utils/validation';
+import { validateUsername, validateEmail } from '../utils/validation';
 import ConfirmDialog from '../components/ConfirmDialog';
 import { useSnackbar } from '../context/SnackbarContext';
 
@@ -17,6 +17,7 @@ const Profile: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [imagePreview, setImagePreview] = useState<string>(PLACEHOLDER);
   const [username, setUsername] = useState<string>('');
+  const [email, setEmail] = useState<string>('');
   const [isEditing, setIsEditing] = useState<boolean>(false);
 
   const [loading, setLoading] = useState<boolean>(false);
@@ -25,13 +26,16 @@ const Profile: React.FC = () => {
   const { enqueueSnackbar } = useSnackbar();
 
   const baseUsername = user?.username ?? '';
+  const baseEmail = user?.email ?? '';
   const isUsernameDirty = isEditing && username !== baseUsername;
+  const isEmailDirty = isEditing && email !== baseEmail;
   const isAvatarDirty = isEditing && Boolean(image);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const resetForm = () => {
     setImage(null);
     setUsername(baseUsername);
+    setEmail(baseEmail);
     setError(null);
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
@@ -41,6 +45,7 @@ const Profile: React.FC = () => {
   const startEditing = () => {
     setError(null);
     setUsername(baseUsername);
+    setEmail(baseEmail);
     setImage(null);
     setImagePreview(resolveAvatarUrl(user?.avatar, axios.defaults.baseURL));
     setIsEditing(true);
@@ -118,6 +123,34 @@ const Profile: React.FC = () => {
     }
   };
 
+  const handleEmailChange = async (): Promise<boolean> => {
+    if (!isEmailDirty || !email || email === baseEmail) return true;
+
+    if (!validateEmail(email)) {
+      setError('Please enter a valid email address.');
+      return false;
+    }
+
+    try {
+      const res = await axios.patch('/api/users/me/email', {
+        newEmail: email,
+      });
+      enqueueSnackbar({
+        message: 'Confirmation email sent to new email address',
+        variant: 'success',
+      });
+      return true;
+    } catch (err: any) {
+      const axiosErr = err as AxiosError<{ message?: string }>;
+      const message = axiosErr?.response?.data?.message;
+      enqueueSnackbar({
+        message: String(message ?? 'Unable to request email change'),
+        variant: 'error',
+      });
+      return false;
+    }
+  };
+
   const handleUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!isEditing) return;
@@ -173,7 +206,9 @@ const Profile: React.FC = () => {
         }
       }
 
-      if (usernameResult && avatarResult) {
+      const emailResult = await handleEmailChange();
+
+      if (usernameResult && avatarResult && emailResult) {
         resetForm();
         setIsEditing(false);
       }
@@ -246,7 +281,7 @@ const Profile: React.FC = () => {
             </div>
           </header>
 
-          <form className="grid gap-8 lg:grid-cols-[auto,1fr]" onSubmit={handleUpdate}>
+          <form className="grid gap-8 lg:grid-cols-[auto,1fr]" onSubmit={handleUpdate} noValidate>
             <div className="flex flex-col items-center gap-4">
               <div
                 className={`relative inline-flex h-28 w-28 items-center justify-center rounded-full border-4 border-white/10 bg-slate-800/80 ${
@@ -343,7 +378,33 @@ const Profile: React.FC = () => {
                     isUsernameDirty ? 'ring-2 ring-emerald-400/70' : ''
                   }`}
                 />
-                {error && isEditing && <p className="text-sm text-rose-400">{error}</p>}
+                {error && isEditing && isUsernameDirty && (
+                  <p className="text-sm text-rose-400">{error}</p>
+                )}
+              </div>
+
+              <div className="space-y-4">
+                {isEditing && (
+                  <label className="text-sm font-semibold text-slate-200">Change email</label>
+                )}
+                <input
+                  type="email"
+                  value={isEditing ? email : (user?.email ?? '')}
+                  placeholder={user?.email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  disabled={!isEditing}
+                  className={`w-full rounded-2xl border border-white/15 bg-white/5 px-4 py-3 text-sm text-white transition placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-400/60 disabled:cursor-not-allowed disabled:opacity-60 ${
+                    isEmailDirty ? 'ring-2 ring-emerald-400/70' : ''
+                  }`}
+                />
+                {isEditing && (
+                  <p className="text-xs text-slate-400">
+                    A confirmation email will be sent to your new email address
+                  </p>
+                )}
+                {error && isEditing && isEmailDirty && (
+                  <p className="text-sm text-rose-400">{error}</p>
+                )}
               </div>
 
               {isEditing && (
