@@ -100,7 +100,7 @@ export function getTotalStatsForUser(uuid: string): MatchPlayerStatsMe | null {
         matchesWon: 0,
         matchesLost: 0,
         ranking: 0,
-        createdAt: '',
+        createdAt: null,
       };
     }
     return result;

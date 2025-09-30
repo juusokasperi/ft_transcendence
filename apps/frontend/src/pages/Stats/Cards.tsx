@@ -1,5 +1,15 @@
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, ResponsiveContainer } from 'recharts';
 
+interface CustomXAxisTickProps {
+  x: number;
+  y: number;
+  payload: {
+    value: string | number;
+    index: number;
+  };
+  data: { value: number }[];
+}
+
 interface StatBarChartCardProps {
   label: string;
   accent?: string;
@@ -33,7 +43,7 @@ export const StatCard: React.FC<{
   </div>
 );
 
-const CustomXAxisTick = (props: any) => {
+const CustomXAxisTick: React.FC<CustomXAxisTickProps> = (props) => {
   const { x, y, payload, data } = props;
   const value = payload.value;
   const index = payload.index;

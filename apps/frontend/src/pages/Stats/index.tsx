@@ -187,7 +187,7 @@ const Stats: React.FC = () => {
                 Pulling your latest games…
               </div>
             ) : matches.length > 0 ? (
-              <div className="min-h-screen bg-slate-900 p-4">
+              <div className="bg-slate-900 p-4">
                 <div className="mx-auto max-w-6xl">
                   <div className="divide-y divide-white/5">
                     <div className="hidden grid-cols-7 items-center border-b border-white/10 bg-slate-950/80 px-6 py-3 text-xs font-semibold uppercase tracking-wide text-slate-300 lg:grid">

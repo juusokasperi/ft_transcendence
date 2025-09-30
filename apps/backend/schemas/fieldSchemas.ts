@@ -82,9 +82,12 @@ export const MyStatsSchema = {
     matchesWon: { type: 'number', minimum: 0 },
     matchesLost: { type: 'number', minimum: 0 },
     ranking: { type: 'number', minimum: 0 },
-    createdAt: { type: 'string', format: 'date-time' },
+    createdAt: { anyOf: [
+      { type: 'string', format: 'date-time' },
+      { type: 'null' },
+    ]},
   },
-  required: [...Object.keys(BaseStatsProperties), 'matchesWon', 'matchesLost', 'ranking'],
+  required: [...Object.keys(BaseStatsProperties), 'matchesWon', 'matchesLost', 'ranking', 'createdAt'],
 };
 
 export const TeamSchema = {
