@@ -50,7 +50,7 @@ const OnlineGame: React.FC = () => {
   const appRef = useRef<{ destroy(): void } | null>(null);
   const clientRef = useRef<ReturnType<typeof createMatchmakingClient> | null>(null);
   const { enqueueSnackbar } = useSnackbar();
-  const { user, navigate } = useAppContext();
+  const { user, navigate, axios } = useAppContext();
 
   const [queueStart, setQueueStart] = useState<number | null>(null);
   const [queueElapsed, setQueueElapsed] = useState<number>(0);
@@ -157,6 +157,23 @@ const OnlineGame: React.FC = () => {
         case 'ERROR':
           if (msg.code === 'AUTH') {
             setAuthenticated(false);
+            if (msg.message === 'Token expired') {
+              client.socket.close();
+              (async () => {
+                try {
+                  await axios.post('/api/auth/refresh');
+                  setStatus('connecting');
+                  setShouldReconnect((prev) => (prev + 1) % 2);
+                } catch {
+                  enqueueSnackbar({
+                    message: msg.message ? msg.message : 'Unknown authentication error',
+                    variant: 'error',
+                  });
+                  navigate('/login');
+                }
+              })();
+              break;
+            }
             enqueueSnackbar({
               message: msg.message ? msg.message : 'Unknown authentication error',
               variant: 'error',
