@@ -7,7 +7,6 @@ export const DesktopMatches: React.FC<{ match: Match; colorClass: string }> = ({
   colorClass,
 }) => (
   <div className="hidden grid-cols-7 items-center gap-2 border-b border-white/10 bg-slate-950/70 px-6 py-4 text-xs transition hover:bg-white/5 lg:grid">
-
     {/* ELO Change */}
     <span
       className={`font-semibold ${
