@@ -7,9 +7,8 @@ const BASE_RANKING = 1000;
 export const StatsSection: React.FC<{ stats: MatchPlayerStats }> = ({ stats }) => {
   const matchesWon = stats?.matchesWon ?? 0;
   const matchesLost = stats.matchesLost ?? 0;
-  const winRate = matchesWon + matchesLost > 0
-    ? Math.round((matchesWon / (matchesWon + matchesLost)) * 100)
-    : 0;
+  const winRate =
+    matchesWon + matchesLost > 0 ? Math.round((matchesWon / (matchesWon + matchesLost)) * 100) : 0;
   const rankingDeltaTotal = stats?.ranking !== undefined ? stats.ranking - BASE_RANKING : 0;
   const matchesPlayed = matchesWon + matchesLost;
   const avgDelta = matchesPlayed > 0 ? Number((rankingDeltaTotal / matchesPlayed).toFixed(2)) : 0;
