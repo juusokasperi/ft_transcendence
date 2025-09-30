@@ -4,6 +4,13 @@ import { AxiosError } from 'axios';
 import { resolveAvatarUrl } from '../utils/avatarUrl';
 import Navbar from '../components/Navbar';
 import { useSnackbar } from '../context/SnackbarContext';
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
+
+interface StatBarChartCardProps {
+  label: string;
+  accent?: string;
+  data: { name: string; value: number }[];
+}
 
 interface MatchPlayerPublic {
   uuid: string;
@@ -231,10 +238,23 @@ const Stats: React.FC = () => {
                   accent="from-sky-400 to-indigo-500"
                 />
 
-                <StatCard label="Points scored" value={stats.pointsScored} />
-                <StatCard label="Points conceded" value={stats.pointsConceded} />
-                <StatCard label="Games won" value={stats.gamesWon} />
-                <StatCard label="Games lost" value={stats.gamesLost} />
+                <StatBarCharCard
+                  label="Points Overview"
+                  accent="from-indigo-400 to-purple-500"
+                  data={[
+                    { name: 'Scored', value: stats.pointsScored },
+                    { name: 'Conceded', value: stats.pointsConceded },
+                  ]}
+                />
+
+                <StatBarCharCard
+                  label="Games Overview"
+                  accent="from-indigo-400 to-purple-500"
+                  data={[
+                    { name: 'Won', value: stats.gamesWon },
+                    { name: 'Lost', value: stats.gamesLost },
+                  ]}
+                />
 
                 <StatCard
                   label="Net rating change"
@@ -348,5 +368,44 @@ const StatCard: React.FC<{
     <p className={`mt-3 text-2xl font-semibold ${toneClass[tone]}`}>{value}</p>
   </div>
 );
+
+const CustomBarTooltip = ({ active, payload, label }: any) => {
+  if (!active || !payload || !payload.length) return null;
+  return (
+    <div className="rounded-xl bg-slate-900/90 px-4 py-2 shadow-lg border border-indigo-500/30">
+      <p className="text-xs font-semibold text-indigo-300">{label}</p>
+      <p className="text-lg font-bold text-white mt-1">{payload[0].value.toLocaleString()}</p>
+    </div>
+  )
+}
+
+const StatBarCharCard: React.FC<StatBarChartCardProps> = ({ label, accent, data }) => {
+  return (
+    <div className="relative overflow-hidden rounded-2xl border border-white/10 bg-slate-950/60 p-5 shadow shadow-indigo-950/20 flex flex-col">
+      {accent && <div className={`absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r ${accent}`} />}
+      <p className="text-xs uppercase tracking-[0.25em] text-slate-400 mb-2">{label}</p>
+      <div className="flex-1 flex items-center justify-center min-w-[180px]">
+        <ResponsiveContainer width="100%" height={120}>
+          <BarChart data={data} margin={{ top: 10, right: 10, left: 10, bottom: 10 }}>
+            <XAxis
+              dataKey="name"
+              axisLine={false}
+              tickLine={false}
+              tick={{ fill: "#a5b4fc", fontSize: 13, fontWeight: 600 }}
+            />
+            <YAxis
+              axisLine={false}
+              tickLine={false}
+              tick={{ fill: "#a5b4fc", fontSize: 13, fontWeight: 500 }}
+              width={32}
+            />
+            <Tooltip content={<CustomBarTooltip />} cursor={{ fill: "rgba(99,102,241,0.08)" }} />
+            <Bar dataKey="value" fill="#6366f1" radius={[8, 8, 8, 8]} barSize={24} />
+          </BarChart>
+        </ResponsiveContainer>
+      </div>
+    </div>
+  );
+};
 
 export default Stats;
