@@ -234,6 +234,73 @@ export function updateUsername(uuid: string, username: string): boolean {
   }
 }
 
+export function updateEmail(uuid: string, email: string): boolean {
+  try {
+    const result = db
+      .prepare(
+        `
+			UPDATE Users
+			SET email = ?
+			WHERE uuid = ?
+			`,
+      )
+      .run(email, uuid);
+    return result.changes === 1;
+  } catch (error) {
+    return false;
+  }
+}
+
+export function markEmailChange(uuid: string, newEmail: string, token: string): boolean {
+  try {
+    const result = db
+      .prepare(
+        `
+			UPDATE Users
+			SET email_change_token = ?, email_change_new_email = ?, email_change_expires = datetime('now', '+24 hours')
+			WHERE uuid = ?
+			`,
+      )
+      .run(token, newEmail, uuid);
+    return result.changes === 1;
+  } catch (error) {
+    return false;
+  }
+}
+
+export function confirmEmailChange(token: string): { uuid: string; newEmail: string } | null {
+  const transaction = db.transaction(() => {
+    const user = db
+      .prepare(
+        `
+			SELECT uuid, email_change_new_email FROM Users
+			WHERE email_change_token = ? AND email_change_expires > datetime('now')
+		`,
+      )
+      .get(token) as { uuid: string; email_change_new_email: string } | undefined;
+    if (!user) throw new Error('Invalid or expired token');
+
+    const updateResult = db
+      .prepare(
+        `
+			UPDATE Users
+			SET email = ?, email_change_token = NULL, email_change_new_email = NULL, email_change_expires = NULL
+			WHERE uuid = ?
+			`,
+      )
+      .run(user.email_change_new_email, user.uuid);
+    if (updateResult.changes === 0) throw new Error('Update failed');
+
+    return { uuid: user.uuid, newEmail: user.email_change_new_email };
+  });
+
+  try {
+    return transaction();
+  } catch {
+    return null;
+  }
+}
+
 export function getUserStats(): UserStats[];
 export function getUserStats(uuid: string): UserStats | null;
 export function getUserStats(uuid?: string): UserStats[] | UserStats | null {

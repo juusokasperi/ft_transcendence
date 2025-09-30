@@ -298,4 +298,139 @@ describe('User Functions', () => {
     expect(bByG?.uuid).toBe(bId);
     expect(bByG?.avatar).toBe('/keep.png'); // unchanged
   });
+
+  describe('Email Change Functions', () => {
+    it('updateEmail should update user email directly', async () => {
+      const { addUser, updateEmail, getUserByUuid } = await import('../../../db/queries/users.ts');
+
+      const userId = 'uuid-email-test';
+      const initialEmail = 'old@example.com';
+      const newEmail = 'new@example.com';
+
+      // Create test user
+      const added = addUser(userId, 'TestUser', 'hash', initialEmail);
+      expect(added).toBe(true);
+
+      // Verify initial email
+      const userBefore = getUserByUuid(userId);
+      expect(userBefore?.email).toBe(initialEmail);
+
+      // Update email
+      const updated = updateEmail(userId, newEmail);
+      expect(updated).toBe(true);
+
+      // Verify email was updated
+      const userAfter = getUserByUuid(userId);
+      expect(userAfter?.email).toBe(newEmail);
+    });
+
+    it('markEmailChange should set email change fields', async () => {
+      const { addUser, markEmailChange } = await import('../../../db/queries/users.ts');
+
+      const userId = 'uuid-mark-test';
+      const currentEmail = 'current@example.com';
+      const newEmail = 'pending@example.com';
+      const token = 'test-token-123';
+
+      // Create test user
+      const added = addUser(userId, 'MarkTest', 'hash', currentEmail);
+      expect(added).toBe(true);
+
+      // Mark email change
+      const marked = markEmailChange(userId, newEmail, token);
+      expect(marked).toBe(true);
+
+      // Verify the change was marked in database
+      const db = await import('../../../db/client.ts');
+      const userRecord = db.default
+        .prepare(
+          'SELECT email_change_token, email_change_new_email, email_change_expires FROM Users WHERE uuid = ?',
+        )
+        .get(userId) as any;
+
+      expect(userRecord.email_change_token).toBe(token);
+      expect(userRecord.email_change_new_email).toBe(newEmail);
+      expect(userRecord.email_change_expires).toBeTruthy(); // Should have an expiration date
+    });
+
+    it('confirmEmailChange should update email and clear change fields on valid token', async () => {
+      const { addUser, markEmailChange, confirmEmailChange, getUserByUuid } = await import(
+        '../../../db/queries/users.ts'
+      );
+
+      const userId = 'uuid-confirm-test';
+      const currentEmail = 'current@example.com';
+      const newEmail = 'confirmed@example.com';
+      const token = 'confirm-token-456';
+
+      // Create test user
+      const added = addUser(userId, 'ConfirmTest', 'hash', currentEmail);
+      expect(added).toBe(true);
+
+      // Mark email change
+      const marked = markEmailChange(userId, newEmail, token);
+      expect(marked).toBe(true);
+
+      // Confirm email change
+      const result = confirmEmailChange(token);
+      expect(result).toBeTruthy();
+      expect(result?.uuid).toBe(userId);
+      expect(result?.newEmail).toBe(newEmail);
+
+      // Verify email was updated
+      const userAfter = getUserByUuid(userId);
+      expect(userAfter?.email).toBe(newEmail);
+
+      // Verify change fields were cleared
+      const db = await import('../../../db/client.ts');
+      const userRecord = db.default
+        .prepare(
+          'SELECT email_change_token, email_change_new_email, email_change_expires FROM Users WHERE uuid = ?',
+        )
+        .get(userId) as any;
+
+      expect(userRecord.email_change_token).toBeNull();
+      expect(userRecord.email_change_new_email).toBeNull();
+      expect(userRecord.email_change_expires).toBeNull();
+    });
+
+    it('confirmEmailChange should return null for invalid token', async () => {
+      const { confirmEmailChange } = await import('../../../db/queries/users.ts');
+
+      // Try to confirm with non-existent token
+      const result = confirmEmailChange('invalid-token');
+      expect(result).toBeNull();
+    });
+
+    it('confirmEmailChange should return null for expired token', async () => {
+      const { addUser, markEmailChange, confirmEmailChange } = await import(
+        '../../../db/queries/users.ts'
+      );
+
+      const userId = 'uuid-expired-test';
+      const currentEmail = 'current@example.com';
+      const newEmail = 'expired@example.com';
+      const token = 'expired-token-789';
+
+      // Create test user
+      const added = addUser(userId, 'ExpiredTest', 'hash', currentEmail);
+      expect(added).toBe(true);
+
+      // Mark email change
+      const marked = markEmailChange(userId, newEmail, token);
+      expect(marked).toBe(true);
+
+      // Manually expire the token by setting it to past date
+      const db = await import('../../../db/client.ts');
+      db.default
+        .prepare(
+          "UPDATE Users SET email_change_expires = datetime('now', '-1 hour') WHERE uuid = ?",
+        )
+        .run(userId);
+
+      // Try to confirm expired token
+      const result = confirmEmailChange(token);
+      expect(result).toBeNull();
+    });
+  });
 });
