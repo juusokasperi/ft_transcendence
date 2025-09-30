@@ -59,7 +59,19 @@ export async function handleAuth(
   clients: Map<string, ClientInfo>,
 ): Promise<boolean> {
   log('Auth: attempt', { remoteId: client.id });
-  const user = await verifySiteToken(token);
+  let user;
+  try {
+    user = await verifySiteToken(token);
+  } catch (err) {
+    let message = 'Invalid token';
+    if (err && typeof err === 'object' && 'name' in err && err.name === 'TokenExpiredError') {
+      message = 'Token expired';
+    }
+    log('Error: ' + message, { clientId: client.id });
+    client.socket.send(JSON.stringify({ type: 'ERROR', code: 'AUTH', message }));
+    client.socket.close();
+    return false;
+  }
   if (!user) {
     log('Error: Invalid token', { clientId: client.id });
     client.socket.send(JSON.stringify({ type: 'ERROR', code: 'AUTH', message: 'Invalid token' }));
