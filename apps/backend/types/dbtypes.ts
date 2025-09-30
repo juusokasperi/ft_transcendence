@@ -94,3 +94,11 @@ export interface UserSettingsDb {
   color_blind_mode: number;
   photo_sensitive_mode: number;
 }
+
+export interface RefreshTokenDb {
+  token_id: string;
+  user_uuid: string;
+  hashed_token: string;
+  expires_at: string;
+  created_at: string;
+}

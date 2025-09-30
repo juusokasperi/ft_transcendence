@@ -1,7 +1,9 @@
 import type { FastifyInstance } from 'fastify';
 import type { FastifyRequest } from 'fastify';
 import crypto from 'crypto';
-import { signAccessToken, signTwoFactorToken } from '../utils/jwt.ts';
+import { signTwoFactorToken } from '../utils/jwt.ts';
+import { ACCESS_TOKEN_COOKIE_NAME, REFRESH_TOKEN_COOKIE_NAME } from '../utils/config.ts';
+import { issueTokensForUser } from '../utils/authTokens.ts';
 import {
   getUserByGoogleId,
   createUserFromGoogle,
@@ -170,7 +172,7 @@ export default async function googleSign(app: FastifyInstance) {
 
     if (user?.tfa) {
       const pendingToken = signTwoFactorToken({ username: user.username, uuid: user.uuid });
-      reply.clearCookie('token', { path: '/' });
+      reply.clearCookie(ACCESS_TOKEN_COOKIE_NAME, { path: '/' });
       const params = new URLSearchParams({
         pendingToken,
         method: 'totp',
@@ -179,13 +181,27 @@ export default async function googleSign(app: FastifyInstance) {
       return reply.redirect(`/login?${params.toString()}`);
     }
 
-    const appToken = signAccessToken({ username: user.username, uuid: user.uuid });
-    reply.setCookie('token', appToken, {
+    let issued;
+    try {
+      issued = issueTokensForUser({ username: user.username, uuid: user.uuid });
+    } catch {
+      return reply.status(500).send({ error: 'token_issue_failed' });
+    }
+
+    reply.setCookie(ACCESS_TOKEN_COOKIE_NAME, issued.accessToken, {
       httpOnly: true,
       sameSite: 'strict', // matches FE
       secure: process.env.NODE_ENV === 'production',
       path: '/',
       maxAge: 60 * 60 * 4, // 4h
+    });
+
+    reply.setCookie(REFRESH_TOKEN_COOKIE_NAME, issued.refreshToken, {
+      httpOnly: true,
+      sameSite: 'strict',
+      secure: process.env.NODE_ENV === 'production',
+      path: '/',
+      maxAge: issued.refreshCookieMaxAge,
     });
 
     // Done — return to SPA
