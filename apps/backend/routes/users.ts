@@ -9,8 +9,12 @@ import {
   getUserByUuid,
   updateUsername,
   updatePassword,
+  updateEmail,
+  markEmailChange,
+  confirmEmailChange,
   updateAvatar,
   getUserByUsername,
+  getUserByEmail,
   getUserSettings,
   updateUserSettings,
 } from '../db/queries/users.ts';
@@ -21,7 +25,7 @@ import {
   findUserToDeleteAndClear,
 } from '../db/queries/userDelete.ts';
 import { authPreHandler, tokenUuidCheck } from '../hooks/auth.ts';
-import { sendDeleteEmail } from '../utils/nodemailer/index.ts';
+import { sendDeleteEmail, sendEmailChangeEmail } from '../utils/nodemailer/index.ts';
 import { normalizeCredentials } from '../hooks/auth.ts';
 import { updateLastSeenHandler } from '../hooks/updateLastSeen.ts';
 import { UPLOAD_DIR } from '../utils/config.ts';
@@ -32,6 +36,8 @@ import {
   userDeleteSchema,
   userDeleteConfirmSchema,
   updateUsernameSchema,
+  updateEmailSchema,
+  emailConfirmSchema,
   updatePassSchema,
   updateAvatarSchema,
   deleteAvatarSchema,
@@ -99,6 +105,7 @@ export async function userRoutes(app: FastifyInstance) {
         const returnBody = {
           username: u.username,
           uuid: u.uuid,
+          email: u.email,
           avatar: u.avatar ?? null,
           tfa: !!u.tfa,
           ...(pass && pass === 'yes' ? { hasPass: !!u.passwordHash } : {}),
@@ -239,6 +246,63 @@ export async function userRoutes(app: FastifyInstance) {
         res.status(200).send({ success: 'Password successfully updated' });
       } catch (error) {
         res.status(500).send({ message: 'Failed to update user' });
+      }
+    },
+  );
+
+  // Request email update, sends confirmation to new email
+  app.patch(
+    '/me/email',
+    {
+      schema: updateEmailSchema,
+      preHandler: [authPreHandler, tokenUuidCheck, updateLastSeenHandler],
+    },
+    async (req: FastifyRequest, res: FastifyReply) => {
+      try {
+        const { newEmail } = req.body as { newEmail: string };
+        const uuid = req.user!.uuid;
+        const user = getUserByUuid(uuid);
+        if (!user) return res.status(404).send({ message: 'User not found' });
+
+        // Check if email is already in use
+        const existingUser = getUserByEmail(newEmail);
+        if (existingUser && existingUser.uuid !== uuid)
+          return res.status(400).send({ message: 'Email already in use' });
+
+        // Generate token and mark email change
+        const token = crypto.randomBytes(32).toString('hex');
+        const markResult = markEmailChange(uuid, newEmail, token);
+        if (!markResult)
+          return res.status(400).send({ message: 'Failed to initiate email change' });
+
+        // Send confirmation email to new email address
+        const emailSent = await sendEmailChangeEmail(newEmail, token);
+        if (!emailSent)
+          return res.status(500).send({ message: 'Failed to send confirmation email' });
+
+        res.status(200).send({ success: 'Confirmation email sent to new email address' });
+      } catch (error) {
+        res.status(500).send({ message: 'Failed to request email update' });
+      }
+    },
+  );
+
+  // Confirm email change
+  app.post(
+    '/confirm-email/:token',
+    {
+      schema: emailConfirmSchema,
+    },
+    async (req: FastifyRequest, res: FastifyReply) => {
+      try {
+        const { token } = req.params as { token: string };
+
+        const confirmResult = confirmEmailChange(token);
+        if (!confirmResult) return res.status(400).send({ message: 'Invalid or expired token' });
+
+        res.status(200).send({ success: 'Email successfully updated' });
+      } catch (error) {
+        res.status(500).send({ message: 'Failed to confirm email change' });
       }
     },
   );
