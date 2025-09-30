@@ -83,7 +83,7 @@ export const MyStatsSchema = {
     matchesLost: { type: 'number', minimum: 0 },
     ranking: { type: 'number', minimum: 0 },
     createdAt: { anyOf: [
-      { type: 'string', format: 'date-time' },
+      { type: 'string' },
       { type: 'null' },
     ]},
   },

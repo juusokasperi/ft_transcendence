@@ -39,7 +39,7 @@ export interface MatchPlayerStats {
   matchesWon?: number;
   matchesLost?: number;
   ranking?: number;
-  createdAt?: string;
+  createdAt?: string | null;
 }
 
 export const formatDate = (dateString: string, format: 'short' | 'long' = 'long') => {
