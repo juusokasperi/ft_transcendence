@@ -84,7 +84,10 @@ const ForgotPassword: React.FC = () => {
 
               <form onSubmit={handleSubmit} className="relative space-y-5 text-left">
                 <div>
-                  <label htmlFor="resetEmail" className="mb-1 block text-sm font-semibold text-slate-200">
+                  <label
+                    htmlFor="resetEmail"
+                    className="mb-1 block text-sm font-semibold text-slate-200"
+                  >
                     Email address
                   </label>
                   <input
@@ -108,7 +111,10 @@ const ForgotPassword: React.FC = () => {
 
                 <p className="text-sm text-slate-300/80">
                   Remembered your password?{' '}
-                  <Link to="/login" className="font-semibold text-sky-200 transition hover:text-white">
+                  <Link
+                    to="/login"
+                    className="font-semibold text-sky-200 transition hover:text-white"
+                  >
                     Back to login
                   </Link>
                 </p>

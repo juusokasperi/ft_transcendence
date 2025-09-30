@@ -101,8 +101,8 @@ const ResetPassword: React.FC = () => {
               Set a fresh password to get back into the arcade.
             </h1>
             <p className="text-base text-slate-200/80 sm:text-lg">
-              Strong passwords keep your progress secure. Make sure to remember the new one or
-              store it in a password manager.
+              Strong passwords keep your progress secure. Make sure to remember the new one or store
+              it in a password manager.
             </p>
           </div>
 
@@ -114,7 +114,10 @@ const ResetPassword: React.FC = () => {
 
               <form onSubmit={handleSubmit} className="relative space-y-5 text-left">
                 <div>
-                  <label htmlFor="newPassword" className="mb-1 block text-sm font-semibold text-slate-200">
+                  <label
+                    htmlFor="newPassword"
+                    className="mb-1 block text-sm font-semibold text-slate-200"
+                  >
                     New password
                   </label>
                   <div className="relative">
