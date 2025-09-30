@@ -7,7 +7,7 @@ import { useAppContext } from '../context/AppContext';
 import { useSnackbar } from '../context/SnackbarContext';
 
 const ResetPassword: React.FC = () => {
-  const { token } = useParams<{ token: string }>();
+  const { token: resetToken } = useParams<{ token: string }>();
   const navigate = useNavigate();
   const { axios } = useAppContext();
   const { enqueueSnackbar } = useSnackbar();
@@ -28,14 +28,14 @@ const ResetPassword: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    if (!token) {
+    if (!resetToken) {
       setError('Reset token is missing or invalid.');
     }
-  }, [token]);
+  }, [resetToken]);
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
-    if (!token || loading) return;
+    if (!resetToken || loading) return;
 
     setError(null);
     setSuccess(null);
@@ -53,7 +53,7 @@ const ResetPassword: React.FC = () => {
 
     setLoading(true);
     try {
-      await axios.post(`/api/reset-password/${token}`, { newPassword: password });
+      await axios.post(`/api/reset-password/${resetToken}`, { newPassword: password });
       setSuccess('Password updated successfully. Redirecting to login…');
       enqueueSnackbar({
         message: 'Password reset complete. Please sign in with your new password.',
@@ -61,7 +61,7 @@ const ResetPassword: React.FC = () => {
       });
       redirectTimer.current = setTimeout(() => navigate('/login'), 1800);
     } catch (err) {
-      setError('Token is invalid or expired. Request a new reset email.');
+      setError('Reset token is invalid or expired. Request a new reset email.');
       enqueueSnackbar({
         message: 'Password reset failed. Please request a new link.',
         variant: 'error',
@@ -171,12 +171,12 @@ const ResetPassword: React.FC = () => {
                 {error && <p className="text-sm font-medium text-rose-300">{error}</p>}
                 {success && <p className="text-sm font-medium text-emerald-300">{success}</p>}
 
-                <Button type="submit" fullWidth disabled={loading || !token}>
+                <Button type="submit" fullWidth disabled={loading || !resetToken}>
                   {loading ? 'Updating password…' : 'Update password'}
                 </Button>
 
                 <p className="text-sm text-slate-300/80">
-                  Token expired?{' '}
+                  Reset token expired?{' '}
                   <Link
                     to="/forgot-password"
                     className="font-semibold text-purple-200 transition hover:text-white"
