@@ -7,6 +7,7 @@ export const DesktopMatches: React.FC<{ match: Match; colorClass: string }> = ({
   colorClass,
 }) => (
   <div className="hidden grid-cols-7 items-center gap-2 border-b border-white/10 bg-slate-950/70 px-6 py-4 text-xs transition hover:bg-white/5 lg:grid">
+
     {/* ELO Change */}
     <span
       className={`font-semibold ${
@@ -30,7 +31,7 @@ export const DesktopMatches: React.FC<{ match: Match; colorClass: string }> = ({
         {match.players.team2[0]?.username ?? 'Unknown'}
       </span>
       {match.players.team2[0]!.ranking && (
-        <span className="text-slate-400">({match.players.team2[0]?.ranking})</span>
+        <span className="text-slate-400">({match.players.team2[0]!.ranking})</span>
       )}
     </span>
 
@@ -38,14 +39,15 @@ export const DesktopMatches: React.FC<{ match: Match; colorClass: string }> = ({
     <span className={`font-bold ${colorClass}`}>
       {match.team1Score} - {match.team2Score}
     </span>
+
     {/* Points scored */}
-    <span>{match.players.team1[0]?.stats?.pointsScored ?? '-'}</span>
+    <span>{match.players.team1[0]!.stats?.pointsScored ?? '-'}</span>
 
     {/* Points conceded */}
-    <span>{match.players.team1[0]?.stats?.pointsConceded ?? '-'}</span>
+    <span>{match.players.team1[0]!.stats?.pointsConceded ?? '-'}</span>
 
     {/* Biggest lead */}
-    <span>{match.players.team1[0]?.stats?.maxPointLead ?? '-'}</span>
+    <span>{match.players.team1[0]!.stats?.maxPointLead ?? '-'}</span>
 
     {/* Played at */}
     <span className="text-slate-400">{formatDate(match.playedAt, 'short')}</span>
@@ -65,7 +67,7 @@ export const MobileMatches: React.FC<{ match: Match; colorClass: string }> = ({
             {match.players.team2[0]?.username ?? 'Unknown'}
           </span>
           {match.players.team2[0]!.ranking && (
-            <span className="text-xs text-slate-400">Rank {match.players.team2[0]?.ranking}</span>
+            <span className="text-xs text-slate-400">Rank {match.players.team2[0]!.ranking}</span>
           )}
         </div>
       </div>
