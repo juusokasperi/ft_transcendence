@@ -5,16 +5,9 @@ import type { IncomingMessage } from 'http';
 import type { ClientInfo } from '../types/types.ts';
 import { log } from '../utils/log.ts';
 
-export async function verifySiteToken(
-  token: string,
-): Promise<{ username: string; uuid: string } | null> {
-  try {
-    const payload = jwt.verify(token, SECRET) as { username: string; uuid: string };
-    return { uuid: payload.uuid, username: payload.username };
-  } catch {
-    log('Auth: token verification failed');
-    return null;
-  }
+export async function verifySiteToken(token: string): Promise<{ username: string; uuid: string }> {
+  const payload = jwt.verify(token, SECRET) as { username: string; uuid: string };
+  return { uuid: payload.uuid, username: payload.username };
 }
 
 //fix the fetch url here..
@@ -59,10 +52,16 @@ export async function handleAuth(
   clients: Map<string, ClientInfo>,
 ): Promise<boolean> {
   log('Auth: attempt', { remoteId: client.id });
-  const user = await verifySiteToken(token);
-  if (!user) {
-    log('Error: Invalid token', { clientId: client.id });
-    client.socket.send(JSON.stringify({ type: 'ERROR', code: 'AUTH', message: 'Invalid token' }));
+  let user: { username: string; uuid: string };
+  try {
+    user = await verifySiteToken(token);
+  } catch (err) {
+    let message = 'Invalid token';
+    if (err && typeof err === 'object' && 'name' in err && err.name === 'TokenExpiredError') {
+      message = 'Token expired';
+    }
+    log('Error: ' + message, { clientId: client.id });
+    client.socket.send(JSON.stringify({ type: 'ERROR', code: 'AUTH', message }));
     client.socket.close();
     return false;
   }

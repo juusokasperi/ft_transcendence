@@ -2,14 +2,23 @@ import { describe, it, expect, beforeAll, afterAll, vi } from 'vitest';
 import fastify from 'fastify';
 import cookie from '@fastify/cookie';
 
+const { ACCESS_COOKIE, REFRESH_COOKIE } = vi.hoisted(() => ({
+  ACCESS_COOKIE: 'accessTokenCookie',
+  REFRESH_COOKIE: 'refreshTokenCookie',
+}));
+
 // ---- Mocks MUST go before importing the route ----
 vi.mock('../../utils/config.ts', () => ({
   SECRET: 'testsecret',
+  REFRESH_SECRET: 'refreshsecret',
   DATABASE_PATH: ':memory:',
   JWT_ACCESS_TTL: '4h',
+  JWT_REFRESH_TTL: '30d',
   JWT_2FA_TTL: '10m',
   TFA_CODE_DIGITS: 6,
   TFA_ISSUER: 'TestApp',
+  ACCESS_TOKEN_COOKIE_NAME: ACCESS_COOKIE,
+  REFRESH_TOKEN_COOKIE_NAME: REFRESH_COOKIE,
 }));
 
 // Fully mock the users query module so we never touch the real DB
@@ -22,6 +31,14 @@ const usersMock = vi.hoisted(() => ({
   getUser: vi.fn(),
 }));
 vi.mock('../../db/queries/users.ts', () => usersMock);
+
+const { issueTokensForUserMock } = vi.hoisted(() => ({
+  issueTokensForUserMock: vi.fn(),
+}));
+
+vi.mock('../../utils/authTokens.ts', () => ({
+  issueTokensForUser: issueTokensForUserMock,
+}));
 
 // Now import the route under test (it will see the mocks)
 import googleSign from '../../routes/googleSign';
@@ -56,6 +73,12 @@ describe('Google OAuth flow', () => {
     // Env the route expects
     process.env.GOOGLE_CLIENT_ID = 'client';
     process.env.GOOGLE_CLIENT_SECRET = 'secret';
+
+    issueTokensForUserMock.mockReturnValue({
+      accessToken: 'access-token',
+      refreshToken: 'refresh-token',
+      refreshCookieMaxAge: 3600,
+    });
 
     // Mock DB behavior
     usersMock.getUserByGoogleId.mockImplementation((sub: string) =>
@@ -148,7 +171,7 @@ describe('Google OAuth flow', () => {
     expect(step2.headers.location).toBe('/');
 
     // token cookie should be set by your route
-    const tokenCookie = parseSetCookie(step2.headers['set-cookie'], 'token');
+    const tokenCookie = parseSetCookie(step2.headers['set-cookie'], ACCESS_COOKIE);
     expect(tokenCookie).toBeTruthy();
   });
 

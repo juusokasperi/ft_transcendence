@@ -3,13 +3,22 @@ import { describe, it, expect, beforeAll, afterAll, vi } from 'vitest';
 import fastify from 'fastify';
 import { signAccessToken } from '../../utils/jwt.ts';
 
+const { ACCESS_COOKIE, REFRESH_COOKIE } = vi.hoisted(() => ({
+  ACCESS_COOKIE: 'accessTokenCookie',
+  REFRESH_COOKIE: 'refreshTokenCookie',
+}));
+
 // Mock config to control SECRET used by authPreHandler
 vi.mock('../../utils/config.ts', () => ({
   SECRET: 'testsecret',
+  REFRESH_SECRET: 'refreshsecret',
   JWT_ACCESS_TTL: '4h',
+  JWT_REFRESH_TTL: '30d',
   JWT_2FA_TTL: '10m',
   TFA_CODE_DIGITS: 6,
   TFA_ISSUER: 'TestApp',
+  ACCESS_TOKEN_COOKIE_NAME: ACCESS_COOKIE,
+  REFRESH_TOKEN_COOKIE_NAME: REFRESH_COOKIE,
 }));
 
 import { authPreHandler } from '../../hooks/auth.ts';

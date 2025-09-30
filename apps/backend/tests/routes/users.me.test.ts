@@ -6,11 +6,15 @@ import cookie from '@fastify/cookie';
 // 1) Mock config BEFORE importing app code (safe: no external refs)
 vi.mock('../../utils/config.ts', () => ({
   SECRET: 'testsecret',
+  REFRESH_SECRET: 'refreshsecret',
   DATABASE_PATH: ':memory:',
   JWT_ACCESS_TTL: '4h',
+  JWT_REFRESH_TTL: '30d',
   JWT_2FA_TTL: '10m',
   TFA_CODE_DIGITS: 6,
   TFA_ISSUER: 'TestApp',
+  ACCESS_TOKEN_COOKIE_NAME: 'token',
+  REFRESH_TOKEN_COOKIE_NAME: 'refresh_token',
 }));
 
 // 2) Make updateLastSeen a no-op (preHandler requires it)

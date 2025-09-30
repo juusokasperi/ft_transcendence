@@ -26,6 +26,8 @@ import { friendsRoutes } from './routes/friends.ts';
 import { matchRoutes } from './routes/matches.ts';
 import { debugRoutes } from './routes/debug.ts';
 import { resetPasswordRoutes } from './routes/resetPassword.ts';
+import { refreshRoutes } from './routes/refresh.ts';
+import { purgeExpiredRefreshTokens } from './db/queries/refreshTokens.ts';
 import { runMigrations } from './db/migrations.ts';
 import { prettierErrorMessages } from './utils/errorHandler.ts';
 import './types/types.ts';
@@ -81,14 +83,37 @@ app.get('/health', async () => ({ status: 'ok' }));
 
 await runMigrations();
 
+// Periodically purge expired refresh tokens to keep table tidy
+const REFRESH_PURGE_INTERVAL_MS = 1000 * 60 * 30; // 30 minutes
+const refreshPurgeTimer = setInterval(() => {
+  try {
+    purgeExpiredRefreshTokens(new Date().toISOString());
+  } catch (err) {
+    app.log.warn({ err }, 'Failed to purge expired refresh tokens');
+  }
+}, REFRESH_PURGE_INTERVAL_MS);
+refreshPurgeTimer.unref();
+
+// Also run a synchronous purge on startup in case of stale records
+try {
+  purgeExpiredRefreshTokens(new Date().toISOString());
+} catch (err) {
+  app.log.warn({ err }, 'Initial refresh token purge failed');
+}
+
 app.register(userRoutes, { prefix: '/api/users' });
 app.register(friendsRoutes, { prefix: '/api/friends' });
 app.register(matchRoutes, { prefix: '/api/matches' });
 app.register(loginRoutes, { prefix: '/api/login' });
 app.register(logoutRoutes, { prefix: '/api/logout' });
 app.register(signupRoutes, { prefix: '/api/signup' });
+app.register(refreshRoutes, { prefix: '/api/auth' });
 app.register(resetPasswordRoutes, { prefix: '/api/reset-password' });
 app.register(debugRoutes, { prefix: '/debug' });
+
+app.addHook('onClose', async () => {
+  clearInterval(refreshPurgeTimer);
+});
 
 await app.register(swaggerUi, {
   routePrefix: '/docs',
