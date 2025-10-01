@@ -71,7 +71,13 @@ export async function userRoutes(app: FastifyInstance) {
   });
 
   // Get a single user
-  app.get('/:uuid', { schema: getUserSchema }, async (req: FastifyRequest, res: FastifyReply) => {
+  app.get(
+    '/:uuid',
+    {
+      schema: getUserSchema,
+      preHandler: [authPreHandler],
+    },
+    async (req: FastifyRequest, res: FastifyReply) => {
     try {
       const { uuid } = req.params as { uuid: string };
       const user = getUserStats(uuid);

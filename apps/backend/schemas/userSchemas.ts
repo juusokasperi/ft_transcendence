@@ -15,6 +15,11 @@ import {
   PhotoSensitiveSchema,
 } from './fieldSchemas.ts';
 
+export const USER_ROUTE_SECURITY = [
+  { bearerAuth: [] as readonly string[] } as Record<string, readonly string[]>,
+  { tokenAuth: [] as readonly string[] } as Record<string, readonly string[]>,
+] as ReadonlyArray<Record<string, readonly string[]>>;
+
 const TwoFactorSetupResponseSchema = {
   type: 'object',
   required: ['secret', 'otpauthUrl'],
@@ -53,6 +58,7 @@ export const getAllUsersSchema = {
 export const getUserSchema = {
   tags: ['User'],
   summary: 'Get user by UUID',
+  security: USER_ROUTE_SECURITY,
   params: {
     type: 'object',
     required: ['uuid'],
@@ -66,11 +72,6 @@ export const getUserSchema = {
     500: ErrorResponseSchema,
   },
 };
-
-export const USER_ROUTE_SECURITY = [
-  { bearerAuth: [] as readonly string[] } as Record<string, readonly string[]>,
-  { tokenAuth: [] as readonly string[] } as Record<string, readonly string[]>,
-] as ReadonlyArray<Record<string, readonly string[]>>;
 
 export const getMeSchema = {
   tags: ['User'],
