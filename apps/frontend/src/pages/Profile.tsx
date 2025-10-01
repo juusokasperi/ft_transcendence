@@ -411,7 +411,11 @@ const Profile: React.FC = () => {
                   onChange={(e) => setUsername(e.target.value)}
                   disabled={!isEditing}
                   className={`w-full rounded-2xl border border-white/15 bg-white/5 px-4 py-3 text-sm text-white transition placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-400/60 disabled:cursor-not-allowed disabled:opacity-60 ${
-                    isUsernameDirty ? 'ring-2 ring-emerald-400/70' : ''
+                    isEditing && usernameError
+                      ? 'ring-2 ring-rose-400/70'
+                      : isUsernameDirty
+                        ? 'ring-2 ring-emerald-400/70'
+                        : ''
                   }`}
                 />
                 {isEditing && usernameError && (
@@ -430,7 +434,11 @@ const Profile: React.FC = () => {
                   onChange={(e) => setEmail(e.target.value)}
                   disabled={!isEditing}
                   className={`w-full rounded-2xl border border-white/15 bg-white/5 px-4 py-3 text-sm text-white transition placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-400/60 disabled:cursor-not-allowed disabled:opacity-60 ${
-                    isEmailDirty ? 'ring-2 ring-emerald-400/70' : ''
+                    isEditing && emailError
+                      ? 'ring-2 ring-rose-400/70'
+                      : isEmailDirty
+                        ? 'ring-2 ring-emerald-400/70'
+                        : ''
                   }`}
                 />
                 {isEditing && (
