@@ -16,7 +16,7 @@ services:
     build:
       context: .
       dockerfile: ./apps/backend/prod.dockerfile
-    image: ft-transcendence-backend:latest
+    image: ft-transcendence-backend-prod:latest
     restart: unless-stopped
     env_file:
       - ./.env
@@ -48,6 +48,8 @@ services:
     restart: unless-stopped
     depends_on:
       backend:
+        condition: service_started
+      game-server:
         condition: service_started
       frontend-builder:
         condition: service_completed_successfully
@@ -82,22 +84,23 @@ services:
   #     options:
   #       gelf-address: udp://localhost:12201
   #
-  # # Game server(s)
-  # game-server:
-  #   build:
-  #     context: .
-  #     dockerfile: ./apps/game-server/Dockerfile
-  #   image: ft-transcendence-game-server:latest
-  #   restart: unless-stopped
-  #   env_file:
-  #     - ./.env
-  #   networks:
-  #     - prod-private
-  #   logging:
-  #     driver: gelf
-  #     options:
-  #       gelf-address: udp://localhost:12201
-  #
+  # Game server(s)
+  # TODO: depends on Redis?
+  game-server:
+    build:
+      context: .
+      dockerfile: ./apps/game-server/prod.dockerfile
+    image: ft-transcendence-game-server-prod:latest
+    restart: unless-stopped
+    env_file:
+      - ./.env
+    networks:
+      - prod-private
+    logging:
+      driver: gelf
+      options:
+        gelf-address: udp://localhost:12201
+
   # game-server-2:
   #   image: ft-transcendence-game-server:latest
   #   restart: unless-stopped
@@ -130,19 +133,19 @@ services:
   #     options:
   #       gelf-address: udp://localhost:12201
   #
-  # # Redis
-  # redis:
-  #   image: redis:8.2.1-alpine
-  #   restart: unless-stopped
-  #   volumes:
-  #     - redis_data:/data
-  #   networks:
-  #     - prod-private
-  #   logging:
-  #     driver: gelf
-  #     options:
-  #       gelf-address: udp://localhost:12201
-  #
+  # Redis
+  redis:
+    image: redis:8.2.1-alpine
+    restart: unless-stopped
+    volumes:
+      - redis_data:/data
+    networks:
+      - prod-private
+    logging:
+      driver: gelf
+      options:
+        gelf-address: udp://localhost:12201
+
   # # Scorer
   # scorer:
   #   build:
