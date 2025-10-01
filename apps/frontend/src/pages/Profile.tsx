@@ -14,7 +14,8 @@ const Profile: React.FC = () => {
   const { axios, user, setUser } = useAppContext();
 
   const [image, setImage] = useState<File | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [usernameError, setUsernameError] = useState<string | null>(null);
+  const [emailError, setEmailError] = useState<string | null>(null);
   const [imagePreview, setImagePreview] = useState<string>(PLACEHOLDER);
   const [username, setUsername] = useState<string>('');
   const [email, setEmail] = useState<string>('');
@@ -36,14 +37,16 @@ const Profile: React.FC = () => {
     setImage(null);
     setUsername(baseUsername);
     setEmail(baseEmail);
-    setError(null);
+    setUsernameError(null);
+    setEmailError(null);
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
   };
 
   const startEditing = () => {
-    setError(null);
+    setUsernameError(null);
+    setEmailError(null);
     setUsername(baseUsername);
     setEmail(baseEmail);
     setImage(null);
@@ -77,9 +80,11 @@ const Profile: React.FC = () => {
   const handleUsernameChange = async (): Promise<boolean> => {
     if (!username || username === baseUsername) return true;
 
+    setUsernameError(null);
     const userVal = validateUsername(username);
     if (userVal.state !== 'valid') {
-      setError(userVal.msg);
+      setUsernameError(userVal.msg);
+      setEmailError(null);
       return false;
     }
 
@@ -111,10 +116,13 @@ const Profile: React.FC = () => {
         message: 'Account username changed',
         variant: 'success',
       });
+      setUsernameError(null);
       return true;
     } catch (err: any) {
       const axiosErr = err as AxiosError<{ error?: string }>;
       const message = axiosErr?.response?.data?.error;
+      setUsernameError(String(message ?? 'Unable to change username'));
+      setEmailError(null);
       enqueueSnackbar({
         message: String(message ?? 'Unable to change username'),
         variant: 'error',
@@ -126,8 +134,10 @@ const Profile: React.FC = () => {
   const handleEmailChange = async (): Promise<boolean> => {
     if (!isEmailDirty || !email || email === baseEmail) return true;
 
+    setEmailError(null);
     if (!validateEmail(email)) {
-      setError('Please enter a valid email address.');
+      setEmailError('Please enter a valid email address.');
+      setUsernameError(null);
       return false;
     }
 
@@ -139,10 +149,13 @@ const Profile: React.FC = () => {
         message: 'Confirmation email sent to new email address',
         variant: 'success',
       });
+      setEmailError(null);
       return true;
     } catch (err: any) {
       const axiosErr = err as AxiosError<{ message?: string }>;
       const message = axiosErr?.response?.data?.message;
+      setEmailError(String(message ?? 'Unable to request email change'));
+      setUsernameError(null);
       enqueueSnackbar({
         message: String(message ?? 'Unable to request email change'),
         variant: 'error',
@@ -155,11 +168,34 @@ const Profile: React.FC = () => {
     e.preventDefault();
     if (!isEditing) return;
 
+    setUsernameError(null);
+    setEmailError(null);
+
+    const usernameNeedsUpdate = isUsernameDirty;
+    const emailNeedsUpdate = isEmailDirty;
+
+    if (usernameNeedsUpdate) {
+      const validation = validateUsername(username);
+      if (validation.state !== 'valid') {
+        setUsernameError(validation.msg);
+        return;
+      }
+    }
+
+    if (emailNeedsUpdate) {
+      if (!validateEmail(email)) {
+        setEmailError('Please enter a valid email address.');
+        return;
+      }
+    }
+
     setLoading(true);
-    setError(null);
 
     try {
       const usernameResult = await handleUsernameChange();
+      if (!usernameResult) {
+        return;
+      }
       let avatarResult = true;
 
       if (image) {
@@ -378,8 +414,8 @@ const Profile: React.FC = () => {
                     isUsernameDirty ? 'ring-2 ring-emerald-400/70' : ''
                   }`}
                 />
-                {error && isEditing && isUsernameDirty && (
-                  <p className="text-sm text-rose-400">{error}</p>
+                {isEditing && usernameError && (
+                  <p className="text-sm text-rose-400">{usernameError}</p>
                 )}
               </div>
 
@@ -402,9 +438,7 @@ const Profile: React.FC = () => {
                     A confirmation email will be sent to your new email address
                   </p>
                 )}
-                {error && isEditing && isEmailDirty && (
-                  <p className="text-sm text-rose-400">{error}</p>
-                )}
+                {isEditing && emailError && <p className="text-sm text-rose-400">{emailError}</p>}
               </div>
 
               {isEditing && (
