@@ -141,6 +141,14 @@ const Stats: React.FC = () => {
     }
   };
 
+  const matches1v1 = matches.filter(
+    (match) =>
+      match.players.team1.length < 2 &&
+      match.players.team2.length < 2 &&
+      match.players.team1[0] &&
+      match.players.team2[0]
+  );
+
   return (
     <div className="min-h-screen bg-slate-950">
       <Navbar />
@@ -179,14 +187,14 @@ const Stats: React.FC = () => {
 
           <section className="relative overflow-hidden rounded-3xl border border-white/10 bg-slate-900/70 shadow-xl shadow-indigo-950/30 backdrop-blur">
             <div className="border-b border-white/10 px-6 py-4">
-              <h2 className="text-lg font-semibold">Recent matches</h2>
+              <h2 className="text-lg font-semibold">Recent 1v1 matches</h2>
             </div>
 
             {loading ? (
               <div className="flex h-64 items-center justify-center text-sm text-slate-300/70">
                 Pulling your latest games…
               </div>
-            ) : matches.length > 0 ? (
+            ) : matches1v1.length > 0 ? (
               <div className="bg-slate-900 p-4">
                 <div className="mx-auto max-w-6xl">
                   <div className="divide-y divide-white/5">
@@ -199,8 +207,7 @@ const Stats: React.FC = () => {
                       <span>Biggest Lead</span>
                       <span>Played At</span>
                     </div>
-                    {matches.map((match) => {
-                      if (!match.players.team2[0] || !match.players.team1[0]) return '';
+                    {matches1v1.map((match) => {
                       const result = getMatchResult(match);
                       const colorClass = getResultColor(result);
 
