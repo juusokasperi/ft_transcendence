@@ -30,7 +30,7 @@ RUN pnpm --filter @app/api deploy --prod /prod/backend
 # -------------------------------
 # 2) Runtime stage
 # -------------------------------
-FROM node:22-bookworm AS runtime
+FROM node:22-bookworm-slim AS runtime
 WORKDIR /app
 
 # Copy the deployed backend from pnpm deploy
