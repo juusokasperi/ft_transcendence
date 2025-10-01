@@ -146,7 +146,7 @@ const Stats: React.FC = () => {
       match.players.team1.length < 2 &&
       match.players.team2.length < 2 &&
       match.players.team1[0] &&
-      match.players.team2[0]
+      match.players.team2[0],
   );
 
   return (
