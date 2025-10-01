@@ -262,7 +262,7 @@ const Profile: React.FC = () => {
         <div className="absolute bottom-0 right-0 h-52 w-52 rounded-full bg-purple-500/10 blur-3xl" />
       </div>
 
-      <div className="relative mx-auto flex w-full max-w-5xl flex-col gap-8 px-4 pb-16 pt-6 sm:px-6 lg:px-10">
+      <div className="relative mx-auto flex w-full max-w-6xl flex-col gap-8 pb-16 pt-6">
         <section className="rounded-3xl border border-white/10 bg-slate-900/60 p-6 shadow-xl shadow-indigo-950/30 backdrop-blur">
           <header className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
             <div>
