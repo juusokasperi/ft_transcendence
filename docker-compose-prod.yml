@@ -113,26 +113,26 @@ services:
   #     options:
   #       gelf-address: udp://localhost:12201
   #
-  # # Allocator
-  # allocator:
-  #   build:
-  #     context: .
-  #     dockerfile: ./apps/allocator/Dockerfile
-  #   image: ft-transcendence-allocator:latest
-  #   restart: unless-stopped
-  #   env_file:
-  #     - ./.env
-  #   environment:
-  #     REDIS_URL: redis://redis:6379
-  #   networks:
-  #     - prod-private
-  #   depends_on:
-  #     - redis
-  #   logging:
-  #     driver: gelf
-  #     options:
-  #       gelf-address: udp://localhost:12201
-  #
+  # Allocator
+  allocator:
+    build:
+      context: .
+      dockerfile: ./apps/allocator/prod.dockerfile
+    image: ft-transcendence-allocator-prod:latest
+    restart: unless-stopped
+    env_file:
+      - ./.env
+    environment:
+      REDIS_URL: redis://redis:6379
+    networks:
+      - prod-private
+    depends_on:
+      - redis
+    logging:
+      driver: gelf
+      options:
+        gelf-address: udp://localhost:12201
+
   # Redis
   redis:
     image: redis:8.2.1-alpine
