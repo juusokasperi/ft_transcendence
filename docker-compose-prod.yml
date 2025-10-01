@@ -14,7 +14,7 @@ services:
   backend:
     build:
       context: .
-      dockerfile: ./apps/backend/Dockerfile
+      dockerfile: ./apps/backend/prod.dockerfile
     image: ft-transcendence-backend:latest
     restart: unless-stopped
     env_file:
