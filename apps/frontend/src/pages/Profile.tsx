@@ -10,6 +10,9 @@ import { validateUsername, validateEmail } from '../utils/validation';
 import ConfirmDialog from '../components/ConfirmDialog';
 import { useSnackbar } from '../context/SnackbarContext';
 
+const MAX_USERNAME_LENGTH = 24;
+const MAX_EMAIL_LENGTH = 254;
+
 const Profile: React.FC = () => {
   const { axios, user, setUser } = useAppContext();
 
@@ -75,6 +78,35 @@ const Profile: React.FC = () => {
     if (file) {
       setImagePreview(URL.createObjectURL(file));
     }
+  };
+
+  const applyUsernameInput = (raw: string) => {
+    const sanitized = raw.replace(/[^a-zA-Z0-9-]/g, '').slice(0, MAX_USERNAME_LENGTH);
+    setUsername(sanitized);
+
+    if (!isEditing) return;
+
+    if (!sanitized) {
+      setUsernameError(null);
+      return;
+    }
+
+    const validation = validateUsername(sanitized);
+    setUsernameError(validation.state === 'valid' ? null : validation.msg);
+  };
+
+  const applyEmailInput = (raw: string) => {
+    const normalized = raw.replace(/[\s]/g, '').slice(0, MAX_EMAIL_LENGTH);
+    setEmail(normalized);
+
+    if (!isEditing) return;
+
+    if (!normalized) {
+      setEmailError(null);
+      return;
+    }
+
+    setEmailError(validateEmail(normalized) ? null : 'Please enter a valid email address.');
   };
 
   const handleUsernameChange = async (): Promise<boolean> => {
@@ -408,7 +440,7 @@ const Profile: React.FC = () => {
                   type="text"
                   value={isEditing ? username : (user?.username ?? '')}
                   placeholder={user?.username}
-                  onChange={(e) => setUsername(e.target.value)}
+                  onChange={(e) => applyUsernameInput(e.target.value)}
                   disabled={!isEditing}
                   className={`w-full rounded-2xl border border-white/15 bg-white/5 px-4 py-3 text-sm text-white transition placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-400/60 disabled:cursor-not-allowed disabled:opacity-60 ${
                     isEditing && usernameError
@@ -431,7 +463,7 @@ const Profile: React.FC = () => {
                   type="email"
                   value={isEditing ? email : (user?.email ?? '')}
                   placeholder={user?.email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  onChange={(e) => applyEmailInput(e.target.value)}
                   disabled={!isEditing}
                   className={`w-full rounded-2xl border border-white/15 bg-white/5 px-4 py-3 text-sm text-white transition placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-400/60 disabled:cursor-not-allowed disabled:opacity-60 ${
                     isEditing && emailError
