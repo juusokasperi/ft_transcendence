@@ -86,7 +86,7 @@ services:
   #
   # Game server(s)
   # TODO: depends on Redis?
-  game-server:
+  game-server: &game-server-template
     build:
       context: .
       dockerfile: ./apps/game-server/prod.dockerfile
@@ -101,18 +101,10 @@ services:
       options:
         gelf-address: udp://localhost:12201
 
-  # game-server-2:
-  #   image: ft-transcendence-game-server:latest
-  #   restart: unless-stopped
-  #   env_file:
-  #     - ./.env
-  #   networks:
-  #     - prod-private
-  #   logging:
-  #     driver: gelf
-  #     options:
-  #       gelf-address: udp://localhost:12201
-  #
+  # 6b) Game server 2
+  game-server-2:
+    <<: *game-server-template
+
   # Allocator
   allocator:
     build:
