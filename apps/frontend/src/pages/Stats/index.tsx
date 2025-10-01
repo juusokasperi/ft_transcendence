@@ -212,7 +212,7 @@ const Stats: React.FC = () => {
                       );
                     })}
 
-                    {hasMore && (
+                    {hasMore ? (
                       <div className="border-t border-white/10 p-6 text-center">
                         <button
                           onClick={loadMore}
@@ -221,6 +221,10 @@ const Stats: React.FC = () => {
                         >
                           {loadingMore ? 'Loading…' : 'Load more matches'}
                         </button>
+                      </div>
+                    ) : (
+                      <div className="p-10 text-center text-slate-300/70">
+                        <p className="mt-2 text-sm text-slate-400/80">All matches displayed.</p>
                       </div>
                     )}
                   </div>
