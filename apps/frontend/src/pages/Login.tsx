@@ -222,6 +222,14 @@ const Login: React.FC = () => {
                 {!twoFactorPending ? (
                   <>
                     <AuthForm type="login" onSubmit={handleLogin} />
+                    <p className="mt-3 text-center text-sm text-slate-300/80">
+                      <Link
+                        to="/forgot-password"
+                        className="font-semibold text-indigo-200 transition hover:text-white"
+                      >
+                        Forgot your password?
+                      </Link>
+                    </p>
                     {loading && <p className="mt-3 text-sm text-indigo-200/80">Authenticating…</p>}
                   </>
                 ) : (
