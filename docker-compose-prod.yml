@@ -160,23 +160,23 @@ services:
       driver: gelf
       options:
         gelf-address: udp://localhost:12201
-  #
-  # # Game Gateway
-  # game-gateway:
-  #   build:
-  #     context: .
-  #     dockerfile: ./apps/game-gateway/Dockerfile
-  #   image: ft-transcendence-game-gateway:latest
-  #   restart: unless-stopped
-  #   env_file:
-  #     - ./.env
-  #   networks:
-  #     - prod-private
-  #   ports:
-  #     - "55550:55550"
-  #   depends_on:
-  #     - redis
-  #   logging:
-  #     driver: gelf
-  #     options:
-  #       gelf-address: udp://localhost:12201
+
+  # Game Gateway
+  game-gateway:
+    build:
+      context: .
+      dockerfile: ./apps/game-gateway/prod.dockerfile
+    image: ft-transcendence-game-gateway-prod:latest
+    restart: unless-stopped
+    env_file:
+      - ./.env
+    networks:
+      - prod-private
+    ports:
+      - "55550:55550"
+    depends_on:
+      - redis
+    logging:
+      driver: gelf
+      options:
+        gelf-address: udp://localhost:12201
