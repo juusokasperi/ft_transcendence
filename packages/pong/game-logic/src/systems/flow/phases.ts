@@ -1,6 +1,6 @@
 import type { GameState } from '../../model/state';
 import { isRallyPhase, isServePhase } from '../utils';
-import { collideWalls, collidePaddle } from '../physics/collisions';
+import { stepBallTOI } from '../physics/collisions';
 import { maybeScoreAndFreeze } from './scoring';
 import { stepPause } from './pause';
 import type { FrameEvents } from '@pong/shared';
@@ -25,22 +25,13 @@ export function handleSteps(
   if (isServePhase(s.phase)) s = { ...s, phase: 'rally' };
 
   if (isRallyPhase(s.phase)) {
-    const SUBSTEPS = 2;
-    const subDt = dt / SUBSTEPS;
-    for (let i = 0; i < SUBSTEPS; i++) {
-      const w = collideWalls(s, subDt);
-      s = w.s;
-      if (w.wallHit && !events.wallHit) events.wallHit = w.wallHit;
+    const out = stepBallTOI(s, dt);
+    s = out.s;
+    if (out.events.wallHit && !events.wallHit) events.wallHit = out.events.wallHit;
+    if (out.events.paddleHit && !events.paddleHit) events.paddleHit = out.events.paddleHit;
 
-      const p = collidePaddle(s, subDt);
-      s = p.s;
-      if (p.paddleHit && !events.paddleHit) events.paddleHit = p.paddleHit;
-      s = { ...s, ball: { ...s.ball, x: s.ball.x + s.ball.vx * subDt } };
-
-      // Check for goal → freeze ball & enter pause to next game
-      s = maybeScoreAndFreeze(s, events);
-      if (!isRallyPhase(s.phase)) break;
-    }
+    // Check for goal → freeze ball & enter pause to next game
+    s = maybeScoreAndFreeze(s, events);
   }
 
   return { next: s, events };
