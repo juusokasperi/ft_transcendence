@@ -1,15 +1,9 @@
 # Project / compose
 NAME             = ft-transcendence-dev
 NAME_PROD        = ft-transcendence-prod
-ROOT_COMPOSE     = --profile dev -f docker-compose.yml
-
-# TODO: have separate NAME variable for prod? need to clean dev and prod
-# separately?
-# order of the `-f` options matters when docker merges compose files
-PROD_COMPOSE     =  -f docker-compose-prod.yml
-
-# DEV_PROFILE = --profile dev
-# PROD_PROFILE = --profile prod
+ROOT_COMPOSE     = -f docker-compose.yml
+PROD_COMPOSE     = -f docker-compose-prod.yml
+BUILDER_NAME     = ft-transcendence
 
 # No user-mapping variables needed anymore; volumes are cleaned by helper image
 # Node/pnpm strategy:
@@ -17,10 +11,10 @@ PROD_COMPOSE     =  -f docker-compose-prod.yml
 # - No global Corepack symlinks; we prefer a writable COREPACK_HOME inside containers.
 # - The `deps` service installs workspace deps and builds libs; other services depend on it.
 
-# Buildx (per-project builder)
-BUILDER ?= $(NAME)-builder
+# Buildx is shared between dev and prod so we share cache
+BUILDER ?= $(BUILDER_NAME)-builder
 BUILDKIT_BASE_IMG ?= moby/buildkit:buildx-stable-1
-BUILDER_IMAGE    ?= $(NAME)-buildkit:latest
+BUILDER_IMAGE    ?= $(BUILDER_NAME)-buildkit:latest
 
 # Env file passed to docker compose (keep secrets out of the Makefile)
 ENV_ROOT         = --env-file .env
@@ -64,7 +58,7 @@ endef
 # ========================
 #  Orchestration
 # ========================
-.PHONY: all up detached up-prod detached-prod elk elk-detached down down-elk clean nuke check-leftovers fclean re stop restart restart-elk restart-% builder-init builder-use builder-prune builder-rm check-leftovers-global overview-docker
+.PHONY: all up detached prod detached-prod elk elk-detached down clean nuke check-leftovers fclean re stop restart restart-elk restart-% builder-init builder-use builder-prune builder-rm check-leftovers-global overview-docker
 all: up
 
 up:
@@ -114,59 +108,73 @@ mon-detached:
 	$(ensure_builder)
 	docker compose -p $(NAME)  --profile monitoring up --build -d
 
+# Running compose with two `-p` flags doesnt work. 
+# But running compose down with multiple `--profile` flags is ok, it brings 
+# down containers with the specified profiles AND containers with no profile 
+# as well
 down:
 	@echo ">> Stopping & removing default stack (volumes, local images, orphans)"
-	docker compose -p $(NAME) -p $(NAME_PROD) $(ROOT_COMPOSE) $(PROD_COMPOSE) $(ENV_ROOT) --profile elk --profile monitoring down -v --rmi local --remove-orphans
+	- docker compose -p $(NAME) $(ROOT_COMPOSE)  $(ENV_ROOT) --profile elk --profile monitoring down -v --rmi local --remove-orphans
+	@echo ">> Stopping & removing prod stack (volumes, local images, orphans)"
+	- docker compose -p $(NAME_PROD) $(PROD_COMPOSE) $(ENV_ROOT) --profile elk --profile monitoring down -v --rmi local --remove-orphans
 
-down-elk:
-	@echo ">> Stopping & removing profile 'elk' (volumes, local images, orphans)"
-	docker compose -p $(NAME) --profile elk down -v --rmi local --remove-orphans
 
 # ========================
 #  Cleaning
 # ========================
 # 'clean' performs a project-scoped removal of containers, networks, volumes, images, plus local dev artifacts
+# Currently removes `node_modules` meaning you will have to run `pnpm install` after this.
 clean:
-	@echo ">> CLEAN: project-scoped cleanup (this compose project only)"
+	@echo ">> CLEAN: project-scoped cleanup (dev and prod projects)"
 	-$(MAKE) down
-	@echo ">> Removing containers labeled to this project"
+	@echo ">> Removing containers labeled to dev project ($(NAME))"
 	- docker ps         -aq --filter "label=com.docker.compose.project=$(NAME)" | xargs -r docker rm -f
-	@echo ">> Removing networks labeled to this project"
+	@echo ">> Removing containers labeled to prod project ($(NAME_PROD))"
+	- docker ps         -aq --filter "label=com.docker.compose.project=$(NAME_PROD)" | xargs -r docker rm -f
+	@echo ">> Removing networks labeled to dev project ($(NAME))"
 	- docker network ls -q  --filter "label=com.docker.compose.project=$(NAME)" | xargs -r docker network rm
-	@echo ">> Removing volumes labeled to this project"
+	@echo ">> Removing networks labeled to prod project ($(NAME_PROD))"
+	- docker network ls -q  --filter "label=com.docker.compose.project=$(NAME_PROD)" | xargs -r docker network rm
+	@echo ">> Removing volumes labeled to dev project ($(NAME))"
 	- docker volume ls  -q  --filter "label=com.docker.compose.project=$(NAME)" | xargs -r docker volume rm
-	@echo ">> Removing images labeled to this project"
+	@echo ">> Removing volumes labeled to prod project ($(NAME_PROD))"
+	- docker volume ls  -q  --filter "label=com.docker.compose.project=$(NAME_PROD)" | xargs -r docker volume rm
+	@echo ">> Removing images labeled to dev project ($(NAME))"
 	- docker image ls   -q  --filter "label=com.docker.compose.project=$(NAME)" | xargs -r docker rmi -f
+	@echo ">> Removing images labeled to prod project ($(NAME_PROD))"
+	- docker image ls   -q  --filter "label=com.docker.compose.project=$(NAME_PROD)" | xargs -r docker rmi -f
 	@echo ">> Removing workspace artifacts via helper image ($(CLEAN_HELPER_IMG))"
 	@docker run --rm -v "$(CURDIR)":/work -w /work $(CLEAN_HELPER_IMG) \
 	  sh -c "\
-	    if [ -d ./.pnpm-store ]; then echo '>> Deleting ./.pnpm-store'; rm -rf ./.pnpm-store; fi; \
-	    if [ -d ./apps/backend/data ]; then echo '>> Deleting ./apps/backend/data'; rm -rf ./apps/backend/data; fi; \
-	    if [ -d ./apps/frontend/.vite ]; then echo '>> Deleting ./apps/frontend/.vite'; rm -rf ./apps/frontend/.vite; fi; \
-	    if [ -d ./packages/pong/game-logic/dist ]; then echo '>> Deleting ./packages/pong/game-logic/dist'; rm -rf ./packages/pong/game-logic/dist; fi; \
-	    if [ -d ./packages/pong/game-logic/node_modules ]; then echo '>> Deleting ./packages/pong/game-logic/node_modules'; rm -rf ./packages/pong/game-logic/node_modules; fi; \
-	    if [ -d ./packages/pong/render/dist ]; then echo '>> Deleting ./packages/pong/render/dist'; rm -rf ./packages/pong/render/dist; fi; \
-	    if [ -d ./packages/pong/shared/dist ]; then echo '>> Deleting ./packages/pong/shared/dist'; rm -rf ./packages/pong/shared/dist; fi \
+	    echo '>> Finding and removing all node_modules directories...'; \
+	    find . -name 'node_modules' -type d -prune -exec rm -rf {} + 2>/dev/null || true; \
+	    echo '>> Finding and removing all dist directories...'; \
+	    find . -name 'dist' -type d -prune -exec rm -rf {} + 2>/dev/null || true; \
+	    echo '>> Finding and removing all tsconfig.tsbuildinfo files...'; \
+	    find . -name 'tsconfig.tsbuildinfo' -type f -delete 2>/dev/null || true; \
+	    echo '>> Removing .pnpm-store...'; \
+	    if [ -d ./.pnpm-store ]; then rm -rf ./.pnpm-store; fi; \
+	    echo '>> Removing backend data...'; \
+	    if [ -d ./apps/backend/data ]; then rm -rf ./apps/backend/data; fi; \
+	    echo '>> Removing frontend .vite cache...'; \
+	    if [ -d ./apps/frontend/.vite ]; then rm -rf ./apps/frontend/.vite; fi \
 	  "
-	@echo ">> Removing additional workspace artifacts (host)"
-	@if [ -d ./apps/backend/node_modules ]; then echo '>> Deleting ./apps/backend/node_modules'; rm -rf ./apps/backend/node_modules; fi
-	@if [ -d ./apps/frontend/node_modules ]; then echo '>> Deleting ./apps/frontend/node_modules'; rm -rf ./apps/frontend/node_modules; fi
-	@if [ -d ./node_modules ]; then echo '>> Deleting ./node_modules'; rm -rf ./node_modules; fi
-	@if [ -f ./packages/pong/game-logic/tsconfig.tsbuildinfo ]; then echo '>> Deleting ./packages/pong/game-logic/tsconfig.tsbuildinfo'; rm -f ./packages/pong/game-logic/tsconfig.tsbuildinfo; fi
-	@if [ -d ./packages/pong/render/node_modules ]; then echo '>> Deleting ./packages/pong/render/node_modules'; rm -rf ./packages/pong/render/node_modules; fi
-	@if [ -f ./packages/pong/render/tsconfig.tsbuildinfo ]; then echo '>> Deleting ./packages/pong/render/tsconfig.tsbuildinfo'; rm -f ./packages/pong/render/tsconfig.tsbuildinfo; fi
-	@if [ -f ./packages/pong/shared/tsconfig.tsbuildinfo ]; then echo '>> Deleting ./packages/pong/shared/tsconfig.tsbuildinfo'; rm -f ./packages/pong/shared/tsconfig.tsbuildinfo; fi
 	@echo ">> Removing helper image ($(CLEAN_HELPER_IMG))"
 	- docker image rm -f $(CLEAN_HELPER_IMG) || true
+	
 
 # 'fclean' = clean + remove per-project build cache & builder
 fclean:
 	@echo ">> FCLEAN: clean + prune build cache + remove builder"
 	-$(MAKE) clean
-	@echo ">> Removing images referenced by compose (default profile)"
+	@echo ">> Removing images referenced by dev compose (default profile)"
 	- docker compose -p $(NAME) $(ROOT_COMPOSE) $(ENV_ROOT) config --images | sort -u | xargs -r docker image rm -f
-	@echo ">> Removing images referenced by compose (elk profile)"
+	@echo ">> Removing images referenced by dev compose (elk profile)"
 	- docker compose -p $(NAME) $(ROOT_COMPOSE) $(ENV_ROOT) --profile elk config --images | sort -u | xargs -r docker image rm -f
+	@echo ">> Removing images referenced by dev compose (monitoring profile)"
+	- docker compose -p $(NAME) $(ROOT_COMPOSE) $(ENV_ROOT) --profile monitoring config --images | sort -u | xargs -r docker image rm -f
+	@echo ">> Removing images referenced by prod compose"
+	- docker compose -p $(NAME_PROD) $(PROD_COMPOSE) $(ENV_ROOT) config --images | sort -u | xargs -r docker image rm -f
 	@echo ">> Pruning build cache for builder '$(BUILDER)'"
 	-$(MAKE) builder-prune
 	@echo ">> Removing builder '$(BUILDER)'"
