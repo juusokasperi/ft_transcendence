@@ -6,6 +6,7 @@ import {
   getFriends,
   getPendingFriendRequestsSent,
   getPendingFriendRequestsReceived,
+  getFriendshipStatus,
 } from '../db/queries/friends.ts';
 import { getUser } from '../db/queries/users.ts';
 import { authPreHandler, tokenUuidCheck } from '../hooks/auth.ts';
@@ -16,7 +17,9 @@ import {
   respondFriendSchema,
   sendFriendSchema,
   deleteFriendSchema,
+  checkFriendSchema,
 } from '../schemas/friendSchemas.ts';
+import { M } from 'vitest/dist/chunks/reporters.d.BFLkQcL6.js';
 
 export async function friendsRoutes(app: FastifyInstance) {
   // Get all (accepted) friends of user
@@ -34,6 +37,25 @@ export async function friendsRoutes(app: FastifyInstance) {
         return res.status(200).send(results);
       } catch (error) {
         return res.status(500).send({ message: 'Failed to get friends' });
+      }
+    },
+  );
+
+  app.get(
+    '/:user2Uuid',
+    {
+      schema: checkFriendSchema,
+      preHandler: [authPreHandler, tokenUuidCheck],
+    },
+    async (req: FastifyRequest, res: FastifyReply) => {
+      try {
+        const uuid = req.user!.uuid;
+        const { user2Uuid } = req.params as { user2Uuid: string };
+        const result = getFriendshipStatus(uuid, user2Uuid);
+        if (!result) return res.status(500).send({ message: 'Failed to check friendship status' });
+        return res.status(200).send({ status: result });
+      } catch (error) {
+        return res.status(500).send({ message: 'Failed to check friendship status ' });
       }
     },
   );

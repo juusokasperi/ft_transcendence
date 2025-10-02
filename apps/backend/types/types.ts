@@ -89,3 +89,5 @@ export interface UserSettings {
   colorBlindMode: number;
   photoSensitiveMode: number;
 }
+
+export type FriendshipStatus = 'friends' | 'request_sent' | 'request_received' | 'none';

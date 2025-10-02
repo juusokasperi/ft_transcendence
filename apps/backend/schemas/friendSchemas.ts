@@ -97,3 +97,30 @@ export const deleteFriendSchema = {
     500: ErrorResponseSchema,
   },
 };
+
+export const checkFriendSchema = {
+  tags: ['Friends'],
+  summary: 'Check if two users are friended',
+  security: FRIEND_ROUTE_SECURITY,
+  params: {
+    type: 'object',
+    required: ['user2Uuid'],
+    properties: {
+      user2Uuid: UuidSchema,
+    },
+  },
+  response: {
+    200: {
+      type: 'object',
+      properties: {
+        status: {
+          type: 'string',
+          enum: ['accepted', 'request_sent', 'request_received', 'none'],
+        },
+      },
+      required: ['status'],
+    },
+    400: ErrorResponseSchema,
+    500: ErrorResponseSchema,
+  },
+};

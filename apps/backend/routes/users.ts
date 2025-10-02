@@ -41,7 +41,11 @@ import {
   twoFactorConfirmSchema,
   twoFactorDisableSchema,
 } from '../schemas/userSchemas.ts';
-import { getUserMatchesSchema, getMyStatsSchema, getUserStatsSchema } from '../schemas/matchSchemas.ts';
+import {
+  getUserMatchesSchema,
+  getMyStatsSchema,
+  getUserStatsSchema,
+} from '../schemas/matchSchemas.ts';
 import {
   beginTwoFactorEnrollment,
   completeTwoFactorEnrollment,
@@ -78,15 +82,16 @@ export async function userRoutes(app: FastifyInstance) {
       preHandler: [authPreHandler],
     },
     async (req: FastifyRequest, res: FastifyReply) => {
-    try {
-      const { uuid } = req.params as { uuid: string };
-      const user = getUserStats(uuid);
-      if (!user) return res.status(404).send({ message: 'User not found' });
-      res.status(200).send(user);
-    } catch (error) {
-      res.status(500).send({ message: 'Failed to fetch user' });
-    }
-  });
+      try {
+        const { uuid } = req.params as { uuid: string };
+        const user = getUserStats(uuid);
+        if (!user) return res.status(404).send({ message: 'User not found' });
+        res.status(200).send(user);
+      } catch (error) {
+        res.status(500).send({ message: 'Failed to fetch user' });
+      }
+    },
+  );
 
   // Current user (for hydration)
   app.get(
@@ -151,12 +156,11 @@ export async function userRoutes(app: FastifyInstance) {
         const stats = getTotalStatsForUser(uuid);
         if (!stats) return res.status(500).send({ message: 'Failed to fetch user stats' });
         return res.status(200).send(stats);
-
       } catch (err) {
         return res.status(500).send({ message: 'Failed to fetch user stats' });
       }
-    }
-  )
+    },
+  );
 
   // Sends a email confirmation for user deletion
   app.delete(
