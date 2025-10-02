@@ -88,10 +88,6 @@ prod:
 	@echo ">> Starting default stack (attached)"
 	docker compose -p $(NAME_PROD) $(PROD_COMPOSE) $(ENV_ROOT) up --build
 
-prod-down:
-	@echo ">> Stopping & removing default stack (volumes, local images, orphans)"
-	docker compose -p $(NAME_PROD) $(PROD_COMPOSE) $(ENV_ROOT) down -v --rmi local --remove-orphans
-
 elk:
 	$(ensure_dirs)
 	$(ensure_env)
@@ -120,7 +116,7 @@ mon-detached:
 
 down:
 	@echo ">> Stopping & removing default stack (volumes, local images, orphans)"
-	docker compose -p $(NAME) $(ROOT_COMPOSE) $(PROD_COMPOSE) $(ENV_ROOT) --profile elk --profile monitoring down -v --rmi local --remove-orphans
+	docker compose -p $(NAME) -p $(NAME_PROD) $(ROOT_COMPOSE) $(PROD_COMPOSE) $(ENV_ROOT) --profile elk --profile monitoring down -v --rmi local --remove-orphans
 
 down-elk:
 	@echo ">> Stopping & removing profile 'elk' (volumes, local images, orphans)"
