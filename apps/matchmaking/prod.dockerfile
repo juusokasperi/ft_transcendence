@@ -1,6 +1,6 @@
 # 1) Builder stage
 # -------------------------------
-FROM node:22-bookworm AS builder
+FROM node:22-bookworm-slim AS builder
 # Set working dir at repo root first
 WORKDIR /work
 # Enable Corepack / pnpm
