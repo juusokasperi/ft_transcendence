@@ -10,6 +10,12 @@ volumes:
   redis_data: {}
   frontend_dist: {}
 
+# YAML anchor
+x-logstash-logging: &logstash-logging
+  driver: gelf
+  options:
+    gelf-address: udp://localhost:12201
+
 services:
   # Backend
   backend:
@@ -25,10 +31,7 @@ services:
     volumes:
       - ./apps/backend/data/sqlite:/data
       - ./apps/backend/data/sqlite/uploads:/data/uploads
-    logging:
-      driver: gelf
-      options:
-        gelf-address: udp://localhost:12201
+    logging: *logstash-logging
 
   # Frontend builds the site and then exits
   frontend-builder:
@@ -41,6 +44,7 @@ services:
       - frontend_dist:/work/apps/frontend/dist
     networks:
       - prod-private
+    logging: *logstash-logging
 
   # Nginx gateway (public entrypoint)
   nginx:
@@ -61,10 +65,7 @@ services:
     networks:
       - prod-public
       - prod-private
-    logging:
-      driver: gelf
-      options:
-        gelf-address: udp://localhost:12201
+    logging: *logstash-logging
 
   # Matchmaking service
   # TODO: depends on Redis?
@@ -80,10 +81,7 @@ services:
       - prod-private
     depends_on:
       - allocator
-    logging:
-      driver: gelf
-      options:
-        gelf-address: udp://localhost:12201
+    logging: *logstash-logging
 
   # Game server(s)
   # TODO: depends on Redis?
@@ -97,10 +95,7 @@ services:
       - ./.env
     networks:
       - prod-private
-    logging:
-      driver: gelf
-      options:
-        gelf-address: udp://localhost:12201
+    logging: *logstash-logging
 
   # 6b) Game server 2
   game-server-2:
@@ -121,10 +116,7 @@ services:
       - prod-private
     depends_on:
       - redis
-    logging:
-      driver: gelf
-      options:
-        gelf-address: udp://localhost:12201
+    logging: *logstash-logging
 
   # Redis
   redis:
@@ -134,10 +126,7 @@ services:
       - redis_data:/data
     networks:
       - prod-private
-    logging:
-      driver: gelf
-      options:
-        gelf-address: udp://localhost:12201
+    logging: *logstash-logging
 
   # Scorer
   scorer:
@@ -156,10 +145,7 @@ services:
       - redis
       - game-server
       - game-server-2
-    logging:
-      driver: gelf
-      options:
-        gelf-address: udp://localhost:12201
+    logging: *logstash-logging
 
   # Game Gateway
   game-gateway:
@@ -176,7 +162,4 @@ services:
       - "55550:55550"
     depends_on:
       - redis
-    logging:
-      driver: gelf
-      options:
-        gelf-address: udp://localhost:12201
+    logging: *logstash-logging
