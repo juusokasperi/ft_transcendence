@@ -38,7 +38,7 @@ export function rotateService(s: GameState): {
 /** Determines the next serve from the given table end. */
 export function serveFrom(tableEnd: TableEnd, s: GameState): GameState {
   const dir = tableEnd === 'east' ? -1 : 1;
-  const angle = 0;
+  const angleRad = ((s.params.serveAngleDeg ?? 0) * Math.PI) / 180;
   return {
     ...s,
     paddles: { P1: { z: 0, vz: 0 }, P2: { z: 0, vz: 0 } },
@@ -46,8 +46,13 @@ export function serveFrom(tableEnd: TableEnd, s: GameState): GameState {
     ball: {
       x: 0,
       z: 0,
-      vx: dir * s.params.ballSpeed * Math.cos(angle),
-      vz: s.params.ballSpeed * Math.sin(angle),
+      vx: dir * s.params.ballSpeed * Math.cos(angleRad),
+      vz: s.params.ballSpeed * Math.sin(angleRad),
     },
   };
+}
+
+/** Returns a copy of state with a new default serve angle (degrees). */
+export function setServeAngleDeg(s: GameState, deg: number): GameState {
+  return { ...s, params: { ...s.params, serveAngleDeg: deg } };
 }

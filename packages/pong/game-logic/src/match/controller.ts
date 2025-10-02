@@ -125,7 +125,11 @@ export function createMatchController(
 
       // Fresh state with correct player occupancy for the new game
       const freshBase = createInitialState(game.bounds, nextInitialServer, p1AtEastNow);
-      const fresh = addRulesToState(freshBase, rules);
+      let fresh = addRulesToState(freshBase, rules);
+      // Carry over any pre-armed serve angle configured during the pause window
+      if (game.params.serveAngleDeg != null) {
+        fresh = { ...fresh, params: { ...fresh.params, serveAngleDeg: game.params.serveAngleDeg } };
+      }
       game = serveFrom(nextInitialServer, fresh);
 
       return { state: game, events };

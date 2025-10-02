@@ -38,18 +38,14 @@ import {
   serveFrom,
   createMatchController,
   tableTennisRules,
+  setServeAngleDeg,
 } from '@pong/game-logic';
 
-import { pickInitialServer, SERVE_SELECT_TOTAL_MS, randomSeed32 } from '@pong/shared';
+import { pickInitialServer, SERVE_SELECT_TOTAL_MS, randomSeed32, sideOpposite } from '@pong/shared';
 import { disposeWorld } from '@pong/render';
 import type { ControllerScheme, Preferences } from '../preferences';
 import { applyPreferences } from '../preferences';
-import {
-  setHudAndPaletteColorsFromPrefs,
-  swapPaddleMaterials,
-  handleMatchOver,
-  handleSwapSidesNow,
-} from './utils';
+import { setHudAndPaletteColorsFromPrefs, swapPaddleMaterials, handleMatchOver, handleSwapSidesNow, pickSafeServeAngleDeg } from './utils';
 import { orbitCameraFor } from '@pong/render';
 import { applyFrameEventsToAudio } from '@pong/render';
 import { createLocalAudioKit, createLocalSfxDetectors } from './audio-utils';
@@ -172,6 +168,10 @@ export function createLocalApp(canvas: HTMLCanvasElement, preferences?: Preferen
 
   // Headless state aligned to match controller (ensures rules overrides apply from game 1)
   let state: GameState = match.getGame();
+  // Deterministic per-serve variation counter for safe serve angles
+  let serveIndex = 0;
+  // Track expected initial server per game (mirror of match controller policy)
+  let initialServerThisGameLocal = initialServer;
 
   // Input wiring (keyboard/touch aggregator)
   setBindingProfile('local');
@@ -278,6 +278,27 @@ export function createLocalApp(canvas: HTMLCanvasElement, preferences?: Preferen
         });
       }
 
+      // Prepare next serve angle as soon as we enter the short pause
+      if (prevPhase !== 'pauseBtwPoints' && state.phase === 'pauseBtwPoints') {
+        const side = state.nextServe ?? state.server;
+        const deg = pickSafeServeAngleDeg(matchSeed, bounds, side, serveIndex++);
+        state = setServeAngleDeg(state, deg);
+      }
+
+      // Between-games: pre-arm the next game's initial serve angle during the pause
+      if (prevPhase !== 'pauseBetweenGames' && state.phase === 'pauseBetweenGames') {
+        if (RULES.match.alternateInitialServerEachGame) {
+          initialServerThisGameLocal = sideOpposite(initialServerThisGameLocal);
+        }
+        const degGame = pickSafeServeAngleDeg(
+          matchSeed,
+          bounds,
+          initialServerThisGameLocal,
+          serveIndex++,
+        );
+        state = setServeAngleDeg(state, degGame);
+      }
+
       // 5) HUD (player‑pinned)
       const snap = match.getSnapshot();
       const stateForHUD = mapStateForPlayerRows(state, rowsMirrored);
@@ -357,6 +378,10 @@ export function createLocalApp(canvas: HTMLCanvasElement, preferences?: Preferen
       loop.start();
 
       void fx.serveSelection(initialServer).then(async () => {
+        // Set deterministic safe serve angle for the opening serve
+        const serveDeg = pickSafeServeAngleDeg(matchSeed, bounds, initialServer, serveIndex++);
+        state = setServeAngleDeg(state, serveDeg);
+
         state = serveFrom(initialServer, state);
         state = { ...state, tPauseBtwPointsMs: 0 };
 

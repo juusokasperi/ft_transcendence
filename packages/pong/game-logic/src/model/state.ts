@@ -88,6 +88,8 @@ export type GameState = {
     ballSpeed: number; // base rally speed (m/s)
     zEnglish: number; // how much paddle vz affects ball.vz (0..1+)
     restitutionWall: number;
+    /** Default serve angle in degrees (0 = straight). */
+    serveAngleDeg?: number;
 
     /** Scoring/service rules (table-tennis style by default) */
     targetScore: number; // points to win a game (e.g., 11)
@@ -119,7 +121,7 @@ export function createInitialState(
   const bestOf = 5;
   const targetGames = Math.ceil(bestOf / 2);
 
-  return {
+    return {
     paddles: { P1: { z: 0, vz: 0 }, P2: { z: 0, vz: 0 } },
     ball: { x: 0, z: 0, vx: 0, vz: 0 },
 
@@ -133,19 +135,20 @@ export function createInitialState(
     serviceTurnsLeft: servesPerTurn,
 
     bounds,
-    params: {
-      paddleSpeed: 2.2,
-      ballSpeed: 1.8, // Avoid setting ballSpeed from 1.41 to 1.59 due to known physics instability in this range, which can cause predictable ball trajectories and gameplay bugs.
-      zEnglish: 0.75,
-      restitutionWall: 1.0,
-      targetScore,
-      winBy,
-      servesPerTurn,
-      deuceServesPerTurn,
-      deuceAt,
-      bestOf,
-      targetGames,
-    },
+      params: {
+        paddleSpeed: 2.2,
+        ballSpeed: 1.8, // Avoid setting ballSpeed from 1.41 to 1.59 due to known physics instability in this range, which can cause predictable ball trajectories and gameplay bugs.
+        zEnglish: 0.75,
+        restitutionWall: 1.0,
+        serveAngleDeg: 0,
+        targetScore,
+        winBy,
+        servesPerTurn,
+        deuceServesPerTurn,
+        deuceAt,
+        bestOf,
+        targetGames,
+      },
     playerAtEnd: p1AtEast ? { east: 'P1', west: 'P2' } : { east: 'P2', west: 'P1' },
   };
 }
