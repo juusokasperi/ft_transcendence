@@ -12,7 +12,6 @@
   "main": "dist/index.js",
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
-    "build:prod": "tsc -p tsconfig.build.prod.json",
     "build:vite": "vite build",
     "db:reset": "rm -rf data/",
     "db:seed": "tsx utils/seedTestData.ts",
