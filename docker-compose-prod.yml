@@ -65,25 +65,26 @@ services:
       driver: gelf
       options:
         gelf-address: udp://localhost:12201
-  #
-  # # Matchmaking service
-  # matchmaking-service:
-  #   build:
-  #     context: .
-  #     dockerfile: ./apps/matchmaking/Dockerfile
-  #   image: ft-transcendence-matchmaking:latest
-  #   restart: unless-stopped
-  #   env_file:
-  #     - ./.env
-  #   networks:
-  #     - prod-private
-  #   depends_on:
-  #     - allocator
-  #   logging:
-  #     driver: gelf
-  #     options:
-  #       gelf-address: udp://localhost:12201
-  #
+
+  # Matchmaking service
+  # TODO: depends on Redis?
+  matchmaking-service:
+    build:
+      context: .
+      dockerfile: ./apps/matchmaking/prod.dockerfile
+    image: ft-transcendence-matchmaking-prod:latest
+    restart: unless-stopped
+    env_file:
+      - ./.env
+    networks:
+      - prod-private
+    depends_on:
+      - allocator
+    logging:
+      driver: gelf
+      options:
+        gelf-address: udp://localhost:12201
+
   # Game server(s)
   # TODO: depends on Redis?
   game-server: &game-server-template
