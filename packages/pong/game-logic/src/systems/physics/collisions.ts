@@ -119,21 +119,21 @@ export function collidePaddle(
  * Resolves the earliest among wall and paddle contacts, iterating while time remains.
  * Captures the first wall/paddle event of the frame for FX.
  */
-export function stepBallTOI(
+export function stepBallTOIInPlace(
   s: GameState,
+  ball: { x: number; z: number; vx: number; vz: number },
   dt: number,
-): { s: GameState; events: FrameEvents } {
-  let state = s;
+  events: FrameEvents,
+): void {
   let remaining = dt;
-  const events: FrameEvents = {};
 
   // Constants
-  const zMax = state.bounds.halfWidthZ - state.bounds.ballRadius;
+  const zMax = s.bounds.halfWidthZ - s.bounds.ballRadius;
   const clampMin = -zMax;
   const clampMax = +zMax;
-  const halfDepth = state.bounds.paddleHalfDepthZ + state.bounds.ballRadius;
-  const leftPlane = state.bounds.leftPaddleX + state.bounds.ballRadius;
-  const rightPlane = state.bounds.rightPaddleX - state.bounds.ballRadius;
+  const halfDepth = s.bounds.paddleHalfDepthZ + s.bounds.ballRadius;
+  const leftPlane = s.bounds.leftPaddleX + s.bounds.ballRadius;
+  const rightPlane = s.bounds.rightPaddleX - s.bounds.ballRadius;
 
   // numerical guard
   const EPS = 1e-9;
@@ -144,9 +144,8 @@ export function stepBallTOI(
     return t > EPS ? t : Number.POSITIVE_INFINITY;
   };
 
-  // Limit the number of iterations to avoid pathological loops
   for (let iter = 0; iter < 4 && remaining > 0; iter++) {
-    const { x, z, vx, vz } = state.ball;
+    const { x, z, vx, vz } = ball;
 
     // Candidate times
     const tNorth = timeTo(+zMax, z, vz);
@@ -163,11 +162,11 @@ export function stepBallTOI(
     if (tSouth <= remaining) candidates.push({ kind: 'south', t: tSouth });
     if (tLeft <= remaining) {
       const zHit = z + vz * tLeft;
-      if (Math.abs(zHit - state.paddles.east.z) <= halfDepth) candidates.push({ kind: 'left', t: tLeft, zHit });
+      if (Math.abs(zHit - s.paddles.east.z) <= halfDepth) candidates.push({ kind: 'left', t: tLeft, zHit });
     }
     if (tRight <= remaining) {
       const zHit = z + vz * tRight;
-      if (Math.abs(zHit - state.paddles.west.z) <= halfDepth) candidates.push({ kind: 'right', t: tRight, zHit });
+      if (Math.abs(zHit - s.paddles.west.z) <= halfDepth) candidates.push({ kind: 'right', t: tRight, zHit });
     }
 
     // Choose earliest
@@ -176,7 +175,8 @@ export function stepBallTOI(
 
     if (!hit) {
       // No hit within remaining: advance freely and finish
-      state = { ...state, ball: { x: x + vx * remaining, z: z + vz * remaining, vx, vz } };
+      ball.x = x + vx * remaining;
+      ball.z = z + vz * remaining;
       remaining = 0;
       break;
     }
@@ -189,21 +189,25 @@ export function stepBallTOI(
     if (hit.kind === 'north' || hit.kind === 'south') {
       const zWall = hit.kind === 'north' ? +zMax : -zMax;
       const vzIn = vz;
-      // reflect Z and set at contact, clamp to valid range
       zHit = clampZ(zWall, clampMin, clampMax);
-      const vzOut = -vz * state.params.restitutionWall;
-      state = { ...state, ball: { x: xHit, z: zHit, vx, vz: vzOut } };
+      const vzOut = -vz * s.params.restitutionWall;
+      ball.x = xHit;
+      ball.z = zHit;
+      ball.vx = vx;
+      ball.vz = vzOut;
       if (!events.wallHit) {
         events.wallHit = { side: hit.kind === 'north' ? 'north' : 'south', x: xHit, z: zHit, vzAbs: Math.abs(vzIn) };
       }
     } else if (hit.kind === 'left' || hit.kind === 'right') {
-      // reflect X and apply english on Z; clamp z contact
       const plane = hit.kind === 'left' ? leftPlane : rightPlane;
-      const paddleVz = hit.kind === 'left' ? state.paddles.east.vz : state.paddles.west.vz;
+      const paddleVz = hit.kind === 'left' ? s.paddles.east.vz : s.paddles.west.vz;
       const zClamped = clampZ(hit.zHit, clampMin, clampMax);
       const vxOut = -vx;
-      const vzOut = vz + paddleVz * state.params.zEnglish;
-      state = { ...state, ball: { x: plane, z: zClamped, vx: vxOut, vz: vzOut } };
+      const vzOut = vz + paddleVz * s.params.zEnglish;
+      ball.x = plane;
+      ball.z = zClamped;
+      ball.vx = vxOut;
+      ball.vz = vzOut;
       if (!events.paddleHit) {
         events.paddleHit = {
           side: hit.kind,
@@ -217,6 +221,4 @@ export function stepBallTOI(
 
     remaining -= t;
   }
-
-  return { s: state, events };
 }

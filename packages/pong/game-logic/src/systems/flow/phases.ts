@@ -1,9 +1,12 @@
 import type { GameState } from '../../model/state';
 import { isRallyPhase, isServePhase } from '../utils';
-import { stepBallTOI } from '../physics/collisions';
+import { stepBallTOIInPlace } from '../physics/collisions';
 import { maybeScoreAndFreeze } from './scoring';
 import { stepPause } from './pause';
 import type { FrameEvents } from '@pong/shared';
+
+// Reusable events object to reduce allocations per tick.
+const REUSABLE_EVENTS: FrameEvents = {} as FrameEvents;
 
 export function handleSteps(
   state: GameState,
@@ -11,7 +14,11 @@ export function handleSteps(
 ): { next: GameState; events: FrameEvents } {
   // Start from a shallow copy to avoid accidental mutations of the input state
   let s = { ...state };
-  const events: FrameEvents = {};
+  const events = REUSABLE_EVENTS;
+  // clear previous contents
+  events.wallHit = undefined;
+  events.paddleHit = undefined;
+  events.explode = undefined;
 
   // Game-over is a hard stop for physics; match controller will advance flow.
   if (s.phase === 'gameOver') return { next: s, events };
@@ -25,11 +32,10 @@ export function handleSteps(
   if (isServePhase(s.phase)) s = { ...s, phase: 'rally' };
 
   if (isRallyPhase(s.phase)) {
-    const out = stepBallTOI(s, dt);
-    s = out.s;
-    if (out.events.wallHit && !events.wallHit) events.wallHit = out.events.wallHit;
-    if (out.events.paddleHit && !events.paddleHit) events.paddleHit = out.events.paddleHit;
-
+    // Mutate a cloned ball once per frame to reduce GC churn
+    const ball = { ...s.ball };
+    stepBallTOIInPlace(s, ball, dt, events);
+    s = { ...s, ball };
     // Check for goal → freeze ball & enter pause to next game
     s = maybeScoreAndFreeze(s, events);
   }
