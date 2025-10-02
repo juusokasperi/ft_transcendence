@@ -252,17 +252,19 @@ export function updateEmail(uuid: string, email: string): boolean {
 }
 
 export function markEmailChange(uuid: string, newEmail: string, token: string): boolean {
+  const transaction = db.transaction(() => {
+    db.prepare(`DELETE FROM EmailChangeRequests WHERE user_uuid = ?`).run(uuid);
+    db.prepare(
+      `
+			INSERT INTO EmailChangeRequests (email_change_token, user_uuid, email_change_new_email, email_change_expires)
+			VALUES (?, ?, ?, datetime('now', '+24 hours'))
+		`,
+    ).run(token, uuid, newEmail);
+  });
+
   try {
-    const result = db
-      .prepare(
-        `
-			UPDATE Users
-			SET email_change_token = ?, email_change_new_email = ?, email_change_expires = datetime('now', '+24 hours')
-			WHERE uuid = ?
-			`,
-      )
-      .run(token, newEmail, uuid);
-    return result.changes === 1;
+    transaction();
+    return true;
   } catch (error) {
     return false;
   }
@@ -270,28 +272,33 @@ export function markEmailChange(uuid: string, newEmail: string, token: string): 
 
 export function confirmEmailChange(token: string): { uuid: string; newEmail: string } | null {
   const transaction = db.transaction(() => {
-    const user = db
+    const request = db
       .prepare(
         `
-			SELECT uuid, email_change_new_email FROM Users
+			SELECT user_uuid, email_change_new_email as new_email
+			FROM EmailChangeRequests
 			WHERE email_change_token = ? AND email_change_expires > datetime('now')
 		`,
       )
-      .get(token) as { uuid: string; email_change_new_email: string } | undefined;
-    if (!user) throw new Error('Invalid or expired token');
+      .get(token) as { user_uuid: string; new_email: string } | undefined;
+
+    if (!request) throw new Error('Invalid or expired token');
 
     const updateResult = db
       .prepare(
         `
 			UPDATE Users
-			SET email = ?, email_change_token = NULL, email_change_new_email = NULL, email_change_expires = NULL
+			SET email = ?
 			WHERE uuid = ?
-			`,
+		`,
       )
-      .run(user.email_change_new_email, user.uuid);
+      .run(request.new_email, request.user_uuid);
+
     if (updateResult.changes === 0) throw new Error('Update failed');
 
-    return { uuid: user.uuid, newEmail: user.email_change_new_email };
+    db.prepare(`DELETE FROM EmailChangeRequests WHERE email_change_token = ?`).run(token);
+
+    return { uuid: request.user_uuid, newEmail: request.new_email };
   });
 
   try {

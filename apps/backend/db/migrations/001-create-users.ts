@@ -13,9 +13,6 @@ export async function up(db: Database) {
 	uuid TEXT PRIMARY KEY NOT NULL UNIQUE,
 	username TEXT NOT NULL COLLATE NOCASE,
 	email TEXT NOT NULL COLLATE NOCASE,
-  email_change_token TEXT,
-  email_change_new_email TEXT,
-  email_change_expires TEXT,
 	password_hash TEXT,
 	tfa	BOOLEAN NOT NULL DEFAULT FALSE,
 	tfa_secret TEXT,
@@ -27,7 +24,9 @@ export async function up(db: Database) {
 	UNIQUE(username),
 	UNIQUE(email),
 	CHECK (password_hash IS NOT NULL OR google_id IS NOT NULL)
-	);`);
+	);
+
+	`);
 }
 
 export async function down(db: Database) {

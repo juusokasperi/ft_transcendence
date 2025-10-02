@@ -324,7 +324,7 @@ describe('User Functions', () => {
       expect(userAfter?.email).toBe(newEmail);
     });
 
-    it('markEmailChange should set email change fields', async () => {
+    it('markEmailChange should create an email change request entry', async () => {
       const { addUser, markEmailChange } = await import('../../../db/queries/users.ts');
 
       const userId = 'uuid-mark-test';
@@ -344,7 +344,7 @@ describe('User Functions', () => {
       const db = await import('../../../db/client.ts');
       const userRecord = db.default
         .prepare(
-          'SELECT email_change_token, email_change_new_email, email_change_expires FROM Users WHERE uuid = ?',
+          'SELECT email_change_token, email_change_new_email, email_change_expires FROM EmailChangeRequests WHERE user_uuid = ?',
         )
         .get(userId) as any;
 
@@ -353,7 +353,7 @@ describe('User Functions', () => {
       expect(userRecord.email_change_expires).toBeTruthy(); // Should have an expiration date
     });
 
-    it('confirmEmailChange should update email and clear change fields on valid token', async () => {
+    it('confirmEmailChange should update email and remove request on valid token', async () => {
       const { addUser, markEmailChange, confirmEmailChange, getUserByUuid } = await import(
         '../../../db/queries/users.ts'
       );
@@ -384,14 +384,10 @@ describe('User Functions', () => {
       // Verify change fields were cleared
       const db = await import('../../../db/client.ts');
       const userRecord = db.default
-        .prepare(
-          'SELECT email_change_token, email_change_new_email, email_change_expires FROM Users WHERE uuid = ?',
-        )
-        .get(userId) as any;
+        .prepare('SELECT COUNT(*) as count FROM EmailChangeRequests WHERE user_uuid = ?')
+        .get(userId) as { count: number };
 
-      expect(userRecord.email_change_token).toBeNull();
-      expect(userRecord.email_change_new_email).toBeNull();
-      expect(userRecord.email_change_expires).toBeNull();
+      expect(userRecord.count).toBe(0);
     });
 
     it('confirmEmailChange should return null for invalid token', async () => {
@@ -424,9 +420,9 @@ describe('User Functions', () => {
       const db = await import('../../../db/client.ts');
       db.default
         .prepare(
-          "UPDATE Users SET email_change_expires = datetime('now', '-1 hour') WHERE uuid = ?",
+          "UPDATE EmailChangeRequests SET email_change_expires = datetime('now', '-1 hour') WHERE email_change_token = ?",
         )
-        .run(userId);
+        .run(token);
 
       // Try to confirm expired token
       const result = confirmEmailChange(token);
