@@ -25,17 +25,22 @@ export function handleSteps(
   if (isServePhase(s.phase)) s = { ...s, phase: 'rally' };
 
   if (isRallyPhase(s.phase)) {
-    const w = collideWalls(s, dt);
-    s = w.s;
-    if (w.wallHit) events.wallHit = w.wallHit;
+    const SUBSTEPS = 2;
+    const subDt = dt / SUBSTEPS;
+    for (let i = 0; i < SUBSTEPS; i++) {
+      const w = collideWalls(s, subDt);
+      s = w.s;
+      if (w.wallHit && !events.wallHit) events.wallHit = w.wallHit;
 
-    const p = collidePaddle(s, dt);
-    s = p.s;
-    if (p.paddleHit) events.paddleHit = p.paddleHit;
-    s = { ...s, ball: { ...s.ball, x: s.ball.x + s.ball.vx * dt } };
+      const p = collidePaddle(s, subDt);
+      s = p.s;
+      if (p.paddleHit && !events.paddleHit) events.paddleHit = p.paddleHit;
+      s = { ...s, ball: { ...s.ball, x: s.ball.x + s.ball.vx * subDt } };
 
-    // Check for goal → freeze ball & enter pause to next game
-    s = maybeScoreAndFreeze(s, events);
+      // Check for goal → freeze ball & enter pause to next game
+      s = maybeScoreAndFreeze(s, events);
+      if (!isRallyPhase(s.phase)) break;
+    }
   }
 
   return { next: s, events };
