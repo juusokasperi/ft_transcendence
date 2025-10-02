@@ -853,9 +853,12 @@ const LocalGame: React.FC = () => {
   }
 
   // Post-match results view (reusing in-game HUD scoreboard)
-  const eastName = postMatch.names.east || 'Player 1';
   const westName = postMatch.names.west || 'Player 2';
-  const winnerName = postMatch.winner === 'east' ? eastName : westName;
+  const eastName = postMatch.names.east || 'Player 1';
+  // Determine winner based on last game history (player-pinned rows)
+  const lastGame = postMatch.gamesHistory?.[postMatch.gamesHistory.length - 1];
+  const winnerRow = (lastGame?.winner ?? postMatch.winner) as 'east' | 'west';
+  const winnerName = winnerRow === 'east' ? eastName : westName;
 
   return (
     <div className="relative min-h-screen w-full overflow-auto">

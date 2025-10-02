@@ -60,9 +60,12 @@ export function handleMatchOver(
   canvas: HTMLCanvasElement,
   messageMs = 3800,
 ): void {
-  hud.flashMessage(`${names[winner]} won, impressive match!`, messageMs);
+  // Map winner via last game's history (player-pinned rows) to avoid end/row mismatch
   const snap = getSnapshot();
   const historyForHUD = mapHistoryForPlayers(snap.gamesHistory);
+  const last = historyForHUD[historyForHUD.length - 1];
+  const winnerRow = (last?.winner ?? winner) as TableEnd; // fallback to end if history missing
+  hud.flashMessage(`${names[winnerRow]} won, impressive match!`, messageMs);
   canvas.dispatchEvent(
     new CustomEvent('pong:matchOver', {
       detail: { winner, bestOf: snap.bestOf, gamesHistory: historyForHUD, names },
