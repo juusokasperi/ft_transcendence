@@ -3,6 +3,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { useAppContext } from '../context/AppContext';
 import { useSidebar } from '../context/SidebarContext';
 import { FiMenu, FiX } from 'react-icons/fi';
+import logoImg from '../assets/logo.png';
 
 const navLinks = [
   { label: 'Home', to: '/' },
@@ -52,7 +53,7 @@ const Navbar = () => {
 
           <Link to="/" className="flex items-center gap-3">
             <span className="inline-flex h-12 w-12 items-center justify-center rounded-2xl">
-              <img src="/src/assets/logo.png" alt="Arcade home" className="h-9 w-9" />
+              <img src={logoImg} alt="Arcade home" className="h-9 w-9" />
             </span>
             <span className="hidden text-lg font-semibold tracking-wide text-indigo-100 sm:inline">
               Arcade Transcendence
