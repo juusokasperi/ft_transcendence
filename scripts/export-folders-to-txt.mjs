@@ -13,9 +13,18 @@ const OUTPUT_DIR = path.join(ROOT, 'scripts', 'output');
 
 // Default targets (override with --dirs)
 const DEFAULT_DIRS = [
+  'apps/allocator',
+  'apps/backend',
+  'apps/chat',
   'apps/backend',
   'apps/frontend/src',
+  'apps/frontend/tests',
+  'apps/game-gateway',
+  'apps/game-server',
+  'apps/matchmaking',
+  'apps/scorer',
   'log-management',
+  'monitoring',
   'packages/pong/game-logic',
   'packages/pong/render',
   'packages/pong/shared',
