@@ -8,5 +8,3 @@ export const PAUSE_BETWEEN_GAMES_MS = 1500;
 
 /** Optional “victory” pause at match end. */
 export const PAUSE_MATCH_OVER_MS = 2500;
-
-export const EPS = 1e-6;

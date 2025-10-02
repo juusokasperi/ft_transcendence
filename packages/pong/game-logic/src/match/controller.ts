@@ -22,7 +22,6 @@ export function createMatchController(
   const gamesWonByPlayer: Record<'P1' | 'P2', number> = { P1: 0, P2: 0 };
 
   let matchWinner: TableEnd | undefined;
-  let endsFlippedThisGame = false;
   let midSwapDoneThisGame = false;
   let initialServerThisGame: TableEnd = initialServer;
 
@@ -112,11 +111,9 @@ export function createMatchController(
     // Transition out of between-games pause when timer hits 0
     if (game.phase === 'pauseBetweenGames' && (game.tPauseBtwGamesMs ?? 0) <= 0) {
       currentGameIndex++;
-      endsFlippedThisGame = false;
       midSwapDoneThisGame = false;
 
       if (rules.match.switchEndsEachGame) {
-        endsFlippedThisGame = true;
         p1AtEastNow = !p1AtEastNow; // sides actually swap at game start
         events.swapSidesNow = true;
       }
