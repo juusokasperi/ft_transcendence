@@ -1,6 +1,7 @@
 import type { GameState } from '../../model/state';
 import { clampZ } from '../utils';
 import type { InputIntent } from '@pong/shared';
+import { clamp } from '@pong/shared';
 
 /** Deterministic, pure step. Units: meters/second, seconds. */
 export function stepPaddles(s: GameState, inpt: InputIntent, dt: number): GameState {
@@ -8,8 +9,8 @@ export function stepPaddles(s: GameState, inpt: InputIntent, dt: number): GameSt
   const maxZ = s.bounds.halfWidthZ - s.bounds.paddleHalfDepthZ;
 
   // Clamp axes defensively to [-1, 1]
-  const leftAxis = Math.max(-1, Math.min(1, inpt.leftAxis));
-  const rightAxis = Math.max(-1, Math.min(1, inpt.rightAxis));
+  const leftAxis = clamp(inpt.leftAxis, -1, 1);
+  const rightAxis = clamp(inpt.rightAxis, -1, 1);
   const leftVz = leftAxis * speed;
   const rightVz = rightAxis * speed;
 
