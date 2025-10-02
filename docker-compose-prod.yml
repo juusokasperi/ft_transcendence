@@ -3,6 +3,7 @@ name: ft-transcendence-prod
 networks:
   prod-private:
     driver: bridge
+    internal: true
   prod-public:
     driver: bridge
 
@@ -17,7 +18,9 @@ x-logstash-logging: &logstash-logging
     gelf-address: udp://localhost:12201
 
 services:
+
   # Backend
+  # Needs outbound internet access to send confirmation mails, hence prod-public
   backend:
     build:
       context: .
@@ -27,6 +30,7 @@ services:
     env_file:
       - ./.env
     networks:
+      - prod-public
       - prod-private
     volumes:
       - ./apps/backend/data/sqlite:/data
