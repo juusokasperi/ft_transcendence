@@ -92,32 +92,32 @@ const matchIds = [
 ];
 
 const statsData = [
-  [0, uuidBob, { pointsScored: 11, pointsConceded: 5, gamesWon: 1, gamesLost: 0, maxPointLead: 6 }],
-  [0, uuidJoe, { pointsScored: 5, pointsConceded: 11, gamesWon: 0, gamesLost: 1, maxPointLead: 2 }],
+  [0, uuidBob, { pointsScored: 11, pointsConceded: 5, gamesWon: 3, gamesLost: 0, maxPointLead: 6 }],
+  [0, uuidJoe, { pointsScored: 5, pointsConceded: 11, gamesWon: 0, gamesLost: 3, maxPointLead: 2 }],
   [
     1,
     uuidBob,
-    { pointsScored: 11, pointsConceded: 0, gamesWon: 1, gamesLost: 0, maxPointLead: 11 },
+    { pointsScored: 11, pointsConceded: 0, gamesWon: 2, gamesLost: 0, maxPointLead: 11 },
   ],
   [1, uuidJoe, { pointsScored: 0, pointsConceded: 11, gamesWon: 0, gamesLost: 1, maxPointLead: 0 }],
   [
     2,
     uuidWil,
-    { pointsScored: 10, pointsConceded: 12, gamesWon: 0, gamesLost: 1, maxPointLead: 3 },
+    { pointsScored: 10, pointsConceded: 12, gamesWon: 4, gamesLost: 1, maxPointLead: 3 },
   ],
   [
     2,
     uuidBob,
-    { pointsScored: 12, pointsConceded: 10, gamesWon: 1, gamesLost: 0, maxPointLead: 4 },
+    { pointsScored: 12, pointsConceded: 10, gamesWon: 1, gamesLost: 4, maxPointLead: 4 },
   ],
-  [3, uuidJoe, { pointsScored: 1, pointsConceded: 11, gamesWon: 0, gamesLost: 1, maxPointLead: 1 }],
+  [3, uuidJoe, { pointsScored: 1, pointsConceded: 11, gamesWon: 3, gamesLost: 0, maxPointLead: 1 }],
   [
     3,
     uuidWil,
-    { pointsScored: 11, pointsConceded: 1, gamesWon: 1, gamesLost: 0, maxPointLead: 10 },
+    { pointsScored: 11, pointsConceded: 1, gamesWon: 0, gamesLost: 3, maxPointLead: 10 },
   ],
-  [4, uuidJoe, { pointsScored: 8, pointsConceded: 11, gamesWon: 0, gamesLost: 1, maxPointLead: 4 }],
-  [4, uuidWil, { pointsScored: 11, pointsConceded: 8, gamesWon: 1, gamesLost: 0, maxPointLead: 7 }],
+  [4, uuidJoe, { pointsScored: 8, pointsConceded: 11, gamesWon: 4, gamesLost: 1, maxPointLead: 4 }],
+  [4, uuidWil, { pointsScored: 11, pointsConceded: 8, gamesWon: 1, gamesLost: 4, maxPointLead: 7 }],
 ];
 
 for (const [matchIdx, userUuid, stats] of statsData as any) {
