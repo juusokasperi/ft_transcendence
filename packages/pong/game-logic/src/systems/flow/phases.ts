@@ -40,5 +40,6 @@ export function handleSteps(
     s = maybeScoreAndFreeze(s, events);
   }
 
-  return { next: s, events };
+  // Return a shallow copy so callers can safely retain it without aliasing
+  return { next: s, events: { ...events } };
 }
