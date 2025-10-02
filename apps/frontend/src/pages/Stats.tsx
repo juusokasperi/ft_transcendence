@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { useAppContext } from '../../context/AppContext';
+import { useAppContext } from '../context/AppContext';
 import { AxiosError } from 'axios';
-import Navbar from '../../components/Navbar';
-import { useSnackbar } from '../../context/SnackbarContext';
-import { DesktopMatches, MobileMatches } from './Matches';
-import { StatsSection } from './StatsOverview';
+import Navbar from '../components/Navbar';
+import { useSnackbar } from '../context/SnackbarContext';
+import { DesktopMatches, MobileMatches } from '../components/StatsMatches';
+import { StatsSection } from '../components/StatsOverview';
 
 interface MatchPlayerPublic {
   uuid: string;
@@ -42,25 +42,6 @@ export interface MatchPlayerStats {
   createdAt?: string | null;
 }
 
-export const formatDate = (dateString: string, format: 'short' | 'long' = 'long') => {
-  let formattedDate;
-  if (format === 'short')
-    formattedDate = new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'numeric',
-      day: 'numeric',
-    });
-  else
-    formattedDate = new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-    });
-  return formattedDate;
-};
-
 const Stats: React.FC = () => {
   const [matches, setMatches] = useState<Match[]>([]);
   const [stats, setStats] = useState<MatchPlayerStats>();
@@ -69,7 +50,7 @@ const Stats: React.FC = () => {
   const [hasMore, setHasMore] = useState(true);
   const [offset, setOffset] = useState(0);
   const pageSize = 5;
-  const { axios, user } = useAppContext();
+  const { axios } = useAppContext();
   const { enqueueSnackbar } = useSnackbar();
 
   const fetchStats = async () => {
@@ -118,6 +99,7 @@ const Stats: React.FC = () => {
   useEffect(() => {
     fetchStats();
     fetchMatches();
+    window.scrollTo(0, 0);
   }, []);
 
   const loadMore = () => fetchMatches(true);
