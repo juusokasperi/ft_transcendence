@@ -7,8 +7,11 @@ export function stepPaddles(s: GameState, inpt: InputIntent, dt: number): GameSt
   const speed = s.params.paddleSpeed;
   const maxZ = s.bounds.halfWidthZ - s.bounds.paddleHalfDepthZ;
 
-  const leftVz = inpt.leftAxis * speed;
-  const rightVz = inpt.rightAxis * speed;
+  // Clamp axes defensively to [-1, 1]
+  const leftAxis = Math.max(-1, Math.min(1, inpt.leftAxis));
+  const rightAxis = Math.max(-1, Math.min(1, inpt.rightAxis));
+  const leftVz = leftAxis * speed;
+  const rightVz = rightAxis * speed;
 
   const leftZ = clampZ(s.paddles.P1.z + leftVz * dt, -maxZ, +maxZ);
   const rightZ = clampZ(s.paddles.P2.z + rightVz * dt, -maxZ, +maxZ);
