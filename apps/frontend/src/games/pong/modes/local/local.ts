@@ -396,6 +396,8 @@ export function createLocalApp(canvas: HTMLCanvasElement, preferences?: Preferen
           paddleSpeed: state.params.paddleSpeed,
           restitutionWall: state.params.restitutionWall,
         },
+        // Mirror parity matches control mirroring across swaps
+        controlsMirrored: rowsMirrored,
       };
     },
   };

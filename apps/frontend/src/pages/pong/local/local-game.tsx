@@ -196,7 +196,11 @@ const LocalGame: React.FC = () => {
       try {
         const { BotController } = await import('../../../games/pong/ai/bot-controller');
         if (cancelled || botRef.current) return;
-        const bot = new BotController(canvas, 'P2', observer, botDifficulty);
+        // AI always drives the Arrow controls; pick the matching seat so
+        // the bot presses the right keys and plans for the right paddle
+        // across side swaps.
+        const botSeat: 'P1' | 'P2' = settings.player1.controller === 'arrows' ? 'P1' : 'P2';
+        const bot = new BotController(canvas, botSeat, observer, botDifficulty);
         bot.start();
         botRef.current = bot;
       } catch (error) {

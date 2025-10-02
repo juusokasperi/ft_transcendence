@@ -18,6 +18,10 @@ export type Observation = {
     paddleSpeed: number;
     restitutionWall: number;
   };
+  // When true, control bindings are mirrored so the Arrow/WASD schemes
+  // drive the opposite physical side. Use this to plan for the paddle
+  // actually controlled by our keys.
+  controlsMirrored?: boolean;
 };
 
 type ObserveFn = () => Observation;
@@ -64,8 +68,8 @@ const DIFFICULTY: Record<BotDifficulty, DifficultyProfile> = {
   },
   hard: {
     reactionDelayMs: 60,
-    aimJitter: 0.04,
-    skipChance: 0.02,
+    aimJitter: 0.01,
+    skipChance: 0.001,
     speedScale: 1,
     maxHoldMs: 820,
     minHoldMs: 100,
@@ -100,14 +104,18 @@ function randomCentered(magnitude: number) {
 }
 
 function predictImpact(obs: Observation, seat: BotSeat, maxLookahead: number): ImpactPrediction {
+  // Determine which physical side this controller is currently driving.
+  // In local mode, controls are mirrored on side swaps. When mirrored,
+  // the keys for P1 control the right paddle and P2 keys control the left.
+  const effectiveSeat: BotSeat = obs.controlsMirrored ? (seat === 'P1' ? 'P2' : 'P1') : seat;
   const planeX =
-    seat === 'P2'
+    effectiveSeat === 'P2'
       ? obs.bounds.rightPaddleX - obs.bounds.ballRadius
       : obs.bounds.leftPaddleX + obs.bounds.ballRadius;
 
   const vx = obs.ball.vx;
   const headingRight = vx > 0;
-  const approaching = seat === 'P2' ? headingRight : !headingRight;
+  const approaching = effectiveSeat === 'P2' ? headingRight : !headingRight;
 
   if (!approaching || Math.abs(vx) < 1e-6) {
     return { approaching: false, targetZ: 0, flightTime: Infinity };
@@ -157,7 +165,9 @@ function integrateZ(
 
 function buildPlan(obs: Observation, seat: BotSeat, profile: DifficultyProfile): MovementPlan {
   const prediction = predictImpact(obs, seat, profile.maxLookahead);
-  const paddleZ = seat === 'P1' ? obs.paddles.P1.z : obs.paddles.P2.z;
+  // Match the planning paddle with the one our keys currently move.
+  const effectiveSeat: BotSeat = obs.controlsMirrored ? (seat === 'P1' ? 'P2' : 'P1') : seat;
+  const paddleZ = effectiveSeat === 'P1' ? obs.paddles.P1.z : obs.paddles.P2.z;
   const zLimit = obs.bounds.halfWidthZ - obs.bounds.ballRadius;
 
   let desired = 0;
