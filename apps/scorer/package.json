@@ -12,6 +12,7 @@
   "main": "dist/index.js",
   "scripts": {
     "dev": "tsx --tsconfig ./tsconfig.json --watch index.ts",
+    "build:vite": "vite build",
     "check-format": "pnpm -F ft_transcendence check-format",
     "fix-format": "pnpm -F ft_transcendence fix-format",
     "typecheck": "tsc -p tsconfig.json --noEmit",

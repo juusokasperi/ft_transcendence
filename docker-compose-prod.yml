@@ -139,27 +139,27 @@ services:
       options:
         gelf-address: udp://localhost:12201
 
-  # # Scorer
-  # scorer:
-  #   build:
-  #     context: .
-  #     dockerfile: ./apps/scorer/Dockerfile
-  #   image: ft-transcendence-scorer:latest
-  #   restart: unless-stopped
-  #   env_file:
-  #     - ./.env
-  #   environment:
-  #     REDIS_URL: redis://redis:6379
-  #   networks:
-  #     - prod-private
-  #   depends_on:
-  #     - redis
-  #     - game-server
-  #     - game-server-2
-  #   logging:
-  #     driver: gelf
-  #     options:
-  #       gelf-address: udp://localhost:12201
+  # Scorer
+  scorer:
+    build:
+      context: .
+      dockerfile: ./apps/scorer/prod.dockerfile
+    image: ft-transcendence-scorer-prod:latest
+    restart: unless-stopped
+    env_file:
+      - ./.env
+    environment:
+      REDIS_URL: redis://redis:6379
+    networks:
+      - prod-private
+    depends_on:
+      - redis
+      - game-server
+      - game-server-2
+    logging:
+      driver: gelf
+      options:
+        gelf-address: udp://localhost:12201
   #
   # # Game Gateway
   # game-gateway:
