@@ -36,7 +36,8 @@ export type Phase =
  * - games: games won within the match (best of N)
  */
 export type GameState = {
-  paddles: { P1: Paddle; P2: Paddle };
+  /** Physics channels are keyed by table end to avoid identity overload. */
+  paddles: { east: Paddle; west: Paddle };
   ball: Ball;
 
   /** Current game's points. */
@@ -121,8 +122,8 @@ export function createInitialState(
   const bestOf = 5;
   const targetGames = Math.ceil(bestOf / 2);
 
-    return {
-    paddles: { P1: { z: 0, vz: 0 }, P2: { z: 0, vz: 0 } },
+  return {
+    paddles: { east: { z: 0, vz: 0 }, west: { z: 0, vz: 0 } },
     ball: { x: 0, z: 0, vx: 0, vz: 0 },
 
     points: { east: 0, west: 0 },

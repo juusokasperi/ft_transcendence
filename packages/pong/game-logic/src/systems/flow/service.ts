@@ -41,7 +41,7 @@ export function serveFrom(tableEnd: TableEnd, s: GameState): GameState {
   const angleRad = ((s.params.serveAngleDeg ?? 0) * Math.PI) / 180;
   return {
     ...s,
-    paddles: { P1: { z: 0, vz: 0 }, P2: { z: 0, vz: 0 } },
+    paddles: { east: { z: 0, vz: 0 }, west: { z: 0, vz: 0 } },
     phase: tableEnd === 'east' ? 'serveEast' : 'serveWest',
     ball: {
       x: 0,

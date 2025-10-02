@@ -49,14 +49,14 @@ export function collidePaddle(
   const denom = nextX - x;
   if (Math.abs(denom) < 1e-9) return { s }; // no horizontal travel
 
-  // Check collision with left paddle plane
+  // Check collision with left paddle plane (east)
   {
     const plane = bounds.leftPaddleX + bounds.ballRadius;
     if ((plane - x) * denom > 0) {
       const t = (plane - x) / denom;
       if (t >= 0 && t <= 1) {
         const zHit = z + vz * dt * t;
-        if (Math.abs(zHit - paddles.P1.z) <= halfDepth) {
+        if (Math.abs(zHit - paddles.east.z) <= halfDepth) {
           return {
             s: {
               ...s,
@@ -64,9 +64,9 @@ export function collidePaddle(
                 x: plane,
                 z: clampZ(zHit, clampMin, clampMax),
                 vx: -vx,
-                vz: vz + paddles.P1.vz * params.zEnglish,
-              },
+                vz: vz + paddles.east.vz * params.zEnglish,
             },
+          },
             paddleHit: {
               side: 'left',
               x: plane,
@@ -80,14 +80,14 @@ export function collidePaddle(
     }
   }
 
-  // Check collision with right paddle plane
+  // Check collision with right paddle plane (west)
   {
     const plane = bounds.rightPaddleX - bounds.ballRadius;
     if ((plane - x) * denom > 0) {
       const t = (plane - x) / denom;
       if (t >= 0 && t <= 1) {
         const zHit = z + vz * dt * t;
-        if (Math.abs(zHit - paddles.P2.z) <= halfDepth) {
+        if (Math.abs(zHit - paddles.west.z) <= halfDepth) {
           return {
             s: {
               ...s,
@@ -95,9 +95,9 @@ export function collidePaddle(
                 x: plane,
                 z: clampZ(zHit, clampMin, clampMax),
                 vx: -vx,
-                vz: vz + paddles.P2.vz * params.zEnglish,
-              },
+                vz: vz + paddles.west.vz * params.zEnglish,
             },
+          },
             paddleHit: {
               side: 'right',
               x: plane,

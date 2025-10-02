@@ -13,14 +13,11 @@ export function stepPaddles(s: GameState, inpt: InputIntent, dt: number): GameSt
   const leftVz = leftAxis * speed;
   const rightVz = rightAxis * speed;
 
-  const leftZ = clampZ(s.paddles.P1.z + leftVz * dt, -maxZ, +maxZ);
-  const rightZ = clampZ(s.paddles.P2.z + rightVz * dt, -maxZ, +maxZ);
+  const leftZ = clampZ(s.paddles.east.z + leftVz * dt, -maxZ, +maxZ);
+  const rightZ = clampZ(s.paddles.west.z + rightVz * dt, -maxZ, +maxZ);
 
   return {
     ...s,
-    paddles: {
-      P1: { z: leftZ, vz: leftVz },
-      P2: { z: rightZ, vz: rightVz },
-    },
+    paddles: { east: { z: leftZ, vz: leftVz }, west: { z: rightZ, vz: rightVz } },
   };
 }

@@ -8,6 +8,7 @@ export type BotDifficulty = 'easy' | 'normal' | 'hard';
 export type Observation = {
   ball: { x: number; z: number; vx: number; vz: number };
   paddles: { P1: { z: number }; P2: { z: number } };
+  paddlesByEnd?: { east: { z: number }; west: { z: number } };
   bounds: {
     leftPaddleX: number;
     rightPaddleX: number;
@@ -166,8 +167,15 @@ function integrateZ(
 function buildPlan(obs: Observation, seat: BotSeat, profile: DifficultyProfile): MovementPlan {
   const prediction = predictImpact(obs, seat, profile.maxLookahead);
   // Match the planning paddle with the one our keys currently move.
-  const effectiveSeat: BotSeat = obs.controlsMirrored ? (seat === 'P1' ? 'P2' : 'P1') : seat;
-  const paddleZ = effectiveSeat === 'P1' ? obs.paddles.P1.z : obs.paddles.P2.z;
+  // Use end-centric channel when available to avoid P1/P2 ambiguity across swaps.
+  const effectiveEnd: 'east' | 'west' = ((): 'east' | 'west' => {
+    const mirrored = !!obs.controlsMirrored;
+    if (!mirrored) return seat === 'P1' ? 'east' : 'west';
+    return seat === 'P1' ? 'west' : 'east';
+  })();
+  const paddleZ = obs.paddlesByEnd
+    ? obs.paddlesByEnd[effectiveEnd].z
+    : (effectiveEnd === 'east' ? obs.paddles.P1.z : obs.paddles.P2.z);
   const zLimit = obs.bounds.halfWidthZ - obs.bounds.ballRadius;
 
   let desired = 0;

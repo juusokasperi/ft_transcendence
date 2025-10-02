@@ -359,14 +359,14 @@ export function createOnlineApp(
 
         // Paddles (authoritative from server) — clamp to local render bounds
         if (!paddleAnim.isAnimating()) {
-          const p1z = hasPrev
-            ? lerp(ref.paddles.P1.z, snap.paddles.P1.z, alpha)
-            : snap.paddles.P1.z;
-          const p2z = hasPrev
-            ? lerp(ref.paddles.P2.z, snap.paddles.P2.z, alpha)
-            : snap.paddles.P2.z;
-          left.mesh.position.z = clampPaddleZ(p1z);
-          right.mesh.position.z = clampPaddleZ(p2z);
+          const eastZ = hasPrev
+            ? lerp(ref.paddles.east.z, snap.paddles.east.z, alpha)
+            : snap.paddles.east.z;
+          const westZ = hasPrev
+            ? lerp(ref.paddles.west.z, snap.paddles.west.z, alpha)
+            : snap.paddles.west.z;
+          left.mesh.position.z = clampPaddleZ(eastZ);
+          right.mesh.position.z = clampPaddleZ(westZ);
         }
 
         // 3) HUD (player-pinned)

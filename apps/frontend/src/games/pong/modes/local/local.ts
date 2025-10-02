@@ -88,7 +88,10 @@ interface PongInstance {
   updatePreferences(p: Preferences): void;
   observe(): {
     ball: { x: number; z: number; vx: number; vz: number };
+    // Player-centric view kept for bot/tooling backwards compatibility
     paddles: { P1: { z: number }; P2: { z: number } };
+    // End-centric view for clarity in UI/tooling
+    paddlesByEnd: { east: { z: number }; west: { z: number } };
     bounds: {
       leftPaddleX: number;
       rightPaddleX: number;
@@ -331,8 +334,8 @@ export function createLocalApp(canvas: HTMLCanvasElement, preferences?: Preferen
       const ballY = Bounces.update(state.ball.x, state.ball.vx);
       ball.mesh.position.set(state.ball.x, ballY, state.ball.z);
       if (!paddleAnim.isAnimating()) {
-        left.mesh.position.z = state.paddles.P1.z;
-        right.mesh.position.z = state.paddles.P2.z;
+        left.mesh.position.z = state.paddles.east.z;
+        right.mesh.position.z = state.paddles.west.z;
       }
 
       // Local-only SFX cues derived from visuals
@@ -410,7 +413,8 @@ export function createLocalApp(canvas: HTMLCanvasElement, preferences?: Preferen
       // Provide a minimal, read‑only snapshot for AI planning (1 Hz sensor)
       return {
         ball: { x: state.ball.x, z: state.ball.z, vx: state.ball.vx, vz: state.ball.vz },
-        paddles: { P1: { z: state.paddles.P1.z }, P2: { z: state.paddles.P2.z } },
+        paddles: { P1: { z: state.paddles.east.z }, P2: { z: state.paddles.west.z } },
+        paddlesByEnd: { east: { z: state.paddles.east.z }, west: { z: state.paddles.west.z } },
         bounds: {
           leftPaddleX: state.bounds.leftPaddleX,
           rightPaddleX: state.bounds.rightPaddleX,

@@ -250,7 +250,7 @@ function startMatch(match: Match) {
   match.loop = setInterval(() => {
     const dt = 1 / TICK_RATE_HZ;
     // Route seat inputs to physical sides based on current occupancy.
-    // By convention in game-logic, P1 paddle channel = LEFT (east), P2 = RIGHT (west).
+    // Game-logic uses end-keyed channels: leftAxis drives EAST, rightAxis drives WEST.
     const leftSeat = match.state.playerAtEnd.east; // 'P1' | 'P2'
     const rightSeat = match.state.playerAtEnd.west; // 'P1' | 'P2'
     const intent = {
