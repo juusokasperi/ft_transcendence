@@ -55,8 +55,8 @@ export function collidePaddle(
     if ((plane - x) * denom > 0) {
       const t = (plane - x) / denom;
       if (t >= 0 && t <= 1) {
-        if (Math.abs(z - paddles.P1.z) <= halfDepth) {
-          const zHit = z + vz * dt * t;
+        const zHit = z + vz * dt * t;
+        if (Math.abs(zHit - paddles.P1.z) <= halfDepth) {
           return {
             s: {
               ...s,
@@ -86,8 +86,8 @@ export function collidePaddle(
     if ((plane - x) * denom > 0) {
       const t = (plane - x) / denom;
       if (t >= 0 && t <= 1) {
-        if (Math.abs(z - paddles.P2.z) <= halfDepth) {
-          const zHit = z + vz * dt * t;
+        const zHit = z + vz * dt * t;
+        if (Math.abs(zHit - paddles.P2.z) <= halfDepth) {
           return {
             s: {
               ...s,
