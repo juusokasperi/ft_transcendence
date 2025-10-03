@@ -115,7 +115,7 @@ export const checkFriendSchema = {
       properties: {
         status: {
           type: 'string',
-          enum: ['accepted', 'request_sent', 'request_received', 'none'],
+          enum: ['friends', 'request_sent', 'request_received', 'none'],
         },
       },
       required: ['status'],
