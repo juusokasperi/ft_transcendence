@@ -29,6 +29,7 @@ services:
         SERVICE_NAME: api
         SERVICE_DIR: backend
     image: ft-transcendence-backend-prod:latest
+    init: true
     restart: unless-stopped
     env_file:
       - ./.env
@@ -84,6 +85,7 @@ services:
         SERVICE_NAME: matchmaking
         SERVICE_DIR: matchmaking
     image: ft-transcendence-matchmaking-prod:latest
+    init: true
     restart: unless-stopped
     env_file:
       - ./.env
@@ -103,6 +105,7 @@ services:
         SERVICE_NAME: game-server
         SERVICE_DIR: game-server
     image: ft-transcendence-game-server-prod:latest
+    init: true
     restart: unless-stopped
     env_file:
       - ./.env
@@ -123,6 +126,7 @@ services:
         SERVICE_NAME: allocator
         SERVICE_DIR: allocator
     image: ft-transcendence-allocator-prod:latest
+    init: true
     restart: unless-stopped
     env_file:
       - ./.env
@@ -153,6 +157,7 @@ services:
         SERVICE_NAME: scorer
         SERVICE_DIR: scorer
     image: ft-transcendence-scorer-prod:latest
+    init: true
     restart: unless-stopped
     env_file:
       - ./.env
@@ -175,6 +180,7 @@ services:
         SERVICE_NAME: game-gateway
         SERVICE_DIR: game-gateway
     image: ft-transcendence-game-gateway-prod:latest
+    init: true
     restart: unless-stopped
     env_file:
       - ./.env
