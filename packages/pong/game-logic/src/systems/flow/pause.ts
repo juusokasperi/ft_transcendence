@@ -20,8 +20,8 @@ export function stepPause(s: GameState, dt: number): GameState {
       const remaining = dec(s.tPauseBtwPointsMs, dt);
       if (remaining > 0) return { ...s, tPauseBtwPointsMs: remaining };
 
-      // done → serve from queued side (fallback to current server/east)
-      const side: TableEnd = s.nextServe ?? s.server ?? 'east';
+      // done → serve from queued side (fallback to current server)
+      const side: TableEnd = s.nextServe ?? s.server;
       return serveFrom(side, s);
     }
 

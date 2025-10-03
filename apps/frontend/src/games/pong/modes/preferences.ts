@@ -1,6 +1,7 @@
 // Utility helpers for color parsing and material tinting in local mode
 
 import type { Ruleset } from '@pong/shared';
+import { overrideBindings } from '@pong/render';
 
 export type ControllerScheme = 'wasd' | 'arrows';
 
@@ -18,6 +19,36 @@ export type Preferences = {
 };
 
 export type NamesByEnd = { east: string; west: string };
+
+// Default keyboard bindings per controller scheme
+export const CONTROLLER_BINDINGS: Record<ControllerScheme, { up: string; down: string }> = {
+  wasd: { up: 'KeyW', down: 'KeyS' },
+  arrows: { up: 'ArrowUp', down: 'ArrowDown' },
+};
+
+// Apply keyboard bindings from preferences (ensures P1/P2 schemes are distinct)
+export function applyControllerBindingsFromPrefs(prefs: Preferences | undefined) {
+  const fallbackP1 = CONTROLLER_BINDINGS.wasd;
+  const fallbackP2 = CONTROLLER_BINDINGS.arrows;
+
+  let p1Scheme: ControllerScheme = prefs?.player1.controller ?? 'wasd';
+  let p2Scheme: ControllerScheme = prefs?.player2.controller ?? 'arrows';
+
+  if (p1Scheme === p2Scheme) {
+    if (p1Scheme === 'wasd') p2Scheme = 'arrows';
+    else p1Scheme = 'wasd';
+  }
+
+  const p1 = CONTROLLER_BINDINGS[p1Scheme] ?? fallbackP1;
+  const p2 = CONTROLLER_BINDINGS[p2Scheme] ?? fallbackP2;
+
+  overrideBindings({
+    P1Up: [p1.up],
+    P1Down: [p1.down],
+    P2Up: [p2.up],
+    P2Down: [p2.down],
+  });
+}
 
 // Parse #RRGGBB or #RRGGBBAA into normalized RGB 0..1
 export function hexToRgb(hex: string): { r: number; g: number; b: number } | null {

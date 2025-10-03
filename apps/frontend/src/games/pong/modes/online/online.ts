@@ -6,6 +6,7 @@ import { FXManager } from '@pong/render';
 import { createScoreboard } from '@pong/render';
 import { updateHUD } from '@pong/render';
 import { applyFrameEventsToFx } from '@pong/render';
+import { applyFrameEventsToAudio } from '@pong/render';
 import { computeBounds } from '@pong/render';
 import { detectEnteredServe, onEnteredServe } from '@pong/render';
 import { mapStateForPlayerRows } from '@pong/render';
@@ -13,8 +14,7 @@ import { attachLocalInput } from '@pong/render';
 import { setBindingProfile } from '@pong/render';
 import { createBounces } from '@pong/render';
 import { createPaddleAnimator } from '@pong/render';
-import { toggleControlsMirrored } from '@pong/render';
-import { incHide, decHide } from '@pong/render';
+import { orbitCameraFor } from '@pong/render';
 
 import { readIntent } from '@pong/render';
 import { blockInputFor } from '@pong/render';
@@ -25,10 +25,17 @@ import type { GameState } from '@pong/game-logic';
 import type { FrameEvents, MatchSnapshot } from '@pong/shared';
 import type { RoomStateMessage, StartMessage } from '@pong/shared/protocol/net';
 import { SERVE_SELECT_TOTAL_MS } from '@pong/shared';
-import { rgb01ToCss } from './preferences';
+import { rgb01ToCss } from '../preferences';
 import { clamp01 } from '@pong/shared';
 
-import { wsUrl } from '../../../utils/url';
+import { wsUrl } from '../../../../utils/url';
+import {
+  swapPaddleMaterials,
+  handleSwapSidesNow,
+  handleMatchOver,
+  runServeSelectionIntro,
+} from '../shared/utils';
+import { createLocalAudioKit, createLocalSfxDetectors } from '../shared/audio-utils';
 
 // Render/update cadence we expect from the authoritative node.
 const CLIENT_TICK_RATE_HZ = 60;
@@ -259,6 +266,10 @@ export function createOnlineApp(
     camera: world.camera,
   });
 
+  // ── Audio (shared with local mode) ───────────────────────────────────────────────
+  const audioKit = createLocalAudioKit(scene, canvas);
+  const audioBus = audioKit.bus;
+
   // Helper: derive CSS color from a paddle mesh's material tint
   const matColorCss = (mat: any): string => {
     const c = mat?.subSurface?.tintColor ?? mat?.diffuseColor ?? mat?.albedoColor;
@@ -267,12 +278,12 @@ export function createOnlineApp(
   const syncHudNameColors = () => {
     const leftMat: any = left.mesh.material as any;
     const rightMat: any = right.mesh.material as any;
-    // Top row = east; east starts on right side by convention
-    const eastCss = matColorCss(rightMat);
-    const westCss = matColorCss(leftMat);
+    // Top row = east; left mesh drives EAST channel (leftAxis → east)
+    const eastCss = matColorCss(leftMat);
+    const westCss = matColorCss(rightMat);
     hud.setPlayerNameColors(eastCss, westCss);
   };
-  syncHudNameColors();
+  // Colors are updated every snapshot based on snapshot occupancy and rowsMirrored
 
   // Visual bounce helper — deterministic per match (visual-only)
   function hash32(s: string): number {
@@ -299,6 +310,10 @@ export function createOnlineApp(
   // Paddle centering tween for serve cues and swaps
   const paddleAnim = createPaddleAnimator(scene, left.mesh, right.mesh);
 
+  // Local-only SFX detectors (render-derived bounce cues)
+  const BASE_Y_FOR_AUDIO = table.tableTop.position.y + bounds.ballRadius / 2;
+  const sfxDetectors = createLocalSfxDetectors(audioBus, BASE_Y_FOR_AUDIO);
+
   // Local render clamp to match table and paddle geometry
   const paddleMaxZ = bounds.halfWidthZ - bounds.paddleHalfDepthZ;
   const clampPaddleZ = (z: number) => Math.max(-paddleMaxZ, Math.min(paddleMaxZ, z));
@@ -306,22 +321,54 @@ export function createOnlineApp(
   // --- Net state -------------------------------------------------------------------
   let net!: OnlineClient;
   let mySeat: PlayerSeat = 'P1'; // set after connect()
-  let oppAxis = 0; // last known opponent axis
+  // opponent axis stream is currently unused in the thin client
   let latest: GameState | null = null; // latest server snapshot
   const eventQueue: FrameEvents[] = []; // buffer to avoid dropping events between frames
   let prevPhase: GameState['phase'] | null = null;
   let didBootFX = false;
   let didFireMatchOverEvent = false;
   let latestMatch: MatchSnapshot | undefined;
+  // Prevent double rotations: track a scheduled between-games spin window, and
+  // whether we've shown a rotation for the current between-games pause.
+  let spinningUntilMs = 0;
+  let didBetweenGamesSpin = false;
 
   // Simple (optional) rows mirroring knob if you choose to flip per-game
   // NOTE: With server-authoritative flow, you can toggle this via messages.
   let rowsMirrored = false;
+  // Live countdown timer for server start
+  let startCountdownTimer: number | null = null;
+
+  function stopStartCountdown() {
+    if (startCountdownTimer !== null) {
+      clearInterval(startCountdownTimer);
+      startCountdownTimer = null;
+    }
+    hud.flashMessage('', 0);
+  }
+
+  function startStartCountdown(untilEpochMs: number) {
+    stopStartCountdown();
+    const tick = () => {
+      const remain = Math.max(0, untilEpochMs - Date.now());
+      if (remain <= 0) {
+        stopStartCountdown();
+        return;
+      }
+      const secs = remain / 1000;
+      const text =
+        secs >= 10 ? `Match starts in ${Math.ceil(secs)}s` : `Match starts in ${secs.toFixed(1)}s`;
+      hud.flashMessage(text, 500);
+    };
+    tick();
+    startCountdownTimer = window.setInterval(tick, 120);
+  }
 
   // Interpolation cache (keep tiny: just ball X and paddle Z’s)
   let prevSnap: GameState | null = null;
   let prevT = 0,
     currT = 0; // ms timestamps for snapshots
+  let tickMs = 1000 / CLIENT_TICK_RATE_HZ;
   // HUD snapshot cache (from server)
 
   const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
@@ -339,14 +386,17 @@ export function createOnlineApp(
       // 2) Visuals from server snapshot (with tiny interpolation)
       const now = performance.now();
       const hasPrev = !!prevSnap && prevT < currT;
-      const alpha = hasPrev ? clamp01((now - currT) / Math.max(1, currT - prevT)) : 1;
+      // Interpolate from prevSnap (at prevT) to latest (at currT)
+      const alpha = hasPrev ? clamp01((now - prevT) / Math.max(1, currT - prevT)) : 1;
 
       const snap = latest ?? prevSnap;
       if (snap) {
         // Interpolate a few hot fields; fall back to latest when no prev.
         const ref = prevSnap ?? snap;
         const ballX = hasPrev ? lerp(ref.ball.x, snap.ball.x, alpha) : snap.ball.x;
-        const ballVX = ((snap.ball.x - ref.ball.x) / Math.max(1, currT - prevT)) * 1000;
+        const ballVX = hasPrev
+          ? ((snap.ball.x - ref.ball.x) / Math.max(1, currT - prevT)) * 1000
+          : 0;
 
         // Ball Y via the same visual bounce helper used locally
         const ballY = Bounces.update(ballX, ballVX);
@@ -357,20 +407,35 @@ export function createOnlineApp(
           hasPrev ? lerp(ref.ball.z, snap.ball.z, alpha) : snap.ball.z,
         );
 
+        // Local-only SFX cues derived from visuals
+        sfxDetectors.update(ballY);
+
         // Paddles (authoritative from server) — clamp to local render bounds
         if (!paddleAnim.isAnimating()) {
-          const p1z = hasPrev
-            ? lerp(ref.paddles.P1.z, snap.paddles.P1.z, alpha)
-            : snap.paddles.P1.z;
-          const p2z = hasPrev
-            ? lerp(ref.paddles.P2.z, snap.paddles.P2.z, alpha)
-            : snap.paddles.P2.z;
-          left.mesh.position.z = clampPaddleZ(p1z);
-          right.mesh.position.z = clampPaddleZ(p2z);
+          const eastZ = hasPrev
+            ? lerp(ref.paddles.east.z, snap.paddles.east.z, alpha)
+            : snap.paddles.east.z;
+          const westZ = hasPrev
+            ? lerp(ref.paddles.west.z, snap.paddles.west.z, alpha)
+            : snap.paddles.west.z;
+          left.mesh.position.z = clampPaddleZ(eastZ);
+          right.mesh.position.z = clampPaddleZ(westZ);
         }
 
-        // 3) HUD (player-pinned)
+        // 3) HUD (player-pinned) + name colors pinned to players
         const stateForHUD = mapStateForPlayerRows(snap, rowsMirrored);
+        // Compute current row colors from materials, remapped to players when rowsMirrored
+        const eastEndCss = matColorCss(left.mesh.material as any);
+        const westEndCss = matColorCss(right.mesh.material as any);
+        if (rowsMirrored) {
+          // Top row = P1, bottom row = P2
+          const topCss = snap.playerAtEnd.east === 'P1' ? eastEndCss : westEndCss;
+          const bottomCss = snap.playerAtEnd.east === 'P2' ? eastEndCss : westEndCss;
+          hud.setPlayerNameColors(topCss, bottomCss);
+        } else {
+          // Top row = east end; bottom row = west end
+          hud.setPlayerNameColors(eastEndCss, westEndCss);
+        }
         updateHUD(hud, stateForHUD, names, latestMatch);
       }
 
@@ -380,7 +445,10 @@ export function createOnlineApp(
         // apply all pending events this frame (they are cheap)
         while (eventQueue.length) {
           const ev = eventQueue.shift();
-          if (ev) applyFrameEventsToFx(fx, ev, y);
+          if (ev) {
+            applyFrameEventsToFx(fx, ev, y);
+            applyFrameEventsToAudio(audioBus, ev);
+          }
         }
       }
     },
@@ -395,45 +463,71 @@ export function createOnlineApp(
     mySeat = net.mySeat;
     console.log('[OnlineGame] Connected. My seat:', mySeat);
 
+    // Boot audio after connecting (mirrors local mode UX)
+    void audioKit.start();
+
     net.onRoomState((state) => {
       console.log('[OnlineGame] Room state update:', state);
       if (state.state === 'READY' && typeof state.startAtEpochMs === 'number') {
-        const etaMs = Math.max(0, state.startAtEpochMs - Date.now());
-        if (etaMs > 0) hud.flashMessage(`Match starting in ${(etaMs / 1000).toFixed(1)}s`, 1800);
+        startStartCountdown(state.startAtEpochMs);
+      } else if (state.state === 'PLAYING') {
+        stopStartCountdown();
       }
     });
 
     const startPromise = net.awaitStart();
 
-    net.onOpponentAxis((axis) => {
-      oppAxis = axis;
-      //console.log('[OnlineGame] Received opponent axis:', axis);
-    });
+    // We accept opponent-axis pings from the server for future use (e.g.,
+    // client-side prediction), but we do not use them in the thin client yet.
+    // net.onOpponentAxis(() => {});
 
     net.onSnapshot((s, ev, matchSnap) => {
       //console.log('[OnlineGame] Received snapshot. Phase:', s.phase);
       if (!didBootFX) {
         didBootFX = true;
-        incHide(ball.mesh);
-        incHide(ball.mesh);
-        // Schedule initial visual serve bounce based on current server
-        const dir = s.server === 'east' ? -1 : 1;
-        Bounces.scheduleServe(dir);
-        void fx.serveSelection(s.server).then(() => {
-          decHide(ball.mesh);
-          decHide(ball.mesh);
-        });
+        void runServeSelectionIntro(fx, ball.mesh, s.server, (dir) => Bounces.scheduleServe(dir));
       }
       // Phase transition hook → serve cues
       if (prevPhase && s.phase !== prevPhase) {
         const entered = detectEnteredServe(prevPhase, s.phase);
         if (entered) {
+          // Trigger serve cues immediately so paddle tween starts before
+          // the next render update applies server-centered paddle poses.
           onEnteredServe(entered, {
             ballMesh: ball.mesh,
             Bounces,
             paddleAnim,
             blockInputFor,
           });
+        }
+        // Entered between-games pause → show message + spin camera and schedule swap at half
+        if (prevPhase !== 'pauseBetweenGames' && s.phase === 'pauseBetweenGames') {
+          const rawMs = Math.max(0, (s as any).tPauseBtwGamesMs ?? 0);
+          // Cushion by ~one server tick to counteract snapshot latency so the
+          // rotation completes just before the server resumes play.
+          const ms = Math.max(0, rawMs - tickMs);
+          const until = handleSwapSidesNow(
+            hud,
+            'gameOver',
+            () =>
+              matchSnap ??
+              latestMatch ?? { bestOf: s.params.bestOf, currentGameIndex: 0, gamesHistory: [] },
+            names,
+            blockInputFor,
+            ms,
+          );
+          spinningUntilMs = until;
+          didBetweenGamesSpin = true;
+          const now = performance.now();
+          const spinMs = Math.max(0, until - now);
+          if (spinMs > 0) {
+            orbitCameraFor(world.camera, spinMs, {
+              onHalf: () => {
+                // Between-games: no paddle centering animation here to avoid
+                // a snap-back before the new game's serve cue runs.
+              },
+            });
+          }
         }
       }
       prevPhase = s.phase;
@@ -442,48 +536,73 @@ export function createOnlineApp(
       // Respond to server signaled side swaps (if present in events)
       const anyEv = ev as any;
       if (anyEv && anyEv.swapSidesNow) {
-        // Mirror HUD rows for readability and play a small crossover cue.
-        rowsMirrored = !rowsMirrored;
-        // Swap paddle materials so colors/skins follow players across sides.
-        const m = left.mesh.material;
-        left.mesh.material = right.mesh.material;
-        right.mesh.material = m;
-        // Names follow player colors across swaps
-        syncHudNameColors();
-        paddleAnim.cue(180);
-        const last = latestMatch?.gamesHistory?.[latestMatch.gamesHistory.length - 1];
-        if (last?.winner) {
-          const winnerName = last.winner === 'east' ? names.east : names.west;
-          hud.flashMessage(`${winnerName} won the game, swapping side!`, 3200);
+        const now = performance.now();
+        if (spinningUntilMs > now || didBetweenGamesSpin || s.phase === 'pauseBetweenGames') {
+          // Between-games (or during the scheduled spin): apply swap immediately
+          // with NO paddle centering animation. Serve cue will animate later.
+          rowsMirrored = !rowsMirrored;
+          swapPaddleMaterials(left.mesh, right.mesh);
+          spinningUntilMs = 0;
+          didBetweenGamesSpin = false;
+        } else {
+          // Mid-game (or fallback) swap: show message + spin and swap at mid-spin for UX.
+          const until = handleSwapSidesNow(
+            hud,
+            prevPhase as GameState['phase'],
+            () =>
+              matchSnap ??
+              latestMatch ?? { bestOf: s.params.bestOf, currentGameIndex: 0, gamesHistory: [] },
+            names,
+            blockInputFor,
+          );
+          const spinMs = Math.max(0, until - now);
+          if (spinMs > 0) {
+            orbitCameraFor(world.camera, spinMs, {
+              onHalf: () => {
+                rowsMirrored = !rowsMirrored;
+                swapPaddleMaterials(left.mesh, right.mesh);
+                paddleAnim.cue(180);
+              },
+            });
+          } else {
+            rowsMirrored = !rowsMirrored;
+            swapPaddleMaterials(left.mesh, right.mesh);
+            paddleAnim.cue(180);
+          }
         }
       }
 
       // Fire a DOM event once when the match concludes (parity with local mode)
       if (!didFireMatchOverEvent && anyEv && anyEv.matchOver) {
         didFireMatchOverEvent = true;
-        const winner = anyEv.matchOver.winner as 'east' | 'west';
-        const winnerName = winner === 'east' ? names.east : names.west;
-        hud.flashMessage(`${winnerName} won, impressive match!`, 3800);
-        canvas.dispatchEvent(
-          new CustomEvent('pong:matchOver', {
-            detail: {
-              winner,
-              bestOf: latestMatch?.bestOf ?? s.params.bestOf,
-              gamesHistory: latestMatch?.gamesHistory ?? [],
-              names,
-            },
-          }),
+        handleMatchOver(
+          hud,
+          names,
+          anyEv.matchOver.winner as 'east' | 'west',
+          () => latestMatch ?? { bestOf: s.params.bestOf, currentGameIndex: 0, gamesHistory: [] },
+          canvas,
         );
+        // Stop match playlist when match concludes
+        audioKit.stop();
       }
 
       // Snapshot ring for tiny interpolation
-      prevSnap = latest ?? s;
-      latest = s;
-      prevT = currT;
-      currT = performance.now() + 60; // small buffer; tune to your tick + net jitter
+      if (!prevSnap) {
+        // Prime interpolation window on first snapshot
+        prevSnap = s;
+        latest = s;
+        const t0 = performance.now();
+        prevT = t0;
+        currT = t0 + tickMs;
+      } else {
+        prevSnap = latest ?? s;
+        latest = s;
+        prevT = currT;
+        currT = currT + tickMs;
+      }
 
       // Queue FX events from this snapshot; avoid overwriting if multiple snapshots arrive
-      if (ev && (ev.wallHit || ev.explode)) {
+      if (ev && (ev.wallHit || ev.paddleHit || ev.explode)) {
         // cap queue size to prevent unbounded growth under extreme lag
         if (eventQueue.length > 8) eventQueue.splice(0, eventQueue.length - 8);
         eventQueue.push(ev);
@@ -491,6 +610,7 @@ export function createOnlineApp(
     });
 
     const startInfo = await startPromise;
+    tickMs = 1000 / Math.max(1, startInfo.tickRateHz || CLIENT_TICK_RATE_HZ);
     if (startInfo.randomSeed !== cfg.randomSeed) {
       console.warn('[OnlineGame] Server randomSeed differs from handoff seed', {
         handoff: cfg.randomSeed,
@@ -500,9 +620,11 @@ export function createOnlineApp(
 
     const waitMs = Math.max(0, startInfo.startAtEpochMs - Date.now());
     if (waitMs > 0) {
+      startStartCountdown(startInfo.startAtEpochMs);
       console.log(`[OnlineGame] Waiting ${waitMs}ms for server start tick`);
       await new Promise<void>((resolve) => setTimeout(resolve, waitMs));
     }
+    stopStartCountdown();
 
     loop.start();
     console.log('[OnlineGame] Game loop started');
@@ -518,6 +640,9 @@ export function createOnlineApp(
       hud,
       engineDisposable,
     });
+    try {
+      audioKit.dispose();
+    } catch {}
   };
 
   return { start, destroy };
