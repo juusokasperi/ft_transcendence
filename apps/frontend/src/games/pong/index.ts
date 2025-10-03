@@ -27,7 +27,7 @@ export async function createPongApp({ mode, canvas, net, preferences }: CreateAp
   }
 
   if (mode === 'online') {
-    const { createOnlineApp } = await import('./modes/online/online');
+    const { createOnlineApp } = await import('./modes/online');
     console.info('[Pong] Booting online mode', {
       matchId: net?.matchId,
       roomIdentifier: net?.roomIdentifier,
