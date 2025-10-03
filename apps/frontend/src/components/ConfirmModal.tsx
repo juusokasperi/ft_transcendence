@@ -1,5 +1,6 @@
 import React from 'react';
 import Button from './Button';
+import type { ButtonVariant } from './Button';
 
 type ConfirmModalProps = {
   isOpen: boolean;
@@ -8,6 +9,8 @@ type ConfirmModalProps = {
   onCancel: () => void;
   confirmText?: string;
   cancelText?: string;
+  confirmVariant?: ButtonVariant;
+  cancelVariant?: ButtonVariant;
 };
 
 const ConfirmModal: React.FC<ConfirmModalProps> = ({
@@ -17,6 +20,8 @@ const ConfirmModal: React.FC<ConfirmModalProps> = ({
   onCancel,
   confirmText = 'Yes',
   cancelText = 'Cancel',
+  confirmVariant = 'primary',
+  cancelVariant = 'secondary',
 }) => {
   if (!isOpen) return null;
 
@@ -36,10 +41,10 @@ const ConfirmModal: React.FC<ConfirmModalProps> = ({
       <div className="mx-4 w-full max-w-md rounded-3xl border border-white/10 bg-slate-900/90 p-4 text-center shadow-xl shadow-indigo-950/30 backdrop-blur">
         <div className="mb-8 text-base leading-relaxed text-slate-100">{message}</div>
         <div className="flex justify-center gap-4">
-          <Button className={buttonStyle} variant="dangerSecondary" onClick={onConfirm}>
+          <Button className={buttonStyle} variant={confirmVariant} onClick={onConfirm}>
             {confirmText}
           </Button>
-          <Button className={buttonStyle} variant="secondary" onClick={onCancel}>
+          <Button className={buttonStyle} variant={cancelVariant} onClick={onCancel}>
             {cancelText}
           </Button>
         </div>

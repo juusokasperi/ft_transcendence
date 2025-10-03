@@ -130,6 +130,8 @@ const FriendshipStatus: React.FC<Props> = ({
         onCancel={() => setShowConfirmModal(false)}
         confirmText="Yes, remove"
         cancelText="Cancel"
+        confirmVariant="dangerSecondary"
+        cancelVariant="secondary"
       />
     </>
   );

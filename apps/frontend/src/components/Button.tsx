@@ -1,6 +1,6 @@
 import React from 'react';
 
-type ButtonVariant =
+export type ButtonVariant =
   | 'primary'
   | 'danger'
   | 'secondary'
