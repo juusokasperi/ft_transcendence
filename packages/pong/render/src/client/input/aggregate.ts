@@ -39,13 +39,14 @@ export function readIntent(): InputIntent {
   const leftAxis = leftAxisTouch !== 0 ? leftAxisTouch : leftAxisKey;
   const rightAxis = rightAxisTouch !== 0 ? rightAxisTouch : rightAxisKey;
 
-  // When sides are swapped, swap which paddle each player controls (P1/P2 stable).
+  // When sides are swapped, swap which physical paddle each player controls.
+  // leftAxis always drives EAST, rightAxis drives WEST (player seats P1/P2 remain stable).
   if (controlsMirrored) {
-    INTENT.leftAxis = rightAxis; // drives P1
-    INTENT.rightAxis = leftAxis; // drives P2
+    INTENT.leftAxis = rightAxis; // drives EAST
+    INTENT.rightAxis = leftAxis; // drives WEST
   } else {
-    INTENT.leftAxis = leftAxis; // drives P1
-    INTENT.rightAxis = rightAxis; // drives P2
+    INTENT.leftAxis = leftAxis; // drives EAST
+    INTENT.rightAxis = rightAxis; // drives WEST
   }
   return INTENT;
 }

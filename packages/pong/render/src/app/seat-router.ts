@@ -7,7 +7,7 @@ export type PlayerSeat = 'P1' | 'P2';
 const MIXED: InputIntent = { leftAxis: 0, rightAxis: 0 };
 
 /**
- * Mix local + remote scalar axes into the P1/P2 channels the core expects.
+ * Mix local + remote scalar axes into left/right channels (east/west paddles).
  * localSeat: which seat you occupy in THIS match ("P1" or "P2").
  * Returns a reused object; consume immediately and don't keep a reference.
  */
@@ -17,11 +17,11 @@ export function mixOnlineAxes(
   remoteAxis: number,
 ): InputIntent {
   if (localSeat === 'P1') {
-    MIXED.leftAxis = localAxis; // drives P1
-    MIXED.rightAxis = remoteAxis; // drives P2
+    MIXED.leftAxis = localAxis; // drives EAST
+    MIXED.rightAxis = remoteAxis; // drives WEST
   } else {
-    MIXED.leftAxis = remoteAxis; // drives P1
-    MIXED.rightAxis = localAxis; // drives P2
+    MIXED.leftAxis = remoteAxis; // drives EAST
+    MIXED.rightAxis = localAxis; // drives WEST
   }
   return MIXED;
 }

@@ -18,7 +18,6 @@ import {
   toggleControlsMirrored,
   blockInputFor,
   setBindingProfile,
-  overrideBindings,
 } from '@pong/render';
 import { createBounces } from '@pong/render';
 import { FXManager } from '@pong/render';
@@ -38,52 +37,21 @@ import {
   serveFrom,
   createMatchController,
   tableTennisRules,
+  setServeAngleDeg,
 } from '@pong/game-logic';
 
-import { pickInitialServer, SERVE_SELECT_TOTAL_MS, randomSeed32 } from '@pong/shared';
+import { pickInitialServer, SERVE_SELECT_TOTAL_MS, randomSeed32, sideOpposite } from '@pong/shared';
 import { disposeWorld } from '@pong/render';
 import type { ControllerScheme, Preferences } from '../preferences';
-import { applyPreferences } from '../preferences';
-import {
-  setHudAndPaletteColorsFromPrefs,
-  swapPaddleMaterials,
-  handleMatchOver,
-  handleSwapSidesNow,
-} from './utils';
+import { applyPreferences, applyControllerBindingsFromPrefs } from '../preferences';
+import { setHudAndPaletteColorsFromPrefs, pickSafeServeAngleDeg } from './utils';
+import { runServeSelectionIntro } from '../shared/utils';
+import { swapPaddleMaterials, handleMatchOver, handleSwapSidesNow } from '../shared/utils';
 import { orbitCameraFor } from '@pong/render';
 import { applyFrameEventsToAudio } from '@pong/render';
-import { createLocalAudioKit, createLocalSfxDetectors } from './audio-utils';
+import { createLocalAudioKit, createLocalSfxDetectors } from '../shared/audio-utils';
 
-const CONTROLLER_BINDINGS: Record<ControllerScheme, { up: string; down: string }> = {
-  wasd: { up: 'KeyW', down: 'KeyS' },
-  arrows: { up: 'ArrowUp', down: 'ArrowDown' },
-};
-
-function applyControllerBindingsFromPrefs(prefs: Preferences | undefined) {
-  const fallbackP1 = CONTROLLER_BINDINGS.wasd;
-  const fallbackP2 = CONTROLLER_BINDINGS.arrows;
-
-  let p1Scheme: ControllerScheme = prefs?.player1.controller ?? 'wasd';
-  let p2Scheme: ControllerScheme = prefs?.player2.controller ?? 'arrows';
-
-  if (p1Scheme === p2Scheme) {
-    if (p1Scheme === 'wasd') {
-      p2Scheme = 'arrows';
-    } else {
-      p1Scheme = 'wasd';
-    }
-  }
-
-  const p1 = CONTROLLER_BINDINGS[p1Scheme] ?? fallbackP1;
-  const p2 = CONTROLLER_BINDINGS[p2Scheme] ?? fallbackP2;
-
-  overrideBindings({
-    P1Up: [p1.up],
-    P1Down: [p1.down],
-    P2Up: [p2.up],
-    P2Down: [p2.down],
-  });
-}
+// Controller bindings application moved to preferences.ts
 
 /** Public surface returned by createLocalApp() */
 interface PongInstance {
@@ -92,7 +60,10 @@ interface PongInstance {
   updatePreferences(p: Preferences): void;
   observe(): {
     ball: { x: number; z: number; vx: number; vz: number };
+    // Player-centric view kept for bot/tooling backwards compatibility
     paddles: { P1: { z: number }; P2: { z: number } };
+    // End-centric view for clarity in UI/tooling
+    paddlesByEnd: { east: { z: number }; west: { z: number } };
     bounds: {
       leftPaddleX: number;
       rightPaddleX: number;
@@ -172,6 +143,10 @@ export function createLocalApp(canvas: HTMLCanvasElement, preferences?: Preferen
 
   // Headless state aligned to match controller (ensures rules overrides apply from game 1)
   let state: GameState = match.getGame();
+  // Deterministic per-serve variation counter for safe serve angles
+  let serveIndex = 0;
+  // Track expected initial server per game (mirror of match controller policy)
+  let initialServerThisGameLocal = initialServer;
 
   // Input wiring (keyboard/touch aggregator)
   setBindingProfile('local');
@@ -278,6 +253,27 @@ export function createLocalApp(canvas: HTMLCanvasElement, preferences?: Preferen
         });
       }
 
+      // Prepare next serve angle as soon as we enter the short pause
+      if (prevPhase !== 'pauseBtwPoints' && state.phase === 'pauseBtwPoints') {
+        const side = state.nextServe ?? state.server;
+        const deg = pickSafeServeAngleDeg(matchSeed, bounds, side, serveIndex++);
+        state = setServeAngleDeg(state, deg);
+      }
+
+      // Between-games: pre-arm the next game's initial serve angle during the pause
+      if (prevPhase !== 'pauseBetweenGames' && state.phase === 'pauseBetweenGames') {
+        if (RULES.match.alternateInitialServerEachGame) {
+          initialServerThisGameLocal = sideOpposite(initialServerThisGameLocal);
+        }
+        const degGame = pickSafeServeAngleDeg(
+          matchSeed,
+          bounds,
+          initialServerThisGameLocal,
+          serveIndex++,
+        );
+        state = setServeAngleDeg(state, degGame);
+      }
+
       // 5) HUD (player‑pinned)
       const snap = match.getSnapshot();
       const stateForHUD = mapStateForPlayerRows(state, rowsMirrored);
@@ -310,8 +306,8 @@ export function createLocalApp(canvas: HTMLCanvasElement, preferences?: Preferen
       const ballY = Bounces.update(state.ball.x, state.ball.vx);
       ball.mesh.position.set(state.ball.x, ballY, state.ball.z);
       if (!paddleAnim.isAnimating()) {
-        left.mesh.position.z = state.paddles.P1.z;
-        right.mesh.position.z = state.paddles.P2.z;
+        left.mesh.position.z = state.paddles.east.z;
+        right.mesh.position.z = state.paddles.west.z;
       }
 
       // Local-only SFX cues derived from visuals
@@ -345,28 +341,23 @@ export function createLocalApp(canvas: HTMLCanvasElement, preferences?: Preferen
       // Audio boot: resume + preload SFX + start playlist
       void audioKit.start();
       // Pre‑roll: run serve selection FX, gate input, then arm opening serve
-      void import('@pong/render').then(({ incHide }) => {
-        // Keep the ball hidden while the serve-selection pre-roll runs; we drain
-        // the hide ref(s) once the FX resolves just below.
-        incHide(ball.mesh);
-      });
 
       blockInputFor(SERVE_SELECT_TOTAL_MS + 200);
       introUntil = performance.now() + SERVE_SELECT_TOTAL_MS;
 
       loop.start();
 
-      void fx.serveSelection(initialServer).then(async () => {
+      void runServeSelectionIntro(fx, ball.mesh, initialServer, (dir) =>
+        Bounces.scheduleServe(dir),
+      ).then(async () => {
+        // Set deterministic safe serve angle for the opening serve
+        const serveDeg = pickSafeServeAngleDeg(matchSeed, bounds, initialServer, serveIndex++);
+        state = setServeAngleDeg(state, serveDeg);
+
         state = serveFrom(initialServer, state);
         state = { ...state, tPauseBtwPointsMs: 0 };
 
-        const dir = initialServer === 'east' ? -1 : 1;
-        Bounces.scheduleServe(dir);
-
-        const { decHide } = await import('@pong/render');
-        // Release any outstanding hide refs (manual above + potential FX bumps).
-        decHide(ball.mesh);
-        decHide(ball.mesh);
+        // bounce schedule handled by runServeSelectionIntro
       });
     },
     destroy,
@@ -385,7 +376,8 @@ export function createLocalApp(canvas: HTMLCanvasElement, preferences?: Preferen
       // Provide a minimal, read‑only snapshot for AI planning (1 Hz sensor)
       return {
         ball: { x: state.ball.x, z: state.ball.z, vx: state.ball.vx, vz: state.ball.vz },
-        paddles: { P1: { z: state.paddles.P1.z }, P2: { z: state.paddles.P2.z } },
+        paddles: { P1: { z: state.paddles.east.z }, P2: { z: state.paddles.west.z } },
+        paddlesByEnd: { east: { z: state.paddles.east.z }, west: { z: state.paddles.west.z } },
         bounds: {
           leftPaddleX: state.bounds.leftPaddleX,
           rightPaddleX: state.bounds.rightPaddleX,
@@ -396,6 +388,8 @@ export function createLocalApp(canvas: HTMLCanvasElement, preferences?: Preferen
           paddleSpeed: state.params.paddleSpeed,
           restitutionWall: state.params.restitutionWall,
         },
+        // Mirror parity matches control mirroring across swaps
+        controlsMirrored: rowsMirrored,
       };
     },
   };

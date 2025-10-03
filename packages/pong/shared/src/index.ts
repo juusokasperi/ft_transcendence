@@ -20,4 +20,4 @@ export type { InputIntent } from './protocol/input';
 export { ZeroIntent } from './protocol/input';
 
 export type { GameHistoryEntry, MatchSnapshot } from './protocol/state';
-export { clamp01 } from './utils/math';
+export { clamp01, clamp } from './utils/math';
