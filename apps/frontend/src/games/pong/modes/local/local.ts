@@ -11,15 +11,7 @@
 import { createEngine } from '@pong/render';
 import { createLifecycle } from '@pong/render';
 import { createWorld } from '@pong/render';
-import {
-  attachLocalInput,
-  readIntent,
-  setControlsMirrored,
-  toggleControlsMirrored,
-  blockInputFor,
-  setBindingProfile,
-  overrideBindings,
-} from '@pong/render';
+import { attachLocalInput, readIntent, setControlsMirrored, toggleControlsMirrored, blockInputFor, setBindingProfile } from '@pong/render';
 import { createBounces } from '@pong/render';
 import { FXManager } from '@pong/render';
 import { createScoreboard } from '@pong/render';
@@ -44,7 +36,7 @@ import {
 import { pickInitialServer, SERVE_SELECT_TOTAL_MS, randomSeed32, sideOpposite } from '@pong/shared';
 import { disposeWorld } from '@pong/render';
 import type { ControllerScheme, Preferences } from '../preferences';
-import { applyPreferences } from '../preferences';
+import { applyPreferences, applyControllerBindingsFromPrefs } from '../preferences';
 import { setHudAndPaletteColorsFromPrefs, pickSafeServeAngleDeg } from './utils';
 import { runServeSelectionIntro } from '../shared-utils';
 import { swapPaddleMaterials, handleMatchOver, handleSwapSidesNow } from '../shared-utils';
@@ -52,36 +44,7 @@ import { orbitCameraFor } from '@pong/render';
 import { applyFrameEventsToAudio } from '@pong/render';
 import { createLocalAudioKit, createLocalSfxDetectors } from '../audio-utils';
 
-const CONTROLLER_BINDINGS: Record<ControllerScheme, { up: string; down: string }> = {
-  wasd: { up: 'KeyW', down: 'KeyS' },
-  arrows: { up: 'ArrowUp', down: 'ArrowDown' },
-};
-
-function applyControllerBindingsFromPrefs(prefs: Preferences | undefined) {
-  const fallbackP1 = CONTROLLER_BINDINGS.wasd;
-  const fallbackP2 = CONTROLLER_BINDINGS.arrows;
-
-  let p1Scheme: ControllerScheme = prefs?.player1.controller ?? 'wasd';
-  let p2Scheme: ControllerScheme = prefs?.player2.controller ?? 'arrows';
-
-  if (p1Scheme === p2Scheme) {
-    if (p1Scheme === 'wasd') {
-      p2Scheme = 'arrows';
-    } else {
-      p1Scheme = 'wasd';
-    }
-  }
-
-  const p1 = CONTROLLER_BINDINGS[p1Scheme] ?? fallbackP1;
-  const p2 = CONTROLLER_BINDINGS[p2Scheme] ?? fallbackP2;
-
-  overrideBindings({
-    P1Up: [p1.up],
-    P1Down: [p1.down],
-    P2Up: [p2.up],
-    P2Down: [p2.down],
-  });
-}
+// Controller bindings application moved to preferences.ts
 
 /** Public surface returned by createLocalApp() */
 interface PongInstance {
