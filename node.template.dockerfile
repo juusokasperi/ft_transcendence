@@ -38,5 +38,14 @@ ARG SERVICE_DIR
 COPY --from=builder /prod/${SERVICE_DIR} ./
 ENV NODE_ENV=production
 EXPOSE 3000
+
+# Currently used by backend
+# creates unnecessary empty directories in some services
+RUN mkdir -p /data ./data ./db
+RUN chown -R node:node /data ./data ./db
+
+# drop root
+USER node
+
 CMD ["node", "dist/index.js"]
 
