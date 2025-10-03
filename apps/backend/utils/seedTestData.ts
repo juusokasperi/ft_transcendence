@@ -74,6 +74,7 @@ const createUser = async (username: string, email: string, password: string) => 
 const uuidJoe = await createUser('Joe', 'joe@test.com', 'testPassword!1');
 const uuidBob = await createUser('Bob', 'bob@test.com', 'testPassword!1');
 const uuidWil = await createUser('Wil', 'wil@test.com', 'testPassword!1');
+const uuidDave = await createUser('Dave', 'dave@test.com', 'testPassword!1');
 // Make Joe and Bob friends
 addFriend(uuidJoe, uuidBob);
 respondToFriendReq(uuidBob, uuidJoe, true);

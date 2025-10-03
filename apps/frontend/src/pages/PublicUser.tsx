@@ -132,7 +132,6 @@ const PublicUser: React.FC = () => {
         `/api/users/${uuid}/matches?count=${pageSize}&offset=${currentOffset}`,
       );
       const newMatches = response.data;
-      console.log(newMatches);
       if (isLoadMore) setMatches((prev: Match[]) => [...prev, ...newMatches]);
       else setMatches(newMatches);
 
@@ -253,7 +252,7 @@ const PublicUser: React.FC = () => {
             <StatsSection stats={stats} />
           ) : (
             <section className="rounded-3xl border border-dashed border-white/10 bg-slate-900/60 p-10 text-center text-slate-300/70">
-              Stats will appear here once you finish your first ranked match.
+              No stats to display.
             </section>
           )}
 
@@ -264,7 +263,7 @@ const PublicUser: React.FC = () => {
 
             {loading ? (
               <div className="flex h-64 items-center justify-center text-sm text-slate-300/70">
-                Pulling your latest games…
+                Pulling user's latest games…
               </div>
             ) : matches1v1.length > 0 ? (
               <div className="bg-slate-900 p-4">
@@ -311,9 +310,9 @@ const PublicUser: React.FC = () => {
               </div>
             ) : (
               <div className="p-10 text-center text-slate-300/70">
-                <p className="text-lg font-medium">No matches yet</p>
+                <p className="text-lg font-medium">No matches to display.</p>
                 <p className="mt-2 text-sm text-slate-400/80">
-                  Play your first game to start building your match timeline.
+                  User hasn't played any matches yet.
                 </p>
               </div>
             )}
