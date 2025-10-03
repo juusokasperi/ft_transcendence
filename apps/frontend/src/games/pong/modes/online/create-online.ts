@@ -1,11 +1,37 @@
-import { createEngine, createLifecycle, createWorld, FXManager, createScoreboard, updateHUD, applyFrameEventsToFx, applyFrameEventsToAudio, computeBounds, detectEnteredServe, onEnteredServe, mapStateForPlayerRows, attachLocalInput, setBindingProfile, createBounces, createPaddleAnimator, orbitCameraFor, readIntent, blockInputFor, disposeWorld } from '@pong/render';
+import {
+  createEngine,
+  createLifecycle,
+  createWorld,
+  FXManager,
+  createScoreboard,
+  updateHUD,
+  applyFrameEventsToFx,
+  applyFrameEventsToAudio,
+  computeBounds,
+  detectEnteredServe,
+  onEnteredServe,
+  mapStateForPlayerRows,
+  attachLocalInput,
+  setBindingProfile,
+  createBounces,
+  createPaddleAnimator,
+  orbitCameraFor,
+  readIntent,
+  blockInputFor,
+  disposeWorld,
+} from '@pong/render';
 import type { PlayerSeat } from '@pong/render';
 import type { GameState } from '@pong/game-logic';
 import type { FrameEvents, MatchSnapshot } from '@pong/shared';
 import { SERVE_SELECT_TOTAL_MS, clamp01 } from '@pong/shared';
 import { rgb01ToCss } from '../preferences';
-import { swapPaddleMaterials, handleSwapSidesNow, handleMatchOver, runServeSelectionIntro } from '../shared-utils';
-import { createLocalAudioKit, createLocalSfxDetectors } from '../audio-utils';
+import {
+  swapPaddleMaterials,
+  handleSwapSidesNow,
+  handleMatchOver,
+  runServeSelectionIntro,
+} from '../shared/utils';
+import { createLocalAudioKit, createLocalSfxDetectors } from '../shared/audio-utils';
 import { connectOnline, type OnlineClient } from './connect-online';
 
 // Render/update cadence we expect from the authoritative node.
@@ -124,7 +150,8 @@ export function createOnlineApp(
         return;
       }
       const secs = remain / 1000;
-      const text = secs >= 10 ? `Match starts in ${Math.ceil(secs)}s` : `Match starts in ${secs.toFixed(1)}s`;
+      const text =
+        secs >= 10 ? `Match starts in ${Math.ceil(secs)}s` : `Match starts in ${secs.toFixed(1)}s`;
       hud.flashMessage(text, 500);
     };
     tick();
@@ -153,16 +180,26 @@ export function createOnlineApp(
       if (snap) {
         const ref = prevSnap ?? snap;
         const ballX = hasPrev ? lerp(ref.ball.x, snap.ball.x, alpha) : snap.ball.x;
-        const ballVX = hasPrev ? ((snap.ball.x - ref.ball.x) / Math.max(1, currT - prevT)) * 1000 : 0;
+        const ballVX = hasPrev
+          ? ((snap.ball.x - ref.ball.x) / Math.max(1, currT - prevT)) * 1000
+          : 0;
         const ballY = Bounces.update(ballX, ballVX);
 
-        ball.mesh.position.set(ballX, ballY, hasPrev ? lerp(ref.ball.z, snap.ball.z, alpha) : snap.ball.z);
+        ball.mesh.position.set(
+          ballX,
+          ballY,
+          hasPrev ? lerp(ref.ball.z, snap.ball.z, alpha) : snap.ball.z,
+        );
 
         sfxDetectors.update(ballY);
 
         if (!paddleAnim.isAnimating()) {
-          const eastZ = hasPrev ? lerp(ref.paddles.east.z, snap.paddles.east.z, alpha) : snap.paddles.east.z;
-          const westZ = hasPrev ? lerp(ref.paddles.west.z, snap.paddles.west.z, alpha) : snap.paddles.west.z;
+          const eastZ = hasPrev
+            ? lerp(ref.paddles.east.z, snap.paddles.east.z, alpha)
+            : snap.paddles.east.z;
+          const westZ = hasPrev
+            ? lerp(ref.paddles.west.z, snap.paddles.west.z, alpha)
+            : snap.paddles.west.z;
           left.mesh.position.z = clampPaddleZ(eastZ);
           right.mesh.position.z = clampPaddleZ(westZ);
         }
@@ -236,7 +273,9 @@ export function createOnlineApp(
           const until = handleSwapSidesNow(
             hud,
             'gameOver',
-            () => matchSnap ?? latestMatch ?? { bestOf: s.params.bestOf, currentGameIndex: 0, gamesHistory: [] },
+            () =>
+              matchSnap ??
+              latestMatch ?? { bestOf: s.params.bestOf, currentGameIndex: 0, gamesHistory: [] },
             names,
             blockInputFor,
             ms,
@@ -269,7 +308,9 @@ export function createOnlineApp(
           const until = handleSwapSidesNow(
             hud,
             prevPhase as GameState['phase'],
-            () => matchSnap ?? latestMatch ?? { bestOf: s.params.bestOf, currentGameIndex: 0, gamesHistory: [] },
+            () =>
+              matchSnap ??
+              latestMatch ?? { bestOf: s.params.bestOf, currentGameIndex: 0, gamesHistory: [] },
             names,
             blockInputFor,
           );
@@ -359,4 +400,3 @@ export function createOnlineApp(
 
   return { start, destroy };
 }
-

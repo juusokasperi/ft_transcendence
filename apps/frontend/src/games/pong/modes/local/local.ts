@@ -11,7 +11,14 @@
 import { createEngine } from '@pong/render';
 import { createLifecycle } from '@pong/render';
 import { createWorld } from '@pong/render';
-import { attachLocalInput, readIntent, setControlsMirrored, toggleControlsMirrored, blockInputFor, setBindingProfile } from '@pong/render';
+import {
+  attachLocalInput,
+  readIntent,
+  setControlsMirrored,
+  toggleControlsMirrored,
+  blockInputFor,
+  setBindingProfile,
+} from '@pong/render';
 import { createBounces } from '@pong/render';
 import { FXManager } from '@pong/render';
 import { createScoreboard } from '@pong/render';
@@ -38,11 +45,11 @@ import { disposeWorld } from '@pong/render';
 import type { ControllerScheme, Preferences } from '../preferences';
 import { applyPreferences, applyControllerBindingsFromPrefs } from '../preferences';
 import { setHudAndPaletteColorsFromPrefs, pickSafeServeAngleDeg } from './utils';
-import { runServeSelectionIntro } from '../shared-utils';
-import { swapPaddleMaterials, handleMatchOver, handleSwapSidesNow } from '../shared-utils';
+import { runServeSelectionIntro } from '../shared/utils';
+import { swapPaddleMaterials, handleMatchOver, handleSwapSidesNow } from '../shared/utils';
 import { orbitCameraFor } from '@pong/render';
 import { applyFrameEventsToAudio } from '@pong/render';
-import { createLocalAudioKit, createLocalSfxDetectors } from '../audio-utils';
+import { createLocalAudioKit, createLocalSfxDetectors } from '../shared/audio-utils';
 
 // Controller bindings application moved to preferences.ts
 
@@ -340,7 +347,9 @@ export function createLocalApp(canvas: HTMLCanvasElement, preferences?: Preferen
 
       loop.start();
 
-      void runServeSelectionIntro(fx, ball.mesh, initialServer, (dir) => Bounces.scheduleServe(dir)).then(async () => {
+      void runServeSelectionIntro(fx, ball.mesh, initialServer, (dir) =>
+        Bounces.scheduleServe(dir),
+      ).then(async () => {
         // Set deterministic safe serve angle for the opening serve
         const serveDeg = pickSafeServeAngleDeg(matchSeed, bounds, initialServer, serveIndex++);
         state = setServeAngleDeg(state, serveDeg);
