@@ -76,7 +76,7 @@ const PublicUser: React.FC = () => {
   const [hasMore, setHasMore] = useState(true);
   const [offset, setOffset] = useState(0);
   const pageSize = 5;
-  const { axios, user } = useAppContext();
+  const { axios, user, navigate } = useAppContext();
   const { enqueueSnackbar } = useSnackbar();
 
   const fetchFriendship = async () => {
@@ -104,6 +104,8 @@ const PublicUser: React.FC = () => {
         message: String(axiosErr?.response?.data?.message ?? 'Failed to load user profile'),
         variant: 'error',
       });
+      navigate('/');
+      throw err;
     }
   };
 
@@ -152,11 +154,18 @@ const PublicUser: React.FC = () => {
   };
 
   useEffect(() => {
-    fetchProfile();
-    fetchStats();
-    fetchMatches();
-    fetchFriendship();
-    window.scrollTo(0, 0);
+    const fetchData = async () => {
+      try {
+        await fetchProfile();
+        fetchStats();
+        (fetchMatches(), fetchFriendship());
+      } catch (err) {
+        console.log('Failed to fetch user data');
+      } finally {
+        window.scrollTo(0, 0);
+      }
+    };
+    if (uuid) fetchData();
   }, [uuid]);
 
   const loadMore = () => fetchMatches(true);
@@ -181,7 +190,7 @@ const PublicUser: React.FC = () => {
   };
 
   const matches1v1 = matches.filter(
-    (match) =>
+    (match: Match) =>
       match.players.team1.length < 2 &&
       match.players.team2.length < 2 &&
       match.players.team1[0] &&
