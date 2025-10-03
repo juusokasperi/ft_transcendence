@@ -56,7 +56,7 @@ services:
 
   # Nginx gateway (public entrypoint)
   nginx:
-    image: nginx:1.27-alpine
+    image: nginxinc/nginx-unprivileged:1.29-alpine
     restart: unless-stopped
     depends_on:
       backend:
