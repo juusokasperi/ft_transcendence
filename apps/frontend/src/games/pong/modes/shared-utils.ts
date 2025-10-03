@@ -1,6 +1,7 @@
 import type { DomScoreboardAPI } from '@pong/render';
+import type { FXManager, AbstractMesh } from '@pong/render';
+import { incHide, decHide } from '@pong/render';
 import { mapHistoryForPlayers } from '@pong/render';
-import type { AbstractMesh } from '@pong/render';
 import type { GameState } from '@pong/game-logic';
 import type { MatchSnapshot, TableEnd } from '@pong/shared';
 
@@ -61,7 +62,6 @@ export function handleSwapSidesNow(
   if (isMidGame) {
     return announceAndPause(hud, 'Swapping mid-game for decisive game', messageMs, blockInputForFn);
   }
-
   const snap = getSnapshot();
   const hist = snap.gamesHistory || [];
   const last = hist[hist.length - 1];
@@ -75,4 +75,28 @@ export function handleSwapSidesNow(
     );
   }
   return 0;
+}
+
+/**
+ * Shared serve-selection intro: hides the ball, runs FX, and reveals it.
+ * Optionally schedules a visual bounce serve in advance.
+ */
+export async function runServeSelectionIntro(
+  fx: FXManager,
+  ballMesh: AbstractMesh,
+  server: 'east' | 'west',
+  scheduleBounce?: (dir: -1 | 1) => void,
+): Promise<void> {
+  // Two hide refs to tolerate internal FX hide bumps; release both after.
+  incHide(ballMesh);
+  incHide(ballMesh);
+  try {
+    const dir = server === 'east' ? -1 : 1;
+    scheduleBounce?.(dir);
+  } catch {}
+  await fx.serveSelection(server);
+  try {
+    decHide(ballMesh);
+    decHide(ballMesh);
+  } catch {}
 }

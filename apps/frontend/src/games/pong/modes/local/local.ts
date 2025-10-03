@@ -46,6 +46,7 @@ import { disposeWorld } from '@pong/render';
 import type { ControllerScheme, Preferences } from '../preferences';
 import { applyPreferences } from '../preferences';
 import { setHudAndPaletteColorsFromPrefs, pickSafeServeAngleDeg } from './utils';
+import { runServeSelectionIntro } from '../shared-utils';
 import { swapPaddleMaterials, handleMatchOver, handleSwapSidesNow } from '../shared-utils';
 import { orbitCameraFor } from '@pong/render';
 import { applyFrameEventsToAudio } from '@pong/render';
@@ -370,18 +371,13 @@ export function createLocalApp(canvas: HTMLCanvasElement, preferences?: Preferen
       // Audio boot: resume + preload SFX + start playlist
       void audioKit.start();
       // Pre‑roll: run serve selection FX, gate input, then arm opening serve
-      void import('@pong/render').then(({ incHide }) => {
-        // Keep the ball hidden while the serve-selection pre-roll runs; we drain
-        // the hide ref(s) once the FX resolves just below.
-        incHide(ball.mesh);
-      });
 
       blockInputFor(SERVE_SELECT_TOTAL_MS + 200);
       introUntil = performance.now() + SERVE_SELECT_TOTAL_MS;
 
       loop.start();
 
-      void fx.serveSelection(initialServer).then(async () => {
+      void runServeSelectionIntro(fx, ball.mesh, initialServer, (dir) => Bounces.scheduleServe(dir)).then(async () => {
         // Set deterministic safe serve angle for the opening serve
         const serveDeg = pickSafeServeAngleDeg(matchSeed, bounds, initialServer, serveIndex++);
         state = setServeAngleDeg(state, serveDeg);
@@ -389,13 +385,7 @@ export function createLocalApp(canvas: HTMLCanvasElement, preferences?: Preferen
         state = serveFrom(initialServer, state);
         state = { ...state, tPauseBtwPointsMs: 0 };
 
-        const dir = initialServer === 'east' ? -1 : 1;
-        Bounces.scheduleServe(dir);
-
-        const { decHide } = await import('@pong/render');
-        // Release any outstanding hide refs (manual above + potential FX bumps).
-        decHide(ball.mesh);
-        decHide(ball.mesh);
+        // bounce schedule handled by runServeSelectionIntro
       });
     },
     destroy,

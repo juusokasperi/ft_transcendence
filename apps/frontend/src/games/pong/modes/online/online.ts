@@ -30,7 +30,7 @@ import { rgb01ToCss } from '../preferences';
 import { clamp01 } from '@pong/shared';
 
 import { wsUrl } from '../../../../utils/url';
-import { swapPaddleMaterials, handleSwapSidesNow, handleMatchOver } from '../shared-utils';
+import { swapPaddleMaterials, handleSwapSidesNow, handleMatchOver, runServeSelectionIntro } from '../shared-utils';
 import { createLocalAudioKit, createLocalSfxDetectors } from '../audio-utils';
 
 // Render/update cadence we expect from the authoritative node.
@@ -481,15 +481,7 @@ export function createOnlineApp(
       //console.log('[OnlineGame] Received snapshot. Phase:', s.phase);
       if (!didBootFX) {
         didBootFX = true;
-        incHide(ball.mesh);
-        incHide(ball.mesh);
-        // Schedule initial visual serve bounce based on current server
-        const dir = s.server === 'east' ? -1 : 1;
-        Bounces.scheduleServe(dir);
-        void fx.serveSelection(s.server).then(() => {
-          decHide(ball.mesh);
-          decHide(ball.mesh);
-        });
+        void runServeSelectionIntro(fx, ball.mesh, s.server, (dir) => Bounces.scheduleServe(dir));
       }
       // Phase transition hook → serve cues
       if (prevPhase && s.phase !== prevPhase) {
