@@ -28,8 +28,17 @@ export function onEnteredServe(
   },
 ) {
   const dir = who === 'east' ? -1 : 1;
-  decHide(deps.ballMesh);
+  // Ensure we schedule the visual serve path before revealing the ball so it
+  // always appears to lift off from the table, not mid-air.
   deps.Bounces.scheduleServe(dir);
+  // Reveal on the next animation frame to give the scene a beat to apply the
+  // new pose before showing the mesh.
+  try {
+    requestAnimationFrame(() => decHide(deps.ballMesh));
+  } catch {
+    // Fallback when rAF is unavailable
+    setTimeout(() => decHide(deps.ballMesh), 0);
+  }
   const blocked = deps.paddleAnim.cue(220);
   deps.blockInputFor(blocked);
 }
