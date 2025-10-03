@@ -10,7 +10,7 @@ import {
   type GameState,
 } from '@pong/game-logic';
 import type { FrameEvents, MatchSnapshot, TableEnd } from '@pong/shared';
-import { pickInitialServer } from '@pong/shared';
+import { pickInitialServer, SERVE_SELECT_TOTAL_MS } from '@pong/shared';
 import { createHttpServer } from './utils/httpServer.ts';
 import { verifyJoinToken } from '@pong/shared/auth/tokenSign';
 import type { RoomState } from '@pong/shared/protocol/net';
@@ -243,8 +243,18 @@ function startMatch(match: Match) {
   if (match.loop) return;
   console.log(`[GameServer] Starting match ${match.id}`);
   const initialServer = match.initialServer;
-  match.state = serveFrom(initialServer, match.state);
-  match.state = { ...match.state, tPauseBtwPointsMs: 0 };
+  // Defer the opening serve to allow clients to run serve-selection FX.
+  const gridMs = 1000 / TICK_RATE_HZ;
+  const selectServeMs = Math.ceil(SERVE_SELECT_TOTAL_MS / gridMs) * gridMs;
+  match.state = {
+    ...match.state,
+    phase: 'pauseBtwPoints',
+    tPauseBtwPointsMs: selectServeMs,
+    nextServe: initialServer,
+    server: initialServer,
+    paddles: { east: { z: 0, vz: 0 }, west: { z: 0, vz: 0 } },
+    ball: { x: 0, z: 0, vx: 0, vz: 0 },
+  };
   broadcastRoomState(match, 'PLAYING');
 
   match.loop = setInterval(() => {
@@ -258,8 +268,25 @@ function startMatch(match: Match) {
       rightAxis: match.players[rightSeat]?.axis ?? 0,
     };
     match.state = stepPaddles(match.state, intent, dt);
+    const prevPhase = match.state.phase;
     const stepped = handleSteps(match.state, dt);
-    const mc = match.controller.afterPhysicsStep(stepped.next);
+    let nextState = stepped.next;
+    // Quantize newly-entered between-points pauses to the server tick grid so clients
+    // reliably see the pause for an integer number of snapshots.
+    if (prevPhase !== 'pauseBtwPoints' && nextState.phase === 'pauseBtwPoints') {
+      const grid = 1000 / TICK_RATE_HZ;
+      const ms = Math.max(0, nextState.tPauseBtwPointsMs ?? 0);
+      const q = Math.ceil(ms / grid) * grid;
+      nextState = { ...nextState, tPauseBtwPointsMs: q };
+    }
+    // Quantize newly-entered between-games pauses as well
+    if (prevPhase !== 'pauseBetweenGames' && nextState.phase === 'pauseBetweenGames') {
+      const grid = 1000 / TICK_RATE_HZ;
+      const ms = Math.max(0, nextState.tPauseBtwGamesMs ?? 0);
+      const q = Math.ceil(ms / grid) * grid;
+      nextState = { ...nextState, tPauseBtwGamesMs: q };
+    }
+    const mc = match.controller.afterPhysicsStep(nextState);
     match.state = mc.state;
     match.lastEvents = { ...stepped.events, ...mc.events };
     match.lastMatch = match.controller.getSnapshot();
