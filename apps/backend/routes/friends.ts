@@ -19,7 +19,6 @@ import {
   deleteFriendSchema,
   checkFriendSchema,
 } from '../schemas/friendSchemas.ts';
-import { M } from 'vitest/dist/chunks/reporters.d.BFLkQcL6.js';
 
 export async function friendsRoutes(app: FastifyInstance) {
   // Get all (accepted) friends of user
