@@ -8,7 +8,8 @@ import { resolveAvatarUrl } from '../utils/avatarUrl';
 import { DesktopMatches, MobileMatches } from '../components/StatsMatches';
 import { StatsSection } from '../components/StatsOverview';
 import { useRequireAuth } from '../hooks/useRequireAuth';
-import Button from '../components/Button';
+import FriendshipStatus from '../components/FriendshipStatus';
+import type { Friendship } from '../types';
 
 interface UserStats {
   username: string;
@@ -45,25 +46,9 @@ interface Match {
   tournamentStage: string | null;
 }
 
-type Friendship = 'friends' | 'request_sent' | 'request_received' | 'none';
-
 interface FriendshipStatus {
   status: Friendship;
 }
-
-const friendshipTexts: Record<Friendship, string> = {
-  friends: 'Delete friend',
-  request_sent: 'Cancel',
-  request_received: '',
-  none: 'Add friend',
-};
-
-const friendshipHeaderTexts: Record<Friendship, string> = {
-  friends: 'You are friends',
-  request_sent: 'Friend Request Sent',
-  request_received: '',
-  none: 'You are not friends',
-};
 
 interface MatchPlayerStats {
   uuid?: string;
@@ -91,7 +76,7 @@ const PublicUser: React.FC = () => {
   const [hasMore, setHasMore] = useState(true);
   const [offset, setOffset] = useState(0);
   const pageSize = 5;
-  const { axios } = useAppContext();
+  const { axios, user } = useAppContext();
   const { enqueueSnackbar } = useSnackbar();
 
   const fetchFriendship = async () => {
@@ -167,51 +152,14 @@ const PublicUser: React.FC = () => {
   };
 
   useEffect(() => {
-    fetchFriendship();
-  }, [friendship, uuid]);
-
-  useEffect(() => {
     fetchProfile();
     fetchStats();
     fetchMatches();
+    fetchFriendship();
     window.scrollTo(0, 0);
   }, [uuid]);
 
   const loadMore = () => fetchMatches(true);
-
-  const handleFriendship = async (accept?: boolean) => {
-    try {
-      if (friendship === 'friends') {
-        await axios.delete(`/api/friends/${uuid}`);
-        setFriendship('none');
-        enqueueSnackbar({ message: 'Removed from Friends list', variant: 'success' });
-      } else if (friendship === 'none') {
-        await axios.post('/api/friends/', { username: uuid });
-        setFriendship('request_sent');
-        enqueueSnackbar({ message: 'Friend request sent', variant: 'success' });
-      } else if (friendship === 'request_sent') {
-        await axios.delete(`/api/friends/${uuid}`);
-        setFriendship('none');
-        enqueueSnackbar({ message: 'Friend request canceled', variant: 'success' });
-      } else if (friendship === 'request_received') {
-        await axios.patch(`/api/friends/respond/${uuid}`, { accept: accept ?? false });
-        setFriendship(accept ? 'friends' : 'none');
-        enqueueSnackbar(
-          accept
-            ? { message: 'Friend request accepted', variant: 'success' }
-            : { message: 'Friend request declined', variant: 'success' },
-        );
-      }
-    } catch (err) {
-      const axiosErr = err as AxiosError<{ message?: string }>;
-      enqueueSnackbar({
-        message: String(axiosErr?.response?.data?.message ?? 'Failed to fetch friendship status'),
-        variant: 'error',
-      });
-    }
-  };
-
-  const buttonStyle = 'text-xs uppercase tracking-[0.25em]';
 
   const getMatchResult = (match: Match) => {
     if (match.team1Score > match.team2Score) return 'win';
@@ -280,44 +228,14 @@ const PublicUser: React.FC = () => {
                   </div>
                 </div>
               </div>
-              <div className="flex flex-col gap-3 tracking-[0.25em] text-slate-400">
-                {friendship === 'request_received' ? (
-                  <>
-                    <Button className={buttonStyle} disabled variant="ghost">
-                      Friendship Request Received
-                    </Button>
-                    <Button
-                      className={buttonStyle}
-                      variant="secondary"
-                      onClick={() => handleFriendship(true)}
-                    >
-                      Accept
-                    </Button>
-                    <Button
-                      className={buttonStyle}
-                      variant="secondary"
-                      onClick={() => handleFriendship(false)}
-                    >
-                      Decline
-                    </Button>
-                  </>
-                ) : (
-                  <>
-                    <Button className={buttonStyle} disabled variant="ghost">
-                      {friendshipHeaderTexts[friendship]}
-                    </Button>
-                    <Button
-                      className={buttonStyle}
-                      variant="secondary"
-                      tone="default"
-                      size="md"
-                      onClick={() => handleFriendship()}
-                    >
-                      {friendshipTexts[friendship]}
-                    </Button>
-                  </>
-                )}
-              </div>
+              {uuid && user?.uuid !== profile.uuid && (
+                <FriendshipStatus
+                  friendship={friendship}
+                  uuid={uuid}
+                  onStatusChange={setFriendship}
+                  onRefreshFriendship={fetchFriendship}
+                />
+              )}
             </header>
           )}
 
