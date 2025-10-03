@@ -274,12 +274,12 @@ export function createOnlineApp(
   const syncHudNameColors = () => {
     const leftMat: any = left.mesh.material as any;
     const rightMat: any = right.mesh.material as any;
-    // Top row = east; east starts on right side by convention
-    const eastCss = matColorCss(rightMat);
-    const westCss = matColorCss(leftMat);
+    // Top row = east; left mesh drives EAST channel (leftAxis → east)
+    const eastCss = matColorCss(leftMat);
+    const westCss = matColorCss(rightMat);
     hud.setPlayerNameColors(eastCss, westCss);
   };
-  syncHudNameColors();
+  // Colors are updated every snapshot based on snapshot occupancy and rowsMirrored
 
   // Visual bounce helper — deterministic per match (visual-only)
   function hash32(s: string): number {
@@ -324,8 +324,10 @@ export function createOnlineApp(
   let didBootFX = false;
   let didFireMatchOverEvent = false;
   let latestMatch: MatchSnapshot | undefined;
-  // Prevent double swap animations when we both detect between-games pause and later receive swap event
+  // Prevent double rotations: track a scheduled between-games spin window, and
+  // whether we've shown a rotation for the current between-games pause.
   let spinningUntilMs = 0;
+  let didBetweenGamesSpin = false;
 
   // Simple (optional) rows mirroring knob if you choose to flip per-game
   // NOTE: With server-authoritative flow, you can toggle this via messages.
@@ -413,8 +415,20 @@ export function createOnlineApp(
           right.mesh.position.z = clampPaddleZ(westZ);
         }
 
-        // 3) HUD (player-pinned)
+        // 3) HUD (player-pinned) + name colors pinned to players
         const stateForHUD = mapStateForPlayerRows(snap, rowsMirrored);
+        // Compute current row colors from materials, remapped to players when rowsMirrored
+        const eastEndCss = matColorCss(left.mesh.material as any);
+        const westEndCss = matColorCss(right.mesh.material as any);
+        if (rowsMirrored) {
+          // Top row = P1, bottom row = P2
+          const topCss = snap.playerAtEnd.east === 'P1' ? eastEndCss : westEndCss;
+          const bottomCss = snap.playerAtEnd.east === 'P2' ? eastEndCss : westEndCss;
+          hud.setPlayerNameColors(topCss, bottomCss);
+        } else {
+          // Top row = east end; bottom row = west end
+          hud.setPlayerNameColors(eastEndCss, westEndCss);
+        }
         updateHUD(hud, stateForHUD, names, latestMatch);
       }
 
@@ -478,30 +492,33 @@ export function createOnlineApp(
       if (prevPhase && s.phase !== prevPhase) {
         const entered = detectEnteredServe(prevPhase, s.phase);
         if (entered) {
-          // Delay serve cues by ~one server tick so the ball always
-          // appears to lift from the table after the server arms serve.
-          const delayMs = Math.max(0, Math.round(tickMs));
-          window.setTimeout(() => {
-            onEnteredServe(entered, {
-              ballMesh: ball.mesh,
-              Bounces,
-              paddleAnim,
-              blockInputFor,
-            });
-          }, delayMs);
+          // Trigger serve cues immediately so paddle tween starts before
+          // the next render update applies server-centered paddle poses.
+          onEnteredServe(entered, {
+            ballMesh: ball.mesh,
+            Bounces,
+            paddleAnim,
+            blockInputFor,
+          });
         }
         // Entered between-games pause → show message + spin camera and schedule swap at half
         if (prevPhase !== 'pauseBetweenGames' && s.phase === 'pauseBetweenGames') {
-          const ms = Math.max(0, (s as any).tPauseBtwGamesMs ?? 0);
+          const rawMs = Math.max(0, (s as any).tPauseBtwGamesMs ?? 0);
+          // Cushion by ~one server tick to counteract snapshot latency so the
+          // rotation completes just before the server resumes play.
+          const ms = Math.max(0, rawMs - tickMs);
           const until = handleSwapSidesNow(
             hud,
-            prevPhase,
-            () => latestMatch ?? { bestOf: s.params.bestOf, currentGameIndex: 0, gamesHistory: [] },
+            'gameOver',
+            () =>
+              matchSnap ??
+              latestMatch ?? { bestOf: s.params.bestOf, currentGameIndex: 0, gamesHistory: [] },
             names,
             blockInputFor,
             ms,
           );
           spinningUntilMs = until;
+          didBetweenGamesSpin = true;
           const now = performance.now();
           const spinMs = Math.max(0, until - now);
           if (spinMs > 0) {
@@ -521,19 +538,21 @@ export function createOnlineApp(
       const anyEv = ev as any;
       if (anyEv && anyEv.swapSidesNow) {
         const now = performance.now();
-        if (spinningUntilMs > now) {
-          // Swap immediately; the between-games spin is/was already in progress.
+        if (spinningUntilMs > now || didBetweenGamesSpin) {
+          // Swap immediately; we already showed a between-games rotation (or are mid-spin).
           rowsMirrored = !rowsMirrored;
           swapPaddleMaterials(left.mesh, right.mesh);
-          syncHudNameColors();
           paddleAnim.cue(180);
           spinningUntilMs = 0;
+          didBetweenGamesSpin = false;
         } else {
           // Mid-game (or fallback) swap: show message + spin and swap at mid-spin for UX.
           const until = handleSwapSidesNow(
             hud,
             prevPhase as GameState['phase'],
-            () => latestMatch ?? { bestOf: s.params.bestOf, currentGameIndex: 0, gamesHistory: [] },
+            () =>
+              matchSnap ??
+              latestMatch ?? { bestOf: s.params.bestOf, currentGameIndex: 0, gamesHistory: [] },
             names,
             blockInputFor,
           );
@@ -543,14 +562,12 @@ export function createOnlineApp(
               onHalf: () => {
                 rowsMirrored = !rowsMirrored;
                 swapPaddleMaterials(left.mesh, right.mesh);
-                syncHudNameColors();
                 paddleAnim.cue(180);
               },
             });
           } else {
             rowsMirrored = !rowsMirrored;
             swapPaddleMaterials(left.mesh, right.mesh);
-            syncHudNameColors();
             paddleAnim.cue(180);
           }
         }
