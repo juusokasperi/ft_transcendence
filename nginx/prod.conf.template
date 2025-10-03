@@ -7,11 +7,30 @@ map $http_upgrade $connection_upgrade {
   ''      close;
 }
 
+# Redirect HTTP to HTTPS
+# uses templating so that we can use non-standard ports: redirect port 80
+# to whatever is actually our HTTPS port
 server {
   listen 80;
   server_name _;
+   return 301 https://$host:${NGINX_HTTPS_PORT}$request_uri;
+}
+
+server {
+  listen 443 ssl;
+  http2 on;
+  server_name _;
 
   client_max_body_size 20m;
+
+  # SSL certificate configuration
+  ssl_certificate /etc/nginx/certs/cert.pem;
+  ssl_certificate_key /etc/nginx/certs/key.pem;
+
+  # SSL configuration (modern security settings)
+  ssl_protocols TLSv1.2 TLSv1.3;
+  ssl_ciphers HIGH:!aNULL:!MD5;
+  ssl_prefer_server_ciphers on;
 
   #  ---------- API -> backend ----------
   location /api/ {

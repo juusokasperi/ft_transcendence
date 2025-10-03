@@ -55,6 +55,17 @@ define ensure_builder
 	@docker buildx use $(BUILDER)
 endef
 
+define ensure_certs
+	@echo "Ensuring that certs for HTTPS exist."
+	@if [ ! -f ./certs/cert.pem ]; then \
+		mkdir -p certs; \
+		openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
+		-keyout ./certs/key.pem -out ./certs/cert.pem -subj '/CN=localhost'; \
+		chmod 644 ./certs/key.pem; \
+	fi
+endef
+
+
 # ========================
 #  Orchestration
 # ========================
@@ -79,6 +90,7 @@ detached:
 prod:
 	$(ensure_dirs)
 	$(ensure_builder)
+	$(ensure_certs)
 	@echo ">> Starting default stack (attached)"
 	docker compose -p $(NAME_PROD) $(PROD_COMPOSE) $(ENV_ROOT) up --build
 
@@ -157,7 +169,9 @@ clean:
 	    echo '>> Removing backend data...'; \
 	    if [ -d ./apps/backend/data ]; then rm -rf ./apps/backend/data; fi; \
 	    echo '>> Removing frontend .vite cache...'; \
-	    if [ -d ./apps/frontend/.vite ]; then rm -rf ./apps/frontend/.vite; fi \
+	    if [ -d ./apps/frontend/.vite ]; then rm -rf ./apps/frontend/.vite; fi; \
+	    echo '>> Removing HTTPS certs...'; \
+	    if [ -d ./certs ]; then rm -rf ./certs; fi \
 	  "
 	@echo ">> Removing helper image ($(CLEAN_HELPER_IMG))"
 	- docker image rm -f $(CLEAN_HELPER_IMG) || true

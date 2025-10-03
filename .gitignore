@@ -86,4 +86,7 @@ tree.txt
 # Scripts output
 scripts/output/
 
+# Secret things
+certs/
+
 # Temp
