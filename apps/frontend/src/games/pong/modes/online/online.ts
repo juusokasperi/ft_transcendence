@@ -26,12 +26,12 @@ import type { GameState } from '@pong/game-logic';
 import type { FrameEvents, MatchSnapshot } from '@pong/shared';
 import type { RoomStateMessage, StartMessage } from '@pong/shared/protocol/net';
 import { SERVE_SELECT_TOTAL_MS } from '@pong/shared';
-import { rgb01ToCss } from './preferences';
+import { rgb01ToCss } from '../preferences';
 import { clamp01 } from '@pong/shared';
 
-import { wsUrl } from '../../../utils/url';
-import { swapPaddleMaterials, handleSwapSidesNow, handleMatchOver } from './local/utils';
-import { createLocalAudioKit, createLocalSfxDetectors } from './local/audio-utils';
+import { wsUrl } from '../../../../utils/url';
+import { swapPaddleMaterials, handleSwapSidesNow, handleMatchOver } from '../shared-utils';
+import { createLocalAudioKit, createLocalSfxDetectors } from '../audio-utils';
 
 // Render/update cadence we expect from the authoritative node.
 const CLIENT_TICK_RATE_HZ = 60;
@@ -352,7 +352,8 @@ export function createOnlineApp(
         return;
       }
       const secs = remain / 1000;
-      const text = secs >= 10 ? `Match starts in ${Math.ceil(secs)}s` : `Match starts in ${secs.toFixed(1)}s`;
+      const text =
+        secs >= 10 ? `Match starts in ${Math.ceil(secs)}s` : `Match starts in ${secs.toFixed(1)}s`;
       hud.flashMessage(text, 500);
     };
     tick();
@@ -389,7 +390,9 @@ export function createOnlineApp(
         // Interpolate a few hot fields; fall back to latest when no prev.
         const ref = prevSnap ?? snap;
         const ballX = hasPrev ? lerp(ref.ball.x, snap.ball.x, alpha) : snap.ball.x;
-        const ballVX = hasPrev ? ((snap.ball.x - ref.ball.x) / Math.max(1, currT - prevT)) * 1000 : 0;
+        const ballVX = hasPrev
+          ? ((snap.ball.x - ref.ball.x) / Math.max(1, currT - prevT)) * 1000
+          : 0;
 
         // Ball Y via the same visual bounce helper used locally
         const ballY = Bounces.update(ballX, ballVX);

@@ -45,10 +45,11 @@ import { pickInitialServer, SERVE_SELECT_TOTAL_MS, randomSeed32, sideOpposite } 
 import { disposeWorld } from '@pong/render';
 import type { ControllerScheme, Preferences } from '../preferences';
 import { applyPreferences } from '../preferences';
-import { setHudAndPaletteColorsFromPrefs, swapPaddleMaterials, handleMatchOver, handleSwapSidesNow, pickSafeServeAngleDeg } from './utils';
+import { setHudAndPaletteColorsFromPrefs, pickSafeServeAngleDeg } from './utils';
+import { swapPaddleMaterials, handleMatchOver, handleSwapSidesNow } from '../shared-utils';
 import { orbitCameraFor } from '@pong/render';
 import { applyFrameEventsToAudio } from '@pong/render';
-import { createLocalAudioKit, createLocalSfxDetectors } from './audio-utils';
+import { createLocalAudioKit, createLocalSfxDetectors } from '../audio-utils';
 
 const CONTROLLER_BINDINGS: Record<ControllerScheme, { up: string; down: string }> = {
   wasd: { up: 'KeyW', down: 'KeyS' },
