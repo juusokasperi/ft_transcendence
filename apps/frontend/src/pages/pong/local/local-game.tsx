@@ -196,7 +196,11 @@ const LocalGame: React.FC = () => {
       try {
         const { BotController } = await import('../../../games/pong/ai/bot-controller');
         if (cancelled || botRef.current) return;
-        const bot = new BotController(canvas, 'P2', observer, botDifficulty);
+        // AI always drives the Arrow controls; pick the matching seat so
+        // the bot presses the right keys and plans for the right paddle
+        // across side swaps.
+        const botSeat: 'P1' | 'P2' = settings.player1.controller === 'arrows' ? 'P1' : 'P2';
+        const bot = new BotController(canvas, botSeat, observer, botDifficulty);
         bot.start();
         botRef.current = bot;
       } catch (error) {
@@ -853,9 +857,12 @@ const LocalGame: React.FC = () => {
   }
 
   // Post-match results view (reusing in-game HUD scoreboard)
-  const eastName = postMatch.names.east || 'Player 1';
   const westName = postMatch.names.west || 'Player 2';
-  const winnerName = postMatch.winner === 'east' ? eastName : westName;
+  const eastName = postMatch.names.east || 'Player 1';
+  // Determine winner based on last game history (player-pinned rows)
+  const lastGame = postMatch.gamesHistory?.[postMatch.gamesHistory.length - 1];
+  const winnerRow = (lastGame?.winner ?? postMatch.winner) as 'east' | 'west';
+  const winnerName = winnerRow === 'east' ? eastName : westName;
 
   return (
     <div className="relative min-h-screen w-full overflow-auto">

@@ -1,4 +1,4 @@
-import type { GameState } from '../model/state.ts';
+import type { GameState } from '../model/state';
 
 /** Convenience to begin immediately with a straight rally. */
 export function bootAsRally(s: GameState): GameState {

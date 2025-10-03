@@ -24,7 +24,9 @@ export async function up(db: Database) {
 	UNIQUE(username),
 	UNIQUE(email),
 	CHECK (password_hash IS NOT NULL OR google_id IS NOT NULL)
-	);`);
+	);
+
+	`);
 }
 
 export async function down(db: Database) {

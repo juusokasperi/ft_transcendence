@@ -1,21 +1,27 @@
 // apps/frontend/src/games/pong/ai/bot-controller.ts
-// AI controller for local single-player games. Plans once per second, predicts
-// ball bounces, and drives the existing keyboard input layer so it behaves like a
-// human opponent as required by the project brief.
 
 export type BotSeat = 'P1' | 'P2';
+
 export type BotDifficulty = 'easy' | 'normal' | 'hard';
 
 export type Observation = {
   ball: { x: number; z: number; vx: number; vz: number };
   paddles: { P1: { z: number }; P2: { z: number } };
+  paddlesByEnd?: { east: { z: number }; west: { z: number } };
   bounds: {
     leftPaddleX: number;
     rightPaddleX: number;
     halfWidthZ: number;
     ballRadius: number;
   };
-  params: { paddleSpeed: number; restitutionWall: number };
+  params: {
+    paddleSpeed: number;
+    restitutionWall: number;
+  };
+  // When true, control bindings are mirrored so the Arrow/WASD schemes
+  // drive the opposite physical side. Use this to plan for the paddle
+  // actually controlled by our keys.
+  controlsMirrored?: boolean;
 };
 
 type ObserveFn = () => Observation;
@@ -31,7 +37,6 @@ type MovementPlan = {
 type DifficultyProfile = {
   reactionDelayMs: number;
   aimJitter: number;
-  recenterJitter: number;
   skipChance: number;
   speedScale: number;
   maxHoldMs: number;
@@ -42,36 +47,33 @@ type DifficultyProfile = {
 
 const DIFFICULTY: Record<BotDifficulty, DifficultyProfile> = {
   easy: {
-    reactionDelayMs: 240,
-    aimJitter: 0.35,
-    recenterJitter: 0.55,
-    skipChance: 0.18,
-    speedScale: 0.85,
+    reactionDelayMs: 140,
+    aimJitter: 0.22,
+    skipChance: 0.15,
+    speedScale: 1,
     maxHoldMs: 900,
     minHoldMs: 150,
-    deadZone: 0.08,
-    maxLookahead: 0.8,
+    deadZone: 0.02,
+    maxLookahead: 1.6,
   },
   normal: {
-    reactionDelayMs: 120,
-    aimJitter: 0.16,
-    recenterJitter: 0.32,
-    skipChance: 0.05,
+    reactionDelayMs: 100,
+    aimJitter: 0.14,
+    skipChance: 0.1,
     speedScale: 1,
     maxHoldMs: 850,
     minHoldMs: 120,
-    deadZone: 0.05,
-    maxLookahead: 1.2,
+    deadZone: 0.02,
+    maxLookahead: 1.6,
   },
   hard: {
     reactionDelayMs: 60,
-    aimJitter: 0.05,
-    recenterJitter: 0.12,
-    skipChance: 0,
-    speedScale: 1.15,
+    aimJitter: 0.01,
+    skipChance: 0.001,
+    speedScale: 1,
     maxHoldMs: 820,
     minHoldMs: 100,
-    deadZone: 0.03,
+    deadZone: 0.02,
     maxLookahead: 1.6,
   },
 };
@@ -98,18 +100,22 @@ function clamp(value: number, min: number, max: number) {
 
 function randomCentered(magnitude: number) {
   if (magnitude <= 0) return 0;
-  return (Math.random() * 2 - 1) * magnitude;
+  return (Math.random() * 2 - 1) * magnitude; // [-mag, +mag]
 }
 
 function predictImpact(obs: Observation, seat: BotSeat, maxLookahead: number): ImpactPrediction {
+  // Determine which physical side this controller is currently driving.
+  // In local mode, controls are mirrored on side swaps. When mirrored,
+  // the keys for P1 control the right paddle and P2 keys control the left.
+  const effectiveSeat: BotSeat = obs.controlsMirrored ? (seat === 'P1' ? 'P2' : 'P1') : seat;
   const planeX =
-    seat === 'P2'
+    effectiveSeat === 'P2'
       ? obs.bounds.rightPaddleX - obs.bounds.ballRadius
       : obs.bounds.leftPaddleX + obs.bounds.ballRadius;
 
   const vx = obs.ball.vx;
   const headingRight = vx > 0;
-  const approaching = seat === 'P2' ? headingRight : !headingRight;
+  const approaching = effectiveSeat === 'P2' ? headingRight : !headingRight;
 
   if (!approaching || Math.abs(vx) < 1e-6) {
     return { approaching: false, targetZ: 0, flightTime: Infinity };
@@ -143,6 +149,7 @@ function integrateZ(
     }
 
     const timeToWall = vz > 0 ? (zMax - z) / vz : (-zMax - z) / vz;
+
     if (timeToWall > 0 && timeToWall < remaining) {
       z += vz * timeToWall;
       vz = -vz * restitution;
@@ -158,16 +165,25 @@ function integrateZ(
 
 function buildPlan(obs: Observation, seat: BotSeat, profile: DifficultyProfile): MovementPlan {
   const prediction = predictImpact(obs, seat, profile.maxLookahead);
-  const paddleZ = seat === 'P1' ? obs.paddles.P1.z : obs.paddles.P2.z;
+  // Match the planning paddle with the one our keys currently move.
+  // Use end-centric channel when available to avoid P1/P2 ambiguity across swaps.
+  const effectiveEnd: 'east' | 'west' = ((): 'east' | 'west' => {
+    const mirrored = !!obs.controlsMirrored;
+    if (!mirrored) return seat === 'P1' ? 'east' : 'west';
+    return seat === 'P1' ? 'west' : 'east';
+  })();
+  const paddleZ = obs.paddlesByEnd
+    ? obs.paddlesByEnd[effectiveEnd].z
+    : effectiveEnd === 'east'
+      ? obs.paddles.P1.z
+      : obs.paddles.P2.z;
   const zLimit = obs.bounds.halfWidthZ - obs.bounds.ballRadius;
 
   let desired = 0;
 
   if (prediction.approaching) {
-    desired = prediction.targetZ + randomCentered(profile.aimJitter);
-  } else {
-    // Drift back towards centre when the ball is leaving to avoid hugging a wall.
-    desired = randomCentered(profile.recenterJitter);
+    const jitter = randomCentered(profile.aimJitter * zLimit);
+    desired = prediction.targetZ + jitter;
   }
 
   desired = clamp(desired, -zLimit, zLimit);
@@ -227,8 +243,7 @@ export class BotController {
   private plan() {
     const profile = DIFFICULTY[this.difficulty] ?? DIFFICULTY.normal;
 
-    if (profile.skipChance > 0 && Math.random() < profile.skipChance) {
-      // Occasionally skip planning altogether on easier modes to simulate hesitation.
+    if (Math.random() < profile.skipChance) {
       return;
     }
 
@@ -244,14 +259,20 @@ export class BotController {
   }
 
   private applyPlan(plan: MovementPlan) {
+    if (plan.direction === 'none' && this.activeDirection === 'none') {
+      this.cancelPendingPress();
+      return;
+    }
+
     this.cancelPendingPress();
-    this.release();
 
     if (plan.direction === 'none') {
+      this.release();
       return;
     }
 
     const keyCode = this.keyForDirection(plan.direction);
+
     const press = () => {
       this.activeDirection = plan.direction;
       dispatchKey(this.el, 'keydown', keyCode);
@@ -275,8 +296,12 @@ export class BotController {
     }
 
     const [upCode, downCode] = this.codesForSeat();
-    dispatchKey(this.el, 'keyup', upCode);
-    dispatchKey(this.el, 'keyup', downCode);
+    if (this.activeDirection === 'up') {
+      dispatchKey(this.el, 'keyup', upCode);
+    } else if (this.activeDirection === 'down') {
+      dispatchKey(this.el, 'keyup', downCode);
+    }
+
     this.activeDirection = 'none';
   }
 
