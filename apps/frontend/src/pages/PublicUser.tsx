@@ -158,7 +158,8 @@ const PublicUser: React.FC = () => {
       try {
         await fetchProfile();
         fetchStats();
-        (fetchMatches(), fetchFriendship());
+        fetchMatches();
+        fetchFriendship();
       } catch (err) {
         console.log('Failed to fetch user data');
       } finally {
