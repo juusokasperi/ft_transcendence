@@ -11,19 +11,13 @@ RUN corepack enable && corepack prepare pnpm@9.12.3 --activate
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 COPY .config ./.config
 
-# Copy all sources, then delete everything except packege.json files. This is 
-# so that the `pnpm install` command can be cached and that cache invalidated 
-# only when package.json changes, not everytime that sources change.
+# Yea the cache gets invalidated often in this approach. The alternative 
+# solution is to copy every package.json file explicitly here and then copy 
+# the sources after `pnpm install`. 
 COPY apps ./apps
 COPY packages ./packages
-RUN find apps packages -type f ! -name 'package.json' -delete && \
-    find apps packages -type d -empty -delete
 
 RUN pnpm install --frozen-lockfile
-
-# Copy all source files (overwrites the package.json-only structure)
-COPY apps ./apps
-COPY packages ./packages
 
 # these are set in compose file
 ARG SERVICE_NAME
