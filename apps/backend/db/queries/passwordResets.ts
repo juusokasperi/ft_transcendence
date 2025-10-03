@@ -17,8 +17,9 @@ export function createResetToken(uuid: string, resetToken: string): Boolean {
   return result.changes === 1;
 }
 
-export function clearExpiredTokens(): void {
-  db.prepare(`DELETE FROM PasswordResets WHERE expires_at < datetime('now')`).run();
+export function purgeExpiredPasswordResetTokens(): number {
+  const result = db.prepare(`DELETE FROM PasswordResets WHERE expires_at < datetime('now')`).run();
+  return result.changes ?? 0;
 }
 
 export function findAndClearResetToken(resetToken: string): string | undefined {

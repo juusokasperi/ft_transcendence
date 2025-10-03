@@ -251,8 +251,16 @@ export function updateEmail(uuid: string, email: string): boolean {
   }
 }
 
+export function purgeExpiredEmailChangeRequests(): number {
+  const result = db
+    .prepare(`DELETE FROM EmailChangeRequests WHERE email_change_expires <= datetime('now')`)
+    .run();
+  return result.changes ?? 0;
+}
+
 export function markEmailChange(uuid: string, newEmail: string, token: string): boolean {
   const transaction = db.transaction(() => {
+    purgeExpiredEmailChangeRequests();
     db.prepare(`DELETE FROM EmailChangeRequests WHERE user_uuid = ?`).run(uuid);
     db.prepare(
       `
