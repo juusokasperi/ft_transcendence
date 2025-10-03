@@ -524,8 +524,8 @@ export function createOnlineApp(
           if (spinMs > 0) {
             orbitCameraFor(world.camera, spinMs, {
               onHalf: () => {
-                // Cosmetic cue only during pause; actual side swap happens on server event
-                paddleAnim.cue(180);
+                // Between-games: no paddle centering animation here to avoid
+                // a snap-back before the new game's serve cue runs.
               },
             });
           }
@@ -538,11 +538,11 @@ export function createOnlineApp(
       const anyEv = ev as any;
       if (anyEv && anyEv.swapSidesNow) {
         const now = performance.now();
-        if (spinningUntilMs > now || didBetweenGamesSpin) {
-          // Swap immediately; we already showed a between-games rotation (or are mid-spin).
+        if (spinningUntilMs > now || didBetweenGamesSpin || s.phase === 'pauseBetweenGames') {
+          // Between-games (or during the scheduled spin): apply swap immediately
+          // with NO paddle centering animation. Serve cue will animate later.
           rowsMirrored = !rowsMirrored;
           swapPaddleMaterials(left.mesh, right.mesh);
-          paddleAnim.cue(180);
           spinningUntilMs = 0;
           didBetweenGamesSpin = false;
         } else {
