@@ -353,6 +353,77 @@ describe('User Functions', () => {
       expect(userRecord.email_change_expires).toBeTruthy(); // Should have an expiration date
     });
 
+    it('purgeExpiredEmailChangeRequests should remove only expired requests', async () => {
+      const { addUser, markEmailChange, purgeExpiredEmailChangeRequests } = await import(
+        '../../../db/queries/users.ts'
+      );
+
+      const expiredUserId = 'uuid-purge-expired';
+      const activeUserId = 'uuid-purge-active';
+      const expiredToken = 'expired-token-123';
+      const activeToken = 'active-token-456';
+
+      addUser(expiredUserId, 'ExpiredUser', 'hash', 'expired@example.com');
+      addUser(activeUserId, 'ActiveUser', 'hash', 'active@example.com');
+
+      expect(markEmailChange(expiredUserId, 'expired-new@example.com', expiredToken)).toBe(true);
+      expect(markEmailChange(activeUserId, 'active-new@example.com', activeToken)).toBe(true);
+
+      const db = await import('../../../db/client.ts');
+      db.default
+        .prepare(
+          "UPDATE EmailChangeRequests SET email_change_expires = datetime('now', '-1 hour') WHERE email_change_token = ?",
+        )
+        .run(expiredToken);
+
+      const removed = purgeExpiredEmailChangeRequests();
+      expect(removed).toBe(1);
+
+      const remaining = db.default
+        .prepare('SELECT email_change_token, user_uuid FROM EmailChangeRequests ORDER BY user_uuid')
+        .all();
+      expect(remaining).toHaveLength(1);
+      expect(remaining[0]!.user_uuid).toBe(activeUserId);
+      expect(remaining[0]!.email_change_token).toBe(activeToken);
+    });
+
+    it('markEmailChange should purge expired requests and replace existing tokens', async () => {
+      const { addUser, markEmailChange } = await import('../../../db/queries/users.ts');
+
+      const staleUserId = 'uuid-stale-user';
+      const activeUserId = 'uuid-active-user';
+      const staleToken = 'stale-token-123';
+      const initialActiveToken = 'active-token-789';
+      const replacementToken = 'active-token-987';
+
+      addUser(staleUserId, 'StaleUser', 'hash', 'stale@example.com');
+      addUser(activeUserId, 'ActiveUser', 'hash', 'active@example.com');
+
+      expect(markEmailChange(staleUserId, 'stale-new@example.com', staleToken)).toBe(true);
+      expect(markEmailChange(activeUserId, 'active-new@example.com', initialActiveToken)).toBe(
+        true,
+      );
+
+      const db = await import('../../../db/client.ts');
+      db.default
+        .prepare(
+          "UPDATE EmailChangeRequests SET email_change_expires = datetime('now', '-2 hours') WHERE user_uuid = ?",
+        )
+        .run(staleUserId);
+
+      expect(markEmailChange(activeUserId, 'active-newer@example.com', replacementToken)).toBe(
+        true,
+      );
+
+      const records = db.default
+        .prepare('SELECT user_uuid, email_change_token FROM EmailChangeRequests ORDER BY user_uuid')
+        .all();
+
+      expect(records).toHaveLength(1);
+      expect(records[0]!.user_uuid).toBe(activeUserId);
+      expect(records[0]!.email_change_token).toBe(replacementToken);
+    });
+
     it('confirmEmailChange should update email and remove request on valid token', async () => {
       const { addUser, markEmailChange, confirmEmailChange, getUserByUuid } = await import(
         '../../../db/queries/users.ts'
