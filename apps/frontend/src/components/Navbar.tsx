@@ -45,13 +45,13 @@ const Navbar = () => {
             aria-label="Toggle profile navigation"
             aria-controls="profile-sidebar"
             aria-expanded={sidebarOpen}
-            className="inline-flex h-12 w-12 items-center justify-center rounded-2xl border border-white/20 bg-indigo-500/70 text-white shadow-lg shadow-indigo-900/40 backdrop-blur-md transition hover:bg-indigo-400/70 md:hidden"
+            className="inline-flex h-12 w-12 items-center justify-center rounded-2xl border border-white/20 text-white shadow-lg shadow-indigo-900/40 backdrop-blur-md transition hover:bg-indigo-400/70 md:hidden"
           >
             {sidebarOpen ? <FiX size={24} /> : <FiMenu size={24} />}
           </button>
 
           <Link to="/" className="flex items-center gap-3">
-            <span className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-500 via-purple-500 to-blue-500">
+            <span className="inline-flex h-12 w-12 items-center justify-center rounded-2xl">
               <img src="/src/assets/logo.png" alt="Arcade home" className="h-9 w-9" />
             </span>
             <span className="hidden text-lg font-semibold tracking-wide text-indigo-100 sm:inline">

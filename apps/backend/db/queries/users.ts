@@ -234,6 +234,88 @@ export function updateUsername(uuid: string, username: string): boolean {
   }
 }
 
+export function updateEmail(uuid: string, email: string): boolean {
+  try {
+    const result = db
+      .prepare(
+        `
+			UPDATE Users
+			SET email = ?
+			WHERE uuid = ?
+			`,
+      )
+      .run(email, uuid);
+    return result.changes === 1;
+  } catch (error) {
+    return false;
+  }
+}
+
+export function purgeExpiredEmailChangeRequests(): number {
+  const result = db
+    .prepare(`DELETE FROM EmailChangeRequests WHERE email_change_expires <= datetime('now')`)
+    .run();
+  return result.changes ?? 0;
+}
+
+export function markEmailChange(uuid: string, newEmail: string, token: string): boolean {
+  const transaction = db.transaction(() => {
+    purgeExpiredEmailChangeRequests();
+    db.prepare(`DELETE FROM EmailChangeRequests WHERE user_uuid = ?`).run(uuid);
+    db.prepare(
+      `
+			INSERT INTO EmailChangeRequests (email_change_token, user_uuid, email_change_new_email, email_change_expires)
+			VALUES (?, ?, ?, datetime('now', '+24 hours'))
+		`,
+    ).run(token, uuid, newEmail);
+  });
+
+  try {
+    transaction();
+    return true;
+  } catch (error) {
+    return false;
+  }
+}
+
+export function confirmEmailChange(token: string): { uuid: string; newEmail: string } | null {
+  const transaction = db.transaction(() => {
+    const request = db
+      .prepare(
+        `
+			SELECT user_uuid, email_change_new_email as new_email
+			FROM EmailChangeRequests
+			WHERE email_change_token = ? AND email_change_expires > datetime('now')
+		`,
+      )
+      .get(token) as { user_uuid: string; new_email: string } | undefined;
+
+    if (!request) throw new Error('Invalid or expired token');
+
+    const updateResult = db
+      .prepare(
+        `
+			UPDATE Users
+			SET email = ?
+			WHERE uuid = ?
+		`,
+      )
+      .run(request.new_email, request.user_uuid);
+
+    if (updateResult.changes === 0) throw new Error('Update failed');
+
+    db.prepare(`DELETE FROM EmailChangeRequests WHERE email_change_token = ?`).run(token);
+
+    return { uuid: request.user_uuid, newEmail: request.new_email };
+  });
+
+  try {
+    return transaction();
+  } catch {
+    return null;
+  }
+}
+
 export function getUserStats(): UserStats[];
 export function getUserStats(uuid: string): UserStats | null;
 export function getUserStats(uuid?: string): UserStats[] | UserStats | null {

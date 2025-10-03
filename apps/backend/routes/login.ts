@@ -70,6 +70,7 @@ export async function loginRoutes(app: FastifyInstance) {
             username: userInDb.username,
             uuid: userInDb.uuid,
             avatar: userInDb.avatar || null,
+            email: userInDb.email,
             tfa: !!userInDb.tfa,
           },
         });
@@ -142,6 +143,7 @@ export async function loginRoutes(app: FastifyInstance) {
             username: user.username,
             uuid: user.uuid,
             avatar: user.avatar || null,
+            email: user.email,
             tfa: true,
           },
         });

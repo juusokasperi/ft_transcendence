@@ -10,6 +10,7 @@ import Confirmation from './pages/Confirmation';
 import PingPong from './pages/pong/pong-homepage';
 import LocalGame from './pages/pong/local/local-game';
 import DeleteUser from './pages/DeleteUser';
+import ConfirmEmail from './pages/ConfirmEmail';
 import OnlineGame from './pages/pong/online-game';
 import ForgotPassword from './pages/ForgotPassword';
 import ResetPassword from './pages/ResetPassword';
@@ -32,6 +33,7 @@ function App() {
             <Route path={'/ping-pong/online'} element={<OnlineGame />} />
             <Route path={'/confirm/:confirmationToken'} element={<Confirmation />} />
             <Route path={'/delete-user/:confirmationToken'} element={<DeleteUser />} />
+            <Route path={'/confirm-email/:token'} element={<ConfirmEmail />} />
             <Route path={'/profile'} element={<Layout />}>
               <Route index element={<Profile />} />
               <Route path={'/profile/stats'} element={<Stats />} />
