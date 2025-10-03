@@ -52,11 +52,13 @@ export function stepBallTOIInPlace(
     if (tSouth <= remaining) candidates.push({ kind: 'south', t: tSouth });
     if (tLeft <= remaining) {
       const zHit = z + vz * tLeft;
-      if (Math.abs(zHit - s.paddles.east.z) <= halfDepth) candidates.push({ kind: 'left', t: tLeft, zHit });
+      if (Math.abs(zHit - s.paddles.east.z) <= halfDepth)
+        candidates.push({ kind: 'left', t: tLeft, zHit });
     }
     if (tRight <= remaining) {
       const zHit = z + vz * tRight;
-      if (Math.abs(zHit - s.paddles.west.z) <= halfDepth) candidates.push({ kind: 'right', t: tRight, zHit });
+      if (Math.abs(zHit - s.paddles.west.z) <= halfDepth)
+        candidates.push({ kind: 'right', t: tRight, zHit });
     }
 
     // Choose earliest
@@ -86,7 +88,12 @@ export function stepBallTOIInPlace(
       ball.vx = vx;
       ball.vz = vzOut;
       if (!events.wallHit) {
-        events.wallHit = { side: hit.kind === 'north' ? 'north' : 'south', x: xHit, z: zHit, vzAbs: Math.abs(vzIn) };
+        events.wallHit = {
+          side: hit.kind === 'north' ? 'north' : 'south',
+          x: xHit,
+          z: zHit,
+          vzAbs: Math.abs(vzIn),
+        };
       }
     } else if (hit.kind === 'left' || hit.kind === 'right') {
       const plane = hit.kind === 'left' ? leftPlane : rightPlane;

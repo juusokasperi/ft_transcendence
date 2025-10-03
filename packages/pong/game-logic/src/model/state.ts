@@ -136,20 +136,20 @@ export function createInitialState(
     serviceTurnsLeft: servesPerTurn,
 
     bounds,
-      params: {
-        paddleSpeed: 2.2,
-        ballSpeed: 1.8, // Avoid setting ballSpeed from 1.41 to 1.59 due to known physics instability in this range, which can cause predictable ball trajectories and gameplay bugs.
-        zEnglish: 0.75,
-        restitutionWall: 1.0,
-        serveAngleDeg: 0,
-        targetScore,
-        winBy,
-        servesPerTurn,
-        deuceServesPerTurn,
-        deuceAt,
-        bestOf,
-        targetGames,
-      },
+    params: {
+      paddleSpeed: 2.2,
+      ballSpeed: 1.8, // Avoid setting ballSpeed from 1.41 to 1.59 due to known physics instability in this range, which can cause predictable ball trajectories and gameplay bugs.
+      zEnglish: 0.75,
+      restitutionWall: 1.0,
+      serveAngleDeg: 0,
+      targetScore,
+      winBy,
+      servesPerTurn,
+      deuceServesPerTurn,
+      deuceAt,
+      bestOf,
+      targetGames,
+    },
     playerAtEnd: p1AtEast ? { east: 'P1', west: 'P2' } : { east: 'P2', west: 'P1' },
   };
 }

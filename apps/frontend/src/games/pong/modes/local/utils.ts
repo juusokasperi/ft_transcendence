@@ -27,7 +27,6 @@ export function setHudAndPaletteColorsFromPrefs(
   setPaddleColors(leftRGB, rightRGB);
 }
 
-
 /**
  * Compute a safe serve angle (in degrees) so the ball won't hit side walls
  * before reaching the paddle plane, leaving a small padding from the borders.
@@ -62,7 +61,7 @@ export function pickSafeServeAngleDeg(
   // Draw two independent uniforms for magnitude and sign. Increase range to 35%..95%
   const u = rng();
   const v = rng();
-  const magFrac = 0.35 + 0.60 * u; // 0.35..0.95 of safe envelope
+  const magFrac = 0.35 + 0.6 * u; // 0.35..0.95 of safe envelope
   const signed = v * 2 - 1; // [-1, 1]
   const deg = isFinite(maxAngleDeg) ? signed * maxAngleDeg * magFrac : 0;
   return deg;

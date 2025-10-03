@@ -4,7 +4,6 @@ export type BotSeat = 'P1' | 'P2';
 
 export type BotDifficulty = 'easy' | 'normal' | 'hard';
 
-
 export type Observation = {
   ball: { x: number; z: number; vx: number; vz: number };
   paddles: { P1: { z: number }; P2: { z: number } };
@@ -175,7 +174,9 @@ function buildPlan(obs: Observation, seat: BotSeat, profile: DifficultyProfile):
   })();
   const paddleZ = obs.paddlesByEnd
     ? obs.paddlesByEnd[effectiveEnd].z
-    : (effectiveEnd === 'east' ? obs.paddles.P1.z : obs.paddles.P2.z);
+    : effectiveEnd === 'east'
+      ? obs.paddles.P1.z
+      : obs.paddles.P2.z;
   const zLimit = obs.bounds.halfWidthZ - obs.bounds.ballRadius;
 
   let desired = 0;
