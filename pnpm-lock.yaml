@@ -80,6 +80,9 @@ importers:
 
   apps/allocator:
     dependencies:
+      '@pong/shared':
+        specifier: workspace:*
+        version: link:../../packages/pong/shared
       axios:
         specifier: ^1.12.0
         version: 1.12.2
@@ -277,6 +280,9 @@ importers:
 
   apps/game-gateway:
     dependencies:
+      '@pong/shared':
+        specifier: workspace:*
+        version: link:../../packages/pong/shared
       dotenv:
         specifier: ^17.2.2
         version: 17.2.2
@@ -326,6 +332,9 @@ importers:
 
   apps/matchmaking:
     dependencies:
+      '@pong/shared':
+        specifier: workspace:*
+        version: link:../../packages/pong/shared
       axios:
         specifier: ^1.12.0
         version: 1.12.2

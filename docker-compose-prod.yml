@@ -24,7 +24,10 @@ services:
   backend:
     build:
       context: .
-      dockerfile: ./apps/backend/prod.dockerfile
+      dockerfile: ./node.template.dockerfile
+      args:
+        SERVICE_NAME: api
+        SERVICE_DIR: backend
     image: ft-transcendence-backend-prod:latest
     restart: unless-stopped
     env_file:
@@ -76,7 +79,10 @@ services:
   matchmaking-service:
     build:
       context: .
-      dockerfile: ./apps/matchmaking/prod.dockerfile
+      dockerfile: ./node.template.dockerfile
+      args:
+        SERVICE_NAME: matchmaking
+        SERVICE_DIR: matchmaking
     image: ft-transcendence-matchmaking-prod:latest
     restart: unless-stopped
     env_file:
@@ -92,7 +98,10 @@ services:
   game-server: &game-server-template
     build:
       context: .
-      dockerfile: ./apps/game-server/prod.dockerfile
+      dockerfile: ./node.template.dockerfile
+      args:
+        SERVICE_NAME: game-server
+        SERVICE_DIR: game-server
     image: ft-transcendence-game-server-prod:latest
     restart: unless-stopped
     env_file:
@@ -109,7 +118,10 @@ services:
   allocator:
     build:
       context: .
-      dockerfile: ./apps/allocator/prod.dockerfile
+      dockerfile: ./node.template.dockerfile
+      args:
+        SERVICE_NAME: allocator
+        SERVICE_DIR: allocator
     image: ft-transcendence-allocator-prod:latest
     restart: unless-stopped
     env_file:
@@ -136,7 +148,10 @@ services:
   scorer:
     build:
       context: .
-      dockerfile: ./apps/scorer/prod.dockerfile
+      dockerfile: ./node.template.dockerfile
+      args:
+        SERVICE_NAME: scorer
+        SERVICE_DIR: scorer
     image: ft-transcendence-scorer-prod:latest
     restart: unless-stopped
     env_file:
@@ -155,7 +170,10 @@ services:
   game-gateway:
     build:
       context: .
-      dockerfile: ./apps/game-gateway/prod.dockerfile
+      dockerfile: ./node.template.dockerfile
+      args:
+        SERVICE_NAME: game-gateway
+        SERVICE_DIR: game-gateway
     image: ft-transcendence-game-gateway-prod:latest
     restart: unless-stopped
     env_file:
