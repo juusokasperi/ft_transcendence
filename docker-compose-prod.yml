@@ -76,7 +76,6 @@ services:
     logging: *logstash-logging
 
   # Matchmaking service
-  # TODO: depends on Redis?
   matchmaking-service:
     build:
       context: .
@@ -96,7 +95,6 @@ services:
     logging: *logstash-logging
 
   # Game server(s)
-  # TODO: depends on Redis?
   game-server: &game-server-template
     build:
       context: .

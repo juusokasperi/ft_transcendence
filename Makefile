@@ -280,7 +280,7 @@ overview-docker:
 help:
 	@echo "Usage:"
 	@echo "  make / make up            # Build & start default stack [uses Buildx '$(BUILDER)']"
-	@echo "  make up-prod              # Build & start prod stack [uses Buildx '$(BUILDER)']"
+	@echo "  make prod                 # Build & start prod stack [uses Buildx '$(BUILDER)']"
 	@echo "  make detached-prod        # Build & start prod stack but detached"
 	@echo "  make detached             # Same as 'up', but detached (-d)"
 	@echo "  make elk                  # Start compose profile 'elk' (attached)"

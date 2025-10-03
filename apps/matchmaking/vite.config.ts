@@ -7,7 +7,6 @@ export default defineConfig({
   resolve: {
     alias: {
       // Map workspace packages to their source
-      // '@pong/game-logic': path.resolve(__dirname, '../../packages/pong/game-logic/src/index.ts'),
       '@pong/shared': path.resolve(__dirname, '../../packages/pong/shared/src/'),
     },
   },
