@@ -168,3 +168,92 @@ export const MatchPlayerStatsArraySchema = {
   minItems: 1,
   items: MatchPlayerStatsItemSchema,
 };
+
+export const TournamentStatusSchema = {
+  type: 'string',
+  minLength: 3,
+  maxLength: 32,
+  description: 'Lifecycle status for a tournament (draft, scheduled, active, completed, etc.)',
+};
+
+export const TournamentFormatSchema = {
+  type: 'string',
+  minLength: 3,
+  maxLength: 48,
+  description: 'Identifier for the tournament format, such as single_elimination',
+};
+
+export const TournamentSchema = {
+  type: 'object',
+  additionalProperties: false,
+  properties: {
+    id: { type: 'integer', minimum: 1 },
+    name: { type: 'string', minLength: 1 },
+    description: { type: 'string' },
+    format: TournamentFormatSchema,
+    status: TournamentStatusSchema,
+    maxParticipants: { anyOf: [{ type: 'integer', minimum: 1 }, { type: 'null' }] },
+    startAt: { anyOf: [{ type: 'string', format: 'date-time' }, { type: 'null' }] },
+    completedAt: { anyOf: [{ type: 'string', format: 'date-time' }, { type: 'null' }] },
+    createdAt: { type: 'string', format: 'date-time' },
+    updatedAt: { type: 'string', format: 'date-time' },
+  },
+  required: ['id', 'name', 'description', 'format', 'status', 'createdAt', 'updatedAt'],
+};
+
+export const TournamentParticipantStatusSchema = {
+  type: 'string',
+  minLength: 3,
+  maxLength: 32,
+  description: 'Registration status for a participant (pending, accepted, eliminated, etc.)',
+};
+
+export const TournamentParticipantSchema = {
+  type: 'object',
+  additionalProperties: false,
+  properties: {
+    id: { type: 'integer', minimum: 1 },
+    tournamentId: { type: 'integer', minimum: 1 },
+    userUuid: { anyOf: [{ type: 'string', format: 'uuid' }, { type: 'null' }] },
+    alias: { type: 'string', minLength: 1 },
+    seed: { anyOf: [{ type: 'integer', minimum: 1 }, { type: 'null' }] },
+    status: TournamentParticipantStatusSchema,
+    joinedAt: { type: 'string', format: 'date-time' },
+  },
+  required: ['id', 'tournamentId', 'alias', 'status', 'joinedAt'],
+};
+
+export const TournamentMatchStatusSchema = {
+  type: 'string',
+  minLength: 3,
+  maxLength: 32,
+  description: 'Status for a bracket match (pending, scheduled, in_progress, completed, etc.)',
+};
+
+export const TournamentMatchSchema = {
+  type: 'object',
+  additionalProperties: false,
+  properties: {
+    id: { type: 'integer', minimum: 1 },
+    tournamentId: { type: 'integer', minimum: 1 },
+    roundNumber: { type: 'integer', minimum: 1 },
+    roundPosition: { type: 'integer', minimum: 1 },
+    status: TournamentMatchStatusSchema,
+    matchId: { anyOf: [{ type: 'integer', minimum: 1 }, { type: 'null' }] },
+    scheduledAt: { anyOf: [{ type: 'string', format: 'date-time' }, { type: 'null' }] },
+    completedAt: { anyOf: [{ type: 'string', format: 'date-time' }, { type: 'null' }] },
+  },
+  required: ['id', 'tournamentId', 'roundNumber', 'roundPosition', 'status'],
+};
+
+export const TournamentMatchPlayerSchema = {
+  type: 'object',
+  additionalProperties: false,
+  properties: {
+    id: { type: 'integer', minimum: 1 },
+    tournamentMatchId: { type: 'integer', minimum: 1 },
+    participantId: { type: 'integer', minimum: 1 },
+    teamNumber: { type: 'integer', minimum: 1 },
+  },
+  required: ['id', 'tournamentMatchId', 'participantId', 'teamNumber'],
+};
