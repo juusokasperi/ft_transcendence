@@ -45,6 +45,7 @@ export function listTournaments(options?: { status?: string }): Tournament[] {
 
 export function createTournament(input: CreateTournamentInput): Tournament | undefined {
   try {
+    const maxParticipants = input.maxParticipants ?? 4;
     const result = db
       .prepare(
         `
@@ -63,7 +64,7 @@ export function createTournament(input: CreateTournamentInput): Tournament | und
         input.description ?? '',
         input.format ?? 'single_elimination',
         input.status ?? 'draft',
-        input.maxParticipants ?? null,
+        maxParticipants,
         input.startAt ?? null,
       );
 

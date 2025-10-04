@@ -41,20 +41,27 @@ describe('tournamentOrchestrator', () => {
 
     const summary = generateSingleEliminationBracket(tournament!.id);
     expect(summary.skippedReason).toBeUndefined();
-    expect(summary.createdMatches).toBe(3);
+    expect(summary.createdMatches).toBe(4);
     expect(summary.totalRounds).toBe(2);
     expect(summary.assignedParticipants).toBe(4);
 
     const matches = listTournamentMatches(tournament!.id);
-    expect(matches).toHaveLength(3);
+    expect(matches).toHaveLength(4);
 
     const roundOneMatches = matches.filter((match) => match.roundNumber === 1);
     expect(roundOneMatches).toHaveLength(2);
+    const roundTwoMatches = matches.filter((match) => match.roundNumber === 2);
+    expect(roundTwoMatches).toHaveLength(2);
 
     const matchOnePlayers = listTournamentMatchPlayers(roundOneMatches[0].id);
     const matchTwoPlayers = listTournamentMatchPlayers(roundOneMatches[1].id);
     expect(matchOnePlayers).toHaveLength(2);
     expect(matchTwoPlayers).toHaveLength(2);
+
+    const finalPlayers = listTournamentMatchPlayers(roundTwoMatches[0].id);
+    const bronzePlayers = listTournamentMatchPlayers(roundTwoMatches[1].id);
+    expect(finalPlayers).toHaveLength(0);
+    expect(bronzePlayers).toHaveLength(0);
   });
 
   it('skips generation when insufficient participants', async () => {
@@ -63,7 +70,7 @@ describe('tournamentOrchestrator', () => {
 
     const tournament = createTournament({ name: 'Tiny Cup' });
     const summary = generateSingleEliminationBracket(tournament!.id);
-    expect(summary.skippedReason).toBe('insufficientParticipants');
+    expect(summary.skippedReason).toBe('awaitingParticipants');
     expect(summary.createdMatches).toBe(0);
   });
 
@@ -76,6 +83,8 @@ describe('tournamentOrchestrator', () => {
     const tournament = createTournament({ name: 'Repeat Cup' });
     createTournamentParticipant({ tournamentId: tournament!.id, alias: 'Alpha' });
     createTournamentParticipant({ tournamentId: tournament!.id, alias: 'Bravo' });
+    createTournamentParticipant({ tournamentId: tournament!.id, alias: 'Charlie' });
+    createTournamentParticipant({ tournamentId: tournament!.id, alias: 'Delta' });
 
     const first = generateSingleEliminationBracket(tournament!.id);
     expect(first.createdMatches).toBeGreaterThan(0);

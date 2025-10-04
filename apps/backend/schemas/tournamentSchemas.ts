@@ -14,6 +14,33 @@ import {
 } from './fieldSchemas.ts';
 import { USER_ROUTE_SECURITY } from './userSchemas.ts';
 
+const BracketSummarySchema = {
+  type: 'object',
+  additionalProperties: false,
+  properties: {
+    tournamentId: { type: 'integer', minimum: 1 },
+    participantCount: { type: 'integer', minimum: 0 },
+    bracketSize: { type: 'integer', minimum: 0 },
+    totalRounds: { type: 'integer', minimum: 0 },
+    createdMatches: { type: 'integer', minimum: 0 },
+    assignedParticipants: { type: 'integer', minimum: 0 },
+    skippedReason: {
+      anyOf: [
+        { type: 'string', enum: ['awaitingParticipants', 'matchesAlreadyExist'] },
+        { type: 'null' },
+      ],
+    },
+  },
+  required: [
+    'tournamentId',
+    'participantCount',
+    'bracketSize',
+    'totalRounds',
+    'createdMatches',
+    'assignedParticipants',
+  ],
+};
+
 const tournamentIdParams = {
   type: 'object',
   required: ['tournamentId'],
@@ -92,7 +119,15 @@ export const updateTournamentStatusSchema = {
     additionalProperties: false,
   },
   response: {
-    200: TournamentSchema,
+    200: {
+      type: 'object',
+      additionalProperties: false,
+      properties: {
+        tournament: TournamentSchema,
+        bracketSummary: BracketSummarySchema,
+      },
+      required: ['tournament'],
+    },
     400: ValidationErrorResponseSchema,
     404: ErrorResponseSchema,
     500: ErrorResponseSchema,
@@ -151,7 +186,28 @@ export const createParticipantSchema = {
     additionalProperties: false,
   },
   response: {
-    201: TournamentParticipantSchema,
+    201: {
+      type: 'object',
+      additionalProperties: false,
+      properties: {
+        participant: TournamentParticipantSchema,
+        activation: {
+          anyOf: [
+            {
+              type: 'object',
+              additionalProperties: false,
+              properties: {
+                tournament: TournamentSchema,
+                bracketSummary: BracketSummarySchema,
+              },
+              required: ['tournament', 'bracketSummary'],
+            },
+            { type: 'null' },
+          ],
+        },
+      },
+      required: ['participant'],
+    },
     400: ValidationErrorResponseSchema,
     404: ErrorResponseSchema,
     409: ErrorResponseSchema,

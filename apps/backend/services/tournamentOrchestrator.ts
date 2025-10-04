@@ -7,8 +7,9 @@ import {
 } from '../db/queries/tournamentMatches.ts';
 import type {
   TournamentParticipant,
-  TournamentMatch,
 } from '../types/types.ts';
+
+const REQUIRED_PARTICIPANTS = 4;
 
 export type BracketGenerationSummary = {
   tournamentId: number;
@@ -17,7 +18,7 @@ export type BracketGenerationSummary = {
   totalRounds: number;
   createdMatches: number;
   assignedParticipants: number;
-  skippedReason?: 'insufficientParticipants' | 'matchesAlreadyExist';
+  skippedReason?: 'awaitingParticipants' | 'matchesAlreadyExist';
 };
 
 function sortParticipantsForBracket(participants: TournamentParticipant[]): TournamentParticipant[] {
@@ -46,91 +47,75 @@ function sortParticipantsForBracket(participants: TournamentParticipant[]): Tour
   return withMeta.map((item) => item.participant);
 }
 
-function nextPowerOfTwo(n: number): number {
-  if (n <= 0) return 0;
-  return 1 << Math.ceil(Math.log2(n));
-}
-
+// Call this after registration closes to lock in the bracket.
 export function generateSingleEliminationBracket(tournamentId: number): BracketGenerationSummary {
-  const participants = listTournamentParticipants(tournamentId);
+  const participants = sortParticipantsForBracket(listTournamentParticipants(tournamentId));
   const participantCount = participants.length;
 
-  if (participantCount < 2) {
+  if (participantCount < REQUIRED_PARTICIPANTS) {
     return {
       tournamentId,
       participantCount,
-      bracketSize: participantCount,
-      totalRounds: 0,
+      bracketSize: REQUIRED_PARTICIPANTS,
+      totalRounds: 2,
       createdMatches: 0,
       assignedParticipants: 0,
-      skippedReason: 'insufficientParticipants',
+      skippedReason: 'awaitingParticipants',
     };
   }
 
   const existingMatches = listTournamentMatches(tournamentId);
   if (existingMatches.length > 0) {
-    const bracketSize = nextPowerOfTwo(participantCount) || participantCount;
-    const totalRounds = Math.max(1, Math.ceil(Math.log2(bracketSize || 1)));
     return {
       tournamentId,
-      participantCount,
-      bracketSize,
-      totalRounds,
+      participantCount: REQUIRED_PARTICIPANTS,
+      bracketSize: REQUIRED_PARTICIPANTS,
+      totalRounds: 2,
       createdMatches: 0,
       assignedParticipants: 0,
       skippedReason: 'matchesAlreadyExist',
     };
   }
 
-  const sortedParticipants = sortParticipantsForBracket(participants);
-  const bracketSize = nextPowerOfTwo(sortedParticipants.length);
-  const totalRounds = Math.max(1, Math.ceil(Math.log2(bracketSize)));
-
-  const slots: Array<TournamentParticipant | null> = Array(bracketSize).fill(null);
-  sortedParticipants.forEach((participant, index) => {
-    slots[index] = participant;
-  });
+  const seeded: Array<TournamentParticipant | undefined> = participants.slice(0, REQUIRED_PARTICIPANTS);
+  while (seeded.length < REQUIRED_PARTICIPANTS) seeded.push(undefined);
 
   const transaction = db.transaction(() => {
     let createdMatches = 0;
     let assignedParticipants = 0;
 
-    for (let round = 1; round <= totalRounds; round += 1) {
-      const matchesInRound = bracketSize / Math.pow(2, round);
-      for (let position = 1; position <= matchesInRound; position += 1) {
-        const match = createTournamentMatch({
-          tournamentId,
-          roundNumber: round,
-          roundPosition: position,
+    const matchDefinitions = [
+      { roundNumber: 1, roundPosition: 1, slots: [0, 3] },
+      { roundNumber: 1, roundPosition: 2, slots: [1, 2] },
+      { roundNumber: 2, roundPosition: 1, slots: null },
+      { roundNumber: 2, roundPosition: 2, slots: null },
+    ] as const;
+
+    for (const def of matchDefinitions) {
+      const match = createTournamentMatch({
+        tournamentId,
+        roundNumber: def.roundNumber,
+        roundPosition: def.roundPosition,
+      });
+      if (!match) throw new Error('Failed to create tournament match');
+      createdMatches += 1;
+
+      if (def.slots) {
+        def.slots.forEach((slotIndex, teamIdx) => {
+          const participant = seeded[slotIndex];
+          if (!participant) return;
+          const assignment = addTournamentMatchPlayer(match.id, participant.id, teamIdx + 1);
+          if (!assignment) throw new Error('Failed to assign participant to match slot');
+          assignedParticipants += 1;
         });
-
-        if (!match) throw new Error('Failed to create tournament match');
-        createdMatches += 1;
-
-        if (round === 1) {
-          const slotIndex = (position - 1) * 2;
-          const participantA = slots[slotIndex] ?? null;
-          const participantB = slots[slotIndex + 1] ?? null;
-
-          if (participantA) {
-            const assignment = addTournamentMatchPlayer(match.id, participantA.id, 1);
-            if (!assignment) throw new Error('Failed to assign participant to slot 1');
-            assignedParticipants += 1;
-          }
-          if (participantB) {
-            const assignment = addTournamentMatchPlayer(match.id, participantB.id, 2);
-            if (!assignment) throw new Error('Failed to assign participant to slot 2');
-            assignedParticipants += 1;
-          }
-        }
       }
     }
 
     return {
       tournamentId,
-      participantCount: sortedParticipants.length,
-      bracketSize,
-      totalRounds,
+      participantCount: REQUIRED_PARTICIPANTS,
+      bracketSize: REQUIRED_PARTICIPANTS,
+      totalRounds: 2,
       createdMatches,
       assignedParticipants,
     } satisfies BracketGenerationSummary;

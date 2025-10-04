@@ -7,6 +7,7 @@ import {
   markTournamentCompleted,
   updateTournamentStatus,
 } from '../db/queries/tournaments.ts';
+import { generateSingleEliminationBracket } from '../services/tournamentOrchestrator.ts';
 import {
   createTournamentParticipant,
   getTournamentParticipantById,
@@ -119,9 +120,28 @@ export async function tournamentRoutes(app: FastifyInstance) {
       try {
         const { tournamentId } = req.params as { tournamentId: number };
         const { status } = req.body as { status: string };
+        const current = getTournamentById(tournamentId);
+        if (!current) return res.status(404).send({ message: 'Tournament not found' });
+
+        if (status === 'active') {
+          const participants = listTournamentParticipants(tournamentId);
+          const maxParticipants = current.maxParticipants ?? 4;
+          if (participants.length !== maxParticipants)
+            return res.status(409).send({ message: 'Tournament requires 4 participants before activation' });
+        }
+
         const updated = updateTournamentStatus(tournamentId, status);
         if (!updated) return res.status(404).send({ message: 'Tournament not found' });
-        return res.status(200).send(updated);
+
+        let bracketSummary;
+        if (current.status !== 'active' && updated.status === 'active') {
+          bracketSummary = generateSingleEliminationBracket(tournamentId);
+        }
+
+        const responsePayload: Record<string, unknown> = { tournament: updated };
+        if (bracketSummary) responsePayload.bracketSummary = bracketSummary;
+
+        return res.status(200).send(responsePayload);
       } catch (error) {
         req.log.error({ error }, 'Failed to update tournament status');
         return res.status(500).send({ message: 'Failed to update tournament status' });
@@ -180,10 +200,29 @@ export async function tournamentRoutes(app: FastifyInstance) {
           seed?: number | null;
           status?: string;
         };
+
+        const tournament = getTournamentById(tournamentId);
+        if (!tournament) return res.status(404).send({ message: 'Tournament not found' });
+
+        const currentParticipants = listTournamentParticipants(tournamentId);
+        const maxParticipants = tournament.maxParticipants ?? 4;
+        if (currentParticipants.length >= maxParticipants)
+          return res.status(409).send({ message: 'Tournament already has maximum participants' });
+
         const participant = createTournamentParticipant({ tournamentId, ...body });
         if (!participant)
           return res.status(409).send({ message: 'Unable to register participant with provided data' });
-        return res.status(201).send(participant);
+
+        const allParticipants = listTournamentParticipants(tournamentId);
+        let activation;
+        if (tournament.status !== 'active' && allParticipants.length === maxParticipants) {
+          const updated = updateTournamentStatus(tournamentId, 'active');
+          if (!updated) return res.status(500).send({ message: 'Failed to activate tournament' });
+          const bracketSummary = generateSingleEliminationBracket(tournamentId);
+          activation = { tournament: updated, bracketSummary };
+        }
+
+        return res.status(201).send({ participant, activation });
       } catch (error) {
         req.log.error({ error }, 'Failed to create participant');
         return res.status(500).send({ message: 'Failed to create participant' });

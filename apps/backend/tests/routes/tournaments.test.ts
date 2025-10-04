@@ -46,9 +46,14 @@ vi.mock('../../db/queries/tournamentMatches.ts', () => ({
   clearTournamentMatchPlayers: vi.fn(),
 }));
 
+vi.mock('../../services/tournamentOrchestrator.ts', () => ({
+  generateSingleEliminationBracket: vi.fn(),
+}));
+
 import * as tournamentQueries from '../../db/queries/tournaments.ts';
 import * as participantQueries from '../../db/queries/tournamentParticipants.ts';
 import * as matchQueries from '../../db/queries/tournamentMatches.ts';
+import * as orchestrator from '../../services/tournamentOrchestrator.ts';
 import { tournamentRoutes } from '../../routes/tournaments.ts';
 import { signAccessToken } from '../../utils/jwt.ts';
 
@@ -67,7 +72,7 @@ const sampleTournament = {
   description: '',
   format: 'single_elimination',
   status: 'draft',
-  maxParticipants: null,
+  maxParticipants: 4,
   startAt: null,
   completedAt: null,
   createdAt: new Date().toISOString(),
@@ -100,6 +105,16 @@ const sampleMatchPlayer = {
   tournamentMatchId: 99,
   participantId: 10,
   teamNumber: 1,
+};
+
+const sampleBracketSummary = {
+  tournamentId: 1,
+  participantCount: 4,
+  bracketSize: 4,
+  totalRounds: 2,
+  createdMatches: 4,
+  assignedParticipants: 4,
+  skippedReason: null,
 };
 
 describe('Tournament routes', () => {
@@ -164,7 +179,11 @@ describe('Tournament routes', () => {
   });
 
   it('PATCH /api/tournaments/:id/status updates status', async () => {
+    const participants = [sampleParticipant, { ...sampleParticipant, id: 11 }, { ...sampleParticipant, id: 12 }, { ...sampleParticipant, id: 13 }];
+    (tournamentQueries.getTournamentById as Mock).mockReturnValue(sampleTournament);
+    (participantQueries.listTournamentParticipants as Mock).mockReturnValue(participants);
     (tournamentQueries.updateTournamentStatus as Mock).mockReturnValue({ ...sampleTournament, status: 'active' });
+    (orchestrator.generateSingleEliminationBracket as Mock).mockReturnValue(sampleBracketSummary);
 
     const res = await app.inject({
       method: 'PATCH',
@@ -174,7 +193,10 @@ describe('Tournament routes', () => {
     });
 
     expect(res.statusCode).toBe(200);
-    expect(res.json().status).toBe('active');
+    const payload = res.json();
+    expect(payload.tournament.status).toBe('active');
+    expect(payload.bracketSummary).toEqual(sampleBracketSummary);
+    expect(orchestrator.generateSingleEliminationBracket).toHaveBeenCalledWith(1);
   });
 
   it('POST /api/tournaments/:id/complete marks tournament completed', async () => {
@@ -204,6 +226,10 @@ describe('Tournament routes', () => {
   });
 
   it('POST /api/tournaments/:id/participants creates participant', async () => {
+    (tournamentQueries.getTournamentById as Mock).mockReturnValue(sampleTournament);
+    (participantQueries.listTournamentParticipants as Mock)
+      .mockReturnValueOnce([])
+      .mockReturnValueOnce([sampleParticipant]);
     (participantQueries.createTournamentParticipant as Mock).mockReturnValue(sampleParticipant);
 
     const res = await app.inject({
@@ -214,11 +240,48 @@ describe('Tournament routes', () => {
     });
 
     expect(res.statusCode).toBe(201);
-    expect(res.json()).toEqual(sampleParticipant);
+    expect(res.json()).toEqual({ participant: sampleParticipant });
     expect(participantQueries.createTournamentParticipant).toHaveBeenCalledWith({
       tournamentId: 1,
       alias: 'PlayerOne',
     });
+    expect(tournamentQueries.updateTournamentStatus).not.toHaveBeenCalled();
+  });
+
+  it('POST /api/tournaments/:id/participants auto-activates at capacity', async () => {
+    const draftTournament = { ...sampleTournament, status: 'draft' };
+    const existingParticipants = [
+      { ...sampleParticipant, id: 2, alias: 'Alpha' },
+      { ...sampleParticipant, id: 3, alias: 'Bravo' },
+      { ...sampleParticipant, id: 4, alias: 'Charlie' },
+    ];
+    const afterAdd = [...existingParticipants, sampleParticipant];
+
+    (tournamentQueries.getTournamentById as Mock).mockReturnValue(draftTournament);
+    (participantQueries.listTournamentParticipants as Mock)
+      .mockReturnValueOnce(existingParticipants)
+      .mockReturnValueOnce(afterAdd);
+    (participantQueries.createTournamentParticipant as Mock).mockReturnValue(sampleParticipant);
+    (tournamentQueries.updateTournamentStatus as Mock).mockReturnValue({ ...sampleTournament, status: 'active' });
+    (orchestrator.generateSingleEliminationBracket as Mock).mockReturnValue(sampleBracketSummary);
+
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/tournaments/1/participants',
+      headers: makeAuthHeader(),
+      body: { alias: 'PlayerFour' },
+    });
+
+    expect(res.statusCode).toBe(201);
+    expect(res.json()).toEqual({
+      participant: sampleParticipant,
+      activation: {
+        tournament: { ...sampleTournament, status: 'active' },
+        bracketSummary: sampleBracketSummary,
+      },
+    });
+    expect(tournamentQueries.updateTournamentStatus).toHaveBeenCalledWith(1, 'active');
+    expect(orchestrator.generateSingleEliminationBracket).toHaveBeenCalledWith(1);
   });
 
   it('PATCH /api/tournaments/:id/participants/:participantId updates participant', async () => {
