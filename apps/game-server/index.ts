@@ -34,7 +34,7 @@ const app = fastify({ logger: true });
 await app.register(websocket);
 
 interface Player {
-  socket: any;
+  socket: WebSocket;
   seat: 'P1' | 'P2';
   axis: number;
   playerIdentifier: string;
