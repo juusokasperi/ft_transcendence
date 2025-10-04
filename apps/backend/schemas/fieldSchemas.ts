@@ -74,7 +74,7 @@ export const StatsSchema = {
   required: Object.keys(BaseStatsProperties),
 };
 
-export const MyStatsSchema = {
+export const UserStatsSchema = {
   type: 'object',
   additionalProperties: false,
   properties: {

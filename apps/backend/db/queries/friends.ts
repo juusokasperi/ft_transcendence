@@ -1,5 +1,5 @@
 import db from '../client.ts';
-import type { PublicUser, UserStats } from '../../types/types.ts';
+import type { FriendshipStatus, PublicUser, UserStats } from '../../types/types.ts';
 import type { PublicUserDb, UserStatsDb } from '../../types/dbtypes.ts';
 
 export function getFriends(user1Uuid: string): UserStats[] {
@@ -170,5 +170,36 @@ export function deleteFriend(user1Uuid: string, user2Uuid: string): boolean {
     return result.changes === 1;
   } catch (error) {
     return false;
+  }
+}
+
+export function getFriendshipStatus(user1Uuid: string, user2Uuid: string): FriendshipStatus {
+  try {
+    const row = db
+      .prepare(
+        `
+      SELECT friend_1_uuid, friend_2_uuid, accepted
+      FROM Friends
+      WHERE (
+        (friend_1_uuid = ? AND friend_2_uuid = ?)
+        OR
+        (friend_1_uuid = ? AND friend_2_uuid = ?)
+      )
+      LIMIT 1
+      `,
+      )
+      .get(user1Uuid, user2Uuid, user2Uuid, user1Uuid) as {
+      friend_1_uuid: string;
+      friend_2_uuid: string;
+      accepted: number;
+    };
+
+    if (!row) return 'none';
+    if (row.accepted) return 'friends';
+    if (row.friend_1_uuid === user1Uuid) return 'request_sent';
+    if (row.friend_2_uuid === user1Uuid) return 'request_received';
+    return 'none';
+  } catch (error) {
+    return 'none';
   }
 }

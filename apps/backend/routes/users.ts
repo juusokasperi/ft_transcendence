@@ -47,7 +47,11 @@ import {
   twoFactorConfirmSchema,
   twoFactorDisableSchema,
 } from '../schemas/userSchemas.ts';
-import { getUserMatchesSchema, getMyStatsSchema } from '../schemas/matchSchemas.ts';
+import {
+  getUserMatchesSchema,
+  getMyStatsSchema,
+  getUserStatsSchema,
+} from '../schemas/matchSchemas.ts';
 import {
   beginTwoFactorEnrollment,
   completeTwoFactorEnrollment,
@@ -77,16 +81,23 @@ export async function userRoutes(app: FastifyInstance) {
   });
 
   // Get a single user
-  app.get('/:uuid', { schema: getUserSchema }, async (req: FastifyRequest, res: FastifyReply) => {
-    try {
-      const { uuid } = req.params as { uuid: string };
-      const user = getUserStats(uuid);
-      if (!user) return res.status(404).send({ message: 'User not found' });
-      res.status(200).send(user);
-    } catch (error) {
-      res.status(500).send({ message: 'Failed to fetch user' });
-    }
-  });
+  app.get(
+    '/:uuid',
+    {
+      schema: getUserSchema,
+      preHandler: [authPreHandler],
+    },
+    async (req: FastifyRequest, res: FastifyReply) => {
+      try {
+        const { uuid } = req.params as { uuid: string };
+        const user = getUserStats(uuid);
+        if (!user) return res.status(404).send({ message: 'User not found' });
+        res.status(200).send(user);
+      } catch (error) {
+        res.status(500).send({ message: 'Failed to fetch user' });
+      }
+    },
+  );
 
   // Current user (for hydration)
   app.get(
@@ -127,6 +138,26 @@ export async function userRoutes(app: FastifyInstance) {
     async (req: FastifyRequest, res: FastifyReply) => {
       try {
         const uuid = req.user!.uuid;
+        const user = getUserByUuid(uuid);
+        if (!user) return res.status(404).send({ message: 'User not found' });
+        const stats = getTotalStatsForUser(uuid);
+        if (!stats) return res.status(500).send({ message: 'Failed to fetch user stats' });
+        return res.status(200).send(stats);
+      } catch (err) {
+        return res.status(500).send({ message: 'Failed to fetch user stats' });
+      }
+    },
+  );
+
+  app.get(
+    '/:uuid/stats',
+    {
+      schema: getUserStatsSchema,
+      preHandler: [authPreHandler],
+    },
+    async (req: FastifyRequest, res: FastifyReply) => {
+      try {
+        const { uuid } = req.params as { uuid: string };
         const user = getUserByUuid(uuid);
         if (!user) return res.status(404).send({ message: 'User not found' });
         const stats = getTotalStatsForUser(uuid);

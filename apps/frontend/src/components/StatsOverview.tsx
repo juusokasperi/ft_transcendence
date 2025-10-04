@@ -1,6 +1,6 @@
-import type { MatchPlayerStats } from '.';
-import { StatBarChartCard, PieChartCard, StatCard } from './Cards';
-import { formatDate } from '.';
+import type { MatchPlayerStats } from '../pages/Stats';
+import { StatBarChartCard, PieChartCard, StatCard } from './StatsCards';
+import { formatDate } from '../utils/formatDate';
 
 const BASE_RANKING = 1000;
 
