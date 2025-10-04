@@ -91,7 +91,7 @@ const FriendshipStatus: React.FC<Props> = ({
           variant="dangerSecondary"
           onClick={() => handleFriendship(false)}
         >
-          Decline
+          Reject
         </Button>
       </div>
     );
