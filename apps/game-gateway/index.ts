@@ -22,7 +22,7 @@ app.server.on('upgrade', async (req, socket, head) => {
 
   if (typeof protocolHeader !== 'string') {
     console.log('[Gateway] Missing Sec-WebSocket-Protocol header for room:', roomId);
-    socket.write('HTTP/1.1 401 Unauthorized\r\nConnection: close\r\n\r\n');
+    socket.write('HTTP/1.1 4401 Unauthorized\r\nConnection: close\r\n\r\n');
     socket.destroy();
     return;
   }
@@ -36,7 +36,7 @@ app.server.on('upgrade', async (req, socket, head) => {
 
   if (!joinToken) {
     console.log('[Gateway] No join token provided for room:', roomId);
-    socket.write('HTTP/1.1 401 Unauthorized\r\nConnection: close\r\n\r\n');
+    socket.write('HTTP/1.1 4401 Unauthorized\r\nConnection: close\r\n\r\n');
     socket.destroy();
     return;
   }
@@ -44,7 +44,7 @@ app.server.on('upgrade', async (req, socket, head) => {
   const claims = verifyJoinToken(joinToken);
   if (!claims || claims.roomIdentifier !== roomId) {
     console.log('[Gateway] Invalid join token for room:', roomId);
-    socket.write('HTTP/1.1 401 Unauthorized\r\nConnection: close\r\n\r\n');
+    socket.write('HTTP/1.1 4401 Unauthorized\r\nConnection: close\r\n\r\n');
     socket.destroy();
     return;
   }
@@ -72,13 +72,13 @@ app.server.on('upgrade', async (req, socket, head) => {
     const setResult = await redis.set(jtiKey, roomId, 'EX', ttlSeconds, 'NX');
     if (setResult !== 'OK') {
       console.log('[Gateway] Join token already consumed', { roomId, jti: claims.jti });
-      socket.write('HTTP/1.1 403 Forbidden\r\nConnection: close\r\n\r\n');
+      socket.write('HTTP/1.1 4403 Forbidden\r\nConnection: close\r\n\r\n');
       socket.destroy();
       return;
     }
   } catch (err) {
     console.error('[Gateway] Failed to persist join token consumption', err);
-    socket.write('HTTP/1.1 500 Internal Server Error\r\nConnection: close\r\n\r\n');
+    socket.write('HTTP/1.1 4500 Internal Server Error\r\nConnection: close\r\n\r\n');
     socket.destroy();
     return;
   }
