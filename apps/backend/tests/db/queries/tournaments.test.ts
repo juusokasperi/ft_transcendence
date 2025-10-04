@@ -29,7 +29,7 @@ describe('Tournament queries', () => {
     expect(tournament!.format).toBe('single_elimination');
     expect(tournament!.status).toBe('draft');
     expect(tournament!.description).toBe('');
-    expect(tournament!.maxParticipants).toBeNull();
+    expect(tournament!.maxParticipants).toBe(4);
     expect(tournament!.startAt).toBeNull();
     expect(tournament!.completedAt).toBeNull();
   });
