@@ -19,14 +19,17 @@ import {
   createTournamentMatch,
   getTournamentMatchById,
   getTournamentMatchPlayerById,
+  listTournamentMatchPlayers,
   listTournamentMatches,
   linkTournamentMatchResult,
   removeTournamentMatchPlayer,
   scheduleTournamentMatch,
   updateTournamentMatchStatus,
+  clearTournamentMatchPlayers,
 } from '../db/queries/tournamentMatches.ts';
 import {
   addMatchPlayerSchema,
+  clearMatchPlayersSchema,
   completeTournamentSchema,
   createMatchSchema,
   createParticipantSchema,
@@ -34,6 +37,7 @@ import {
   deleteMatchPlayerSchema,
   deleteParticipantSchema,
   getTournamentSchema,
+  listMatchPlayersSchema,
   listMatchesSchema,
   listParticipantsSchema,
   listTournamentsSchema,
@@ -326,6 +330,48 @@ export async function tournamentRoutes(app: FastifyInstance) {
       } catch (error) {
         req.log.error({ error }, 'Failed to update tournament match');
         return res.status(500).send({ message: 'Failed to update tournament match' });
+      }
+    },
+  );
+
+  app.get(
+    '/:tournamentId/matches/:matchId/players',
+    {
+      schema: listMatchPlayersSchema,
+    },
+    async (req, res) => {
+      try {
+        const { tournamentId, matchId } = req.params as { tournamentId: number; matchId: number };
+        const match = getTournamentMatchById(matchId);
+        if (!match || match.tournamentId !== tournamentId)
+          return res.status(404).send({ message: 'Tournament match not found' });
+        const players = listTournamentMatchPlayers(matchId);
+        return res.status(200).send(players);
+      } catch (error) {
+        req.log.error({ error }, 'Failed to list match participants');
+        return res.status(500).send({ message: 'Failed to list match participants' });
+      }
+    },
+  );
+
+  app.delete(
+    '/:tournamentId/matches/:matchId/players',
+    {
+      schema: clearMatchPlayersSchema,
+      preHandler: [authPreHandler],
+    },
+    async (req, res) => {
+      try {
+        const { tournamentId, matchId } = req.params as { tournamentId: number; matchId: number };
+        const match = getTournamentMatchById(matchId);
+        if (!match || match.tournamentId !== tournamentId)
+          return res.status(404).send({ message: 'Tournament match not found' });
+        const cleared = clearTournamentMatchPlayers(matchId);
+        if (!cleared) return res.status(500).send({ message: 'Failed to clear match participants' });
+        return res.status(204).send();
+      } catch (error) {
+        req.log.error({ error }, 'Failed to clear match participants');
+        return res.status(500).send({ message: 'Failed to clear match participants' });
       }
     },
   );
