@@ -5,7 +5,7 @@ import {
   TournamentStageSchema,
   UuidSchema,
   MatchPlayerStatsArraySchema,
-  MyStatsSchema,
+  UserStatsSchema,
 } from './fieldSchemas.ts';
 import { USER_ROUTE_SECURITY } from './userSchemas.ts';
 
@@ -114,7 +114,24 @@ export const getMyStatsSchema = {
   security: USER_ROUTE_SECURITY,
   summary: 'Get stats for authenticated user',
   response: {
-    200: MyStatsSchema,
+    200: UserStatsSchema,
+    500: ErrorResponseSchema,
+  },
+};
+
+export const getUserStatsSchema = {
+  tags: ['Match'],
+  security: USER_ROUTE_SECURITY,
+  summary: 'Get stats for another user',
+  params: {
+    type: 'object',
+    properties: {
+      uuid: UuidSchema,
+    },
+    required: ['uuid'],
+  },
+  response: {
+    200: UserStatsSchema,
     500: ErrorResponseSchema,
   },
 };

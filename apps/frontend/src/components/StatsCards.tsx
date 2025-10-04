@@ -1,4 +1,5 @@
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, ResponsiveContainer } from 'recharts';
+import { toneClass } from '../utils/toneClass';
 
 interface CustomXAxisTickProps {
   x: number;
@@ -23,12 +24,6 @@ interface PieChartCardProps {
   data: { name: string; value: number }[];
   total: number;
 }
-
-export const toneClass = {
-  positive: 'text-emerald-400',
-  negative: 'text-rose-400',
-  neutral: 'text-white',
-} as const;
 
 export const StatCard: React.FC<{
   label: string;

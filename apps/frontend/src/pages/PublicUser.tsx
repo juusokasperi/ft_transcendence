@@ -1,10 +1,27 @@
 import React, { useState, useEffect } from 'react';
-import { useAppContext } from '../../context/AppContext';
+import { useParams } from 'react-router-dom';
+import { useAppContext } from '../context/AppContext';
 import { AxiosError } from 'axios';
-import Navbar from '../../components/Navbar';
-import { useSnackbar } from '../../context/SnackbarContext';
-import { DesktopMatches, MobileMatches } from './Matches';
-import { StatsSection } from './StatsOverview';
+import Navbar from '../components/Navbar';
+import { useSnackbar } from '../context/SnackbarContext';
+import { resolveAvatarUrl } from '../utils/avatarUrl';
+import { DesktopMatches, MobileMatches } from '../components/StatsMatches';
+import { StatsSection } from '../components/StatsOverview';
+import { useRequireAuth } from '../hooks/useRequireAuth';
+import FriendshipStatus from '../components/FriendshipStatus';
+import type { Friendship } from '../types';
+
+interface UserStats {
+  username: string;
+  uuid: string;
+  avatar: string | null;
+  ranking: number;
+  createdAt: string;
+  wins: number;
+  losses: number;
+  totalMatches: number;
+  online: boolean;
+}
 
 interface MatchPlayerPublic {
   uuid: string;
@@ -16,7 +33,7 @@ interface MatchPlayerPublic {
   stats?: MatchPlayerStats;
 }
 
-export interface Match {
+interface Match {
   id: number;
   team1Score: number;
   team2Score: number;
@@ -29,7 +46,11 @@ export interface Match {
   tournamentStage: string | null;
 }
 
-export interface MatchPlayerStats {
+interface FriendshipStatus {
+  status: Friendship;
+}
+
+interface MatchPlayerStats {
   uuid?: string;
   pointsScored: number;
   pointsConceded: number;
@@ -42,26 +63,12 @@ export interface MatchPlayerStats {
   createdAt?: string | null;
 }
 
-export const formatDate = (dateString: string, format: 'short' | 'long' = 'long') => {
-  let formattedDate;
-  if (format === 'short')
-    formattedDate = new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'numeric',
-      day: 'numeric',
-    });
-  else
-    formattedDate = new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-    });
-  return formattedDate;
-};
+const PublicUser: React.FC = () => {
+  useRequireAuth();
 
-const Stats: React.FC = () => {
+  const { uuid } = useParams<{ uuid: string }>();
+  const [friendship, setFriendship] = useState<Friendship>('none');
+  const [profile, setProfile] = useState<UserStats>();
   const [matches, setMatches] = useState<Match[]>([]);
   const [stats, setStats] = useState<MatchPlayerStats>();
   const [loading, setLoading] = useState(true);
@@ -69,12 +76,42 @@ const Stats: React.FC = () => {
   const [hasMore, setHasMore] = useState(true);
   const [offset, setOffset] = useState(0);
   const pageSize = 5;
-  const { axios, user } = useAppContext();
+  const { axios, user, navigate } = useAppContext();
   const { enqueueSnackbar } = useSnackbar();
+
+  const fetchFriendship = async () => {
+    try {
+      const response = await axios.get<FriendshipStatus>(`/api/friends/${uuid}`);
+      setFriendship(response.data.status);
+    } catch (err) {
+      const axiosErr = err as AxiosError<{ message?: string }>;
+      enqueueSnackbar({
+        message: String(axiosErr?.response?.data?.message ?? 'Failed to fetch friendship status'),
+        variant: 'error',
+      });
+    }
+  };
+
+  const fetchProfile = async () => {
+    try {
+      const response = await axios.get<UserStats>(`/api/users/${uuid}`);
+      const fetchedProfile = response.data;
+      fetchedProfile.avatar = resolveAvatarUrl(fetchedProfile.avatar, axios.defaults.baseURL);
+      setProfile(fetchedProfile);
+    } catch (err) {
+      const axiosErr = err as AxiosError<{ message?: string }>;
+      enqueueSnackbar({
+        message: String(axiosErr?.response?.data?.message ?? 'Failed to load user profile'),
+        variant: 'error',
+      });
+      navigate('/');
+      throw err;
+    }
+  };
 
   const fetchStats = async () => {
     try {
-      const response = await axios.get<MatchPlayerStats>('/api/users/me/stats');
+      const response = await axios.get<MatchPlayerStats>(`/api/users/${uuid}/stats`);
       setStats(response.data);
     } catch (err) {
       const axiosErr = err as AxiosError<{ message?: string }>;
@@ -92,7 +129,7 @@ const Stats: React.FC = () => {
 
       const currentOffset = isLoadMore ? offset : 0;
       const response = await axios.get<Match[]>(
-        `/api/matches?count=${pageSize}&offset=${currentOffset}`,
+        `/api/users/${uuid}/matches?count=${pageSize}&offset=${currentOffset}`,
       );
       const newMatches = response.data;
       if (isLoadMore) setMatches((prev: Match[]) => [...prev, ...newMatches]);
@@ -116,9 +153,20 @@ const Stats: React.FC = () => {
   };
 
   useEffect(() => {
-    fetchStats();
-    fetchMatches();
-  }, []);
+    const fetchData = async () => {
+      try {
+        await fetchProfile();
+        fetchStats();
+        fetchMatches();
+        fetchFriendship();
+      } catch (err) {
+        console.log('Failed to fetch user data');
+      } finally {
+        window.scrollTo(0, 0);
+      }
+    };
+    if (uuid) fetchData();
+  }, [uuid]);
 
   const loadMore = () => fetchMatches(true);
 
@@ -142,7 +190,7 @@ const Stats: React.FC = () => {
   };
 
   const matches1v1 = matches.filter(
-    (match) =>
+    (match: Match) =>
       match.players.team1.length < 2 &&
       match.players.team2.length < 2 &&
       match.players.team1[0] &&
@@ -160,28 +208,51 @@ const Stats: React.FC = () => {
         </div>
 
         <div className="relative mx-auto flex w-full max-w-6xl flex-col gap-10 px-4 sm:px-6 lg:px-12">
-          <header className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
-            <div>
-              <h1 className="text-3xl font-semibold sm:text-4xl">Performance overview</h1>
-              <p className="text-sm text-slate-300/80">
-                Match history, rankings, and streaks are updated after every game you play.
-              </p>
-            </div>
-            {stats && (
-              <div className="inline-flex items-center gap-3 rounded-full border border-indigo-500/30 bg-indigo-500/10 px-4 py-2 text-sm text-indigo-200">
-                <span className="font-semibold">Current rating</span>
-                <span className="rounded-full bg-slate-950/50 px-3 py-1 text-white">
-                  {stats.ranking}
-                </span>
+          {profile && (
+            <header className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
+              <div
+                key={profile.uuid}
+                className="flex items-center justify-between rounded-2xl px-4 py-3 shadow-sm shadow-indigo-950/20 backdrop-blur"
+              >
+                <div className="flex items-center gap-3">
+                  <span
+                    className={`relative flex h-20 w-20 items-center justify-center rounded-full ring-2 ring-white/20`}
+                  >
+                    <img
+                      src={profile.avatar!}
+                      alt={profile.username}
+                      className="h-full w-full rounded-full object-cover"
+                    />
+                  </span>
+                  <div>
+                    <h1 className="text-3xl font-semibold sm:text-4xl">{profile.username}</h1>
+                    {stats && (
+                      <p className="text-sm uppercase tracking-[0.25em] text-slate-400">
+                        Rank {stats.ranking}
+                      </p>
+                    )}
+                    <p className="text-sm uppercase tracking-[0.25em] text-slate-400">
+                      {profile.online ? 'Online' : 'Offline'}
+                    </p>
+                  </div>
+                </div>
               </div>
-            )}
-          </header>
+              {uuid && user?.uuid !== profile.uuid && (
+                <FriendshipStatus
+                  friendship={friendship}
+                  uuid={uuid}
+                  onStatusChange={setFriendship}
+                  onRefreshFriendship={fetchFriendship}
+                />
+              )}
+            </header>
+          )}
 
           {stats ? (
             <StatsSection stats={stats} />
           ) : (
             <section className="rounded-3xl border border-dashed border-white/10 bg-slate-900/60 p-10 text-center text-slate-300/70">
-              Stats will appear here once you finish your first ranked match.
+              No stats to display.
             </section>
           )}
 
@@ -192,7 +263,7 @@ const Stats: React.FC = () => {
 
             {loading ? (
               <div className="flex h-64 items-center justify-center text-sm text-slate-300/70">
-                Pulling your latest games…
+                Pulling user's latest games…
               </div>
             ) : matches1v1.length > 0 ? (
               <div className="bg-slate-900 p-4">
@@ -220,7 +291,7 @@ const Stats: React.FC = () => {
                     })}
 
                     {hasMore ? (
-                      <div className="p-6 text-center">
+                      <div className="border-t border-white/10 p-6 text-center">
                         <button
                           onClick={loadMore}
                           disabled={loadingMore}
@@ -230,8 +301,8 @@ const Stats: React.FC = () => {
                         </button>
                       </div>
                     ) : (
-                      <div className="p-6 text-center">
-                        <p className="mt-4 text-sm text-slate-400/80">All matches displayed.</p>
+                      <div className="p-10 text-center text-slate-300/70">
+                        <p className="mt-2 text-sm text-slate-400/80">All matches displayed.</p>
                       </div>
                     )}
                   </div>
@@ -239,9 +310,9 @@ const Stats: React.FC = () => {
               </div>
             ) : (
               <div className="p-10 text-center text-slate-300/70">
-                <p className="text-lg font-medium">No matches yet</p>
+                <p className="text-lg font-medium">No matches to display.</p>
                 <p className="mt-2 text-sm text-slate-400/80">
-                  Play your first game to start building your match timeline.
+                  User hasn't played any matches yet.
                 </p>
               </div>
             )}
@@ -252,4 +323,4 @@ const Stats: React.FC = () => {
   );
 };
 
-export default Stats;
+export default PublicUser;

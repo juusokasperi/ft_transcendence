@@ -14,6 +14,7 @@ import ConfirmEmail from './pages/ConfirmEmail';
 import OnlineGame from './pages/pong/online-game';
 import ForgotPassword from './pages/ForgotPassword';
 import ResetPassword from './pages/ResetPassword';
+import PublicUser from './pages/PublicUser';
 import { SidebarProvider } from './context/SidebarContext';
 import { SnackbarProvider } from './context/SnackbarContext';
 
@@ -39,6 +40,7 @@ function App() {
               <Route path={'/profile/stats'} element={<Stats />} />
               <Route path={'/profile/friends'} element={<Friends />} />
             </Route>
+            <Route path={'/users/:uuid'} element={<PublicUser />} />
           </Routes>
         </div>
       </SnackbarProvider>
