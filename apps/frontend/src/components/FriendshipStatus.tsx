@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import Button from './Button';
-import ConfirmModal from './ConfirmModal';
+import ConfirmDialog from './ConfirmDialog';
 import { useAppContext } from '../context/AppContext';
 import { useSnackbar } from '../context/SnackbarContext';
 import { AxiosError } from 'axios';
@@ -71,7 +71,7 @@ const FriendshipStatus: React.FC<Props> = ({
     }
   };
 
-  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
 
   if (friendship === 'request_received') {
     return (
@@ -91,7 +91,7 @@ const FriendshipStatus: React.FC<Props> = ({
           variant="dangerSecondary"
           onClick={() => handleFriendship(false)}
         >
-          Decline
+          Reject
         </Button>
       </div>
     );
@@ -106,32 +106,32 @@ const FriendshipStatus: React.FC<Props> = ({
           className={buttonStyle}
           variant={
             friendship === 'friends'
-              ? 'dangerSecondary'
+              ? 'danger'
               : friendship === 'none'
                 ? 'successSecondary'
                 : 'secondary'
           }
-          tone="default"
+          tone={friendship === 'friends' ? 'subtle' : 'default'}
           size="md"
           onClick={
-            friendship === 'friends' ? () => setShowConfirmModal(true) : () => handleFriendship()
+            friendship === 'friends' ? () => setShowConfirmDialog(true) : () => handleFriendship()
           }
         >
           {friendshipTexts[friendship]}
         </Button>
       </div>
-      <ConfirmModal
-        isOpen={showConfirmModal}
-        message="Are you sure you want to remove this friend?"
+      <ConfirmDialog
+        open={showConfirmDialog}
+        title="Remove friend?"
+        description="Are you sure you want to remove this friend?"
+        confirmLabel="Yes, delete"
+        cancelLabel="Keep friend"
+        tone="danger"
         onConfirm={async () => {
           await handleFriendship();
-          setShowConfirmModal(false);
+          setShowConfirmDialog(false);
         }}
-        onCancel={() => setShowConfirmModal(false)}
-        confirmText="Yes, remove"
-        cancelText="Cancel"
-        confirmVariant="dangerSecondary"
-        cancelVariant="secondary"
+        onCancel={() => setShowConfirmDialog(false)}
       />
     </>
   );
