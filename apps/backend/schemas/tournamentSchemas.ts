@@ -244,6 +244,33 @@ export const createMatchSchema = {
   },
 };
 
+
+export const listMatchPlayersSchema = {
+  tags: ['Tournament Matches'],
+  summary: 'List participant assignments for a bracket match',
+  params: tournamentMatchParams,
+  response: {
+    200: {
+      type: 'array',
+      items: TournamentMatchPlayerSchema,
+    },
+    404: ErrorResponseSchema,
+    500: ErrorResponseSchema,
+  },
+};
+
+export const clearMatchPlayersSchema = {
+  tags: ['Tournament Matches'],
+  summary: 'Remove all participant assignments from a bracket match',
+  security: USER_ROUTE_SECURITY,
+  params: tournamentMatchParams,
+  response: {
+    204: { type: 'null' },
+    404: ErrorResponseSchema,
+    500: ErrorResponseSchema,
+  },
+};
+
 export const updateMatchSchema = {
   tags: ['Tournament Matches'],
   summary: 'Update match status, schedule, or linked match id',
