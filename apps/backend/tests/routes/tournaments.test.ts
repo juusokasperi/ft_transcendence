@@ -36,12 +36,14 @@ vi.mock('../../db/queries/tournamentMatches.ts', () => ({
   listTournamentMatches: vi.fn(),
   createTournamentMatch: vi.fn(),
   getTournamentMatchById: vi.fn(),
+  listTournamentMatchPlayers: vi.fn(),
   updateTournamentMatchStatus: vi.fn(),
   scheduleTournamentMatch: vi.fn(),
   linkTournamentMatchResult: vi.fn(),
   addTournamentMatchPlayer: vi.fn(),
   getTournamentMatchPlayerById: vi.fn(),
   removeTournamentMatchPlayer: vi.fn(),
+  clearTournamentMatchPlayers: vi.fn(),
 }));
 
 import * as tournamentQueries from '../../db/queries/tournaments.ts';
@@ -250,6 +252,31 @@ describe('Tournament routes', () => {
 
     expect(res.statusCode).toBe(204);
     expect(participantQueries.removeTournamentParticipant).toHaveBeenCalledWith(10);
+  });
+
+  it('GET /api/tournaments/:id/matches/:matchId/players returns assignments', async () => {
+    (matchQueries.getTournamentMatchById as Mock).mockReturnValue(sampleMatch);
+    (matchQueries.listTournamentMatchPlayers as Mock).mockReturnValue([sampleMatchPlayer]);
+
+    const res = await app.inject({ method: 'GET', url: '/api/tournaments/1/matches/99/players' });
+
+    expect(res.statusCode).toBe(200);
+    expect(res.json()).toEqual([sampleMatchPlayer]);
+    expect(matchQueries.listTournamentMatchPlayers).toHaveBeenCalledWith(99);
+  });
+
+  it('DELETE /api/tournaments/:id/matches/:matchId/players clears assignments', async () => {
+    (matchQueries.getTournamentMatchById as Mock).mockReturnValue(sampleMatch);
+    (matchQueries.clearTournamentMatchPlayers as Mock).mockReturnValue(true);
+
+    const res = await app.inject({
+      method: 'DELETE',
+      url: '/api/tournaments/1/matches/99/players',
+      headers: makeAuthHeader(),
+    });
+
+    expect(res.statusCode).toBe(204);
+    expect(matchQueries.clearTournamentMatchPlayers).toHaveBeenCalledWith(99);
   });
 
   it('GET /api/tournaments/:id/matches returns matches', async () => {
