@@ -1,22 +1,14 @@
-import { WebSocketServer, WebSocket } from 'ws';
-import Redis from 'ioredis';
-import http from 'http';
+import fastify from 'fastify';
 import createProxyServer from 'http-proxy';
+import Redis from 'ioredis';
 import { REDIS_URL, PORT } from './config';
 import { verifyJoinToken } from '@pong/shared/auth/tokenSign';
 
 const redis = new Redis(REDIS_URL);
+const app = fastify({ logger: true });
 const proxy = new createProxyServer({ ws: true });
 
-const server = http.createServer();
-
-const wss = new WebSocketServer({ noServer: true });
-
-wss.on('connection', (ws: WebSocket, req: http.IncomingMessage, targetUrl: string) => {
-  console.log('[Gateway] Proxying connection to target', targetUrl);
-});
-
-server.on('upgrade', async (req: http.IncomingMessage, socket: any, head: Buffer) => {
+app.server.on('upgrade', async (req, socket, head) => {
   console.log('[Gateway] Upgrade connection started');
   const match = req.url?.match(/^\/g\/([a-zA-Z0-9_-]+)/);
   if (!match) {
@@ -24,41 +16,35 @@ server.on('upgrade', async (req: http.IncomingMessage, socket: any, head: Buffer
     socket.destroy();
     return;
   }
-  const roomId = match[1];
 
+  const roomId = match[1];
   const protocolHeader = req.headers['sec-websocket-protocol'];
+
   if (typeof protocolHeader !== 'string') {
     console.log('[Gateway] Missing Sec-WebSocket-Protocol header for room:', roomId);
-    socket.write('HTTP/1.1 4401 Unauthorized\r\nConnection: close\r\n\r\n');
+    socket.write('HTTP/1.1 401 Unauthorized\r\nConnection: close\r\n\r\n');
     socket.destroy();
     return;
   }
+
   const requestedProtocols = protocolHeader
     .split(',')
     .map((p) => p.trim())
     .filter(Boolean);
   const bearerIndex = requestedProtocols.findIndex((p) => p.toLowerCase() === 'bearer');
   const joinToken = bearerIndex !== -1 ? requestedProtocols[bearerIndex + 1] : undefined;
+
   if (!joinToken) {
     console.log('[Gateway] No join token provided for room:', roomId);
-    socket.write('HTTP/1.1 4401 Unauthorized\r\nConnection: close\r\n\r\n');
+    socket.write('HTTP/1.1 401 Unauthorized\r\nConnection: close\r\n\r\n');
     socket.destroy();
     return;
   }
 
   const claims = verifyJoinToken(joinToken);
-  if (!claims) {
+  if (!claims || claims.roomIdentifier !== roomId) {
     console.log('[Gateway] Invalid join token for room:', roomId);
-    socket.write('HTTP/1.1 4401 Unauthorized\r\nConnection: close\r\n\r\n');
-    socket.destroy();
-    return;
-  }
-  if (claims.roomIdentifier !== roomId) {
-    console.log('[Gateway] Token room mismatch', {
-      requested: roomId,
-      tokenRoom: claims.roomIdentifier,
-    });
-    socket.write('HTTP/1.1 4401 Unauthorized\r\nConnection: close\r\n\r\n');
+    socket.write('HTTP/1.1 401 Unauthorized\r\nConnection: close\r\n\r\n');
     socket.destroy();
     return;
   }
@@ -71,31 +57,28 @@ server.on('upgrade', async (req: http.IncomingMessage, socket: any, head: Buffer
     socket.destroy();
     return;
   }
+
   if (!gameNode) {
     console.log('[Gateway] Game node is null');
     socket.destroy();
     return;
   }
 
-  console.log(gameNode);
-
   const nowSec = Math.floor(Date.now() / 1000);
   const ttlSeconds = Math.max(1, (claims.exp ?? nowSec) - nowSec);
   const jtiKey = `join-token:${claims.jti}`;
+
   try {
     const setResult = await redis.set(jtiKey, roomId, 'EX', ttlSeconds, 'NX');
     if (setResult !== 'OK') {
-      console.log('[Gateway] Join token already consumed', {
-        roomId,
-        jti: claims.jti,
-      });
-      socket.write('HTTP/1.1 4403 Forbidden\r\nConnection: close\r\n\r\n');
+      console.log('[Gateway] Join token already consumed', { roomId, jti: claims.jti });
+      socket.write('HTTP/1.1 403 Forbidden\r\nConnection: close\r\n\r\n');
       socket.destroy();
       return;
     }
   } catch (err) {
     console.error('[Gateway] Failed to persist join token consumption', err);
-    socket.write('HTTP/1.1 4500 Internal Server Error\r\nConnection: close\r\n\r\n');
+    socket.write('HTTP/1.1 500 Internal Server Error\r\nConnection: close\r\n\r\n');
     socket.destroy();
     return;
   }
@@ -106,9 +89,22 @@ server.on('upgrade', async (req: http.IncomingMessage, socket: any, head: Buffer
       'sec-websocket-protocol': req.headers['sec-websocket-protocol'] || '',
     },
   });
+
   console.log(`[Gateway] Routed room ${roomId} to ${gameNode}`);
 });
 
-server.listen(PORT, '0.0.0.0', () => {
-  console.log(`[Gateway] Game gateway listening on port ${PORT}`);
+app.get('/health', async () => {
+  return { status: 'ok' };
 });
+
+const start = async () => {
+  try {
+    await app.listen({ port: PORT, host: '0.0.0.0' });
+    console.log(`[Gateway] Game gateway listening on port ${PORT}`);
+  } catch (err) {
+    app.log.error(err);
+    process.exit(1);
+  }
+};
+
+start();
