@@ -16,19 +16,27 @@ const serverOnMock = vi.fn<(event: string, handler: UpgradeHandler) => void>((ev
   }
 });
 
-const serverListenMock = vi.fn<(port: number, host: string, cb?: () => void) => void>((_port, _host, cb) => {
-  cb?.();
+const appListenMock = vi.fn(async () => {
+  return undefined;
 });
 
-const httpCreateServerMock = vi.fn(() => ({
-  on: serverOnMock,
-  listen: serverListenMock,
-}));
+const appGetMock = vi.fn();
 
-vi.mock('http', () => ({
-  default: {
-    createServer: httpCreateServerMock,
+const fastifyApp = {
+  server: {
+    on: serverOnMock,
   },
+  get: appGetMock,
+  listen: appListenMock,
+  log: {
+    error: vi.fn(),
+  },
+};
+
+const fastifyMock = vi.fn(() => fastifyApp);
+
+vi.mock('fastify', () => ({
+  default: fastifyMock,
 }));
 
 const wssOnMock = vi.fn();
@@ -99,15 +107,17 @@ describe('game gateway upgrade flow', () => {
     redisGetMock.mockReset();
     redisSetMock.mockReset();
     verifyJoinTokenMock.mockReset();
-    httpCreateServerMock.mockClear();
+    serverOnMock.mockReset();
     serverOnMock.mockImplementation((event, handler) => {
       if (event === 'upgrade') {
         upgradeHandlerRef.handler = handler;
       }
     });
-    serverListenMock.mockImplementation((_port: number, _host: string, cb?: () => void) => {
-      cb?.();
-    });
+    appGetMock.mockReset();
+    appListenMock.mockReset();
+    appListenMock.mockResolvedValue(undefined);
+    fastifyMock.mockClear();
+    fastifyApp.log.error = vi.fn();
     vi.resetModules();
   });
 
