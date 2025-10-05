@@ -7,7 +7,8 @@ import {
   markTournamentCompleted,
   updateTournamentStatus,
 } from '../db/queries/tournaments.ts';
-import { generateSingleEliminationBracket } from '../services/tournamentOrchestrator.ts';
+import { generateSingleEliminationBracket, processSemifinalResult } from '../services/tournamentOrchestrator.ts';
+import { notifyMatchesReady } from '../services/matchmakingBridge.ts';
 import {
   createTournamentParticipant,
   getTournamentParticipantById,
@@ -139,7 +140,11 @@ export async function tournamentRoutes(app: FastifyInstance) {
         }
 
         const responsePayload: Record<string, unknown> = { tournament: updated };
-        if (bracketSummary) responsePayload.bracketSummary = bracketSummary;
+        if (bracketSummary) {
+          responsePayload.bracketSummary = bracketSummary;
+          if (bracketSummary.readyMatches?.length)
+            notifyMatchesReady(tournamentId, bracketSummary.readyMatches);
+        }
 
         return res.status(200).send(responsePayload);
       } catch (error) {
@@ -220,6 +225,8 @@ export async function tournamentRoutes(app: FastifyInstance) {
           if (!updated) return res.status(500).send({ message: 'Failed to activate tournament' });
           const bracketSummary = generateSingleEliminationBracket(tournamentId);
           activation = { tournament: updated, bracketSummary };
+          if (bracketSummary.readyMatches.length)
+            notifyMatchesReady(tournamentId, bracketSummary.readyMatches);
         }
 
         return res.status(201).send({ participant, activation });
@@ -363,6 +370,14 @@ export async function tournamentRoutes(app: FastifyInstance) {
           });
           if (!updated) return res.status(500).send({ message: 'Failed to link match result' });
           match = updated;
+        }
+
+        if (match.status === 'completed' && match.roundNumber === 1) {
+          const progression = processSemifinalResult(match.id);
+          if (progression) {
+            if (progression.readyMatches.length)
+              notifyMatchesReady(tournamentId, progression.readyMatches);
+          }
         }
 
         return res.status(200).send(match);

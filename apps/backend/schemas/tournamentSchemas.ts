@@ -14,6 +14,7 @@ import {
 } from './fieldSchemas.ts';
 import { USER_ROUTE_SECURITY } from './userSchemas.ts';
 
+
 const BracketSummarySchema = {
   type: 'object',
   additionalProperties: false,
@@ -24,6 +25,8 @@ const BracketSummarySchema = {
     totalRounds: { type: 'integer', minimum: 0 },
     createdMatches: { type: 'integer', minimum: 0 },
     assignedParticipants: { type: 'integer', minimum: 0 },
+    readyMatches: { type: 'array', items: { type: 'integer', minimum: 1 } },
+    autoAdvancedMatches: { type: 'array', items: { type: 'integer', minimum: 1 } },
     skippedReason: {
       anyOf: [
         { type: 'string', enum: ['awaitingParticipants', 'matchesAlreadyExist'] },

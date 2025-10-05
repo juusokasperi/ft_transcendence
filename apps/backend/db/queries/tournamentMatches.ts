@@ -206,3 +206,44 @@ export function clearTournamentMatchPlayers(tournamentMatchId: number): boolean 
     return false;
   }
 }
+
+export function getTournamentMatchByRoundAndPosition(
+  tournamentId: number,
+  roundNumber: number,
+  roundPosition: number,
+): TournamentMatch | undefined {
+  const row = db
+    .prepare(
+      'SELECT * FROM TournamentMatches WHERE tournament_id = ? AND round_number = ? AND round_position = ?',
+    )
+    .get(tournamentId, roundNumber, roundPosition) as TournamentMatchDb | null;
+  if (!row) return undefined;
+  return mapMatchRecord(row);
+}
+
+export function setTournamentMatchPlayer(
+  tournamentMatchId: number,
+  participantId: number,
+  teamNumber: number,
+): TournamentMatchPlayer | undefined {
+  try {
+    db.prepare(
+      `
+      INSERT INTO TournamentMatchPlayers (tournament_match_id, participant_id, team_number)
+      VALUES (?, ?, ?)
+      ON CONFLICT(tournament_match_id, team_number)
+      DO UPDATE SET participant_id = excluded.participant_id
+    `,
+    ).run(tournamentMatchId, participantId, teamNumber);
+
+    const row = db
+      .prepare(
+        'SELECT * FROM TournamentMatchPlayers WHERE tournament_match_id = ? AND team_number = ?',
+      )
+      .get(tournamentMatchId, teamNumber) as TournamentMatchPlayerDb | null;
+    if (!row) return undefined;
+    return mapMatchPlayerRecord(row);
+  } catch (error) {
+    return undefined;
+  }
+}
