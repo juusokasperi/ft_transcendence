@@ -64,11 +64,11 @@ games on the platform. Key features and objectives include:
 - [✅] Users can securely subscribe to the website.
 - [✅] Registered users can securely log in.
 - [ ] Users can select a unique display name to participate in tournaments.
-- [ ] Users can update their information. (We don't update e-mail)
+- [✅] Users can update their information.
 - [✅] Users can upload an avatar, with a default option if none is provided.
 - [✅] Users can add others as friends and view their online status.
 - [✅] User profiles display stats, such as wins and losses.
-- [ ] Each user has a Match History including 1v1 games, dates, and relevant details, accessible to logged-in users.
+- [✅] Each user has a Match History including 1v1 games, dates, and relevant details, accessible to logged-in users.
 
 ## User Management — Major module: Implement remote authentication.
 
@@ -95,7 +95,7 @@ games on the platform. Key features and objectives include:
 - [✅] Create user-friendly dashboards that provide users with insights into their gaming statistics.
 - [✅] Develop a separate dashboard for game sessions, showing detailed statistics, outcomes, and historical data for each match.
 - [✅] Ensure that the dashboards offer an intuitive and informative user interface for tracking and analyzing data.
-- [ ] Implement data visualization techniques, such as charts and graphs, to present statistics in a clear and visually appealing manner.
+- [✅] Implement data visualization techniques, such as charts and graphs, to present statistics in a clear and visually appealing manner.
 - [✅] Allow users to access and explore their own gaming history and performance metrics conveniently.
 - [✅] Feel free to add any metrics you deem useful.
 
@@ -157,8 +157,8 @@ The goal of this minor module is to introduce GDPR compliance options that allow
 
 ## Server-Side Pong — Major module: Replace Basic Pong with Server-Side Pong and Implementing an API.
 
-- [ ] Develop server-side logic for the Pong game to handle gameplay, ball movement, scoring, and player interactions.
-- [ ] Create an API that exposes the necessary resources and endpoints to interact with the Pong game, allowing partial usage of the game via the Command-Line Interface (CLI) and web interface.
+- [✅] Develop server-side logic for the Pong game to handle gameplay, ball movement, scoring, and player interactions.
+- [✅] Create an API that exposes the necessary resources and endpoints to interact with the Pong game, allowing partial usage of the game via the Command-Line Interface (CLI) and web interface.
 - [ ] Design and implement the API endpoints to support game initialization, player controls, and game state updates.
-- [ ] Ensure that the server-side Pong game is responsive, providing an engaging and enjoyable gaming experience.
-- [ ] Integrate the server-side Pong game with the web application, allowing users to play the game directly on the website.
+- [✅] Ensure that the server-side Pong game is responsive, providing an engaging and enjoyable gaming experience.
+- [✅] Integrate the server-side Pong game with the web application, allowing users to play the game directly on the website.

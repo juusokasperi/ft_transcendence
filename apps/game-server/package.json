@@ -21,12 +21,12 @@
     "test:watch": "vitest watch --config vitest.config.ts"
   },
   "dependencies": {
+    "@fastify/websocket": "^11.2.0",
     "@pong/game-logic": "workspace:*",
     "@pong/shared": "workspace:*",
     "dotenv": "^17.2.2",
     "fastify": "^5.6.0",
     "ioredis": "^5.8.0",
-    "uuid": "^13.0.0",
-    "ws": "^8.18.3"
+    "uuid": "^13.0.0"
   }
 }
