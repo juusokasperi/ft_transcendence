@@ -1,23 +1,16 @@
 import { createMatch } from './queue.ts';
 import type { ClientInfo } from '../types/types.ts';
-import type { CreateTournamentRequest, JoinTournamentRequest } from '@pong/shared/protocol/net';
+import type {
+  CreateTournamentRequest,
+  JoinTournamentRequest,
+  TournamentMatchesReadyMessage,
+} from '@pong/shared/protocol/net';
 import { log } from './log.ts';
 
 const scheduledTournamentMatches = new Set<number>();
-
-export interface TournamentMatchesReadyMessage {
-  tournamentId: number;
-  matches: Array<{
-    tournamentMatchId: number;
-    stage: string;
-    participants: Array<{
-      userUuid: string;
-      alias: string;
-      participantId: number;
-      teamNumber: number;
-    }>;
-  }>;
-}
+const pendingTournamentReminders = new Map<number, { attempts: number; timeout: NodeJS.Timeout }>();
+const TOURNAMENT_REMINDER_DELAY_MS = 5000;
+const TOURNAMENT_MAX_REMINDERS = 3;
 
 function findClientByUuid(clients: Map<string, ClientInfo>, uuid: string) {
   for (const client of clients.values()) {
@@ -26,47 +19,108 @@ function findClientByUuid(clients: Map<string, ClientInfo>, uuid: string) {
   return undefined;
 }
 
+function scheduleTournamentReminder(
+  match: TournamentMatchesReadyMessage['matches'][number],
+  tournamentId: number,
+  clients: Map<string, ClientInfo>,
+  attempts: number,
+) {
+  if (attempts >= TOURNAMENT_MAX_REMINDERS) {
+    log(
+      'Tournament match reminder exhausted',
+      { tournamentId, matchId: match.tournamentMatchId },
+      'warn',
+    );
+    return;
+  }
+
+  const existing = pendingTournamentReminders.get(match.tournamentMatchId);
+  if (existing) clearTimeout(existing.timeout);
+
+  const timeout = setTimeout(() => {
+    pendingTournamentReminders.delete(match.tournamentMatchId);
+    handleSingleTournamentMatch(match, tournamentId, clients, attempts + 1);
+  }, TOURNAMENT_REMINDER_DELAY_MS);
+
+  pendingTournamentReminders.set(match.tournamentMatchId, { attempts: attempts + 1, timeout });
+  log(
+    'Queued tournament match reminder',
+    { tournamentId, matchId: match.tournamentMatchId, attempts: attempts + 1 },
+  );
+}
+
+function handleSingleTournamentMatch(
+  match: TournamentMatchesReadyMessage['matches'][number],
+  tournamentId: number,
+  clients: Map<string, ClientInfo>,
+  attempts = 0,
+) {
+  if (scheduledTournamentMatches.has(match.tournamentMatchId)) return;
+  if (match.participants.length !== 2) return;
+
+  const p1 = match.participants[0]!;
+  const p2 = match.participants[1]!;
+  const clientA = findClientByUuid(clients, p1.userUuid);
+  const clientB = findClientByUuid(clients, p2.userUuid);
+
+  if (!clientA || !clientB) {
+    log(
+      'Tournament match ready but player offline',
+      {
+        tournamentId,
+        matchId: match.tournamentMatchId,
+        missingPlayers: [p1.userUuid, p2.userUuid].filter((uuid) => {
+          const client = uuid === p1.userUuid ? clientA : clientB;
+          return !client;
+        }),
+      },
+      'warn',
+    );
+    scheduleTournamentReminder(match, tournamentId, clients, attempts);
+    return;
+  }
+
+  if (
+    clientA.tournamentId !== String(tournamentId) ||
+    clientB.tournamentId !== String(tournamentId)
+  ) {
+    log(
+      'Tournament match players not assigned to this tournament',
+      { tournamentId, matchId: match.tournamentMatchId },
+      'warn',
+    );
+    scheduleTournamentReminder(match, tournamentId, clients, attempts);
+    return;
+  }
+
+  const pending = pendingTournamentReminders.get(match.tournamentMatchId);
+  if (pending) {
+    clearTimeout(pending.timeout);
+    pendingTournamentReminders.delete(match.tournamentMatchId);
+  }
+
+  scheduledTournamentMatches.add(match.tournamentMatchId);
+  log('Scheduling tournament match', {
+    tournamentId,
+    matchId: match.tournamentMatchId,
+    players: [clientA.uuid, clientB.uuid],
+  });
+  createMatch(clientA, clientB, 'tournament', {
+    tournament: {
+      tournamentId,
+      tournamentMatchId: match.tournamentMatchId,
+      tournamentStage: match.stage,
+    },
+  });
+}
+
 export function handleTournamentMatchesReady(
   payload: TournamentMatchesReadyMessage,
   clients: Map<string, ClientInfo>,
 ) {
   if (!payload || !Array.isArray(payload.matches)) return;
   for (const match of payload.matches) {
-    if (scheduledTournamentMatches.has(match.tournamentMatchId)) continue;
-    if (match.participants.length !== 2) continue;
-
-    const p1 = match.participants[0]!;
-    const p2 = match.participants[1]!;
-    const clientA = findClientByUuid(clients, p1.userUuid);
-    const clientB = findClientByUuid(clients, p2.userUuid);
-
-    if (!clientA || !clientB) {
-      log('Tournament match ready but player offline', {
-        tournamentId: payload.tournamentId,
-        matchId: match.tournamentMatchId,
-        missingPlayers: [p1.userUuid, p2.userUuid].filter((uuid) => {
-          const client = uuid === p1.userUuid ? clientA : clientB;
-          return !client;
-        }),
-      }, 'warn');
-      continue;
-    }
-
-    if (clientA.tournamentId !== String(payload.tournamentId) || clientB.tournamentId !== String(payload.tournamentId)) {
-      log('Tournament match players not assigned to this tournament', {
-        tournamentId: payload.tournamentId,
-        matchId: match.tournamentMatchId,
-      }, 'warn');
-      continue;
-    }
-
-    scheduledTournamentMatches.add(match.tournamentMatchId);
-    log('Scheduling tournament match', {
-      tournamentId: payload.tournamentId,
-      matchId: match.tournamentMatchId,
-      players: [clientA.uuid, clientB.uuid],
-    });
-    createMatch(clientA, clientB, 'tournament');
+    handleSingleTournamentMatch(match, payload.tournamentId, clients);
   }
 }
 
