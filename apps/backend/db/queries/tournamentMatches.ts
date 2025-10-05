@@ -38,6 +38,13 @@ function mapMatchPlayerRecord(row: TournamentMatchPlayerDb): TournamentMatchPlay
   };
 }
 
+export interface TournamentMatchParticipantDetail {
+  participantId: number;
+  userUuid: string | null;
+  alias: string;
+  teamNumber: number;
+}
+
 export function getTournamentMatchById(id: number): TournamentMatch | undefined {
   const row = db
     .prepare('SELECT * FROM TournamentMatches WHERE id = ?')
@@ -187,6 +194,22 @@ export function listTournamentMatchPlayers(tournamentMatchId: number): Tournamen
     )
     .all(tournamentMatchId) as TournamentMatchPlayerDb[];
   return rows.map(mapMatchPlayerRecord);
+}
+
+
+export function getTournamentMatchRoster(matchId: number): TournamentMatchParticipantDetail[] {
+  const rows = db
+    .prepare(
+      `
+      SELECT tp.id as participantId, tp.user_uuid as userUuid, tp.alias as alias, tmp.team_number as teamNumber
+      FROM TournamentMatchPlayers tmp
+      JOIN TournamentParticipants tp ON tp.id = tmp.participant_id
+      WHERE tmp.tournament_match_id = ?
+      ORDER BY tmp.team_number ASC, tmp.id ASC
+    `,
+    )
+    .all(matchId) as { participantId: number; userUuid: string | null; alias: string; teamNumber: number }[];
+  return rows;
 }
 
 export function removeTournamentMatchPlayer(id: number): boolean {

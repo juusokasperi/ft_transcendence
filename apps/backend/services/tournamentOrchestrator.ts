@@ -147,13 +147,12 @@ export function generateSingleEliminationBracket(tournamentId: number): BracketG
       const defined = players.filter((p): p is TournamentParticipant => Boolean(p));
 
       if (defined.length === 2) {
-        readyMatches.push(matchId);
-        db.prepare('UPDATE TournamentMatches SET status = ? WHERE id = ?').run('ready', matchId);
+        const updated = updateTournamentMatchStatus(matchId, 'ready');
+        if (updated) readyMatches.push(matchId);
       } else if (defined.length === 1) {
-        const winner = defined[0];
+        const winner = defined[0]!;
         autoAdvancedMatches.push(matchId);
-        db.prepare('UPDATE TournamentMatches SET status = ?, completed_at = CURRENT_TIMESTAMP WHERE id = ?')
-          .run('completed', matchId);
+        updateTournamentMatchStatus(matchId, 'completed', { setCompletedAt: true });
         setTournamentMatchPlayer(matchIds.final, winner.id, finalTeam);
       }
     };
@@ -163,14 +162,14 @@ export function generateSingleEliminationBracket(tournamentId: number): BracketG
 
     const finalAssignments = listTournamentMatchPlayers(matchIds.final);
     if (finalAssignments.length === 2) {
-      db.prepare('UPDATE TournamentMatches SET status = ? WHERE id = ?').run('ready', matchIds.final);
-      readyMatches.push(matchIds.final);
+      const updated = updateTournamentMatchStatus(matchIds.final, 'ready');
+      if (updated) readyMatches.push(matchIds.final);
     }
 
     const bronzeAssignments = listTournamentMatchPlayers(matchIds.bronze);
     if (bronzeAssignments.length === 2) {
-      db.prepare('UPDATE TournamentMatches SET status = ? WHERE id = ?').run('ready', matchIds.bronze);
-      readyMatches.push(matchIds.bronze);
+      const updated = updateTournamentMatchStatus(matchIds.bronze, 'ready');
+      if (updated) readyMatches.push(matchIds.bronze);
     }
 
     return {
@@ -223,20 +222,14 @@ export function processSemifinalResult(
   );
   if (!finalMatch || !bronzeMatch) return undefined;
 
-  let winner: number | undefined;
-  let loser: number | undefined;
-  if (scores.team_1_score > scores.team_2_score) {
-    winner = team1.participantId;
-    loser = team2.participantId;
-  } else if (scores.team_2_score > scores.team_1_score) {
-    winner = team2.participantId;
-    loser = team1.participantId;
-  } else if (options?.autoAdvanceOnDraw) {
-    winner = team1.participantId;
-    loser = team2.participantId;
-  } else {
-    return undefined;
-  }
+  const result = (() => {
+    if (scores.team_1_score > scores.team_2_score) return [team1.participantId, team2.participantId] as const;
+    if (scores.team_2_score > scores.team_1_score) return [team2.participantId, team1.participantId] as const;
+    if (options?.autoAdvanceOnDraw) return [team1.participantId, team2.participantId] as const;
+    return null;
+  })();
+  if (!result) return undefined;
+  const [winner, loser] = result as [number, number];
 
   setTournamentMatchPlayer(finalMatch.id, winner, tournamentMatch.roundPosition as 1 | 2);
   setTournamentMatchPlayer(bronzeMatch.id, loser, tournamentMatch.roundPosition as 1 | 2);
