@@ -153,6 +153,7 @@ export async function createMatch(
       ],
       randomSeed,
       simulationStartTick,
+      tournament: options?.tournament,
     });
   } catch (err) {
     log(
@@ -195,6 +196,7 @@ export async function createMatch(
     matchId,
     playerA: { username: a.username, uuid: a.uuid },
     playerB: { username: b.username, uuid: b.uuid },
+    tournament: options?.tournament,
   });
 }
 
