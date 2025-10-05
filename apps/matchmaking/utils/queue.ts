@@ -188,6 +188,7 @@ export async function createMatch(
         joinTokenTTLSeconds: JOIN_TOKEN_TTL_SECONDS,
         randomSeed,
         simulationStartTick,
+        tournament: options?.tournament,
       }),
     );
     handleHandoff(player, roomIdentifier, mode);
