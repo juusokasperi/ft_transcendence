@@ -1,4 +1,6 @@
 import fastify from 'fastify';
+import type { IncomingMessage } from 'http';
+import type { Duplex } from 'stream';
 import createProxyServer from 'http-proxy';
 import Redis from 'ioredis';
 import { REDIS_URL, PORT } from './config';
@@ -8,7 +10,7 @@ const redis = new Redis(REDIS_URL);
 const app = fastify({ logger: true });
 const proxy = new createProxyServer({ ws: true });
 
-app.server.on('upgrade', async (req, socket, head) => {
+app.server.on('upgrade', async (req: IncomingMessage, socket: Duplex, head: Buffer) => {
   console.log('[Gateway] Upgrade connection started');
   const match = req.url?.match(/^\/g\/([a-zA-Z0-9_-]+)/);
   if (!match) {
