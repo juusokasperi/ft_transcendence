@@ -6,6 +6,12 @@ import axios from 'axios';
 import { isAuthenticated } from '../auth/auth.ts';
 import { handleHandoff } from './pendingHandoffs.ts';
 
+export interface TournamentMatchContext {
+  tournamentId: number;
+  tournamentMatchId: number;
+  tournamentStage: 'semifinal' | 'final' | 'bronze';
+}
+
 const queue: ClientInfo[] = [];
 
 export function tryMatchQueue(pendingMatches: Map<string, PendingMatch>) {
@@ -118,7 +124,12 @@ export function handleDeclineMatch(
   pendingMatches.delete(matchId);
 }
 
-export async function createMatch(a: ClientInfo, b: ClientInfo, mode: MatchMode) {
+export async function createMatch(
+  a: ClientInfo,
+  b: ClientInfo,
+  mode: MatchMode,
+  options?: { tournament?: TournamentMatchContext },
+) {
   const matchId = uuid();
   const randomSeed = Math.floor(Math.random() * 0x100000000);
   const simulationStartTick = Date.now() + 5000;

@@ -62,6 +62,9 @@ export type JoinTokenClaims = {
   side: 'west' | 'east';
   simulationStartTick: number;
   region?: string;
+  tournamentId?: number;
+  tournamentMatchId?: number;
+  tournamentStage?: 'semifinal' | 'final' | 'bronze';
 };
 
 export type ErrorMessage = {
