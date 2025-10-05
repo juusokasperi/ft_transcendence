@@ -34,6 +34,15 @@ describe('Tournament queries', () => {
     expect(tournament!.completedAt).toBeNull();
   });
 
+  it('respects custom maxParticipants when provided', async () => {
+    const { createTournament } = await import('../../../db/queries/tournaments.ts');
+
+    const tournament = createTournament({ name: 'Mini Cup', maxParticipants: 8 });
+
+    expect(tournament).toBeDefined();
+    expect(tournament!.maxParticipants).toBe(8);
+  });
+
   it('filters tournaments by status', async () => {
     const { createTournament, listTournaments, updateTournamentStatus } = await import(
       '../../../db/queries/tournaments.ts'

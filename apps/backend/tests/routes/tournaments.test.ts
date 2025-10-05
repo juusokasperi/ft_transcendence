@@ -48,12 +48,18 @@ vi.mock('../../db/queries/tournamentMatches.ts', () => ({
 
 vi.mock('../../services/tournamentOrchestrator.ts', () => ({
   generateSingleEliminationBracket: vi.fn(),
+  processSemifinalResult: vi.fn(),
+}));
+
+vi.mock('../../services/matchmakingBridge.ts', () => ({
+  notifyMatchesReady: vi.fn(),
 }));
 
 import * as tournamentQueries from '../../db/queries/tournaments.ts';
 import * as participantQueries from '../../db/queries/tournamentParticipants.ts';
 import * as matchQueries from '../../db/queries/tournamentMatches.ts';
 import * as orchestrator from '../../services/tournamentOrchestrator.ts';
+import { notifyMatchesReady } from '../../services/matchmakingBridge.ts';
 import { tournamentRoutes } from '../../routes/tournaments.ts';
 import { signAccessToken } from '../../utils/jwt.ts';
 
@@ -114,6 +120,8 @@ const sampleBracketSummary = {
   totalRounds: 2,
   createdMatches: 4,
   assignedParticipants: 4,
+  readyMatches: [101, 102],
+  autoAdvancedMatches: [],
   skippedReason: null,
 };
 
@@ -197,6 +205,7 @@ describe('Tournament routes', () => {
     expect(payload.tournament.status).toBe('active');
     expect(payload.bracketSummary).toEqual(sampleBracketSummary);
     expect(orchestrator.generateSingleEliminationBracket).toHaveBeenCalledWith(1);
+    expect(notifyMatchesReady).toHaveBeenCalledWith(1, sampleBracketSummary.readyMatches);
   });
 
   it('POST /api/tournaments/:id/complete marks tournament completed', async () => {
@@ -246,6 +255,7 @@ describe('Tournament routes', () => {
       alias: 'PlayerOne',
     });
     expect(tournamentQueries.updateTournamentStatus).not.toHaveBeenCalled();
+    expect(notifyMatchesReady).not.toHaveBeenCalled();
   });
 
   it('POST /api/tournaments/:id/participants auto-activates at capacity', async () => {
@@ -282,6 +292,7 @@ describe('Tournament routes', () => {
     });
     expect(tournamentQueries.updateTournamentStatus).toHaveBeenCalledWith(1, 'active');
     expect(orchestrator.generateSingleEliminationBracket).toHaveBeenCalledWith(1);
+    expect(notifyMatchesReady).toHaveBeenCalledWith(1, sampleBracketSummary.readyMatches);
   });
 
   it('PATCH /api/tournaments/:id/participants/:participantId updates participant', async () => {
@@ -350,6 +361,35 @@ describe('Tournament routes', () => {
     expect(res.statusCode).toBe(200);
     expect(res.json()).toEqual([sampleMatch]);
   });
+
+
+it('PATCH /api/tournaments/:id/matches/:matchId triggers bracket progression', async () => {
+  const semifinalMatch = {
+    id: 5,
+    tournamentId: 1,
+    roundNumber: 1,
+    roundPosition: 1,
+    status: 'completed',
+    matchId: 42,
+    scheduledAt: null,
+    completedAt: new Date().toISOString(),
+  };
+  (matchQueries.getTournamentMatchById as Mock).mockReturnValue(semifinalMatch);
+  (matchQueries.updateTournamentMatchStatus as Mock).mockReturnValue(semifinalMatch);
+  (matchQueries.linkTournamentMatchResult as Mock).mockReturnValue(semifinalMatch);
+  (orchestrator.processSemifinalResult as Mock).mockReturnValue({ readyMatches: [77], autoAdvancedMatches: [] });
+
+  const res = await app.inject({
+    method: 'PATCH',
+    url: '/api/tournaments/1/matches/5',
+    headers: makeAuthHeader(),
+    body: { matchId: 123, setCompleted: true },
+  });
+
+  expect(res.statusCode).toBe(200);
+  expect(orchestrator.processSemifinalResult).toHaveBeenCalledWith(5);
+  expect(notifyMatchesReady).toHaveBeenCalledWith(1, [77]);
+});
 
   it('POST /api/tournaments/:id/matches creates match', async () => {
     (matchQueries.createTournamentMatch as Mock).mockReturnValue(sampleMatch);
