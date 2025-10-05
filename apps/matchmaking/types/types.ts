@@ -5,7 +5,10 @@ export interface ClientInfo {
   mmr: number;
   socket: WebSocket;
   username: string;
-  tournamentId?: string;
+  tournamentId?: number;
+  tournamentParticipantId?: number;
+  tournamentAlias?: string;
+  siteToken?: string;
   ready: boolean;
   uuid: string;
   authenticated: boolean;

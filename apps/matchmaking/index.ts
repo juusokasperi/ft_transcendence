@@ -20,6 +20,7 @@ import {
   handleForfeitTournament,
   handleAcceptScheduled,
   handleTournamentMatchesReady,
+  handleClientDisconnectFromTournament,
 } from './utils/scheduledMatches.ts';
 import { handleJoinQueue } from './utils/queue.ts';
 import Redis from 'ioredis';
@@ -121,19 +122,19 @@ wss.on('connection', async (socket: WebSocket, req) => {
         handleDeclineMatch(data.matchId, client, pendingMatches);
         break;
       case 'CREATE_TOURNAMENT':
-        handleCreateTournament(data, client);
+        void handleCreateTournament(data, client, clients);
         break;
       case 'JOIN_TOURNAMENT':
-        handleJoinTournament(data, client);
+        void handleJoinTournament(data, client, clients);
         break;
       case 'LEAVE_TOURNAMENT':
-        handleLeaveTournament(client);
+        void handleLeaveTournament(client, clients);
         break;
       case 'FORFEIT_TOURNAMENT':
-        handleForfeitTournament(client);
+        void handleForfeitTournament(client, clients);
         break;
       case 'ACCEPT_SCHEDULED':
-        handleAcceptScheduled(client);
+        void handleAcceptScheduled(data, client, clients);
         break;
       default:
         log('Unknown message', { type: (data as any).type ?? 'UNKNOWN' });
@@ -145,6 +146,7 @@ wss.on('connection', async (socket: WebSocket, req) => {
 
   socket.on('close', () => {
     log('Client disconnected', { id });
+    handleClientDisconnectFromTournament(client);
     clients.delete(id);
     removeFromQueue(id);
     //removeFromTournamentLobby(id)

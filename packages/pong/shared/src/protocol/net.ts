@@ -172,6 +172,7 @@ export type CreateTournamentRequest = {
 export type JoinTournamentRequest = {
   type: 'JOIN_TOURNAMENT';
   tournamentId: string;
+  alias?: string;
 };
 
 export type LeaveTournamentRequest = {
@@ -186,6 +187,7 @@ export type ForfeitTournamentRequest = {
 
 export type AcceptScheduledRequest = {
   type: 'ACCEPT_SCHEDULED';
+  tournamentMatchId: number;
 };
 
 export type MatchmakingClientMessage =

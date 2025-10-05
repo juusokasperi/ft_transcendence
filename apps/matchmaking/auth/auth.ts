@@ -84,6 +84,7 @@ export async function handleAuth(
   client.uuid = user.uuid;
   client.authenticated = true;
   client.mmr = mmr;
+  client.siteToken = token;
   log(`Client authenticated, admitting to MM service`, {
     uuid: client.uuid,
     mmr: client.mmr,
