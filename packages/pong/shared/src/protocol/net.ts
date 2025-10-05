@@ -1,3 +1,9 @@
+export type TournamentContext = {
+  tournamentId: number;
+  tournamentMatchId: number;
+  tournamentStage: 'semifinal' | 'final' | 'bronze';
+};
+
 export type HandoffMessage = {
   type: 'HANDOFF';
   matchId: string;
@@ -8,6 +14,7 @@ export type HandoffMessage = {
   joinTokenTTLSeconds: number;
   randomSeed: number;
   simulationStartTick: number;
+  tournament?: TournamentContext;
 };
 
 export type ConnectedMessage = {
@@ -41,6 +48,67 @@ export type MatchTimeoutMessage = {
   type: 'MATCH_TIMEOUT';
 };
 
+export type HandoffTimeoutMessage = {
+  type: 'HANDOFF_TIMEOUT';
+  roomIdentifier: string;
+  message: string;
+};
+
+export type TournamentParticipantState = {
+  participantId: number;
+  alias: string;
+  userUuid: string | null;
+  seed: number | null;
+  status: string;
+};
+
+export type TournamentMatchPlayerState = {
+  participantId: number;
+  teamNumber: number;
+  alias: string;
+  status: string;
+};
+
+export type TournamentMatchState = {
+  tournamentMatchId: number;
+  roundNumber: number;
+  roundPosition: number;
+  status: string;
+  scheduledAt: string | null;
+  completedAt: string | null;
+  matchId: number | null;
+  players: TournamentMatchPlayerState[];
+};
+
+export type TournamentLobbyUpdatedMessage = {
+  type: 'TOURNAMENT_LOBBY_UPDATED';
+  tournamentId: number;
+  status: string;
+  maxParticipants: number | null;
+  participants: TournamentParticipantState[];
+};
+
+export type TournamentBracketSnapshotMessage = {
+  type: 'TOURNAMENT_BRACKET_SNAPSHOT';
+  tournamentId: number;
+  matches: TournamentMatchState[];
+};
+
+export type TournamentMatchesReadyMessage = {
+  type: 'TOURNAMENT_MATCHES_READY';
+  tournamentId: number;
+  matches: Array<{
+    tournamentMatchId: number;
+    stage: 'semifinal' | 'final' | 'bronze';
+    participants: Array<{
+      userUuid: string;
+      alias: string;
+      participantId: number;
+      teamNumber: number;
+    }>;
+  }>;
+};
+
 export type MatchmakingMessage =
   | ConnectedMessage
   | QueueJoinedMessage
@@ -49,6 +117,10 @@ export type MatchmakingMessage =
   | MatchDeclinedMessage
   | HandoffMessage
   | MatchTimeoutMessage
+  | HandoffTimeoutMessage
+  | TournamentLobbyUpdatedMessage
+  | TournamentBracketSnapshotMessage
+  | TournamentMatchesReadyMessage
   | ErrorMessage;
 
 export type JoinTokenClaims = {
@@ -62,10 +134,7 @@ export type JoinTokenClaims = {
   side: 'west' | 'east';
   simulationStartTick: number;
   region?: string;
-  tournamentId?: number;
-  tournamentMatchId?: number;
-  tournamentStage?: 'semifinal' | 'final' | 'bronze';
-};
+} & Partial<TournamentContext>;
 
 export type ErrorMessage = {
   type: 'ERROR';
