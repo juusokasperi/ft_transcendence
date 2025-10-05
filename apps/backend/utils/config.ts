@@ -36,6 +36,8 @@ await mkdir(dirname(DB_PATH), { recursive: true });
 // Export config
 export const DATABASE_PATH = DB_PATH;
 
+export const REDIS_URL = process.env.REDIS_URL ?? 'redis://localhost:6379';
+
 export const BACKEND_PORT = Number(process.env.BACKEND_PORT!);
 export const BACKEND_HOST = process.env.BACKEND_HOST as string;
 export const SECRET = process.env.SECRET as string;

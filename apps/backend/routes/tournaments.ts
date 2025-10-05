@@ -143,7 +143,7 @@ export async function tournamentRoutes(app: FastifyInstance) {
         if (bracketSummary) {
           responsePayload.bracketSummary = bracketSummary;
           if (bracketSummary.readyMatches?.length)
-            notifyMatchesReady(tournamentId, bracketSummary.readyMatches);
+            await notifyMatchesReady(tournamentId, bracketSummary.readyMatches);
         }
 
         return res.status(200).send(responsePayload);
@@ -225,8 +225,8 @@ export async function tournamentRoutes(app: FastifyInstance) {
           if (!updated) return res.status(500).send({ message: 'Failed to activate tournament' });
           const bracketSummary = generateSingleEliminationBracket(tournamentId);
           activation = { tournament: updated, bracketSummary };
-          if (bracketSummary.readyMatches.length)
-            notifyMatchesReady(tournamentId, bracketSummary.readyMatches);
+          if (bracketSummary.readyMatches?.length)
+            await notifyMatchesReady(tournamentId, bracketSummary.readyMatches);
         }
 
         return res.status(201).send({ participant, activation });
@@ -374,9 +374,8 @@ export async function tournamentRoutes(app: FastifyInstance) {
 
         if (match.status === 'completed' && match.roundNumber === 1) {
           const progression = processSemifinalResult(match.id);
-          if (progression) {
-            if (progression.readyMatches.length)
-              notifyMatchesReady(tournamentId, progression.readyMatches);
+          if (progression?.readyMatches?.length) {
+            await notifyMatchesReady(tournamentId, progression.readyMatches);
           }
         }
 

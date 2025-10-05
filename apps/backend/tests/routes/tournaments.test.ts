@@ -52,7 +52,7 @@ vi.mock('../../services/tournamentOrchestrator.ts', () => ({
 }));
 
 vi.mock('../../services/matchmakingBridge.ts', () => ({
-  notifyMatchesReady: vi.fn(),
+  notifyMatchesReady: vi.fn().mockResolvedValue(undefined),
 }));
 
 import * as tournamentQueries from '../../db/queries/tournaments.ts';

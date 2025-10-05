@@ -133,6 +133,7 @@ export const updateTournamentStatusSchema = {
     },
     400: ValidationErrorResponseSchema,
     404: ErrorResponseSchema,
+    409: ErrorResponseSchema,
     500: ErrorResponseSchema,
   },
 };

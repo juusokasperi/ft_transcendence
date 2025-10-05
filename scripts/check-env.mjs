@@ -48,6 +48,7 @@ const REQUIRED_VARS = [
   'REDIS_URL',
   'API_URL',
   'GAME_NODES_AMOUNT',
+  'REDIS_URL',
 ];
 
 const help =

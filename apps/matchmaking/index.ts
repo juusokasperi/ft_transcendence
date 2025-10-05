@@ -19,6 +19,7 @@ import {
   handleLeaveTournament,
   handleForfeitTournament,
   handleAcceptScheduled,
+  handleTournamentMatchesReady,
 } from './utils/scheduledMatches.ts';
 import { handleJoinQueue } from './utils/queue.ts';
 import Redis from 'ioredis';
@@ -27,6 +28,7 @@ import { handleAdmitConfirmed } from './utils/pendingHandoffs.ts';
 const redisSub = new Redis(REDIS_URL);
 
 redisSub.subscribe('room_ready');
+redisSub.subscribe('tournament:matches_ready');
 redisSub.on('connect', () => {
   log('Redis pub/sub connected');
 });
@@ -39,9 +41,18 @@ redisSub.on('message', (channel: string, message: string) => {
     } catch (err) {
       log(
         'Error parsing roomIdentifier from redis',
-        {
-          error: err instanceof Error ? err.message : 'Unknown error',
-        },
+        { error: err instanceof Error ? err.message : 'Unknown error' },
+        'error',
+      );
+    }
+  } else if (channel === 'tournament:matches_ready') {
+    try {
+      const payload = JSON.parse(message);
+      handleTournamentMatchesReady(payload, clients);
+    } catch (err) {
+      log(
+        'Failed to handle tournament matches ready message',
+        { error: err instanceof Error ? err.message : 'Unknown error' },
         'error',
       );
     }
