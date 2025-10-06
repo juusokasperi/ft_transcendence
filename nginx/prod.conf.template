@@ -57,7 +57,7 @@ server {
     proxy_set_header Host $http_host;
   }
 
-  # ---------- Site served from volume populated by the frotend container ----
+  # ---------- Site served from volume populated by the frontend container ----
    location / {
     root /usr/share/nginx/html;
     index index.html;
