@@ -51,6 +51,7 @@ export function createOnlineApp(
     seat: PlayerSeat;
     joinToken: string;
     randomSeed: number;
+    onMatchEnd?: (reason: string, winner?: 'east' | 'west') => void;
   },
 ): PongInstance {
   const { engine, engineDisposable } = createEngine(canvas);
@@ -365,6 +366,14 @@ export function createOnlineApp(
       console.log('[OnlineGame] Match ended:', reason, 'winner:', winner);
       hideDisconnectOverlay();
       showMatchEndOverlay(reason, winner);
+      
+      // Call external callback if provided
+      if (cfg.onMatchEnd) {
+        // Delay callback to allow user to see the overlay
+        setTimeout(() => {
+          cfg.onMatchEnd?.(reason, winner);
+        }, 4000);
+      }
     });
 
     const startPromise = net.awaitStart();

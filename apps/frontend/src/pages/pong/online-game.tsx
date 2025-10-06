@@ -264,6 +264,35 @@ const OnlineGame: React.FC = () => {
           seat,
           joinToken,
           randomSeed,
+          onMatchEnd: (reason: string, winner?: 'east' | 'west') => {
+            console.log('[OnlineGame] Match ended callback:', reason, winner);
+            
+            // Show notification about match result
+            if (reason === 'opponent_timeout' && winner) {
+              const youWon = (seat === 'P1' && winner === 'east') || (seat === 'P2' && winner === 'west');
+              enqueueSnackbar({
+                message: youWon ? 'You won! Opponent disconnected.' : 'Match ended. Opponent timed out.',
+                variant: youWon ? 'success' : 'info',
+              });
+            }
+            
+            // Return to idle state after match ends
+            setServerUrl('');
+            setRoomIdentifier('');
+            setJoinToken(null);
+            setRandomSeed(null);
+            setMatchId('');
+            setOpponentInfo({ username: null, mmr: 0 });
+            
+            // Reconnect to matchmaking if connection was closed
+            if (clientRef.current && clientRef.current.socket.readyState !== WebSocket.OPEN) {
+              console.log('[OnlineGame] Matchmaking connection closed, reconnecting...');
+              setStatus('connecting');
+              setShouldReconnect((prev) => (prev + 1) % 2);
+            } else {
+              setStatus('idle');
+            }
+          },
         });
         appRef.current = app;
         setStatus('playing');
