@@ -116,6 +116,18 @@ export type TournamentMatchesReadyMessage = {
   }>;
 };
 
+export type TournamentMatchCountdownStatus = 'running' | 'cancelled' | 'started';
+
+export type TournamentMatchCountdownMessage = {
+  type: 'TOURNAMENT_MATCH_COUNTDOWN';
+  tournamentId: number;
+  tournamentMatchId: number;
+  stage: 'semifinal' | 'final' | 'bronze';
+  secondsRemaining: number;
+  targetStartEpochMs: number;
+  status: TournamentMatchCountdownStatus;
+};
+
 export type MatchmakingMessage =
   | ConnectedMessage
   | QueueJoinedMessage
@@ -128,6 +140,7 @@ export type MatchmakingMessage =
   | TournamentLobbyUpdatedMessage
   | TournamentBracketSnapshotMessage
   | TournamentMatchesReadyMessage
+  | TournamentMatchCountdownMessage
   | ErrorMessage;
 
 export type JoinTokenClaims = {
