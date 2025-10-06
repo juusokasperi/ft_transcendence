@@ -2,6 +2,8 @@ import db from '../client.ts';
 import type { TournamentDb } from '../../types/dbtypes.ts';
 import type { Tournament } from '../../types/types.ts';
 
+type TournamentWithParticipantRow = TournamentDb & { participant_id: number };
+
 type CreateTournamentInput = {
   name: string;
   description?: string;
@@ -122,4 +124,29 @@ export function markTournamentCompleted(id: number): Tournament | undefined {
   } catch (error) {
     return undefined;
   }
+}
+
+export function findUserActiveTournament(
+  userUuid: string,
+): { tournament: Tournament; participantId: number } | undefined {
+  const row = db
+    .prepare(
+      `
+      SELECT t.*, p.id AS participant_id
+      FROM Tournaments t
+      INNER JOIN TournamentParticipants p ON p.tournament_id = t.id
+      WHERE p.user_uuid = ? AND t.status IN ('draft', 'active')
+      ORDER BY t.updated_at DESC, t.id DESC
+      LIMIT 1
+    `,
+    )
+    .get(userUuid) as TournamentWithParticipantRow | null;
+
+  if (!row) return undefined;
+
+  const tournament = mapTournamentRecord(row as TournamentDb);
+  return {
+    tournament,
+    participantId: row.participant_id,
+  };
 }

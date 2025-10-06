@@ -22,6 +22,7 @@ vi.mock('../../db/queries/tournaments.ts', () => ({
   getTournamentById: vi.fn(),
   updateTournamentStatus: vi.fn(),
   markTournamentCompleted: vi.fn(),
+  findUserActiveTournament: vi.fn(),
 }));
 
 vi.mock('../../db/queries/tournamentParticipants.ts', () => ({
@@ -139,6 +140,7 @@ describe('Tournament routes', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    (tournamentQueries.findUserActiveTournament as Mock).mockReturnValue(undefined);
   });
 
   it('GET /api/tournaments returns tournaments', async () => {
@@ -173,10 +175,57 @@ describe('Tournament routes', () => {
 
     expect(res.statusCode).toBe(201);
     expect(res.json()).toEqual(sampleTournament);
+    expect(tournamentQueries.findUserActiveTournament).toHaveBeenCalledWith('user-1');
     expect(tournamentQueries.createTournament).toHaveBeenCalledWith({
       name: 'Cup',
       description: '',
     });
+  });
+
+  it('POST /api/tournaments returns 409 when user already has active tournament', async () => {
+    (tournamentQueries.findUserActiveTournament as Mock).mockReturnValue({
+      tournament: sampleTournament,
+      participantId: sampleParticipant.id,
+    });
+
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/tournaments',
+      headers: makeAuthHeader(),
+      body: { name: 'Cup' },
+    });
+
+  expect(res.statusCode).toBe(409);
+  expect(res.json()).toMatchObject({ code: 'tournament_active', tournamentId: sampleTournament.id });
+    expect(tournamentQueries.createTournament).not.toHaveBeenCalled();
+  });
+
+  it('GET /api/tournaments/my/active returns null when user has none', async () => {
+    const res = await app.inject({
+      method: 'GET',
+      url: '/api/tournaments/my/active',
+      headers: makeAuthHeader(),
+    });
+
+    expect(res.statusCode).toBe(200);
+    expect(res.json()).toBeNull();
+  });
+
+  it('GET /api/tournaments/my/active returns active tournament', async () => {
+    (tournamentQueries.findUserActiveTournament as Mock).mockReturnValue({
+      tournament: sampleTournament,
+      participantId: sampleParticipant.id,
+    });
+    (participantQueries.getTournamentParticipantById as Mock).mockReturnValue(sampleParticipant);
+
+    const res = await app.inject({
+      method: 'GET',
+      url: '/api/tournaments/my/active',
+      headers: makeAuthHeader(),
+    });
+
+    expect(res.statusCode).toBe(200);
+    expect(res.json()).toEqual({ tournament: sampleTournament, participant: sampleParticipant });
   });
 
   it('GET /api/tournaments/:id returns 404 when missing', async () => {

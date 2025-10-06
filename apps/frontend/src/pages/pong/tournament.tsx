@@ -20,6 +20,8 @@ import { useSnackbar } from '../../context/SnackbarContext';
 import { useAppContext } from '../../context/AppContext';
 
 const TOURNAMENT_SIZE = 4;
+const RECENT_TOURNAMENT_WINDOW_MS = 6 * 60 * 60 * 1000; // 6 hours
+const MAX_VISIBLE_TOURNAMENTS = 8;
 
 type TournamentSummary = {
   id: number;
@@ -27,6 +29,9 @@ type TournamentSummary = {
   status: string;
   maxParticipants: number | null;
   startAt?: string | null;
+  createdAt?: string;
+  updatedAt?: string;
+  completedAt?: string | null;
 };
 
 type ReadyMatch = TournamentMatchesReadyMessage['matches'][number];
@@ -94,15 +99,98 @@ const TournamentPage: React.FC = () => {
     activeTournamentIdRef.current = activeTournamentId;
   }, [activeTournamentId]);
 
+  const filterTournamentsForDisplay = useCallback(
+    (incoming: TournamentSummary[]): TournamentSummary[] => {
+      const parseTimestamp = (value?: string | null): number | null => {
+        if (!value) return null;
+        const parsed = Date.parse(value);
+        return Number.isNaN(parsed) ? null : parsed;
+      };
+
+      const resolveTimestamp = (item: TournamentSummary): number | null => {
+        const candidates: Array<string | null | undefined> = [
+          item.updatedAt,
+          item.startAt,
+          item.createdAt,
+        ];
+        for (const candidate of candidates) {
+          const parsed = parseTimestamp(candidate);
+          if (parsed !== null) return parsed;
+        }
+        return null;
+      };
+
+      const byStatus = incoming.filter((tournament) =>
+        ['draft', 'active'].includes(tournament.status),
+      );
+
+      if (byStatus.length === 0) return [];
+
+      const unique = new Map<number, TournamentSummary>();
+      byStatus.forEach((item) => {
+        const existing = unique.get(item.id);
+        if (!existing) {
+          unique.set(item.id, item);
+          return;
+        }
+        const existingTime = resolveTimestamp(existing) ?? Number.NEGATIVE_INFINITY;
+        const candidateTime = resolveTimestamp(item) ?? Number.NEGATIVE_INFINITY;
+        if (candidateTime >= existingTime) {
+          unique.set(item.id, item);
+        }
+      });
+
+      const now = Date.now();
+      const currentId = activeTournamentIdRef.current;
+
+      const recent: TournamentSummary[] = [];
+      const fallbackPool: TournamentSummary[] = [];
+
+      for (const item of unique.values()) {
+        const timestamp = resolveTimestamp(item);
+        const isCurrent = currentId !== null && item.id === currentId;
+        const isRecent = timestamp !== null && now - timestamp <= RECENT_TOURNAMENT_WINDOW_MS;
+        if (isCurrent || isRecent) {
+          recent.push(item);
+        } else {
+          fallbackPool.push(item);
+        }
+      }
+
+      const sortByTimestampDesc = (left: TournamentSummary, right: TournamentSummary) => {
+        const leftTs = resolveTimestamp(left);
+        const rightTs = resolveTimestamp(right);
+        if (leftTs === null && rightTs === null) return 0;
+        if (leftTs === null) return 1;
+        if (rightTs === null) return -1;
+        return rightTs - leftTs;
+      };
+
+      recent.sort(sortByTimestampDesc);
+      fallbackPool.sort(sortByTimestampDesc);
+
+      if (recent.length >= MAX_VISIBLE_TOURNAMENTS) {
+        return recent.slice(0, MAX_VISIBLE_TOURNAMENTS);
+      }
+
+      const combined = [...recent];
+      for (const item of fallbackPool) {
+        combined.push(item);
+        if (combined.length >= MAX_VISIBLE_TOURNAMENTS) break;
+      }
+
+      return combined;
+    },
+    [],
+  );
+
   const loadTournaments = useCallback(async () => {
     if (!userReady) return;
     setLoadingTournaments(true);
     try {
       const { data } = await axios.get('/api/tournaments');
-      const filtered = (data as TournamentSummary[]).filter((t) =>
-        ['draft', 'active'].includes(t.status),
-      );
-      setAvailableTournaments(filtered);
+      const rawList = Array.isArray(data) ? (data as TournamentSummary[]) : [];
+      setAvailableTournaments(filterTournamentsForDisplay(rawList));
     } catch (error) {
       enqueueSnackbar({
         message: 'Failed to load tournaments list',
@@ -111,7 +199,7 @@ const TournamentPage: React.FC = () => {
     } finally {
       setLoadingTournaments(false);
     }
-  }, [axios, enqueueSnackbar, userReady]);
+  }, [axios, enqueueSnackbar, filterTournamentsForDisplay, userReady]);
 
   useEffect(() => {
     if (!userReady || !user) return;
@@ -247,29 +335,35 @@ const TournamentPage: React.FC = () => {
             resetActiveTournamentState();
           }
 
+          let needsRefresh = false;
           setAvailableTournaments((prev) => {
             const next = prev.slice();
             const index = next.findIndex((item) => item.id === msg.tournamentId);
+            const timestamp = new Date().toISOString();
             if (index === -1) {
               next.push({
                 id: msg.tournamentId,
                 name: `Tournament #${msg.tournamentId}`,
                 status: msg.status,
                 maxParticipants: msg.maxParticipants ?? TOURNAMENT_SIZE,
+                updatedAt: timestamp,
               });
+              needsRefresh = true;
             } else {
               const existing = next[index]!;
               next[index] = {
-                id: existing.id,
-                name: existing.name,
+                ...existing,
                 status: msg.status,
                 maxParticipants:
                   msg.maxParticipants ?? existing.maxParticipants ?? TOURNAMENT_SIZE,
-                startAt: existing.startAt,
+                updatedAt: timestamp,
               };
             }
-            return next;
+            return filterTournamentsForDisplay(next);
           });
+          if (needsRefresh) {
+            void loadTournaments();
+          }
           break;
         }
         case 'TOURNAMENT_BRACKET_SNAPSHOT': {
@@ -322,7 +416,7 @@ const TournamentPage: React.FC = () => {
           break;
       }
     },
-    [enqueueSnackbar, loadTournaments, navigate, refreshTournamentState, resetActiveTournamentState, user?.uuid],
+    [enqueueSnackbar, filterTournamentsForDisplay, loadTournaments, navigate, refreshTournamentState, resetActiveTournamentState, user?.uuid],
   );
 
   useEffect(() => {

@@ -110,6 +110,30 @@ export const getTournamentSchema = {
   },
 };
 
+export const getMyActiveTournamentSchema = {
+  tags: ['Tournament'],
+  summary: 'Get active or draft tournament for current user',
+  security: USER_ROUTE_SECURITY,
+  response: {
+    200: {
+      anyOf: [
+        { type: 'null' },
+        {
+          type: 'object',
+          additionalProperties: false,
+          properties: {
+            tournament: TournamentSchema,
+            participant: TournamentParticipantSchema,
+          },
+          required: ['tournament', 'participant'],
+        },
+      ],
+    },
+    401: ErrorResponseSchema,
+    500: ErrorResponseSchema,
+  },
+};
+
 export const updateTournamentStatusSchema = {
   tags: ['Tournament'],
   summary: 'Update tournament status',

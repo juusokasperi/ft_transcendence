@@ -455,6 +455,34 @@ export async function handleCreateTournament(
   const tournamentName = data.name?.trim().slice(0, 128) || 'Ping Pong Cup';
 
   try {
+    const activeRes = await axios.get(`${API_URL}/api/tournaments/my/active`, { headers });
+    const activePayload = activeRes.data as
+      | null
+      | {
+          tournament: { id: number };
+          participant: { id: number; alias: string };
+        };
+
+    if (activePayload) {
+      client.tournamentId = activePayload.tournament.id;
+      client.tournamentParticipantId = activePayload.participant.id;
+      client.tournamentAlias = activePayload.participant.alias;
+      subscribeClientToTournament(activePayload.tournament.id, client);
+
+      sendToClient(client, {
+        type: 'ERROR',
+        code: 'TOURNAMENT_LIMIT',
+        message: 'You already have a tournament in progress',
+      });
+
+      await syncTournamentState(activePayload.tournament.id, client, clients);
+      return;
+    }
+
+    client.tournamentId = undefined;
+    client.tournamentParticipantId = undefined;
+    client.tournamentAlias = undefined;
+
     const tournamentRes = await axios.post(
       `${API_URL}/api/tournaments`,
       {
@@ -679,5 +707,54 @@ export function handleClientDisconnectFromTournament(client: ClientInfo) {
 
   for (const pending of pendingTournamentMatches.values()) {
     pending.accepted.delete(client.uuid);
+  }
+}
+
+export async function restoreTournamentMembership(
+  client: ClientInfo,
+  clients: Map<string, ClientInfo>,
+) {
+  if (!client.authenticated) return;
+  const token = extractSiteToken(client);
+  if (!token) return;
+
+  try {
+    const response = await axios.get(`${API_URL}/api/tournaments/my/active`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+
+    const payload = response.data as
+      | null
+      | {
+          tournament: {
+            id: number;
+            status: string;
+            maxParticipants: number | null;
+          };
+          participant: {
+            id: number;
+            alias: string;
+            status: string;
+          };
+        };
+
+    if (!payload) return;
+
+    const { tournament, participant } = payload;
+
+    client.tournamentId = tournament.id;
+    client.tournamentParticipantId = participant.id;
+    client.tournamentAlias = participant.alias;
+
+    subscribeClientToTournament(tournament.id, client);
+
+    await syncTournamentState(tournament.id, client, clients);
+    checkPendingMatchesForPlayer(client, tournament.id, clients);
+  } catch (error) {
+    log(
+      'Failed to restore tournament membership',
+      { uuid: client.uuid, error: error instanceof Error ? error.message : 'unknown' },
+      'warn',
+    );
   }
 }

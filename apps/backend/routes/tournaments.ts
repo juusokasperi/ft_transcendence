@@ -4,6 +4,7 @@ import {
   createTournament,
   getTournamentById,
   listTournaments,
+  findUserActiveTournament,
   markTournamentCompleted,
   updateTournamentStatus,
 } from '../db/queries/tournaments.ts';
@@ -37,6 +38,7 @@ import {
   createMatchSchema,
   createParticipantSchema,
   createTournamentSchema,
+  getMyActiveTournamentSchema,
   deleteMatchPlayerSchema,
   deleteParticipantSchema,
   getTournamentSchema,
@@ -68,6 +70,31 @@ export async function tournamentRoutes(app: FastifyInstance) {
     },
   );
 
+  app.get(
+    '/my/active',
+    {
+      schema: getMyActiveTournamentSchema,
+      preHandler: [authPreHandler],
+    },
+    async (req, res) => {
+      try {
+        const userUuid = (req.user as { uuid?: string } | undefined)?.uuid;
+        if (!userUuid) return res.status(200).send(null);
+
+        const active = findUserActiveTournament(userUuid);
+        if (!active) return res.status(200).send(null);
+
+        const participant = getTournamentParticipantById(active.participantId);
+        if (!participant) return res.status(200).send(null);
+
+        return res.status(200).send({ tournament: active.tournament, participant });
+      } catch (error) {
+        req.log.error({ error }, 'Failed to fetch active tournament for user');
+        return res.status(500).send({ message: 'Failed to fetch active tournament' });
+      }
+    },
+  );
+
   app.post(
     '/',
     {
@@ -84,6 +111,19 @@ export async function tournamentRoutes(app: FastifyInstance) {
           maxParticipants?: number | null;
           startAt?: string | null;
         };
+
+        const userUuid = (req.user as { uuid?: string } | undefined)?.uuid;
+        if (userUuid) {
+          const existing = findUserActiveTournament(userUuid);
+          if (existing) {
+            return res.status(409).send({
+              message: 'You already have a tournament in progress',
+              code: 'tournament_active',
+              tournamentId: existing.tournament.id,
+            });
+          }
+        }
+
         const tournament = createTournament(body);
         if (!tournament)
           return res.status(409).send({ message: 'Unable to create tournament with provided data' });

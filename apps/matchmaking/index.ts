@@ -21,6 +21,7 @@ import {
   handleAcceptScheduled,
   handleTournamentMatchesReady,
   handleClientDisconnectFromTournament,
+  restoreTournamentMembership,
 } from './utils/scheduledMatches.ts';
 import { handleJoinQueue } from './utils/queue.ts';
 import Redis from 'ioredis';
@@ -99,6 +100,7 @@ wss.on('connection', async (socket: WebSocket, req) => {
   clients.set(id, client);
 
   socket.send(JSON.stringify({ type: 'CONNECTED', clientId: id }));
+  void restoreTournamentMembership(client, clients);
   // broadcastLobbies(client, lobbies, clients); Maybe for tournament system..
   socket.on('message', (raw: RawData) => {
     let data: MatchmakingClientMessage;
