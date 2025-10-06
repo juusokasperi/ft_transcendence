@@ -9,7 +9,12 @@ import TournamentMatchOverlay from './components/TournamentMatchOverlay';
 import TournamentPageHeader from './components/TournamentPageHeader';
 import { useTournamentPageController } from './hooks/useTournamentPageController';
 
-const TournamentPage: React.FC = () => {
+type TournamentPageProps = {
+  onBack?: () => void;
+  focusTournamentId?: number | null;
+};
+
+const TournamentPage: React.FC<TournamentPageProps> = ({ onBack, focusTournamentId = null }) => {
   const {
     user,
     userReady,
@@ -40,7 +45,7 @@ const TournamentPage: React.FC = () => {
     isDetailView,
     headerRefreshHandler,
     currentParticipantId,
-  } = useTournamentPageController();
+  } = useTournamentPageController({ focusTournamentId });
 
   const currentUserUuid = user?.uuid ?? null;
   const hasActiveTournament = activeTournamentId !== null;
@@ -74,6 +79,7 @@ const TournamentPage: React.FC = () => {
           connectionReady={connectionReady}
           loading={loadingTournaments}
           onRefresh={headerRefreshHandler}
+          onBack={isDetailView ? onBack : undefined}
         />
 
         <section className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">

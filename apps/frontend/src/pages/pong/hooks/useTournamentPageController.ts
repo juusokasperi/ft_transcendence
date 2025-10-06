@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import type { RefObject } from 'react';
+import { useLocation } from 'react-router-dom';
 import { createMatchmakingClient } from '../../../services/matchmaking';
 import type {
   HandoffTimeoutMessage,
@@ -49,15 +50,42 @@ type TournamentControllerReturn = {
   currentParticipantId: number | null;
 };
 
-export function useTournamentPageController(): TournamentControllerReturn {
+type UseTournamentPageControllerOptions = {
+  focusTournamentId?: number | null;
+};
+
+export function useTournamentPageController(
+  options: UseTournamentPageControllerOptions = {},
+): TournamentControllerReturn {
   const { enqueueSnackbar } = useSnackbar();
   const { user, userReady, axios, navigate } = useAppContext();
+  const location = useLocation();
+  const focusTournamentId = options.focusTournamentId ?? null;
+
+  const debugLog = useCallback((event: string, payload?: Record<string, unknown>) => {
+    if (import.meta.env?.DEV) {
+      // eslint-disable-next-line no-console
+      console.debug(`[TournamentController] ${event}`, payload ?? {});
+    }
+  }, []);
 
   const clientRef = useRef<ReturnType<typeof createMatchmakingClient> | null>(null);
   const activeTournamentIdRef = useRef<number | null>(null);
   const pendingMatchRef = useRef<ReadyMatch | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const appRef = useRef<{ destroy(): void } | null>(null);
+  const manualCloseRef = useRef(false);
+  const connectionErrorShownRef = useRef(false);
+  const reconnectTimerRef = useRef<number | null>(null);
+  const connectionStateRef = useRef<'idle' | 'connecting' | 'open'>('idle');
+  const backoffDelayRef = useRef(1500);
+  const lastDisconnectRef = useRef<number | null>(null);
+  const focusStateRef = useRef<number | null>(null);
+  const membershipRef = useRef<{ member: boolean; tournamentId: number | null }>({
+    member: false,
+    tournamentId: null,
+  });
+  const locationRef = useRef(location.pathname);
 
   const [connectionReady, setConnectionReady] = useState(false);
   const [loadingTournaments, setLoadingTournaments] = useState(false);
@@ -81,6 +109,10 @@ export function useTournamentPageController(): TournamentControllerReturn {
   useEffect(() => {
     setAliasInput(user?.username ?? '');
   }, [user?.username]);
+
+  useEffect(() => {
+    locationRef.current = location.pathname;
+  }, [location.pathname]);
 
   useEffect(() => {
     activeTournamentIdRef.current = activeTournamentId;
@@ -184,8 +216,9 @@ export function useTournamentPageController(): TournamentControllerReturn {
 
   useEffect(() => {
     if (!userReady || !user) return;
+    debugLog('initial-load', { userUuid: user.uuid });
     loadTournaments();
-  }, [loadTournaments, userReady, user]);
+  }, [debugLog, loadTournaments, userReady, user]);
 
   const resetActiveTournamentState = useCallback(() => {
     setParticipants([]);
@@ -196,12 +229,27 @@ export function useTournamentPageController(): TournamentControllerReturn {
     setLatestReadyMatches([]);
     setTournamentStatus('draft');
     setMaxParticipants(null);
-  }, []);
+    debugLog('reset-active-tournament');
+  }, [debugLog]);
+
+  useEffect(() => {
+    if (focusTournamentId === null) {
+      focusStateRef.current = null;
+      return;
+    }
+    if (focusStateRef.current === focusTournamentId) return;
+    focusStateRef.current = focusTournamentId;
+    if (activeTournamentIdRef.current === focusTournamentId) return;
+    resetActiveTournamentState();
+    setActiveTournamentId(focusTournamentId);
+    debugLog('focus-change', { focusTournamentId });
+  }, [debugLog, focusTournamentId, resetActiveTournamentState]);
 
   const refreshTournamentState = useCallback(async () => {
     if (!activeTournamentId || !userReady) return;
 
     try {
+      debugLog('refresh-tournament-state:start', { tournamentId: activeTournamentId });
       const [tournamentRes, participantsRes, matchesRes] = await Promise.all([
         axios.get(`/api/tournaments/${activeTournamentId}`),
         axios.get(`/api/tournaments/${activeTournamentId}/participants`),
@@ -275,10 +323,19 @@ export function useTournamentPageController(): TournamentControllerReturn {
       )) as TournamentMatchState[];
 
       setBracket(matches);
+      debugLog('refresh-tournament-state:success', {
+        tournamentId: activeTournamentId,
+        participants: participantPayload.length,
+        matches: matches.length,
+      });
     } catch (error) {
+      debugLog('refresh-tournament-state:error', {
+        tournamentId: activeTournamentId,
+        error,
+      });
       enqueueSnackbar({ message: 'Failed to refresh tournament state', variant: 'error' });
     }
-  }, [activeTournamentId, axios, enqueueSnackbar, userReady]);
+  }, [activeTournamentId, axios, debugLog, enqueueSnackbar, userReady]);
 
   useEffect(() => {
     if (!activeTournamentId) return;
@@ -287,11 +344,14 @@ export function useTournamentPageController(): TournamentControllerReturn {
 
   const handleMessage = useCallback(
     (msg: MatchmakingMessage) => {
+      debugLog('socket-message', { type: msg.type });
       switch (msg.type) {
         case 'CONNECTED':
           setConnectionReady(true);
+          debugLog('socket-event:connected');
           break;
         case 'ERROR':
+          debugLog('socket-event:error', { code: msg.code, message: msg.message });
           enqueueSnackbar({ message: msg.message ?? 'Tournament error', variant: 'error' });
           if (msg.code === 'AUTH') navigate('/login');
           if (msg.code === 'TOURNAMENT_API') {
@@ -299,6 +359,11 @@ export function useTournamentPageController(): TournamentControllerReturn {
           }
           break;
         case 'TOURNAMENT_LOBBY_UPDATED': {
+          debugLog('socket-event:lobby-update', {
+            tournamentId: msg.tournamentId,
+            status: msg.status,
+            participants: msg.participants.length,
+          });
           setTournamentStatus(msg.status);
           setMaxParticipants(msg.maxParticipants ?? TOURNAMENT_SIZE);
           setParticipants(msg.participants);
@@ -310,10 +375,33 @@ export function useTournamentPageController(): TournamentControllerReturn {
 
           if (member) {
             setActiveTournamentId(msg.tournamentId);
+            debugLog('membership:update', { member: true, tournamentId: msg.tournamentId });
           } else if (activeTournamentIdRef.current === msg.tournamentId) {
             setActiveTournamentId(null);
             resetActiveTournamentState();
+            debugLog('membership:update', { member: false, tournamentId: msg.tournamentId });
           }
+
+          const detailPath = `/ping-pong/tournaments/${msg.tournamentId}`;
+          const previousMembership = membershipRef.current;
+          if (member && (!previousMembership.member || previousMembership.tournamentId !== msg.tournamentId)) {
+            if (locationRef.current !== detailPath) {
+              navigate(detailPath);
+            }
+          } else if (
+            !member &&
+            previousMembership.member &&
+            previousMembership.tournamentId === msg.tournamentId &&
+            locationRef.current === detailPath
+          ) {
+            navigate('/ping-pong/tournaments');
+          }
+
+          membershipRef.current = {
+            member,
+            tournamentId: member ? msg.tournamentId : null,
+          };
+          debugLog('membership:state', membershipRef.current);
 
           let needsRefresh = false;
           setAvailableTournaments((prev) => {
@@ -346,10 +434,12 @@ export function useTournamentPageController(): TournamentControllerReturn {
           break;
         }
         case 'TOURNAMENT_BRACKET_SNAPSHOT': {
+          debugLog('socket-event:bracket-snapshot', { matches: msg.matches.length });
           setBracket(msg.matches);
           break;
         }
         case 'TOURNAMENT_MATCHES_READY': {
+          debugLog('socket-event:matches-ready', { matches: msg.matches.length });
           setLatestReadyMatches(msg.matches);
           void refreshTournamentState();
 
@@ -378,19 +468,31 @@ export function useTournamentPageController(): TournamentControllerReturn {
               setMatchPhase((phase) =>
                 phase === 'starting' || phase === 'playing' ? phase : 'awaiting_start',
               );
+              debugLog('pending-match:assigned', {
+                tournamentMatchId: personal.tournamentMatchId,
+              });
             } else {
               pendingMatchRef.current = null;
               setPendingMatch(null);
+              debugLog('pending-match:cleared');
             }
           } else {
             pendingMatchRef.current = null;
             setPendingMatch(null);
+            debugLog('pending-match:cleared-no-user');
           }
           break;
         }
         case 'TOURNAMENT_MATCH_COUNTDOWN': {
           const payload = msg;
           if (activeTournamentIdRef.current !== payload.tournamentId) break;
+
+          debugLog('socket-event:countdown', {
+            tournamentId: payload.tournamentId,
+            tournamentMatchId: payload.tournamentMatchId,
+            status: payload.status,
+            secondsRemaining: payload.secondsRemaining,
+          });
 
           setMatchCountdowns((prev) => {
             const next = new Map(prev);
@@ -423,6 +525,10 @@ export function useTournamentPageController(): TournamentControllerReturn {
         }
         case 'HANDOFF': {
           const currentTournamentId = activeTournamentIdRef.current;
+          debugLog('socket-event:handoff', {
+            tournamentId: msg.tournament?.tournamentId ?? null,
+            matchId: msg.matchId,
+          });
           if (msg.tournament && msg.tournament.tournamentId === currentTournamentId) {
             const previousMatchId = pendingMatchRef.current?.tournamentMatchId;
             setPendingMatch(null);
@@ -449,6 +555,10 @@ export function useTournamentPageController(): TournamentControllerReturn {
         }
         case 'HANDOFF_TIMEOUT': {
           const payload = msg as HandoffTimeoutMessage;
+          debugLog('socket-event:handoff-timeout', {
+            tournamentId: 'tournamentId' in payload ? (payload as { tournamentId?: number }).tournamentId ?? null : null,
+            message: payload.message ?? null,
+          });
           const previousMatchId = pendingMatchRef.current?.tournamentMatchId;
           enqueueSnackbar({ message: payload.message ?? 'Match handoff timed out', variant: 'error' });
           setMatchPhase('idle');
@@ -463,52 +573,181 @@ export function useTournamentPageController(): TournamentControllerReturn {
           break;
         }
         default:
+          debugLog('socket-event:unhandled', { type: msg.type });
           break;
       }
     },
-    [enqueueSnackbar, filterTournamentsForDisplay, loadTournaments, navigate, refreshTournamentState, resetActiveTournamentState, user?.uuid],
+    [debugLog, enqueueSnackbar, filterTournamentsForDisplay, loadTournaments, navigate, refreshTournamentState, resetActiveTournamentState, user?.uuid],
   );
 
   useEffect(() => {
     if (!userReady || !user) return;
-    const client = createMatchmakingClient(handleMessage);
-    clientRef.current = client;
-    return () => {
-      if (activeTournamentIdRef.current && clientRef.current) {
-        clientRef.current.leaveTournament(String(activeTournamentIdRef.current));
+
+    manualCloseRef.current = false;
+    connectionStateRef.current = 'idle';
+    backoffDelayRef.current = 1500;
+    setConnectionReady(false);
+    debugLog('connection:effect-mounted', { userUuid: user.uuid });
+
+    const DEFAULT_RECONNECT_DELAY = 1500;
+    const MAX_RECONNECT_DELAY = 10000;
+    const MIN_COOLDOWN_MS = 300;
+
+    const clearReconnectTimer = () => {
+      if (reconnectTimerRef.current !== null) {
+        window.clearTimeout(reconnectTimerRef.current);
+        reconnectTimerRef.current = null;
+        debugLog('connection:timer-cleared');
       }
-      client.close();
     };
-  }, [handleMessage, userReady, user]);
+
+    const computeDelayWithCooldown = (requestedDelay: number) => {
+      let delay = requestedDelay;
+      if (lastDisconnectRef.current !== null) {
+        const elapsed = Date.now() - lastDisconnectRef.current;
+        if (elapsed < MIN_COOLDOWN_MS) {
+          delay = Math.max(delay, MIN_COOLDOWN_MS - elapsed);
+        }
+      }
+      return delay;
+    };
+
+    const queueReconnect = () => {
+      if (manualCloseRef.current) return;
+      if (reconnectTimerRef.current !== null) return;
+      connectionStateRef.current = 'idle';
+      const delay = backoffDelayRef.current;
+      backoffDelayRef.current = Math.min(Math.floor(backoffDelayRef.current * 1.8), MAX_RECONNECT_DELAY);
+      debugLog('connection:queue-reconnect', { delay });
+      startConnection(delay);
+    };
+
+    function startConnection(requestedDelay = 0) {
+      if (manualCloseRef.current) return;
+      if (connectionStateRef.current !== 'idle') return;
+      if (reconnectTimerRef.current !== null) return;
+
+      const delay = computeDelayWithCooldown(requestedDelay);
+      debugLog('connection:start-requested', { requestedDelay, delay });
+
+      const begin = () => {
+        reconnectTimerRef.current = null;
+        if (manualCloseRef.current) return;
+
+        connectionStateRef.current = 'connecting';
+        debugLog('connection:opening');
+        const client = createMatchmakingClient(handleMessage, {
+          onOpen: () => {
+            connectionStateRef.current = 'open';
+            backoffDelayRef.current = DEFAULT_RECONNECT_DELAY;
+            connectionErrorShownRef.current = false;
+            setConnectionReady(true);
+            debugLog('connection:open');
+          },
+          onError: () => {
+            if (manualCloseRef.current) return;
+            connectionStateRef.current = 'idle';
+            lastDisconnectRef.current = Date.now();
+            setConnectionReady(false);
+            if (!connectionErrorShownRef.current) {
+              enqueueSnackbar({ message: 'Tournament connection error. Retrying…', variant: 'error' });
+              connectionErrorShownRef.current = true;
+            }
+            debugLog('connection:error');
+            queueReconnect();
+          },
+          onClose: (event) => {
+            setConnectionReady(false);
+            if (manualCloseRef.current) return;
+            connectionStateRef.current = 'idle';
+            lastDisconnectRef.current = Date.now();
+            const abnormal = !event.wasClean && event.code !== 1000;
+            if (abnormal && !connectionErrorShownRef.current) {
+              enqueueSnackbar({ message: 'Tournament connection lost. Reconnecting…', variant: 'warning' });
+              connectionErrorShownRef.current = true;
+            }
+            debugLog('connection:closed', {
+              wasClean: event.wasClean,
+              code: event.code,
+              reason: event.reason,
+            });
+            queueReconnect();
+          },
+        });
+
+        clientRef.current = client;
+      };
+
+      if (delay > 0) {
+        reconnectTimerRef.current = window.setTimeout(begin, delay);
+        debugLog('connection:timer-set', { delay });
+      } else {
+        begin();
+      }
+    }
+
+    startConnection();
+
+    return () => {
+      manualCloseRef.current = true;
+      connectionStateRef.current = 'idle';
+      backoffDelayRef.current = DEFAULT_RECONNECT_DELAY;
+      clearReconnectTimer();
+      setConnectionReady(false);
+      const client = clientRef.current;
+      if (client) {
+        if (activeTournamentIdRef.current) {
+          client.leaveTournament(String(activeTournamentIdRef.current));
+        }
+        client.close();
+        debugLog('connection:cleanup-close', { tournamentId: activeTournamentIdRef.current });
+        clientRef.current = null;
+      }
+      lastDisconnectRef.current = Date.now();
+      debugLog('connection:effect-unmounted');
+    };
+  }, [debugLog, enqueueSnackbar, handleMessage, user, userReady]);
 
   const handleCreateTournamentClick = useCallback(() => {
     if (!clientRef.current) return;
     clientRef.current.createTournament(TOURNAMENT_SIZE, tournamentName);
     setTournamentName('');
+    debugLog('action:create-tournament', { name: tournamentName });
     enqueueSnackbar({ message: 'Tournament creation requested…', variant: 'info' });
-  }, [enqueueSnackbar, tournamentName]);
+  }, [debugLog, enqueueSnackbar, tournamentName]);
 
   const handleJoinTournamentClick = useCallback(
     (tournamentId: number) => {
       if (!clientRef.current) return;
       clientRef.current.joinTournament(tournamentId, aliasInput);
+      debugLog('action:join-tournament', { tournamentId, alias: aliasInput });
       enqueueSnackbar({ message: 'Join request sent', variant: 'info' });
     },
-    [aliasInput, enqueueSnackbar],
+    [aliasInput, debugLog, enqueueSnackbar],
   );
 
   const handleLeaveTournamentClick = useCallback(() => {
     if (!clientRef.current || activeTournamentId === null) return;
-    clientRef.current.leaveTournament(String(activeTournamentId));
+    const tournamentId = activeTournamentId;
+    clientRef.current.leaveTournament(String(tournamentId));
+    membershipRef.current = { member: false, tournamentId: null };
+    focusStateRef.current = null;
     setActiveTournamentId(null);
     resetActiveTournamentState();
-  }, [activeTournamentId, resetActiveTournamentState]);
+    if (locationRef.current === `/ping-pong/tournaments/${tournamentId}`) {
+      locationRef.current = '/ping-pong/tournaments';
+      navigate('/ping-pong/tournaments');
+    }
+    void loadTournaments();
+    debugLog('action:leave-tournament', { tournamentId });
+  }, [activeTournamentId, debugLog, loadTournaments, navigate, resetActiveTournamentState]);
 
   const handleForfeitTournamentClick = useCallback(() => {
     if (!clientRef.current || activeTournamentId === null) return;
     clientRef.current.forfeitTournament(String(activeTournamentId));
+    debugLog('action:forfeit-tournament', { tournamentId: activeTournamentId });
     enqueueSnackbar({ message: 'Forfeit request sent', variant: 'warning' });
-  }, [activeTournamentId, enqueueSnackbar]);
+  }, [activeTournamentId, debugLog, enqueueSnackbar]);
 
   const sortedParticipants = useMemo(() => {
     return [...participants].sort((a, b) => {
