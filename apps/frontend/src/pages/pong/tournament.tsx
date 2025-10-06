@@ -19,6 +19,7 @@ import { useSnackbar } from '../../context/SnackbarContext';
 import { useAppContext } from '../../context/AppContext';
 import type { ActiveHandoff, CountdownSnapshot, ReadyMatch, TournamentSummary } from './components/types';
 import { participantStatusLabel, readyStageLabel, stageLabel } from './components/utils';
+import TournamentParticipantsPanel from './components/TournamentParticipantsPanel';
 
 const TOURNAMENT_SIZE = 4;
 const RECENT_TOURNAMENT_WINDOW_MS = 6 * 60 * 60 * 1000; // 6 hours
@@ -814,30 +815,11 @@ const TournamentPage: React.FC = () => {
             </div>
           </div>
 
-          <aside className="rounded-2xl border border-white/10 bg-white/5 p-5 shadow-xl backdrop-blur">
-            <h2 className="mb-3 text-lg font-semibold">Participants</h2>
-            {activeTournamentId === null ? (
-              <p className="text-sm text-white/60">Join a tournament to see participants.</p>
-            ) : sortedParticipants.length === 0 ? (
-              <p className="text-sm text-white/60">Waiting for players…</p>
-            ) : (
-              <ul className="space-y-2">
-                {sortedParticipants.map((participant) => (
-                  <li
-                    key={participant.participantId}
-                    className={`flex items-center justify-between rounded-lg border border-white/10 bg-black/40 px-3 py-2 text-sm ${
-                      participant.userUuid === user?.uuid ? 'border-indigo-400/40 bg-indigo-500/10' : ''
-                    }`}
-                  >
-                    <span>{participant.alias}</span>
-                    <span className="text-xs uppercase tracking-[0.2em] text-white/40">
-                      {participantStatusLabel(participant.status)}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </aside>
+          <TournamentParticipantsPanel
+            participants={sortedParticipants}
+            hasActiveTournament={activeTournamentId !== null}
+            currentUserUuid={user?.uuid ?? null}
+          />
         </section>
 
         <section className="rounded-2xl border border-white/10 bg-white/5 p-5 shadow-xl backdrop-blur">
