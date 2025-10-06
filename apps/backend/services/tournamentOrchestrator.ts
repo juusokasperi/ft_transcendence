@@ -195,20 +195,48 @@ export type MatchProgression = {
 
 export function processSemifinalResult(
   tournamentMatchId: number,
-  options?: { autoAdvanceOnDraw?: boolean },
+  options?: {
+    autoAdvanceOnDraw?: boolean;
+    manualResult?: { winnerParticipantId: number; loserParticipantId: number };
+  },
 ): MatchProgression | undefined {
   const tournamentMatch = getTournamentMatchById(tournamentMatchId);
   if (!tournamentMatch) return undefined;
-  if (tournamentMatch.roundNumber !== 1 || !tournamentMatch.matchId)
+  if (tournamentMatch.roundNumber !== 1)
     return { readyMatches: [], autoAdvancedMatches: [] };
-
-  const scores = getMatchById(tournamentMatch.matchId);
-  if (!scores) return undefined;
 
   const participants = listTournamentMatchPlayers(tournamentMatchId);
   const team1 = participants.find((p) => p.teamNumber === 1);
   const team2 = participants.find((p) => p.teamNumber === 2);
   if (!team1 || !team2) return undefined;
+
+  let winner: number | undefined;
+  let loser: number | undefined;
+
+  if (options?.manualResult) {
+    winner = options.manualResult.winnerParticipantId;
+    loser = options.manualResult.loserParticipantId;
+  } else {
+    if (!tournamentMatch.matchId)
+      return { readyMatches: [], autoAdvancedMatches: [] };
+    const scores = getMatchById(tournamentMatch.matchId);
+    if (!scores) return undefined;
+
+    if (scores.team_1_score > scores.team_2_score) {
+      winner = team1.participantId;
+      loser = team2.participantId;
+    } else if (scores.team_2_score > scores.team_1_score) {
+      winner = team2.participantId;
+      loser = team1.participantId;
+    } else if (options?.autoAdvanceOnDraw) {
+      winner = team1.participantId;
+      loser = team2.participantId;
+    } else {
+      return undefined;
+    }
+  }
+
+  if (!winner || !loser) return undefined;
 
   const finalMatch = getTournamentMatchByRoundAndPosition(
     tournamentMatch.tournamentId,
@@ -221,15 +249,6 @@ export function processSemifinalResult(
     2,
   );
   if (!finalMatch || !bronzeMatch) return undefined;
-
-  const result = (() => {
-    if (scores.team_1_score > scores.team_2_score) return [team1.participantId, team2.participantId] as const;
-    if (scores.team_2_score > scores.team_1_score) return [team2.participantId, team1.participantId] as const;
-    if (options?.autoAdvanceOnDraw) return [team1.participantId, team2.participantId] as const;
-    return null;
-  })();
-  if (!result) return undefined;
-  const [winner, loser] = result as [number, number];
 
   setTournamentMatchPlayer(finalMatch.id, winner, tournamentMatch.roundPosition as 1 | 2);
   setTournamentMatchPlayer(bronzeMatch.id, loser, tournamentMatch.roundPosition as 1 | 2);

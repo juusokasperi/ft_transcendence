@@ -306,6 +306,9 @@ importers:
       '@pong/shared':
         specifier: workspace:*
         version: link:../../packages/pong/shared
+      axios:
+        specifier: ^1.12.0
+        version: 1.12.2
       dotenv:
         specifier: ^17.2.2
         version: 17.2.2
@@ -315,6 +318,9 @@ importers:
       ioredis:
         specifier: ^5.8.0
         version: 5.8.0
+      jsonwebtoken:
+        specifier: ^9.0.2
+        version: 9.0.2
       uuid:
         specifier: ^13.0.0
         version: 13.0.0

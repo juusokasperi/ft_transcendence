@@ -10,6 +10,7 @@ export interface TournamentMatchContext {
   tournamentId: number;
   tournamentMatchId: number;
   tournamentStage: 'semifinal' | 'final' | 'bronze';
+  participants?: Array<{ participantId: number; userUuid: string; alias?: string }>;
 }
 
 const queue: ClientInfo[] = [];

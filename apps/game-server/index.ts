@@ -1,6 +1,8 @@
 import { WebSocketServer, type WebSocket, type RawData } from 'ws';
 import dotenv from 'dotenv';
 import Redis from 'ioredis';
+import axios from 'axios';
+import jwt from 'jsonwebtoken';
 import {
   stepPaddles,
   handleSteps,
@@ -21,6 +23,8 @@ const ADMIN_SECRET = process.env.ADMIN_SECRET || 'fix-this';
 const HTTP_PORT = Number(process.env.HTTP_PORT || 55554);
 const PORT = Number(process.env.GAME_SERVER_PORT || 55553);
 const REDIS_URL = process.env.REDIS_URL || process.env.REDIS_HOST || '';
+const API_URL = process.env.API_URL || process.env.BACKEND_URL || 'http://backend:3001';
+const MATCH_SECRET = process.env.MATCH_SECRET || 'fix-this';
 if (!REDIS_URL) throw new Error('Missing env: REDIS_URL');
 
 // Authoritative tick cadence and minimum delay after both players connect to
@@ -35,6 +39,8 @@ interface Player {
   axis: number;
   playerIdentifier: string;
   tokenJti: string;
+  participantId?: number;
+  alias?: string;
 }
 
 type RoomReservation = {
@@ -50,9 +56,17 @@ type RoomReservation = {
       side: 'west' | 'east';
       seat: 'P1' | 'P2';
       joined: boolean;
+      participantId?: number;
+      alias?: string;
     }
   >;
   consumedJtis: Set<string>;
+  tournament?: {
+    tournamentId: number;
+    tournamentMatchId: number;
+    tournamentStage: 'semifinal' | 'final' | 'bronze';
+    participants?: Array<{ participantId: number; userUuid: string; alias?: string }>;
+  };
 };
 
 // Merge physics FX events with controller flow events for a single payload.
@@ -74,6 +88,8 @@ export interface Match {
   lastEvents: ServerEvents;
   lastMatch?: MatchSnapshot;
   reservation: RoomReservation;
+  resultSubmitting?: boolean;
+  resultSubmitted?: boolean;
 }
 
 const wss = new WebSocketServer({ port: PORT, host: '0.0.0.0' });
@@ -95,6 +111,7 @@ createHttpServer({
       randomSeed,
       simulationStartTick,
       joinDeadlineAtEpochMs,
+      tournament,
     } = body as {
       idempotencyKey?: string;
       roomIdentifier?: string;
@@ -103,6 +120,12 @@ createHttpServer({
       randomSeed?: number;
       simulationStartTick?: number;
       joinDeadlineAtEpochMs?: number;
+      tournament?: {
+        tournamentId: number;
+        tournamentMatchId: number;
+        tournamentStage: 'semifinal' | 'final' | 'bronze';
+        participants?: Array<{ participantId: number; userUuid: string; alias?: string }>;
+      };
     };
 
     if (!idempotencyKey || !roomIdentifier) {
@@ -118,18 +141,30 @@ createHttpServer({
       return { status: 'exists' };
     }
 
+    const participantLookup = new Map(
+      tournament?.participants?.map((p) => [p.userUuid, p]) ?? [],
+    );
     const expected = new Map<
       string,
-      { side: 'west' | 'east'; seat: 'P1' | 'P2'; joined: boolean }
+      {
+        side: 'west' | 'east';
+        seat: 'P1' | 'P2';
+        joined: boolean;
+        participantId?: number;
+        alias?: string;
+      }
     >();
     for (const p of expectedPlayers) {
       if (!p?.playerIdentifier || (p.side !== 'west' && p.side !== 'east')) {
         throw new Error('Invalid expected player payload');
       }
+      const participant = participantLookup.get(p.playerIdentifier);
       expected.set(p.playerIdentifier, {
         side: p.side,
         seat: seatForSide(p.side),
         joined: false,
+        participantId: participant?.participantId,
+        alias: participant?.alias,
       });
     }
 
@@ -142,6 +177,14 @@ createHttpServer({
       simulationStartTick: simulationStartTick ?? Date.now(),
       expectedPlayers: expected,
       consumedJtis: new Set<string>(),
+      tournament: tournament
+        ? {
+            tournamentId: tournament.tournamentId,
+            tournamentMatchId: tournament.tournamentMatchId,
+            tournamentStage: tournament.tournamentStage,
+            participants: tournament.participants,
+          }
+        : undefined,
     });
 
     return { status: 'room registered' };
@@ -290,6 +333,12 @@ function startMatch(match: Match) {
     match.state = mc.state;
     match.lastEvents = { ...stepped.events, ...mc.events };
     match.lastMatch = match.controller.getSnapshot();
+    
+    // Handle match completion for tournaments
+    if (mc.events.matchOver && !match.resultSubmitted && !match.resultSubmitting) {
+      handleMatchCompletion(match, mc.events.matchOver);
+    }
+    
     broadcast(match, {
       type: 'snapshot',
       state: match.state,
@@ -313,6 +362,85 @@ function broadcast(match: Match, payload: any) {
   //console.log(`[GameServer] Broadcasting to match ${match.id}:`, payload);
   match.players.P1?.socket.send(msg);
   match.players.P2?.socket.send(msg);
+}
+
+async function handleMatchCompletion(match: Match, matchOverEvent: { winner: string }) {
+  // Only handle tournament matches
+  if (!match.reservation.tournament) {
+    console.log(`[GameServer] Match ${match.id} completed (non-tournament)`);
+    return;
+  }
+
+  match.resultSubmitting = true;
+  
+  try {
+    console.log(`[GameServer] Tournament match ${match.id} completed, reporting result`);
+    
+    const tournament = match.reservation.tournament;
+    const gamesHistory = match.lastMatch?.gamesHistory || [];
+    
+    // Determine winner and loser participant IDs
+    const eastPlayer = match.players.P1; // P1 is always east initially
+    const westPlayer = match.players.P2; // P2 is always west initially
+    
+    let winnerParticipantId: number;
+    let loserParticipantId: number;
+    
+    if (matchOverEvent.winner === 'east') {
+      winnerParticipantId = eastPlayer?.participantId || 0;
+      loserParticipantId = westPlayer?.participantId || 0;
+    } else {
+      winnerParticipantId = westPlayer?.participantId || 0;
+      loserParticipantId = eastPlayer?.participantId || 0;
+    }
+    
+    if (!winnerParticipantId || !loserParticipantId) {
+      console.error(`[GameServer] Missing participant IDs for tournament match ${match.id}`);
+      return;
+    }
+    
+    // Create proper JWT token for match service authentication
+    const now = Math.floor(Date.now() / 1000);
+    const token = jwt.sign(
+      { 
+        service: 'game-node', 
+        iat: now,
+        exp: now + 3600 // 1 hour expiry
+      }, 
+      MATCH_SECRET
+    );
+    
+    const resultPayload = {
+      winnerParticipantId,
+      loserParticipantId,
+      winnerUserUuid: eastPlayer?.playerIdentifier || '',
+      loserUserUuid: westPlayer?.playerIdentifier || '',
+      gamesHistory: gamesHistory.map(game => ({
+        gameIndex: game.gameIndex,
+        east: game.east,
+        west: game.west,
+        winner: game.winner
+      }))
+    };
+    
+    const response = await axios.post(
+      `${API_URL}/api/tournaments/${tournament.tournamentId}/matches/${tournament.tournamentMatchId}/result`,
+      resultPayload,
+      {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      }
+    );
+    
+    console.log(`[GameServer] Tournament match result reported successfully:`, response.data);
+    match.resultSubmitted = true;
+    
+  } catch (error) {
+    console.error(`[GameServer] Failed to report tournament match result:`, error);
+    match.resultSubmitting = false;
+  }
 }
 
 wss.on('connection', (socket, req) => {
@@ -457,6 +585,8 @@ wss.on('connection', (socket, req) => {
       axis: 0,
       playerIdentifier: claims.sub,
       tokenJti: claims.jti,
+      participantId: expected.participantId,
+      alias: expected.alias,
     };
     match.players[seat] = player;
     expected.joined = true;

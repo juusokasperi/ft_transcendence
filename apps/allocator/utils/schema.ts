@@ -15,6 +15,7 @@ export const AllocateSchema = {
           properties: {
             playerIdentifier: { type: 'string', format: 'uuid' },
             side: { type: 'string', enum: ['west', 'east'] },
+            tournamentParticipantId: { type: 'integer', minimum: 1 },
           },
         },
       },
@@ -28,6 +29,19 @@ export const AllocateSchema = {
           tournamentId: { type: 'integer', minimum: 1 },
           tournamentMatchId: { type: 'integer', minimum: 1 },
           tournamentStage: { type: 'string', enum: ['semifinal', 'final', 'bronze'] },
+          participants: {
+            type: 'array',
+            items: {
+              type: 'object',
+              required: ['participantId', 'userUuid'],
+              additionalProperties: false,
+              properties: {
+                participantId: { type: 'integer', minimum: 1 },
+                userUuid: { type: 'string', format: 'uuid' },
+                alias: { type: 'string' },
+              },
+            },
+          },
         },
       },
     },

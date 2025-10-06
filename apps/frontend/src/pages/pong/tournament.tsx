@@ -362,12 +362,24 @@ const TournamentPage: React.FC = () => {
     return () => document.body.classList.remove('pong-playing');
   }, [matchPhase]);
 
-  const handleQuitMatch = () => {
+  const handleQuitMatch = useCallback(() => {
     appRef.current?.destroy();
     appRef.current = null;
     setMatchPhase('idle');
     setHandoff(null);
-  };
+    
+    // Auto-rejoin tournament after match completion to receive next match invitations
+    if (activeTournamentId && clientRef.current && user?.username) {
+      const rejoinTimer = setTimeout(() => {
+        if (activeTournamentId && clientRef.current) {
+          clientRef.current.joinTournament(activeTournamentId, user.username);
+          enqueueSnackbar({ message: 'Rejoined tournament - waiting for next match', variant: 'info' });
+        }
+      }, 1000); // Small delay to let match cleanup complete
+      
+      return () => clearTimeout(rejoinTimer);
+    }
+  }, [activeTournamentId, user?.username, enqueueSnackbar]);
 
   useEffect(() => {
     if ((matchPhase !== 'starting' && matchPhase !== 'playing') || !canvasRef.current) return;
@@ -384,7 +396,7 @@ const TournamentPage: React.FC = () => {
       canvas.removeEventListener('pong:matchOver', onMatchOver as EventListener);
       if (timer !== null) window.clearTimeout(timer);
     };
-  }, [matchPhase, enqueueSnackbar]);
+  }, [matchPhase, handleQuitMatch, enqueueSnackbar]);
 
   if (userReady && !user) {
     return (

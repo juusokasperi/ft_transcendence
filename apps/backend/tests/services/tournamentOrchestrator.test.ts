@@ -146,4 +146,39 @@ it('advances semifinal winners into final and bronze', async () => {
   expect(listTournamentMatchPlayers(bronzeMatch.id)).toHaveLength(2);
 });
 
+it('allows manual semifinal result reporting', async () => {
+  const { createTournament } = await import('../../db/queries/tournaments.ts');
+  const { createTournamentParticipant } = await import('../../db/queries/tournamentParticipants.ts');
+  const { listTournamentMatches, listTournamentMatchPlayers } = await import(
+    '../../db/queries/tournamentMatches.ts'
+  );
+  const { generateSingleEliminationBracket, processSemifinalResult } = await import(
+    '../../services/tournamentOrchestrator.ts'
+  );
+
+  const tournament = createTournament({ name: 'Manual Cup' });
+  createTournamentParticipant({ tournamentId: tournament!.id, alias: 'Alpha', seed: 1 });
+  createTournamentParticipant({ tournamentId: tournament!.id, alias: 'Bravo', seed: 4 });
+  createTournamentParticipant({ tournamentId: tournament!.id, alias: 'Charlie', seed: 2 });
+  createTournamentParticipant({ tournamentId: tournament!.id, alias: 'Delta', seed: 3 });
+
+  generateSingleEliminationBracket(tournament!.id);
+  const matches = listTournamentMatches(tournament!.id);
+  const semifinal = matches.find((m) => m.roundNumber === 1 && m.roundPosition === 1)!;
+  const finalMatch = matches.find((m) => m.roundNumber === 2 && m.roundPosition === 1)!;
+  const bronzeMatch = matches.find((m) => m.roundNumber === 2 && m.roundPosition === 2)!;
+
+  const semifinalPlayers = listTournamentMatchPlayers(semifinal.id);
+  const team1 = semifinalPlayers.find((p) => p.teamNumber === 1)!;
+  const team2 = semifinalPlayers.find((p) => p.teamNumber === 2)!;
+
+  const progression = processSemifinalResult(semifinal.id, {
+    manualResult: { winnerParticipantId: team1.participantId, loserParticipantId: team2.participantId },
+  });
+
+  expect(progression).toBeDefined();
+  expect(listTournamentMatchPlayers(finalMatch.id)).toHaveLength(1);
+  expect(listTournamentMatchPlayers(bronzeMatch.id)).toHaveLength(1);
+});
+
 });

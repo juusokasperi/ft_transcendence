@@ -257,3 +257,31 @@ export const TournamentMatchPlayerSchema = {
   },
   required: ['id', 'tournamentMatchId', 'participantId', 'teamNumber'],
 };
+
+export const TournamentMatchHistoryEntrySchema = {
+  type: 'object',
+  additionalProperties: false,
+  properties: {
+    gameIndex: { type: 'integer', minimum: 1 },
+    east: { type: 'integer', minimum: 0 },
+    west: { type: 'integer', minimum: 0 },
+    winner: { type: 'string', enum: ['east', 'west'] },
+  },
+  required: ['gameIndex', 'east', 'west', 'winner'],
+};
+
+export const TournamentMatchResultReportSchema = {
+  type: 'object',
+  additionalProperties: false,
+  properties: {
+    winnerParticipantId: { type: 'integer', minimum: 1 },
+    loserParticipantId: { type: 'integer', minimum: 1 },
+    winnerUserUuid: { anyOf: [{ type: 'string', format: 'uuid' }, { type: 'null' }] },
+    loserUserUuid: { anyOf: [{ type: 'string', format: 'uuid' }, { type: 'null' }] },
+    gamesHistory: {
+      type: 'array',
+      items: TournamentMatchHistoryEntrySchema,
+    },
+  },
+  required: ['winnerParticipantId', 'loserParticipantId'],
+};

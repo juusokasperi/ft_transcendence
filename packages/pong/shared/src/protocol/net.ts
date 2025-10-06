@@ -1,7 +1,14 @@
+export type TournamentParticipantMapping = {
+  participantId: number;
+  userUuid: string;
+  alias?: string;
+};
+
 export type TournamentContext = {
   tournamentId: number;
   tournamentMatchId: number;
   tournamentStage: 'semifinal' | 'final' | 'bronze';
+  participants?: TournamentParticipantMapping[];
 };
 
 export type HandoffMessage = {

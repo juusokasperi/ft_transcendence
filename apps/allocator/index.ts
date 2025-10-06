@@ -25,7 +25,11 @@ app.post(
           idempotencyKey: string;
           mode: 'ranked' | 'tournament' | 'invite';
           region: string;
-          players: Array<{ playerIdentifier: string; side: 'west' | 'east' }>;
+          players: Array<{
+            playerIdentifier: string;
+            side: 'west' | 'east';
+            tournamentParticipantId?: number;
+          }>;
           simulationStartTick: number;
           randomSeed: number;
           tournament?: TournamentContext;
@@ -74,6 +78,7 @@ app.post(
             randomSeed,
             simulationStartTick,
             joinDeadlineAtEpochMs,
+            tournament,
           },
           {
             headers: {

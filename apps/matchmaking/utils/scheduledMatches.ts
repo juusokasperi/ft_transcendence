@@ -202,6 +202,33 @@ function extractSiteToken(client: ClientInfo) {
   return client.siteToken;
 }
 
+// Check for pending tournament matches for a specific player who just joined
+function checkPendingMatchesForPlayer(
+  client: ClientInfo, 
+  tournamentId: number, 
+  clients: Map<string, ClientInfo>
+) {
+  for (const [matchId, pending] of pendingTournamentMatches) {
+    if (pending.tournamentId !== tournamentId) continue;
+    
+    // Check if this player is part of the pending match
+    const isPlayerInMatch = pending.match.participants.some(
+      participant => participant.userUuid === client.uuid
+    );
+    
+    if (isPlayerInMatch) {
+      log('Resending tournament match invitation to rejoined player', {
+        tournamentId,
+        matchId,
+        playerUuid: client.uuid
+      });
+      
+      // Retry the match with current clients
+      handleSingleTournamentMatch(pending.match, tournamentId, clients, pending.attempts);
+    }
+  }
+}
+
 interface TournamentState {
   tournament: {
     id: number;
@@ -478,6 +505,9 @@ export async function handleJoinTournament(
     subscribeClientToTournament(tournamentId, client);
 
     await syncTournamentState(tournamentId, client, clients);
+    
+    // Check for any pending matches for this player who just rejoined
+    checkPendingMatchesForPlayer(client, tournamentId, clients);
   } catch (error) {
     handleTournamentApiError(client, error, 'Failed to register for tournament');
   }
@@ -599,6 +629,11 @@ export async function handleAcceptScheduled(
         tournamentId: pending.tournamentId,
         tournamentMatchId: pending.match.tournamentMatchId,
         tournamentStage: pending.match.stage,
+        participants: pending.match.participants.map((participant) => ({
+          participantId: participant.participantId,
+          userUuid: participant.userUuid,
+          alias: participant.alias,
+        })),
       },
     });
   }

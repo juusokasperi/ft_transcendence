@@ -11,8 +11,10 @@ import {
   TournamentMatchStatusSchema,
   TournamentMatchPlayerSchema,
   TournamentFormatSchema,
+  TournamentMatchResultReportSchema,
 } from './fieldSchemas.ts';
 import { USER_ROUTE_SECURITY } from './userSchemas.ts';
+import { MATCH_ROUTE_SECURITY } from './matchSchemas.ts';
 
 
 const BracketSummarySchema = {
@@ -397,6 +399,47 @@ export const deleteMatchPlayerSchema = {
   response: {
     204: { type: 'null' },
     404: ErrorResponseSchema,
+    500: ErrorResponseSchema,
+  },
+};
+
+export const reportMatchResultSchema = {
+  tags: ['Tournament Matches'],
+  summary: 'Report tournament match result (service)',
+  security: MATCH_ROUTE_SECURITY,
+  params: tournamentMatchParams,
+  body: TournamentMatchResultReportSchema,
+  response: {
+    200: {
+      type: 'object',
+      additionalProperties: false,
+      properties: {
+        match: TournamentMatchSchema,
+        progression: {
+          anyOf: [
+            {
+              type: 'object',
+              additionalProperties: false,
+              properties: {
+                readyMatches: {
+                  type: 'array',
+                  items: { type: 'integer', minimum: 1 },
+                },
+                autoAdvancedMatches: {
+                  type: 'array',
+                  items: { type: 'integer', minimum: 1 },
+                },
+              },
+            },
+            { type: 'null' },
+          ],
+        },
+      },
+      required: ['match'],
+    },
+    400: ValidationErrorResponseSchema,
+    404: ErrorResponseSchema,
+    409: ErrorResponseSchema,
     500: ErrorResponseSchema,
   },
 };

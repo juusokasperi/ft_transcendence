@@ -1,5 +1,5 @@
 import type { FastifyInstance } from 'fastify';
-import { authPreHandler } from '../hooks/auth.ts';
+import { authPreHandler, matchAuthPreHandler } from '../hooks/auth.ts';
 import {
   createTournament,
   getTournamentById,
@@ -8,6 +8,7 @@ import {
   updateTournamentStatus,
 } from '../db/queries/tournaments.ts';
 import { generateSingleEliminationBracket, processSemifinalResult } from '../services/tournamentOrchestrator.ts';
+import type { MatchProgression } from '../services/tournamentOrchestrator.ts';
 import { notifyMatchesReady } from '../services/matchmakingBridge.ts';
 import {
   createTournamentParticipant,
@@ -46,6 +47,7 @@ import {
   updateMatchSchema,
   updateParticipantSchema,
   updateTournamentStatusSchema,
+  reportMatchResultSchema,
 } from '../schemas/tournamentSchemas.ts';
 
 export async function tournamentRoutes(app: FastifyInstance) {
@@ -150,6 +152,50 @@ export async function tournamentRoutes(app: FastifyInstance) {
       } catch (error) {
         req.log.error({ error }, 'Failed to update tournament status');
         return res.status(500).send({ message: 'Failed to update tournament status' });
+      }
+    },
+  );
+
+  app.post(
+    '/:tournamentId/matches/:matchId/result',
+    {
+      schema: reportMatchResultSchema,
+      preHandler: [matchAuthPreHandler],
+    },
+    async (req, res) => {
+      try {
+        const { tournamentId, matchId } = req.params as { tournamentId: number; matchId: number };
+        const body = req.body as {
+          winnerParticipantId: number;
+          loserParticipantId: number;
+          winnerUserUuid?: string | null;
+          loserUserUuid?: string | null;
+          gamesHistory?: Array<{ gameIndex: number; east: number; west: number; winner: string }>;
+        };
+
+        const match = getTournamentMatchById(matchId);
+        if (!match || match.tournamentId !== tournamentId)
+          return res.status(404).send({ message: 'Tournament match not found' });
+
+        const updated = updateTournamentMatchStatus(matchId, 'completed', { setCompletedAt: true });
+        if (!updated) return res.status(500).send({ message: 'Failed to update match status' });
+
+        let progression: MatchProgression | undefined;
+        if (match.roundNumber === 1) {
+          progression = processSemifinalResult(matchId, {
+            manualResult: {
+              winnerParticipantId: body.winnerParticipantId,
+              loserParticipantId: body.loserParticipantId,
+            },
+          });
+          if (progression?.readyMatches?.length)
+            await notifyMatchesReady(tournamentId, progression.readyMatches);
+        }
+
+        return res.status(200).send({ match: updated, progression: progression ?? null });
+      } catch (error) {
+        req.log.error({ error }, 'Failed to report tournament match result');
+        return res.status(500).send({ message: 'Failed to report tournament match result' });
       }
     },
   );
