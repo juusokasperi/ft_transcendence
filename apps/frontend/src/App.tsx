@@ -34,6 +34,7 @@ function App() {
             <Route path={'/ping-pong/local'} element={<LocalGame />} />
             <Route path={'/ping-pong/online'} element={<OnlineGame />} />
             <Route path={'/ping-pong/tournaments'} element={<Tournament />} />
+            <Route path={'/ping-pong/tournaments/:tournamentId'} element={<Tournament />} />
             <Route path={'/confirm/:confirmationToken'} element={<Confirmation />} />
             <Route path={'/delete-user/:confirmationToken'} element={<DeleteUser />} />
             <Route path={'/confirm-email/:token'} element={<ConfirmEmail />} />
