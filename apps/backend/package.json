@@ -52,7 +52,7 @@
     "@types/jsonwebtoken": "^9.0.10",
     "@types/nodemailer": "^7.0.1",
     "@types/umzug": "^2.3.9",
-    "@types/uuid": "^10.0.0"
+    "@types/uuid": "^10.0.0",
     "vite": "^7.1.5",
     "vite-tsconfig-paths": "^5.1.4"
   }
