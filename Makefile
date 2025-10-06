@@ -91,7 +91,7 @@ prod:
 	$(ensure_dirs)
 	$(ensure_builder)
 	$(ensure_certs)
-	@echo ">> Starting default stack (attached)"
+	@echo ">> Starting prod stack (attached)"
 	docker compose -p $(NAME_PROD) $(PROD_COMPOSE) $(ENV_ROOT) up --build
 
 elk:
