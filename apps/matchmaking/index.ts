@@ -49,7 +49,7 @@ redisSub.on('message', (channel: string, message: string) => {
   } else if (channel === 'tournament:matches_ready') {
     try {
       const payload = JSON.parse(message);
-      handleTournamentMatchesReady(payload, clients);
+      void handleTournamentMatchesReady(payload, clients);
     } catch (err) {
       log(
         'Failed to handle tournament matches ready message',

@@ -390,13 +390,46 @@ function handleTournamentApiError(client: ClientInfo, error: unknown, fallbackMe
   });
 }
 
-export function handleTournamentMatchesReady(
+export async function handleTournamentMatchesReady(
   payload: TournamentMatchesReadyMessage,
   clients: Map<string, ClientInfo>,
 ) {
   if (!payload || !Array.isArray(payload.matches)) return;
+  
+  log('Handling tournament matches ready', { tournamentId: payload.tournamentId, matchCount: payload.matches.length });
+  
+  // Handle individual match invitations
   for (const match of payload.matches) {
     handleSingleTournamentMatch(match, payload.tournamentId, clients);
+  }
+  
+  // Sync tournament state to update bracket for all connected players
+  // Find any authenticated client for this tournament to use their token
+  const tournamentClient = Array.from(clients.values()).find(
+    client => client.tournamentId === payload.tournamentId && client.authenticated && client.siteToken
+  );
+  
+  if (tournamentClient) {
+    log('Found tournament client for bracket sync', { tournamentId: payload.tournamentId, clientUuid: tournamentClient.uuid });
+    try {
+      await syncTournamentState(payload.tournamentId, tournamentClient, clients);
+      log('Successfully synced tournament state after matches ready', { tournamentId: payload.tournamentId });
+    } catch (error) {
+      log(
+        'Failed to sync tournament state after matches ready',
+        { 
+          tournamentId: payload.tournamentId, 
+          error: error instanceof Error ? error.message : 'unknown' 
+        },
+        'warn',
+      );
+    }
+  } else {
+    log('No tournament clients found for bracket sync', { 
+      tournamentId: payload.tournamentId, 
+      totalClients: clients.size,
+      tournamentClients: Array.from(clients.values()).filter(c => c.tournamentId === payload.tournamentId).length
+    });
   }
 }
 

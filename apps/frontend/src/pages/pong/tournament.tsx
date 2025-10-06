@@ -83,6 +83,8 @@ const TournamentPage: React.FC = () => {
   const [handoff, setHandoff] = useState<ActiveHandoff | null>(null);
   const [aliasInput, setAliasInput] = useState('');
   const [tournamentName, setTournamentName] = useState('');
+  const rejoinTimerRef = useRef<number | null>(null);
+  const refreshTimerRef = useRef<number | null>(null);
 
   useEffect(() => {
     setAliasInput(user?.username ?? '');
@@ -125,6 +127,95 @@ const TournamentPage: React.FC = () => {
     setTournamentStatus('draft');
     setMaxParticipants(null);
   }, []);
+
+  const refreshTournamentState = useCallback(async () => {
+    if (!activeTournamentId || !userReady) return;
+
+    try {
+      const [tournamentRes, participantsRes, matchesRes] = await Promise.all([
+        axios.get(`/api/tournaments/${activeTournamentId}`),
+        axios.get(`/api/tournaments/${activeTournamentId}/participants`),
+        axios.get(`/api/tournaments/${activeTournamentId}/matches`),
+      ]);
+
+      const tournamentData = tournamentRes.data as {
+        status: string;
+        maxParticipants: number | null;
+      };
+
+      setTournamentStatus(tournamentData.status);
+      setMaxParticipants(tournamentData.maxParticipants ?? TOURNAMENT_SIZE);
+
+      const participantPayload = participantsRes.data as Array<{
+        id: number;
+        alias: string;
+        seed: number | null;
+        status: string;
+        userUuid: string | null;
+      }>;
+
+      setParticipants(
+        participantPayload.map((participant) => ({
+          participantId: participant.id,
+          alias: participant.alias,
+          seed: participant.seed,
+          status: participant.status,
+          userUuid: participant.userUuid,
+        })),
+      );
+
+      const participantMap = new Map(participantPayload.map((participant) => [participant.id, participant]));
+
+      const matchPayload = matchesRes.data as Array<{
+        id: number;
+        roundNumber: number;
+        roundPosition: number;
+        status: string;
+        scheduledAt: string | null;
+        completedAt: string | null;
+        matchId: number | null;
+      }>;
+
+      const matches = (await Promise.all(
+        matchPayload.map(async (match) => {
+          const playersRes = await axios.get(
+            `/api/tournaments/${activeTournamentId}/matches/${match.id}/players`,
+          );
+          const players = (playersRes.data as Array<{ participantId: number; teamNumber: number }>).map(
+            (player) => {
+              const participant = participantMap.get(player.participantId);
+              return {
+                participantId: player.participantId,
+                teamNumber: player.teamNumber,
+                alias: participant?.alias ?? 'Unknown',
+                status: participant?.status ?? 'pending',
+              };
+            },
+          );
+
+          return {
+            tournamentMatchId: match.id,
+            roundNumber: match.roundNumber,
+            roundPosition: match.roundPosition,
+            status: match.status,
+            scheduledAt: match.scheduledAt,
+            completedAt: match.completedAt,
+            matchId: match.matchId,
+            players,
+          } satisfies TournamentMatchState;
+        }),
+      )) as TournamentMatchState[];
+
+      setBracket(matches);
+    } catch (error) {
+      enqueueSnackbar({ message: 'Failed to refresh tournament state', variant: 'error' });
+    }
+  }, [activeTournamentId, axios, enqueueSnackbar, userReady]);
+
+  useEffect(() => {
+    if (!activeTournamentId) return;
+    void refreshTournamentState();
+  }, [activeTournamentId, refreshTournamentState]);
 
   const handleMessage = useCallback(
     (msg: MatchmakingMessage) => {
@@ -187,6 +278,7 @@ const TournamentPage: React.FC = () => {
         }
         case 'TOURNAMENT_MATCHES_READY': {
           setLatestReadyMatches(msg.matches);
+          void refreshTournamentState();
           const userUuid = user?.uuid;
           if (userUuid) {
             const personal = msg.matches.find((match) =>
@@ -230,7 +322,7 @@ const TournamentPage: React.FC = () => {
           break;
       }
     },
-    [enqueueSnackbar, loadTournaments, navigate, resetActiveTournamentState, user?.uuid],
+    [enqueueSnackbar, loadTournaments, navigate, refreshTournamentState, resetActiveTournamentState, user?.uuid],
   );
 
   useEffect(() => {
@@ -353,6 +445,17 @@ const TournamentPage: React.FC = () => {
     appRef.current = null;
   }, []);
 
+  useEffect(() => () => {
+    if (rejoinTimerRef.current) {
+      window.clearTimeout(rejoinTimerRef.current);
+      rejoinTimerRef.current = null;
+    }
+    if (refreshTimerRef.current) {
+      window.clearTimeout(refreshTimerRef.current);
+      refreshTimerRef.current = null;
+    }
+  }, []);
+
   useEffect(() => {
     if (matchPhase === 'starting' || matchPhase === 'playing') {
       document.body.classList.add('pong-playing');
@@ -367,19 +470,32 @@ const TournamentPage: React.FC = () => {
     appRef.current = null;
     setMatchPhase('idle');
     setHandoff(null);
-    
-    // Auto-rejoin tournament after match completion to receive next match invitations
-    if (activeTournamentId && clientRef.current && user?.username) {
-      const rejoinTimer = setTimeout(() => {
-        if (activeTournamentId && clientRef.current) {
-          clientRef.current.joinTournament(activeTournamentId, user.username);
-          enqueueSnackbar({ message: 'Rejoined tournament - waiting for next match', variant: 'info' });
-        }
-      }, 1000); // Small delay to let match cleanup complete
-      
-      return () => clearTimeout(rejoinTimer);
+
+    if (rejoinTimerRef.current) {
+      window.clearTimeout(rejoinTimerRef.current);
+      rejoinTimerRef.current = null;
     }
-  }, [activeTournamentId, user?.username, enqueueSnackbar]);
+
+    if (refreshTimerRef.current) {
+      window.clearTimeout(refreshTimerRef.current);
+      refreshTimerRef.current = null;
+    }
+
+    // Auto-rejoin tournament after match completion to receive next match invitations.
+    if (clientRef.current && user?.username) {
+      rejoinTimerRef.current = window.setTimeout(() => {
+        const tournamentId = activeTournamentIdRef.current;
+        if (!clientRef.current || !tournamentId) return;
+        clientRef.current.joinTournament(tournamentId, user.username);
+        enqueueSnackbar({ message: 'Rejoined tournament - waiting for next match', variant: 'info' });
+      }, 3000);
+
+      // Refresh bracket state shortly after rejoining to pick up newly created matches.
+      refreshTimerRef.current = window.setTimeout(() => {
+        void refreshTournamentState();
+      }, 3500);
+    }
+  }, [enqueueSnackbar, refreshTournamentState, user?.username]);
 
   useEffect(() => {
     if ((matchPhase !== 'starting' && matchPhase !== 'playing') || !canvasRef.current) return;
