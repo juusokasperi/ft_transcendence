@@ -11,6 +11,17 @@ type CreateTournamentInput = {
   startAt?: string | null;
 };
 
+function normalizeDateTime(value: string | null): string | null {
+  if (!value) return null;
+  if (value.includes('T')) {
+    const date = new Date(value);
+    return Number.isNaN(date.getTime()) ? value : date.toISOString();
+  }
+  const normalized = `${value.replace(' ', 'T')}Z`;
+  const date = new Date(normalized);
+  return Number.isNaN(date.getTime()) ? value : date.toISOString();
+}
+
 function mapTournamentRecord(row: TournamentDb): Tournament {
   return {
     id: row.id,
@@ -19,10 +30,10 @@ function mapTournamentRecord(row: TournamentDb): Tournament {
     format: row.format,
     status: row.status,
     maxParticipants: row.max_participants,
-    startAt: row.start_at,
-    completedAt: row.completed_at,
-    createdAt: row.created_at,
-    updatedAt: row.updated_at,
+    startAt: normalizeDateTime(row.start_at),
+    completedAt: normalizeDateTime(row.completed_at),
+    createdAt: normalizeDateTime(row.created_at)!,
+    updatedAt: normalizeDateTime(row.updated_at)!,
   };
 }
 

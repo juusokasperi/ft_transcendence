@@ -94,7 +94,11 @@ function scheduleTournamentReminder(
       { tournamentId, matchId: match.tournamentMatchId },
       'warn',
     );
-    pendingTournamentMatches.delete(match.tournamentMatchId);
+    const pending = pendingTournamentMatches.get(match.tournamentMatchId);
+    if (pending && pending.reminder) {
+      clearTimeout(pending.reminder);
+      pending.reminder = undefined;
+    }
     return;
   }
 
@@ -332,6 +336,16 @@ function handleTournamentApiError(client: ClientInfo, error: unknown, fallbackMe
     error && typeof error === 'object' && 'response' in error
       ? (error as { response?: { status?: number; data?: unknown } }).response
       : undefined;
+  const serverMessage = (() => {
+    const data = details?.data;
+    if (!data) return undefined;
+    if (typeof data === 'string' && data.trim().length) return data;
+    if (typeof data === 'object' && 'message' in (data as Record<string, unknown>)) {
+      const value = (data as Record<string, unknown>).message;
+      if (typeof value === 'string' && value.trim().length) return value;
+    }
+    return undefined;
+  })();
   log(
     'Tournament API request failed',
     {
@@ -345,7 +359,7 @@ function handleTournamentApiError(client: ClientInfo, error: unknown, fallbackMe
   sendToClient(client, {
     type: 'ERROR',
     code: 'TOURNAMENT_API',
-    message: fallbackMessage,
+    message: serverMessage ?? fallbackMessage,
   });
 }
 

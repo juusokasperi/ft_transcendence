@@ -17,6 +17,17 @@ type ParticipantUpdates = {
   userUuid?: string | null;
 };
 
+function normalizeDateTime(value: string | null): string | null {
+  if (!value) return null;
+  if (value.includes('T')) {
+    const date = new Date(value);
+    return Number.isNaN(date.getTime()) ? value : date.toISOString();
+  }
+  const normalized = `${value.replace(' ', 'T')}Z`;
+  const date = new Date(normalized);
+  return Number.isNaN(date.getTime()) ? value : date.toISOString();
+}
+
 function mapParticipantRecord(row: TournamentParticipantDb): TournamentParticipant {
   return {
     id: row.id,
@@ -25,7 +36,7 @@ function mapParticipantRecord(row: TournamentParticipantDb): TournamentParticipa
     alias: row.alias,
     seed: row.seed,
     status: row.status,
-    joinedAt: row.joined_at,
+    joinedAt: normalizeDateTime(row.joined_at)!,
   };
 }
 

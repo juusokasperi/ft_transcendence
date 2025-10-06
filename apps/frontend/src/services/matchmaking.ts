@@ -1,4 +1,4 @@
-import type { MatchmakingMessage } from '@pong/shared/protocol/net';
+import type { MatchmakingMessage, TournamentSize } from '@pong/shared/protocol/net';
 
 export type Lobby = {
   lobbyId: string;
@@ -62,6 +62,36 @@ export function createMatchmakingClient(onMessage: (msg: MatchmakingMessage) => 
     },
     setReady(lobbyId: string, ready: boolean) {
       socket.send(JSON.stringify({ type: 'ready', lobbyId, ready }));
+    },
+    createTournament(size: TournamentSize = 4, name?: string) {
+      const payload: { type: 'CREATE_TOURNAMENT'; size: TournamentSize; name?: string } = {
+        type: 'CREATE_TOURNAMENT',
+        size,
+      };
+      if (name && name.trim().length) payload.name = name.trim();
+      socket.send(JSON.stringify(payload));
+    },
+    joinTournament(tournamentId: string | number, alias?: string) {
+      const payload: { type: 'JOIN_TOURNAMENT'; tournamentId: string; alias?: string } = {
+        type: 'JOIN_TOURNAMENT',
+        tournamentId: String(tournamentId),
+      };
+      if (alias && alias.trim().length) payload.alias = alias.trim();
+      socket.send(JSON.stringify(payload));
+    },
+    leaveTournament(tournamentId: string | number) {
+      const payload = { type: 'LEAVE_TOURNAMENT', tournamentId: String(tournamentId) } as const;
+      socket.send(JSON.stringify(payload));
+    },
+    forfeitTournament(tournamentId: string | number) {
+      const payload = { type: 'FORFEIT_TOURNAMENT', tournamentId: String(tournamentId) } as const;
+      socket.send(JSON.stringify(payload));
+    },
+    acceptScheduled(tournamentMatchId: number) {
+      socket.send(JSON.stringify({ type: 'ACCEPT_SCHEDULED', tournamentMatchId }));
+    },
+    close() {
+      socket.close();
     },
   } as const;
 }

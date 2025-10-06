@@ -16,6 +16,17 @@ type CreateTournamentMatchInput = {
   scheduledAt?: string | null;
 };
 
+function normalizeDateTime(value: string | null): string | null {
+  if (!value) return null;
+  if (value.includes('T')) {
+    const date = new Date(value);
+    return Number.isNaN(date.getTime()) ? value : date.toISOString();
+  }
+  const normalized = `${value.replace(' ', 'T')}Z`;
+  const date = new Date(normalized);
+  return Number.isNaN(date.getTime()) ? value : date.toISOString();
+}
+
 function mapMatchRecord(row: TournamentMatchDb): TournamentMatch {
   return {
     id: row.id,
@@ -24,8 +35,8 @@ function mapMatchRecord(row: TournamentMatchDb): TournamentMatch {
     roundPosition: row.round_position,
     status: row.status,
     matchId: row.match_id,
-    scheduledAt: row.scheduled_at,
-    completedAt: row.completed_at,
+    scheduledAt: normalizeDateTime(row.scheduled_at),
+    completedAt: normalizeDateTime(row.completed_at),
   };
 }
 
