@@ -21,6 +21,7 @@ import type { ActiveHandoff, CountdownSnapshot, ReadyMatch, TournamentSummary } 
 import TournamentParticipantsPanel from './components/TournamentParticipantsPanel';
 import TournamentBracketPanel from './components/TournamentBracketPanel';
 import TournamentDirectedMatchesPanel from './components/TournamentDirectedMatchesPanel';
+import TournamentLobbyPanel from './components/TournamentLobbyPanel';
 
 const TOURNAMENT_SIZE = 4;
 const RECENT_TOURNAMENT_WINDOW_MS = 6 * 60 * 60 * 1000; // 6 hours
@@ -729,92 +730,20 @@ const TournamentPage: React.FC = () => {
         </header>
 
         <section className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
-          <div className="flex flex-col gap-6">
-            <div className="rounded-2xl border border-white/10 bg-white/5 p-5 shadow-xl backdrop-blur">
-              <h2 className="mb-4 text-lg font-semibold">Create a new tournament</h2>
-              <div className="flex flex-col gap-3 md:flex-row md:items-center">
-                <input
-                  value={tournamentName}
-                  onChange={(e) => setTournamentName(e.target.value)}
-                  placeholder="Tournament name"
-                  className="w-full rounded-full border border-white/10 bg-black/50 px-4 py-2 text-sm text-white placeholder:text-white/40 focus:border-indigo-400 focus:outline-none"
-                />
-                <Button
-                  variant="primary"
-                  onClick={handleCreateTournamentClick}
-                  disabled={!connectionReady}
-                >
-                  Create tournament
-                </Button>
-              </div>
-            </div>
-
-            <div className="rounded-2xl border border-white/10 bg-white/5 p-5 shadow-xl backdrop-blur">
-              <h2 className="mb-4 text-lg font-semibold">Open tournaments</h2>
-              {availableTournaments.length === 0 ? (
-                <p className="text-sm text-white/60">No tournaments available yet. Create one above!</p>
-              ) : (
-                <ul className="space-y-3">
-                  {availableTournaments.map((tournament) => {
-                    const isCurrent = tournament.id === activeTournamentId;
-                    return (
-                      <li
-                        key={tournament.id}
-                        className="flex flex-col gap-2 rounded-xl border border-white/10 bg-black/30 p-4 md:flex-row md:items-center md:justify-between"
-                      >
-                        <div>
-                          <p className="text-base font-semibold">{tournament.name}</p>
-                          <p className="text-xs uppercase tracking-widest text-white/50">
-                            Status: {tournament.status}
-                          </p>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          {isCurrent ? (
-                            <span className="rounded-full border border-emerald-400/30 bg-emerald-500/20 px-3 py-1 text-xs font-semibold uppercase tracking-widest text-emerald-200">
-                              Joined
-                            </span>
-                          ) : tournament.status !== 'draft' ? (
-                            <span className="rounded-full border border-white/20 bg-white/10 px-3 py-1 text-xs font-semibold uppercase tracking-widest text-white/60">
-                              {tournament.status === 'active' ? 'In progress' : tournament.status}
-                            </span>
-                          ) : (
-                            <Button
-                              variant="secondary"
-                              size="sm"
-                              onClick={() => handleJoinTournamentClick(tournament.id)}
-                              disabled={!connectionReady || activeTournamentId !== null || tournament.status !== 'draft'}
-                            >
-                              Join
-                            </Button>
-                          )}
-                        </div>
-                      </li>
-                    );
-                  })}
-                </ul>
-              )}
-              <div className="mt-4 flex flex-col gap-2 md:flex-row md:items-center">
-                <input
-                  value={aliasInput}
-                  onChange={(e) => setAliasInput(e.target.value)}
-                  placeholder="Preferred alias"
-                  className="w-full rounded-full border border-white/10 bg-black/50 px-4 py-2 text-sm text-white placeholder:text-white/40 focus:border-indigo-400 focus:outline-none md:max-w-xs"
-                />
-                {activeTournamentId !== null && (
-                  <div className="flex flex-wrap gap-2">
-                    <Button variant="outline" size="sm" onClick={handleLeaveTournamentClick}>
-                      Leave tournament
-                    </Button>
-                    {tournamentStatus === 'active' && (
-                      <Button variant="dangerSecondary" size="sm" onClick={handleForfeitTournamentClick}>
-                        Forfeit
-                      </Button>
-                    )}
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
+          <TournamentLobbyPanel
+            tournamentName={tournamentName}
+            onTournamentNameChange={setTournamentName}
+            onCreateTournament={handleCreateTournamentClick}
+            connectionReady={connectionReady}
+            availableTournaments={availableTournaments}
+            activeTournamentId={activeTournamentId}
+            aliasInput={aliasInput}
+            onAliasInputChange={setAliasInput}
+            onJoinTournament={handleJoinTournamentClick}
+            onLeaveTournament={handleLeaveTournamentClick}
+            onForfeitTournament={handleForfeitTournamentClick}
+            canForfeit={tournamentStatus === 'active'}
+          />
 
           <TournamentParticipantsPanel
             participants={sortedParticipants}
