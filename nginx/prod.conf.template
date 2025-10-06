@@ -34,7 +34,7 @@ server {
 
   #  ---------- API -> backend ----------
   location /api/ {
-	proxy_pass http://backend:3001;
+	proxy_pass http://backend:${BACKEND_PORT};
     proxy_http_version 1.1;
 
     proxy_set_header Host               $http_host;
@@ -52,7 +52,7 @@ server {
 
   # ---------- Static uploads via backend ----------
   location /uploads/ {
-	proxy_pass http://backend:3001;
+	proxy_pass http://backend:${BACKEND_PORT};
     proxy_http_version 1.1;
     proxy_set_header Host $http_host;
   }
