@@ -241,7 +241,27 @@ export type StartMessage = {
   tickRateHz: number;
 };
 
-export type GameServerControlMessage = RoomStateMessage | StartMessage;
+export type OpponentDisconnectedMessage = {
+  type: 'OPPONENT_DISCONNECTED';
+  gracePeriodMs: number;
+};
+
+export type OpponentReconnectedMessage = {
+  type: 'OPPONENT_RECONNECTED';
+};
+
+export type MatchEndMessage = {
+  type: 'MATCH_END';
+  reason: 'opponent_timeout' | 'completed' | 'error';
+  winner?: 'east' | 'west';
+};
+
+export type GameServerControlMessage = 
+  | RoomStateMessage 
+  | StartMessage 
+  | OpponentDisconnectedMessage 
+  | OpponentReconnectedMessage
+  | MatchEndMessage;
 
 // Types that were in blueprint but not implemented:
 

@@ -192,6 +192,10 @@ const OnlineGame: React.FC = () => {
             });
           }
           break;
+        case 'TOURNAMENT_LOBBY_UPDATED':
+        case 'TOURNAMENT_BRACKET_SNAPSHOT':
+          // Tournament messages - handled in tournament pages, ignore here
+          break;
         // case 'lobbyList':
         //   setLobbies(msg.lobbies);
         //   break;

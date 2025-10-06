@@ -65,6 +65,106 @@ export function createOnlineApp(
   const hud = createScoreboard();
   hud.attachToCanvas(canvas);
 
+  // Disconnect overlay
+  let disconnectOverlay: HTMLDivElement | null = null;
+  let reconnectCountdownInterval: number | null = null;
+
+  const showDisconnectOverlay = (gracePeriodMs: number) => {
+    if (!disconnectOverlay) {
+      disconnectOverlay = document.createElement('div');
+      disconnectOverlay.style.cssText = `
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background: rgba(0, 0, 0, 0.9);
+        color: #fbbf24;
+        padding: 2rem;
+        border-radius: 0.5rem;
+        border: 2px solid #fbbf24;
+        font-size: 1.25rem;
+        font-weight: bold;
+        text-align: center;
+        z-index: 1000;
+        pointer-events: none;
+      `;
+      canvas.parentElement?.appendChild(disconnectOverlay);
+    }
+
+    const endTime = Date.now() + gracePeriodMs;
+    const isTournament = gracePeriodMs <= 10000; // 10 seconds = tournament, 15 seconds = casual
+    
+    const updateCountdown = () => {
+      const remaining = Math.max(0, Math.ceil((endTime - Date.now()) / 1000));
+      if (disconnectOverlay) {
+        // Both tournament and casual matches now award victory after timeout
+        disconnectOverlay.textContent = `Opponent disconnected. Waiting ${remaining}s before auto-win...`;
+      }
+      if (remaining <= 0 && reconnectCountdownInterval) {
+        clearInterval(reconnectCountdownInterval);
+        reconnectCountdownInterval = null;
+      }
+    };
+
+    updateCountdown();
+    if (reconnectCountdownInterval) clearInterval(reconnectCountdownInterval);
+    reconnectCountdownInterval = window.setInterval(updateCountdown, 1000);
+  };
+
+  const hideDisconnectOverlay = () => {
+    if (reconnectCountdownInterval) {
+      clearInterval(reconnectCountdownInterval);
+      reconnectCountdownInterval = null;
+    }
+    if (disconnectOverlay) {
+      disconnectOverlay.remove();
+      disconnectOverlay = null;
+    }
+  };
+
+  const showMatchEndOverlay = (reason: string, winner?: 'east' | 'west') => {
+    const overlay = document.createElement('div');
+    overlay.style.cssText = `
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: rgba(0, 0, 0, 0.95);
+      color: #fff;
+      padding: 2rem;
+      border-radius: 0.5rem;
+      border: 2px solid #10b981;
+      font-size: 1.5rem;
+      font-weight: bold;
+      text-align: center;
+      z-index: 1000;
+      pointer-events: none;
+    `;
+
+    let message = 'Match ended';
+    if (reason === 'opponent_timeout') {
+      if (winner) {
+        // Both tournament and casual matches now have a winner
+        const youWon = (cfg.seat === 'P1' && winner === 'east') || (cfg.seat === 'P2' && winner === 'west');
+        message = youWon ? 'You won! (Opponent disconnected)' : 'You lost (Disconnected)';
+        overlay.style.borderColor = youWon ? '#10b981' : '#ef4444';
+        overlay.style.color = youWon ? '#10b981' : '#ef4444';
+      } else {
+        // Fallback (should not happen anymore)
+        message = 'Opponent disconnected - Match ended';
+        overlay.style.borderColor = '#f59e0b';
+        overlay.style.color = '#f59e0b';
+      }
+    }
+
+    overlay.textContent = message;
+    canvas.parentElement?.appendChild(overlay);
+
+    setTimeout(() => {
+      overlay.remove();
+    }, 5000);
+  };
+
   setBindingProfile('online');
   const detachInput = attachLocalInput(canvas);
   scene.onDisposeObservable.add(detachInput);
@@ -250,6 +350,23 @@ export function createOnlineApp(
       }
     });
 
+    // Handle opponent disconnect events
+    net.onOpponentDisconnected((gracePeriodMs: number) => {
+      console.log('[OnlineGame] Opponent disconnected, grace period:', gracePeriodMs);
+      showDisconnectOverlay(gracePeriodMs);
+    });
+
+    net.onOpponentReconnected(() => {
+      console.log('[OnlineGame] Opponent reconnected');
+      hideDisconnectOverlay();
+    });
+
+    net.onMatchEnd((reason: string, winner?: 'east' | 'west') => {
+      console.log('[OnlineGame] Match ended:', reason, 'winner:', winner);
+      hideDisconnectOverlay();
+      showMatchEndOverlay(reason, winner);
+    });
+
     const startPromise = net.awaitStart();
 
     net.onSnapshot((s, ev, matchSnap) => {
@@ -385,6 +502,10 @@ export function createOnlineApp(
 
   const destroy = () => {
     console.log('[OnlineGame] Destroying online game');
+    
+    // Clean up disconnect overlay
+    hideDisconnectOverlay();
+    
     disposeWorld({
       loop,
       net,

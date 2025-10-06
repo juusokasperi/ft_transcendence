@@ -31,6 +31,8 @@ if (!REDIS_URL) throw new Error('Missing env: REDIS_URL');
 // give clients time to establish their sockets and prep their scenes.
 const TICK_RATE_HZ = 60;
 const MIN_START_DELAY_MS = 1500;
+const RECONNECT_GRACE_PERIOD_MS = 10000; // 10 seconds grace period for tournament matches
+const CASUAL_RECONNECT_GRACE_PERIOD_MS = 15000; // 15 seconds for casual matches
 
 const redis = new Redis(REDIS_URL);
 interface Player {
@@ -90,6 +92,11 @@ export interface Match {
   reservation: RoomReservation;
   resultSubmitting?: boolean;
   resultSubmitted?: boolean;
+  disconnectGracePeriod?: {
+    disconnectedSeat: 'P1' | 'P2';
+    disconnectTime: number;
+    graceTimeout?: NodeJS.Timeout;
+  };
 }
 
 const wss = new WebSocketServer({ port: PORT, host: '0.0.0.0' });
@@ -364,41 +371,151 @@ function broadcast(match: Match, payload: any) {
   match.players.P2?.socket.send(msg);
 }
 
-async function handleMatchCompletion(match: Match, matchOverEvent: { winner: string }) {
-  // Only handle tournament matches
-  if (!match.reservation.tournament) {
-    console.log(`[GameServer] Match ${match.id} completed (non-tournament)`);
+async function handleDisconnectGracePeriod(match: Match, disconnectedSeat: 'P1' | 'P2') {
+  const remainingSeat = disconnectedSeat === 'P1' ? 'P2' : 'P1';
+  const remainingPlayer = match.players[remainingSeat];
+
+  if (!remainingPlayer) {
+    console.log(`[GameServer] No grace period needed - no remaining player`);
     return;
   }
 
+  const isTournament = Boolean(match.reservation.tournament);
+  const gracePeriodMs = isTournament ? RECONNECT_GRACE_PERIOD_MS : CASUAL_RECONNECT_GRACE_PERIOD_MS;
+
+  // Clear any existing grace period
+  if (match.disconnectGracePeriod?.graceTimeout) {
+    clearTimeout(match.disconnectGracePeriod.graceTimeout);
+  }
+
+  const disconnectTime = Date.now();
+  console.log(`[GameServer] Player ${disconnectedSeat} disconnected, starting ${gracePeriodMs}ms grace period (${isTournament ? 'tournament' : 'casual'})`);
+
+  // Notify remaining player about disconnect
+  remainingPlayer.socket.send(
+    JSON.stringify({
+      type: 'OPPONENT_DISCONNECTED',
+      gracePeriodMs: gracePeriodMs,
+    }),
+  );
+  
+  console.log(`[GameServer] Sent OPPONENT_DISCONNECTED to ${remainingSeat}`);
+
+  // Set grace period timeout
+  const graceTimeout = setTimeout(async () => {
+    const currentMatch = matches.get(match.id);
+    if (!currentMatch || currentMatch.players[disconnectedSeat]) {
+      // Player reconnected or match was cleaned up
+      console.log(`[GameServer] Grace period ended, player reconnected or match cleaned up`);
+      return;
+    }
+
+    console.log(`[GameServer] Grace period expired for ${disconnectedSeat}`);
+    
+    // Determine winner based on which seat remains
+    const winnerSide = remainingSeat === 'P1' ? 'east' : 'west';
+    
+    // Award victory to remaining player for both tournament and casual matches
+    console.log(`[GameServer] ${isTournament ? 'Tournament' : 'Casual'} match - awarding win to ${remainingSeat} due to opponent timeout`);
+    await handleMatchCompletion(currentMatch, { winner: winnerSide });
+
+    // Notify remaining player of match end
+    if (currentMatch.players[remainingSeat]) {
+      currentMatch.players[remainingSeat]!.socket.send(
+        JSON.stringify({
+          type: 'MATCH_END',
+          reason: 'opponent_timeout',
+          winner: winnerSide,
+        }),
+      );
+    }
+
+    // Clean up match
+    if (currentMatch.loop) {
+      clearInterval(currentMatch.loop);
+      currentMatch.loop = undefined;
+    }
+    matches.delete(match.id);
+    rooms.delete(match.id);
+  }, gracePeriodMs);
+
+  match.disconnectGracePeriod = {
+    disconnectedSeat,
+    disconnectTime,
+    graceTimeout,
+  };
+}
+
+function cancelDisconnectGracePeriod(match: Match) {
+  if (match.disconnectGracePeriod?.graceTimeout) {
+    clearTimeout(match.disconnectGracePeriod.graceTimeout);
+    match.disconnectGracePeriod = undefined;
+    console.log(`[GameServer] Cancelled disconnect grace period for match ${match.id}`);
+  }
+}
+
+async function handleMatchCompletion(match: Match, matchOverEvent: { winner: string }) {
   match.resultSubmitting = true;
   
   try {
-    console.log(`[GameServer] Tournament match ${match.id} completed, reporting result`);
-    
-    const tournament = match.reservation.tournament;
-    const gamesHistory = match.lastMatch?.gamesHistory || [];
-    
-    // Determine winner and loser participant IDs
+    // Get player info - might be undefined if disconnected
     const eastPlayer = match.players.P1; // P1 is always east initially
     const westPlayer = match.players.P2; // P2 is always west initially
     
-    let winnerParticipantId: number;
-    let loserParticipantId: number;
-    
-    if (matchOverEvent.winner === 'east') {
-      winnerParticipantId = eastPlayer?.participantId || 0;
-      loserParticipantId = westPlayer?.participantId || 0;
-    } else {
-      winnerParticipantId = westPlayer?.participantId || 0;
-      loserParticipantId = eastPlayer?.participantId || 0;
-    }
-    
-    if (!winnerParticipantId || !loserParticipantId) {
-      console.error(`[GameServer] Missing participant IDs for tournament match ${match.id}`);
+    // For disconnection timeout, we need at least one player
+    if (!eastPlayer && !westPlayer) {
+      console.error(`[GameServer] No player data available for match ${match.id}`);
       return;
     }
+
+    // Get player identifiers - try from active players first, then from expectedPlayers
+    let eastPlayerIdentifier = eastPlayer?.playerIdentifier;
+    let westPlayerIdentifier = westPlayer?.playerIdentifier;
+    let eastParticipantId = eastPlayer?.participantId;
+    let westParticipantId = westPlayer?.participantId;
+    let eastAlias = eastPlayer?.alias;
+    let westAlias = westPlayer?.alias;
     
+    if (!eastPlayerIdentifier || !westPlayerIdentifier) {
+      // Try to get from expectedPlayers in reservation (Map key is playerIdentifier)
+      for (const [playerIdentifier, playerInfo] of match.reservation.expectedPlayers.entries()) {
+        if (playerInfo.seat === 'P1' && !eastPlayerIdentifier) {
+          eastPlayerIdentifier = playerIdentifier;
+          eastParticipantId = playerInfo.participantId;
+          eastAlias = playerInfo.alias;
+        }
+        if (playerInfo.seat === 'P2' && !westPlayerIdentifier) {
+          westPlayerIdentifier = playerIdentifier;
+          westParticipantId = playerInfo.participantId;
+          westAlias = playerInfo.alias;
+        }
+      }
+    }
+
+    if (!eastPlayerIdentifier || !westPlayerIdentifier) {
+      console.error(`[GameServer] Cannot determine player identifiers for match ${match.id}`);
+      return;
+    }
+
+    const gamesHistory = match.lastMatch?.gamesHistory || [];
+    
+    // Calculate scores from games history
+    let eastScore = 0;
+    let westScore = 0;
+    for (const game of gamesHistory) {
+      if (game.winner === 'east') eastScore++;
+      else if (game.winner === 'west') westScore++;
+    }
+
+    // If no games were played but we have a winner (disconnect timeout), award the win
+    if (eastScore === 0 && westScore === 0) {
+      if (matchOverEvent.winner === 'east') {
+        eastScore = 2;
+      } else if (matchOverEvent.winner === 'west') {
+        westScore = 2;
+      }
+    }
+
     // Create proper JWT token for match service authentication
     const now = Math.floor(Date.now() / 1000);
     const token = jwt.sign(
@@ -409,36 +526,83 @@ async function handleMatchCompletion(match: Match, matchOverEvent: { winner: str
       }, 
       MATCH_SECRET
     );
-    
-    const resultPayload = {
-      winnerParticipantId,
-      loserParticipantId,
-      winnerUserUuid: eastPlayer?.playerIdentifier || '',
-      loserUserUuid: westPlayer?.playerIdentifier || '',
-      gamesHistory: gamesHistory.map(game => ({
-        gameIndex: game.gameIndex,
-        east: game.east,
-        west: game.west,
-        winner: game.winner
-      }))
-    };
-    
-    const response = await axios.post(
-      `${API_URL}/api/tournaments/${tournament.tournamentId}/matches/${tournament.tournamentMatchId}/result`,
-      resultPayload,
-      {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
+
+    if (match.reservation.tournament) {
+      // Tournament match
+      console.log(`[GameServer] Tournament match ${match.id} completed, reporting result`);
+      
+      const tournament = match.reservation.tournament;
+      
+      let winnerParticipantId: number;
+      let loserParticipantId: number;
+      
+      if (matchOverEvent.winner === 'east') {
+        winnerParticipantId = eastParticipantId || 0;
+        loserParticipantId = westParticipantId || 0;
+      } else {
+        winnerParticipantId = westParticipantId || 0;
+        loserParticipantId = eastParticipantId || 0;
       }
-    );
+      
+      if (!winnerParticipantId || !loserParticipantId) {
+        console.error(`[GameServer] Missing participant IDs for tournament match ${match.id}`);
+        return;
+      }
+      
+      const resultPayload = {
+        winnerParticipantId,
+        loserParticipantId,
+        winnerUserUuid: matchOverEvent.winner === 'east' ? eastPlayerIdentifier : westPlayerIdentifier,
+        loserUserUuid: matchOverEvent.winner === 'east' ? westPlayerIdentifier : eastPlayerIdentifier,
+        gamesHistory: gamesHistory.map(game => ({
+          gameIndex: game.gameIndex,
+          east: game.east,
+          west: game.west,
+          winner: game.winner
+        }))
+      };
+      
+      const response = await axios.post(
+        `${API_URL}/api/tournaments/${tournament.tournamentId}/matches/${tournament.tournamentMatchId}/result`,
+        resultPayload,
+        {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+      
+      console.log(`[GameServer] Tournament match result reported successfully:`, response.data);
+    } else {
+      // Casual match
+      console.log(`[GameServer] Casual match ${match.id} completed, reporting result`);
+      
+      const resultPayload = {
+        team1Players: [eastPlayerIdentifier],
+        team2Players: [westPlayerIdentifier],
+        team1Score: eastScore,
+        team2Score: westScore,
+      };
+      
+      const response = await axios.post(
+        `${API_URL}/api/matches`,
+        resultPayload,
+        {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+      
+      console.log(`[GameServer] Casual match result reported successfully:`, response.data);
+    }
     
-    console.log(`[GameServer] Tournament match result reported successfully:`, response.data);
     match.resultSubmitted = true;
     
   } catch (error) {
-    console.error(`[GameServer] Failed to report tournament match result:`, error);
+    console.error(`[GameServer] Failed to report match result:`, error);
     match.resultSubmitting = false;
   }
 }
@@ -596,6 +760,26 @@ wss.on('connection', (socket, req) => {
       `[GameServer] Player joined room=${roomIdentifier} seat=${seat} player=${claims.sub}`,
     );
 
+    // Cancel grace period if player reconnected
+    if (match.disconnectGracePeriod?.disconnectedSeat === seat) {
+      cancelDisconnectGracePeriod(match);
+      
+      // Notify all players about reconnection
+      const reconnectMsg = JSON.stringify({
+        type: 'OPPONENT_RECONNECTED',
+      });
+      match.players.P1?.socket.send(reconnectMsg);
+      match.players.P2?.socket.send(reconnectMsg);
+      
+      console.log(`[GameServer] Player ${seat} reconnected, grace period cancelled`);
+      
+      // Resume the match if it was started
+      if (match.started && !match.loop) {
+        console.log(`[GameServer] Resuming match ${roomIdentifier} after reconnection`);
+        startMatch(match);
+      }
+    }
+
     broadcastRoomState(match);
 
     socket.on('message', (raw: RawData) => {
@@ -622,26 +806,50 @@ wss.on('connection', (socket, req) => {
       }
       if (currentMatch) {
         delete currentMatch.players[seat];
+        
+        // Check if match has started and is a tournament match
+        const isTournamentMatch = Boolean(currentMatch.reservation.tournament);
+        const matchHasStarted = currentMatch.started;
+        const hasRemainingPlayer = currentMatch.players.P1 || currentMatch.players.P2;
+
+        console.log(`[GameServer] Disconnect details: tournament=${isTournamentMatch}, started=${matchHasStarted}, hasRemaining=${hasRemainingPlayer}`);
+
         if (!currentMatch.players.P1 || !currentMatch.players.P2) {
           if (currentMatch.startTimeout) {
             clearTimeout(currentMatch.startTimeout);
             currentMatch.startTimeout = undefined;
           }
-          if (currentMatch.loop) {
-            clearInterval(currentMatch.loop);
-            currentMatch.loop = undefined;
-            console.log(`[GameServer] Pausing match ${roomIdentifier} waiting for opponent`);
-            // Inform remaining player that opponent disconnected and match is paused?
-            // Check what the client does with this...
-            // Review Juuso and Iurii
+          
+          // If match has started with one player remaining, start grace period
+          if (matchHasStarted && hasRemainingPlayer) {
+            console.log(`[GameServer] Match in progress, starting grace period for ${seat} (tournament: ${isTournamentMatch})`);
+            if (currentMatch.loop) {
+              clearInterval(currentMatch.loop);
+              currentMatch.loop = undefined;
+            }
+            handleDisconnectGracePeriod(currentMatch, seat);
+          } else {
+            // Non-tournament match or match hasn't started yet - clean up normally
+            if (currentMatch.loop) {
+              clearInterval(currentMatch.loop);
+              currentMatch.loop = undefined;
+              console.log(`[GameServer] Pausing match ${roomIdentifier} waiting for opponent`);
+            }
+            currentMatch.startAtEpochMs = undefined;
+            currentMatch.started = false;
           }
-          currentMatch.startAtEpochMs = undefined;
-          currentMatch.started = false;
+        } else {
+          // Both players still connected, cancel any grace period
+          cancelDisconnectGracePeriod(currentMatch);
         }
+        
         if (!currentMatch.players.P1 && !currentMatch.players.P2) {
           if (currentMatch.loop) {
             clearInterval(currentMatch.loop);
             console.log(`[GameServer] Match ${roomIdentifier} ended and cleaned up`);
+          }
+          if (currentMatch.disconnectGracePeriod?.graceTimeout) {
+            clearTimeout(currentMatch.disconnectGracePeriod.graceTimeout);
           }
           matches.delete(roomIdentifier);
           rooms.delete(roomIdentifier);

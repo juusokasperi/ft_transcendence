@@ -1,5 +1,5 @@
 import db from '../db/client.ts';
-import { listTournamentParticipants } from '../db/queries/tournamentParticipants.ts';
+import { listTournamentParticipants, updateTournamentParticipant } from '../db/queries/tournamentParticipants.ts';
 import {
   addTournamentMatchPlayer,
   createTournamentMatch,
@@ -10,6 +10,7 @@ import {
   getTournamentMatchById,
   updateTournamentMatchStatus,
 } from '../db/queries/tournamentMatches.ts';
+import { markTournamentCompleted, updateTournamentStatus } from '../db/queries/tournaments.ts';
 import type {
   TournamentParticipant,
 } from '../types/types.ts';
@@ -269,4 +270,50 @@ export function processSemifinalResult(
   }
 
   return { readyMatches, autoAdvancedMatches };
+}
+
+/**
+ * Check if tournament has only one active participant remaining.
+ * If so, automatically declare them champion and complete the tournament.
+ * Returns the winner participant ID if auto-completion occurred, undefined otherwise.
+ */
+export function checkAndAutoCompleteTournament(tournamentId: number): number | undefined {
+  const participants = listTournamentParticipants(tournamentId);
+  
+  // Filter for active participants (not eliminated, forfeited, etc.)
+  const activeParticipants = participants.filter((p) => 
+    p.status !== 'eliminated' && 
+    p.status !== 'forfeited' &&
+    p.status !== 'champion' &&
+    p.status !== 'silver' &&
+    p.status !== 'third_place'
+  );
+
+  // If only one active participant remains, make them champion
+  if (activeParticipants.length === 1) {
+    const winner = activeParticipants[0]!;
+    
+    console.log(`[TournamentOrchestrator] Auto-completing tournament ${tournamentId}, only one participant remains: ${winner.alias} (ID: ${winner.id})`);
+    
+    // Mark winner as champion
+    updateTournamentParticipant(winner.id, { status: 'champion' });
+    
+    // Mark all incomplete matches as completed
+    const matches = listTournamentMatches(tournamentId);
+    for (const match of matches) {
+      if (match.status !== 'completed') {
+        updateTournamentMatchStatus(match.id, 'completed', { setCompletedAt: true });
+      }
+    }
+    
+    // Complete the tournament
+    const completed = markTournamentCompleted(tournamentId);
+    if (!completed) {
+      updateTournamentStatus(tournamentId, 'completed');
+    }
+    
+    return winner.id;
+  }
+
+  return undefined;
 }

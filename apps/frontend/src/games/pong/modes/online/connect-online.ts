@@ -22,6 +22,9 @@ export type OnlineClient = {
   onRoomState(cb: (state: RoomStateMessage) => void): void;
   onStart(cb: (payload: StartSignal) => void): void;
   awaitStart(): Promise<StartSignal>;
+  onOpponentDisconnected(cb: (gracePeriodMs: number) => void): void;
+  onOpponentReconnected(cb: () => void): void;
+  onMatchEnd(cb: (reason: string, winner?: 'east' | 'west') => void): void;
 };
 
 export type ConnectConfig = {
@@ -79,6 +82,9 @@ export async function connectOnline(cfg: ConnectConfig): Promise<OnlineClient> {
       const opponentAxisListeners = new Set<(axis: number) => void>();
       const roomStateListeners = new Set<(state: RoomStateMessage) => void>();
       const startListeners = new Set<(payload: StartSignal) => void>();
+      const opponentDisconnectedListeners = new Set<(gracePeriodMs: number) => void>();
+      const opponentReconnectedListeners = new Set<() => void>();
+      const matchEndListeners = new Set<(reason: string, winner?: 'east' | 'west') => void>();
       const startResolvers: Array<(payload: StartSignal) => void> = [];
       let startPayload: StartSignal | null = null;
 
@@ -124,6 +130,18 @@ export async function connectOnline(cfg: ConnectConfig): Promise<OnlineClient> {
             };
             notifyStart(payload);
             break;
+          case 'OPPONENT_DISCONNECTED':
+            console.log('[OnlineGame] Opponent disconnected, grace period:', data.gracePeriodMs);
+            opponentDisconnectedListeners.forEach((cb) => cb(data.gracePeriodMs));
+            break;
+          case 'OPPONENT_RECONNECTED':
+            console.log('[OnlineGame] Opponent reconnected');
+            opponentReconnectedListeners.forEach((cb) => cb());
+            break;
+          case 'MATCH_END':
+            console.log('[OnlineGame] Match ended:', data.reason, data.winner);
+            matchEndListeners.forEach((cb) => cb(data.reason, data.winner));
+            break;
           default:
             console.warn('[OnlineGame] Unknown message type:', data.type);
             break;
@@ -151,6 +169,15 @@ export async function connectOnline(cfg: ConnectConfig): Promise<OnlineClient> {
             startResolvers.push(resolveStart);
           });
         },
+        onOpponentDisconnected(cb) {
+          opponentDisconnectedListeners.add(cb);
+        },
+        onOpponentReconnected(cb) {
+          opponentReconnectedListeners.add(cb);
+        },
+        onMatchEnd(cb) {
+          matchEndListeners.add(cb);
+        },
         sendLocalAxis(axis: number) {
           if (gameWs.readyState === WebSocket.OPEN) {
             gameWs.send(JSON.stringify({ type: 'axis', axis }));
@@ -163,6 +190,9 @@ export async function connectOnline(cfg: ConnectConfig): Promise<OnlineClient> {
           roomStateListeners.clear();
           snapshotListeners.clear();
           opponentAxisListeners.clear();
+          opponentDisconnectedListeners.clear();
+          opponentReconnectedListeners.clear();
+          matchEndListeners.clear();
           try {
             gameWs.close();
           } catch {

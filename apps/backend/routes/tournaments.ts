@@ -8,7 +8,11 @@ import {
   markTournamentCompleted,
   updateTournamentStatus,
 } from '../db/queries/tournaments.ts';
-import { generateSingleEliminationBracket, processSemifinalResult } from '../services/tournamentOrchestrator.ts';
+import { 
+  generateSingleEliminationBracket, 
+  processSemifinalResult,
+  checkAndAutoCompleteTournament,
+} from '../services/tournamentOrchestrator.ts';
 import type { MatchProgression } from '../services/tournamentOrchestrator.ts';
 import { notifyMatchesReady, notifyTournamentStateUpdated } from '../services/matchmakingBridge.ts';
 import {
@@ -246,6 +250,12 @@ export async function tournamentRoutes(app: FastifyInstance) {
           if (progression?.readyMatches?.length) {
             await notifyMatchesReady(tournamentId, progression.readyMatches);
           }
+          
+          // Check if only one participant remains (others forfeited/eliminated)
+          const autoWinner = checkAndAutoCompleteTournament(tournamentId);
+          if (autoWinner) {
+            req.log.info({ tournamentId, winnerId: autoWinner }, 'Tournament auto-completed with single remaining participant');
+          }
         } else if (match.roundNumber === 2) {
           const applyStatusUpdate = (participantId: number, status: string) => {
             const participant = updateTournamentParticipant(participantId, { status });
@@ -447,6 +457,12 @@ export async function tournamentRoutes(app: FastifyInstance) {
               { tournamentId },
               'Failed to mark tournament cancelled after last participant left',
             );
+          }
+        } else {
+          // Check if only one participant remains after this removal
+          const autoWinner = checkAndAutoCompleteTournament(tournamentId);
+          if (autoWinner) {
+            req.log.info({ tournamentId, winnerId: autoWinner }, 'Tournament auto-completed after participant removal');
           }
         }
 
