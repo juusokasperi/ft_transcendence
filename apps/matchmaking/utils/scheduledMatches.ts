@@ -814,7 +814,14 @@ export async function handleLeaveTournament(
   client: ClientInfo,
   clients: Map<string, ClientInfo>,
 ) {
-  if (!client.tournamentId || !client.tournamentParticipantId) return;
+  if (!client.tournamentId || !client.tournamentParticipantId) {
+    log('Leave tournament ignored: no active membership', {
+      uuid: client.uuid,
+      tournamentId: client.tournamentId,
+      participantId: client.tournamentParticipantId,
+    });
+    return;
+  }
 
   const tournamentId = client.tournamentId;
   const participantId = client.tournamentParticipantId;
@@ -824,10 +831,21 @@ export async function handleLeaveTournament(
   const headers = { Authorization: `Bearer ${token}` };
 
   try {
+    log('Leave tournament requested', {
+      uuid: client.uuid,
+      tournamentId,
+      participantId,
+    });
     await axios.delete(
       `${API_URL}/api/tournaments/${tournamentId}/participants/${participantId}`,
       { headers },
     );
+
+    log('Leave tournament API succeeded', {
+      uuid: client.uuid,
+      tournamentId,
+      participantId,
+    });
 
     await syncTournamentState(tournamentId, client, clients);
 
@@ -835,6 +853,12 @@ export async function handleLeaveTournament(
     client.tournamentId = undefined;
     client.tournamentParticipantId = undefined;
     client.tournamentAlias = undefined;
+
+    log('Tournament membership cleared', {
+      uuid: client.uuid,
+      tournamentId,
+      participantId,
+    });
   } catch (error) {
     handleTournamentApiError(client, error, 'Failed to leave tournament');
   }
@@ -844,7 +868,14 @@ export async function handleForfeitTournament(
   client: ClientInfo,
   clients: Map<string, ClientInfo>,
 ) {
-  if (!client.tournamentId || !client.tournamentParticipantId) return;
+  if (!client.tournamentId || !client.tournamentParticipantId) {
+    log('Forfeit tournament ignored: no active membership', {
+      uuid: client.uuid,
+      tournamentId: client.tournamentId,
+      participantId: client.tournamentParticipantId,
+    });
+    return;
+  }
 
   const tournamentId = client.tournamentId;
   const participantId = client.tournamentParticipantId;
@@ -854,17 +885,33 @@ export async function handleForfeitTournament(
   const headers = { Authorization: `Bearer ${token}` };
 
   try {
+    log('Forfeit tournament requested', {
+      uuid: client.uuid,
+      tournamentId,
+      participantId,
+    });
     await axios.patch(
       `${API_URL}/api/tournaments/${tournamentId}/participants/${participantId}`,
       { status: 'forfeited' },
       { headers },
     );
 
+    log('Forfeit tournament API succeeded', {
+      uuid: client.uuid,
+      tournamentId,
+      participantId,
+    });
+
     for (const [matchId, pending] of pendingTournamentMatches.entries()) {
       if (pending.match.participants.some((participant) => participant.userUuid === client.uuid)) {
         if (pending.reminder) clearTimeout(pending.reminder);
         cancelTournamentCountdown(pending, clients, 'stopped');
         pendingTournamentMatches.delete(matchId);
+        log('Cancelled pending tournament match after forfeit', {
+          tournamentId,
+          matchId,
+          uuid: client.uuid,
+        });
       }
     }
 
@@ -909,8 +956,18 @@ export function handleClientDisconnectFromTournament(
   client: ClientInfo,
   clients: Map<string, ClientInfo>,
 ) {
+  log('Handling client disconnect from tournament context', {
+    uuid: client.uuid,
+    tournamentId: client.tournamentId,
+    participantId: client.tournamentParticipantId,
+  });
+
   if (client.tournamentId) {
     unsubscribeClientFromTournament(client.tournamentId, client.id);
+    log('Unsubscribed client from tournament after disconnect', {
+      uuid: client.uuid,
+      tournamentId: client.tournamentId,
+    });
   }
 
   for (const pending of pendingTournamentMatches.values()) {
@@ -921,6 +978,11 @@ export function handleClientDisconnectFromTournament(
         pending.reminder = undefined;
       }
       scheduleTournamentReminder(pending.match, pending.tournamentId, clients, pending.attempts);
+      log('Scheduled reminder after disconnecting tournament player', {
+        tournamentId: pending.tournamentId,
+        matchId: pending.match.tournamentMatchId,
+        uuid: client.uuid,
+      });
     }
   }
 }
@@ -953,7 +1015,12 @@ export async function restoreTournamentMembership(
           };
         };
 
-    if (!payload) return;
+    if (!payload) {
+      log('Restore tournament membership: no active tournament found', {
+        uuid: client.uuid,
+      });
+      return;
+    }
 
     const { tournament, participant } = payload;
 
@@ -962,6 +1029,13 @@ export async function restoreTournamentMembership(
     client.tournamentAlias = participant.alias;
 
     subscribeClientToTournament(tournament.id, client);
+
+    log('Restored active tournament membership for client', {
+      uuid: client.uuid,
+      tournamentId: tournament.id,
+      participantId: participant.id,
+      status: participant.status,
+    });
 
     await syncTournamentState(tournament.id, client, clients);
     checkPendingMatchesForPlayer(client, tournament.id, clients);
