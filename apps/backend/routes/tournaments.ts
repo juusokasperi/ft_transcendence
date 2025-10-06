@@ -428,8 +428,29 @@ export async function tournamentRoutes(app: FastifyInstance) {
         const existing = getTournamentParticipantById(participantId);
         if (!existing || existing.tournamentId !== tournamentId)
           return res.status(404).send({ message: 'Participant not found for tournament' });
+
+        const participantsBefore = listTournamentParticipants(tournamentId);
+        const wasOnlyParticipant =
+          participantsBefore.length === 1 && participantsBefore[0]?.id === participantId;
+        const tournamentMatches = wasOnlyParticipant ? listTournamentMatches(tournamentId) : [];
+        const hasCompletedMatches = tournamentMatches.some(
+          (match) => match.completedAt !== null || match.status === 'completed',
+        );
+
         const removed = removeTournamentParticipant(participantId);
         if (!removed) return res.status(500).send({ message: 'Failed to remove participant' });
+
+        if (wasOnlyParticipant && !hasCompletedMatches) {
+          const cancelled = updateTournamentStatus(tournamentId, 'cancelled');
+          if (!cancelled) {
+            req.log.warn(
+              { tournamentId },
+              'Failed to mark tournament cancelled after last participant left',
+            );
+          }
+        }
+
+        await notifyTournamentStateUpdated(tournamentId);
         return res.status(204).send();
       } catch (error) {
         req.log.error({ error }, 'Failed to remove participant');

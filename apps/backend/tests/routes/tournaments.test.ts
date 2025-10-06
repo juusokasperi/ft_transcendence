@@ -54,13 +54,14 @@ vi.mock('../../services/tournamentOrchestrator.ts', () => ({
 
 vi.mock('../../services/matchmakingBridge.ts', () => ({
   notifyMatchesReady: vi.fn().mockResolvedValue(undefined),
+  notifyTournamentStateUpdated: vi.fn().mockResolvedValue(undefined),
 }));
 
 import * as tournamentQueries from '../../db/queries/tournaments.ts';
 import * as participantQueries from '../../db/queries/tournamentParticipants.ts';
 import * as matchQueries from '../../db/queries/tournamentMatches.ts';
 import * as orchestrator from '../../services/tournamentOrchestrator.ts';
-import { notifyMatchesReady } from '../../services/matchmakingBridge.ts';
+import { notifyMatchesReady, notifyTournamentStateUpdated } from '../../services/matchmakingBridge.ts';
 import { tournamentRoutes } from '../../routes/tournaments.ts';
 import { signAccessToken } from '../../utils/jwt.ts';
 
@@ -365,6 +366,30 @@ describe('Tournament routes', () => {
 
   it('DELETE /api/tournaments/:id/participants/:participantId removes participant', async () => {
     (participantQueries.getTournamentParticipantById as Mock).mockReturnValue(sampleParticipant);
+    (participantQueries.listTournamentParticipants as Mock).mockReturnValue([sampleParticipant]);
+    (matchQueries.listTournamentMatches as Mock).mockReturnValue([]);
+    (participantQueries.removeTournamentParticipant as Mock).mockReturnValue(true);
+    (tournamentQueries.updateTournamentStatus as Mock).mockReturnValue({
+      ...sampleTournament,
+      status: 'cancelled',
+    });
+
+    const res = await app.inject({
+      method: 'DELETE',
+      url: '/api/tournaments/1/participants/10',
+      headers: makeAuthHeader(),
+    });
+
+    expect(res.statusCode).toBe(204);
+    expect(participantQueries.removeTournamentParticipant).toHaveBeenCalledWith(10);
+    expect(tournamentQueries.updateTournamentStatus).toHaveBeenCalledWith(1, 'cancelled');
+    expect(notifyTournamentStateUpdated).toHaveBeenCalledWith(1);
+  });
+
+  it('DELETE /api/tournaments/:id/participants/:participantId keeps tournament active when others remain', async () => {
+    const secondParticipant = { ...sampleParticipant, id: 11 };
+    (participantQueries.getTournamentParticipantById as Mock).mockReturnValue(sampleParticipant);
+    (participantQueries.listTournamentParticipants as Mock).mockReturnValue([sampleParticipant, secondParticipant]);
     (participantQueries.removeTournamentParticipant as Mock).mockReturnValue(true);
 
     const res = await app.inject({
@@ -375,6 +400,9 @@ describe('Tournament routes', () => {
 
     expect(res.statusCode).toBe(204);
     expect(participantQueries.removeTournamentParticipant).toHaveBeenCalledWith(10);
+    expect(matchQueries.listTournamentMatches).not.toHaveBeenCalled();
+    expect(tournamentQueries.updateTournamentStatus).not.toHaveBeenCalled();
+    expect(notifyTournamentStateUpdated).toHaveBeenCalledWith(1);
   });
 
   it('GET /api/tournaments/:id/matches/:matchId/players returns assignments', async () => {
