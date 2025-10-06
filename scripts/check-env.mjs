@@ -4,6 +4,7 @@ import { resolve, dirname, isAbsolute } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const REQUIRED_VARS = [
+  'PNPM_VERSION',
   'GAME_SERVER_PORT',
   'GAME_SERVER_HTTP',
   'MATCHMAKING_PORT',

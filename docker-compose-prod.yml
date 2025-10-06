@@ -26,6 +26,7 @@ services:
       context: .
       dockerfile: ./node.template.dockerfile
       args:
+        PNPM_VERSION: ${PNPM_VERSION:-9.12.3}
         SERVICE_NAME: api
         SERVICE_DIR: backend
     image: ft-transcendence-backend-prod:latest
@@ -46,6 +47,8 @@ services:
     build:
       context: .
       dockerfile: ./apps/frontend/prod.dockerfile
+      args:
+        PNPM_VERSION: ${PNPM_VERSION:-9.12.3}
     image: ft-transcendence-frontend-builder:latest
     volumes:
       - .:/work:cached
@@ -85,6 +88,7 @@ services:
       context: .
       dockerfile: ./node.template.dockerfile
       args:
+        PNPM_VERSION: ${PNPM_VERSION:-9.12.3}
         SERVICE_NAME: matchmaking
         SERVICE_DIR: matchmaking
     image: ft-transcendence-matchmaking-prod:latest
@@ -104,6 +108,7 @@ services:
       context: .
       dockerfile: ./node.template.dockerfile
       args:
+        PNPM_VERSION: ${PNPM_VERSION:-9.12.3}
         SERVICE_NAME: game-server
         SERVICE_DIR: game-server
     image: ft-transcendence-game-server-prod:latest
@@ -125,6 +130,7 @@ services:
       context: .
       dockerfile: ./node.template.dockerfile
       args:
+        PNPM_VERSION: ${PNPM_VERSION:-9.12.3}
         SERVICE_NAME: allocator
         SERVICE_DIR: allocator
     image: ft-transcendence-allocator-prod:latest
@@ -156,6 +162,7 @@ services:
       context: .
       dockerfile: ./node.template.dockerfile
       args:
+        PNPM_VERSION: ${PNPM_VERSION:-9.12.3}
         SERVICE_NAME: scorer
         SERVICE_DIR: scorer
     image: ft-transcendence-scorer-prod:latest
@@ -179,6 +186,7 @@ services:
       context: .
       dockerfile: ./node.template.dockerfile
       args:
+        PNPM_VERSION: ${PNPM_VERSION:-9.12.3}
         SERVICE_NAME: game-gateway
         SERVICE_DIR: game-gateway
     image: ft-transcendence-game-gateway-prod:latest
