@@ -12,6 +12,7 @@ import { createMatchmakingClient } from '../../services/matchmaking';
 import type {
   HandoffTimeoutMessage,
   MatchmakingMessage,
+  TournamentMatchCountdownStatus,
   TournamentMatchesReadyMessage,
   TournamentMatchState,
   TournamentParticipantState,
@@ -35,6 +36,15 @@ type TournamentSummary = {
 };
 
 type ReadyMatch = TournamentMatchesReadyMessage['matches'][number];
+
+type CountdownSnapshot = {
+  tournamentMatchId: number;
+  tournamentId: number;
+  stage: ReadyMatch['stage'];
+  status: TournamentMatchCountdownStatus;
+  targetStartEpochMs: number;
+  secondsRemaining: number;
+};
 
 type ActiveHandoff = {
   matchId: string;
@@ -67,7 +77,7 @@ const PARTICIPANT_STATUS_LABELS: Record<string, string> = {
   accepted: 'Checked in',
   active: 'Active',
   champion: 'Champion',
-  runner_up: 'Runner-up',
+  silver: 'Silver',
   third_place: 'Third place',
   eliminated: 'Eliminated',
   forfeited: 'Forfeited',
@@ -91,6 +101,7 @@ const TournamentPage: React.FC = () => {
 
   const clientRef = useRef<ReturnType<typeof createMatchmakingClient> | null>(null);
   const activeTournamentIdRef = useRef<number | null>(null);
+  const pendingMatchRef = useRef<ReadyMatch | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const appRef = useRef<{ destroy(): void } | null>(null);
 
@@ -104,10 +115,11 @@ const TournamentPage: React.FC = () => {
   const [bracket, setBracket] = useState<TournamentMatchState[]>([]);
   const [latestReadyMatches, setLatestReadyMatches] = useState<ReadyMatch[]>([]);
   const [pendingMatch, setPendingMatch] = useState<ReadyMatch | null>(null);
-  const [acceptedMatchIds, setAcceptedMatchIds] = useState<Set<number>>(new Set());
-  const [matchPhase, setMatchPhase] = useState<'idle' | 'awaiting_accept' | 'starting' | 'playing'>(
+  const [matchCountdowns, setMatchCountdowns] = useState<Map<number, CountdownSnapshot>>(new Map());
+  const [matchPhase, setMatchPhase] = useState<'idle' | 'awaiting_start' | 'starting' | 'playing'>(
     'idle',
   );
+  const [localCountdownSeconds, setLocalCountdownSeconds] = useState<number | null>(null);
   const [handoff, setHandoff] = useState<ActiveHandoff | null>(null);
   const [aliasInput, setAliasInput] = useState('');
   const [tournamentName, setTournamentName] = useState('');
@@ -121,6 +133,10 @@ const TournamentPage: React.FC = () => {
   useEffect(() => {
     activeTournamentIdRef.current = activeTournamentId;
   }, [activeTournamentId]);
+
+  useEffect(() => {
+    pendingMatchRef.current = pendingMatch;
+  }, [pendingMatch]);
 
   const filterTournamentsForDisplay = useCallback(
     (incoming: TournamentSummary[]): TournamentSummary[] => {
@@ -233,7 +249,8 @@ const TournamentPage: React.FC = () => {
     setParticipants([]);
     setBracket([]);
     setPendingMatch(null);
-    setAcceptedMatchIds(new Set());
+    pendingMatchRef.current = null;
+    setMatchCountdowns(new Map());
     setLatestReadyMatches([]);
     setTournamentStatus('draft');
     setMaxParticipants(null);
@@ -396,19 +413,71 @@ const TournamentPage: React.FC = () => {
         case 'TOURNAMENT_MATCHES_READY': {
           setLatestReadyMatches(msg.matches);
           void refreshTournamentState();
+
+          setMatchCountdowns((prev) => {
+            const activeIds = new Set(msg.matches.map((match) => match.tournamentMatchId));
+            let changed = false;
+            const next = new Map<number, CountdownSnapshot>();
+            for (const [key, value] of prev.entries()) {
+              if (activeIds.has(key)) {
+                next.set(key, value);
+              } else {
+                changed = true;
+              }
+            }
+            return changed ? next : prev;
+          });
+
           const userUuid = user?.uuid;
           if (userUuid) {
             const personal = msg.matches.find((match) =>
               match.participants.some((participant) => participant.userUuid === userUuid),
             );
             if (personal) {
+              pendingMatchRef.current = personal;
               setPendingMatch(personal);
-              setMatchPhase((phase) => (phase === 'starting' || phase === 'playing' ? phase : 'awaiting_accept'));
-              setAcceptedMatchIds((prev) => {
-                const next = new Set(prev);
-                next.delete(personal.tournamentMatchId);
-                return next;
-              });
+              setMatchPhase((phase) =>
+                phase === 'starting' || phase === 'playing' ? phase : 'awaiting_start',
+              );
+            } else {
+              pendingMatchRef.current = null;
+              setPendingMatch(null);
+            }
+          } else {
+            pendingMatchRef.current = null;
+            setPendingMatch(null);
+          }
+          break;
+        }
+        case 'TOURNAMENT_MATCH_COUNTDOWN': {
+          const payload = msg;
+          if (activeTournamentIdRef.current !== payload.tournamentId) break;
+
+          setMatchCountdowns((prev) => {
+            const next = new Map(prev);
+            next.set(payload.tournamentMatchId, {
+              tournamentMatchId: payload.tournamentMatchId,
+              tournamentId: payload.tournamentId,
+              stage: payload.stage,
+              status: payload.status,
+              targetStartEpochMs: payload.targetStartEpochMs,
+              secondsRemaining: payload.secondsRemaining,
+            });
+            return next;
+          });
+
+          const personalMatchId = pendingMatchRef.current?.tournamentMatchId;
+          if (personalMatchId === payload.tournamentMatchId) {
+            if (payload.status === 'started') {
+              setMatchPhase((phase) => (phase === 'playing' ? phase : 'starting'));
+            } else if (payload.status === 'cancelled') {
+              setMatchPhase((phase) =>
+                phase === 'starting' || phase === 'playing' ? phase : 'awaiting_start',
+              );
+            } else {
+              setMatchPhase((phase) =>
+                phase === 'starting' || phase === 'playing' ? phase : 'awaiting_start',
+              );
             }
           }
           break;
@@ -416,7 +485,17 @@ const TournamentPage: React.FC = () => {
         case 'HANDOFF': {
           const currentTournamentId = activeTournamentIdRef.current;
           if (msg.tournament && msg.tournament.tournamentId === currentTournamentId) {
+            const previousMatchId = pendingMatchRef.current?.tournamentMatchId;
             setPendingMatch(null);
+            pendingMatchRef.current = null;
+            if (typeof previousMatchId === 'number') {
+              setMatchCountdowns((prev) => {
+                if (!prev.has(previousMatchId)) return prev;
+                const next = new Map(prev);
+                next.delete(previousMatchId);
+                return next;
+              });
+            }
             setMatchPhase('starting');
             setHandoff({
               matchId: msg.matchId,
@@ -431,8 +510,17 @@ const TournamentPage: React.FC = () => {
         }
         case 'HANDOFF_TIMEOUT': {
           const payload = msg as HandoffTimeoutMessage;
+          const previousMatchId = pendingMatchRef.current?.tournamentMatchId;
           enqueueSnackbar({ message: payload.message ?? 'Match handoff timed out', variant: 'error' });
           setMatchPhase('idle');
+          pendingMatchRef.current = null;
+          setPendingMatch(null);
+          setMatchCountdowns((prev) => {
+            if (typeof previousMatchId !== 'number' || !prev.has(previousMatchId)) return prev;
+            const next = new Map(prev);
+            next.delete(previousMatchId);
+            return next;
+          });
           break;
         }
         default:
@@ -480,16 +568,6 @@ const TournamentPage: React.FC = () => {
     enqueueSnackbar({ message: 'Forfeit request sent', variant: 'warning' });
   };
 
-  const handleAcceptMatch = () => {
-    if (!clientRef.current || !pendingMatch) return;
-    clientRef.current.acceptScheduled(pendingMatch.tournamentMatchId);
-    setAcceptedMatchIds((prev) => {
-      const next = new Set(prev);
-      next.add(pendingMatch.tournamentMatchId);
-      return next;
-    });
-  };
-
   const sortedParticipants = useMemo(() => {
     return [...participants].sort((a, b) => {
       const seedA = a.seed ?? Number.MAX_SAFE_INTEGER;
@@ -512,10 +590,42 @@ const TournamentPage: React.FC = () => {
     });
   }, [bracket]);
 
-  const isAwaitingAccept = matchPhase === 'awaiting_accept' && pendingMatch;
-  const hasAccepted = pendingMatch ? acceptedMatchIds.has(pendingMatch.tournamentMatchId) : false;
+  const pendingCountdown = pendingMatch
+    ? matchCountdowns.get(pendingMatch.tournamentMatchId)
+    : undefined;
+  const countdownStatus = pendingCountdown?.status ?? null;
+  const countdownSecondsDisplay =
+    pendingCountdown?.status === 'running'
+      ? localCountdownSeconds ?? pendingCountdown.secondsRemaining
+      : pendingCountdown?.secondsRemaining ?? null;
 
   const seat = handoff?.side === 'east' ? 'P1' : 'P2';
+
+  useEffect(() => {
+    if (!pendingCountdown) {
+      setLocalCountdownSeconds(null);
+      return;
+    }
+
+    if (pendingCountdown.status !== 'running') {
+      setLocalCountdownSeconds(pendingCountdown.secondsRemaining);
+      return;
+    }
+
+    const update = () => {
+      const remaining = Math.max(
+        0,
+        Math.ceil((pendingCountdown.targetStartEpochMs - Date.now()) / 1000),
+      );
+      setLocalCountdownSeconds(remaining);
+    };
+
+    update();
+    const timer = window.setInterval(update, 300);
+    return () => {
+      window.clearInterval(timer);
+    };
+  }, [pendingCountdown]);
 
   useLayoutEffect(() => {
     if (matchPhase !== 'starting' && matchPhase !== 'playing') return;
@@ -853,8 +963,15 @@ const TournamentPage: React.FC = () => {
             <div className="mb-3 flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
               <h2 className="text-lg font-semibold">Directed matches</h2>
               {pendingMatch && (
-                        <span className="text-xs uppercase tracking-[0.4em] text-white/50">
-                  Awaiting players for {readyStageLabel(pendingMatch)}
+                <span className="text-xs uppercase tracking-[0.4em] text-white/60">
+                  Next: {readyStageLabel(pendingMatch)}
+                  {countdownStatus === 'running' && typeof countdownSecondsDisplay === 'number'
+                    ? ` · Auto-start in ${Math.max(countdownSecondsDisplay, 0)}s`
+                    : countdownStatus === 'started'
+                    ? ' · Launching…'
+                    : countdownStatus === 'cancelled'
+                    ? ' · Waiting for players…'
+                    : ' · Preparing…'}
                 </span>
               )}
             </div>
@@ -864,6 +981,31 @@ const TournamentPage: React.FC = () => {
               <ul className="space-y-3">
                 {latestReadyMatches.map((match) => {
                   const isYours = match.participants.some((participant) => participant.userUuid === user?.uuid);
+                  const countdownInfo = matchCountdowns.get(match.tournamentMatchId);
+                  const isPersonalMatch = pendingMatch?.tournamentMatchId === match.tournamentMatchId;
+                  let countdownText: string | null = null;
+                  let countdownTone = 'text-white/70';
+
+                  if (countdownInfo) {
+                    if (countdownInfo.status === 'running') {
+                      const seconds = isPersonalMatch && typeof countdownSecondsDisplay === 'number'
+                        ? Math.max(countdownSecondsDisplay, 0)
+                        : Math.max(countdownInfo.secondsRemaining, 0);
+                      countdownText = `Auto-starting in ${seconds}s`;
+                      countdownTone = 'text-emerald-300';
+                    } else if (countdownInfo.status === 'started') {
+                      countdownText = 'Launching match…';
+                      countdownTone = 'text-sky-300';
+                    } else if (countdownInfo.status === 'cancelled') {
+                      countdownText = 'Countdown paused — waiting for players';
+                      countdownTone = 'text-amber-300';
+                    }
+                  }
+
+                  if (!countdownText && isPersonalMatch) {
+                    countdownText = 'As soon as both players are online, the countdown begins.';
+                    countdownTone = 'text-white/70';
+                  }
                   return (
                     <li
                       key={match.tournamentMatchId}
@@ -892,19 +1034,9 @@ const TournamentPage: React.FC = () => {
                         ))}
                       </ul>
 
-                      {isYours && match.tournamentMatchId === pendingMatch?.tournamentMatchId && (
-                        <div className="mt-3 flex items-center gap-3">
-                          <Button
-                            variant="primary"
-                            size="sm"
-                            onClick={handleAcceptMatch}
-                            disabled={hasAccepted}
-                          >
-                            {hasAccepted ? 'Waiting for opponent…' : 'Ready for match'}
-                          </Button>
-                          {hasAccepted && (
-                            <span className="text-xs text-white/60">Thanks! Waiting for the opponent.</span>
-                          )}
+                      {countdownText && (
+                        <div className={`mt-3 text-xs font-medium ${countdownTone}`}>
+                          {countdownText}
                         </div>
                       )}
                     </li>

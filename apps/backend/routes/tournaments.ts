@@ -256,7 +256,7 @@ export async function tournamentRoutes(app: FastifyInstance) {
           try {
             if (match.roundPosition === 1) {
               applyStatusUpdate(body.winnerParticipantId, 'champion');
-              applyStatusUpdate(body.loserParticipantId, 'runner_up');
+              applyStatusUpdate(body.loserParticipantId, 'silver');
             } else if (match.roundPosition === 2) {
               applyStatusUpdate(body.winnerParticipantId, 'third_place');
               applyStatusUpdate(body.loserParticipantId, 'eliminated');
