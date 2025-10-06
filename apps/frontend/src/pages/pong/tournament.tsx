@@ -22,6 +22,8 @@ import TournamentParticipantsPanel from './components/TournamentParticipantsPane
 import TournamentBracketPanel from './components/TournamentBracketPanel';
 import TournamentDirectedMatchesPanel from './components/TournamentDirectedMatchesPanel';
 import TournamentLobbyPanel from './components/TournamentLobbyPanel';
+import TournamentMatchOverlay from './components/TournamentMatchOverlay';
+import TournamentPageHeader from './components/TournamentPageHeader';
 
 const TOURNAMENT_SIZE = 4;
 const RECENT_TOURNAMENT_WINDOW_MS = 6 * 60 * 60 * 1000; // 6 hours
@@ -531,6 +533,9 @@ const TournamentPage: React.FC = () => {
       ? localCountdownSeconds ?? pendingCountdown.secondsRemaining
       : pendingCountdown?.secondsRemaining ?? null;
 
+  const isDetailView = activeTournamentId !== null;
+  const headerRefreshHandler = isDetailView ? refreshTournamentState : loadTournaments;
+
   const seat = handoff?.side === 'east' ? 'P1' : 'P2';
 
   useEffect(() => {
@@ -688,46 +693,20 @@ const TournamentPage: React.FC = () => {
   }
 
   if (matchPhase === 'starting' || matchPhase === 'playing') {
-    return (
-      <div className="relative min-h-screen w-full bg-black">
-        <Navbar />
-        <canvas ref={canvasRef} className="block h-full w-full" tabIndex={0} autoFocus />
-        <button
-          type="button"
-          onClick={handleQuitMatch}
-          className="game-quit-button absolute right-5 top-5"
-          aria-label="Quit match"
-        >
-          Quit
-          <span aria-hidden className="game-quit-hover-text">Quit</span>
-        </button>
-      </div>
-    );
+    return <TournamentMatchOverlay canvasRef={canvasRef} onQuit={handleQuitMatch} />;
   }
 
   return (
     <div className="relative min-h-screen bg-gradient-to-b from-slate-950 via-slate-900 to-black text-white">
       <Navbar />
       <div className="mx-auto mt-24 flex w-full max-w-6xl flex-col gap-6 px-4 pb-16">
-        <header className="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
-          <div>
-            <h1 className="text-3xl font-semibold">Ping Pong Tournaments</h1>
-            <p className="text-white/60">
-              Create a lobby, invite players, and advance through the fixed four-slot bracket.
-            </p>
-          </div>
-          <div className="flex items-center gap-3 text-sm text-white/70">
-            <span>
-              Connection:
-              <span className={`ml-2 font-semibold ${connectionReady ? 'text-emerald-400' : 'text-rose-400'}`}>
-                {connectionReady ? 'Ready' : 'Connecting…'}
-              </span>
-            </span>
-            <Button variant="secondary" size="sm" onClick={loadTournaments} disabled={loadingTournaments}>
-              {loadingTournaments ? 'Refreshing…' : 'Refresh list'}
-            </Button>
-          </div>
-        </header>
+        <TournamentPageHeader
+          isDetailView={isDetailView}
+          displayTournamentId={activeTournamentId}
+          connectionReady={connectionReady}
+          loading={loadingTournaments}
+          onRefresh={headerRefreshHandler}
+        />
 
         <section className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
           <TournamentLobbyPanel

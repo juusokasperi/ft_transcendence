@@ -2,7 +2,7 @@ import React from 'react';
 import Navbar from '../../../components/Navbar';
 
 export type TournamentMatchOverlayProps = {
-  canvasRef: React.RefObject<HTMLCanvasElement>;
+  canvasRef: React.RefObject<HTMLCanvasElement | null>;
   onQuit(): void;
 };
 
