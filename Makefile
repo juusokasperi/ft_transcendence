@@ -254,10 +254,12 @@ builder-use:
 builder-prune:
 	@echo ">> Pruning build cache for builder '$(BUILDER)'"
 	docker buildx prune -af --builder $(BUILDER)
+	- docker buildx prune -af --builder ft-transcendence-dev-builder # leftover from old setup
 
 builder-rm:
 	@echo ">> Removing buildx builder '$(BUILDER)' (and its cache)"
 	- docker buildx rm -f $(BUILDER)
+	- docker buildx rm -f ft-transcendence-dev-builder # leftover from old setup
 
 # ========================
 #  Project-scoped prunes & checks
