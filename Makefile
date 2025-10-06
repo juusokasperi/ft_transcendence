@@ -89,10 +89,19 @@ detached:
 
 prod:
 	$(ensure_dirs)
+	$(ensure_env)
 	$(ensure_builder)
 	$(ensure_certs)
 	@echo ">> Starting prod stack (attached)"
 	docker compose -p $(NAME_PROD) $(PROD_COMPOSE) $(ENV_ROOT) up --build
+
+detached-prod:
+	$(ensure_dirs)
+	$(ensure_env)
+	$(ensure_builder)
+	$(ensure_certs)
+	@echo ">> Starting prod stack (attached)"
+	docker compose -p $(NAME_PROD) $(PROD_COMPOSE) $(ENV_ROOT) up --build -d
 
 elk:
 	$(ensure_dirs)
