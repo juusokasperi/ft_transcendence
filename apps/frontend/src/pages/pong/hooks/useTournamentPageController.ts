@@ -1,0 +1,712 @@
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import type { RefObject } from 'react';
+import { createMatchmakingClient } from '../../../services/matchmaking';
+import type {
+  HandoffTimeoutMessage,
+  MatchmakingMessage,
+  TournamentMatchState,
+  TournamentParticipantState,
+} from '@pong/shared/protocol/net';
+import { useSnackbar } from '../../../context/SnackbarContext';
+import { useAppContext } from '../../../context/AppContext';
+import type { ActiveHandoff, CountdownSnapshot, ReadyMatch, TournamentSummary } from '../components/types';
+
+const TOURNAMENT_SIZE = 4;
+const RECENT_TOURNAMENT_WINDOW_MS = 6 * 60 * 60 * 1000; // 6 hours
+const MAX_VISIBLE_TOURNAMENTS = 8;
+
+type MatchPhase = 'idle' | 'awaiting_start' | 'starting' | 'playing';
+
+type TournamentControllerReturn = {
+  user: ReturnType<typeof useAppContext>['user'];
+  userReady: boolean;
+  navigate: ReturnType<typeof useAppContext>['navigate'];
+  connectionReady: boolean;
+  loadingTournaments: boolean;
+  availableTournaments: TournamentSummary[];
+  activeTournamentId: number | null;
+  tournamentStatus: string;
+  aliasInput: string;
+  setAliasInput: (value: string) => void;
+  tournamentName: string;
+  setTournamentName: (value: string) => void;
+  handleCreateTournamentClick: () => void;
+  handleJoinTournamentClick: (tournamentId: number) => void;
+  handleLeaveTournamentClick: () => void;
+  handleForfeitTournamentClick: () => void;
+  sortedParticipants: TournamentParticipantState[];
+  matchesByStage: TournamentMatchState[];
+  latestReadyMatches: ReadyMatch[];
+  matchCountdowns: Map<number, CountdownSnapshot>;
+  pendingMatch: ReadyMatch | null;
+  countdownStatus: CountdownSnapshot['status'] | null;
+  countdownSecondsDisplay: number | null;
+  matchPhase: MatchPhase;
+  canvasRef: RefObject<HTMLCanvasElement | null>;
+  handleQuitMatch: () => void;
+  isDetailView: boolean;
+  headerRefreshHandler: () => Promise<void> | void;
+  currentParticipantId: number | null;
+};
+
+export function useTournamentPageController(): TournamentControllerReturn {
+  const { enqueueSnackbar } = useSnackbar();
+  const { user, userReady, axios, navigate } = useAppContext();
+
+  const clientRef = useRef<ReturnType<typeof createMatchmakingClient> | null>(null);
+  const activeTournamentIdRef = useRef<number | null>(null);
+  const pendingMatchRef = useRef<ReadyMatch | null>(null);
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const appRef = useRef<{ destroy(): void } | null>(null);
+
+  const [connectionReady, setConnectionReady] = useState(false);
+  const [loadingTournaments, setLoadingTournaments] = useState(false);
+  const [availableTournaments, setAvailableTournaments] = useState<TournamentSummary[]>([]);
+  const [activeTournamentId, setActiveTournamentId] = useState<number | null>(null);
+  const [tournamentStatus, setTournamentStatus] = useState<string>('draft');
+  const [maxParticipants, setMaxParticipants] = useState<number | null>(null);
+  const [participants, setParticipants] = useState<TournamentParticipantState[]>([]);
+  const [bracket, setBracket] = useState<TournamentMatchState[]>([]);
+  const [latestReadyMatches, setLatestReadyMatches] = useState<ReadyMatch[]>([]);
+  const [pendingMatch, setPendingMatch] = useState<ReadyMatch | null>(null);
+  const [matchCountdowns, setMatchCountdowns] = useState<Map<number, CountdownSnapshot>>(new Map());
+  const [matchPhase, setMatchPhase] = useState<MatchPhase>('idle');
+  const [localCountdownSeconds, setLocalCountdownSeconds] = useState<number | null>(null);
+  const [handoff, setHandoff] = useState<ActiveHandoff | null>(null);
+  const [aliasInput, setAliasInput] = useState('');
+  const [tournamentName, setTournamentName] = useState('');
+  const rejoinTimerRef = useRef<number | null>(null);
+  const refreshTimerRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    setAliasInput(user?.username ?? '');
+  }, [user?.username]);
+
+  useEffect(() => {
+    activeTournamentIdRef.current = activeTournamentId;
+  }, [activeTournamentId]);
+
+  useEffect(() => {
+    pendingMatchRef.current = pendingMatch;
+  }, [pendingMatch]);
+
+  const filterTournamentsForDisplay = useCallback((incoming: TournamentSummary[]): TournamentSummary[] => {
+    const parseTimestamp = (value?: string | null): number | null => {
+      if (!value) return null;
+      const parsed = Date.parse(value);
+      return Number.isNaN(parsed) ? null : parsed;
+    };
+
+    const resolveTimestamp = (item: TournamentSummary): number | null => {
+      const candidates: Array<string | null | undefined> = [item.updatedAt, item.startAt, item.createdAt];
+      for (const candidate of candidates) {
+        const parsed = parseTimestamp(candidate);
+        if (parsed !== null) return parsed;
+      }
+      return null;
+    };
+
+    const byStatus = incoming.filter((tournament) => ['draft', 'active'].includes(tournament.status));
+    if (byStatus.length === 0) return [];
+
+    const unique = new Map<number, TournamentSummary>();
+    byStatus.forEach((item) => {
+      const existing = unique.get(item.id);
+      if (!existing) {
+        unique.set(item.id, item);
+        return;
+      }
+      const existingTime = resolveTimestamp(existing) ?? Number.NEGATIVE_INFINITY;
+      const candidateTime = resolveTimestamp(item) ?? Number.NEGATIVE_INFINITY;
+      if (candidateTime >= existingTime) {
+        unique.set(item.id, item);
+      }
+    });
+
+    const now = Date.now();
+    const currentId = activeTournamentIdRef.current;
+
+    const recent: TournamentSummary[] = [];
+    const fallbackPool: TournamentSummary[] = [];
+
+    for (const item of unique.values()) {
+      const timestamp = resolveTimestamp(item);
+      const isCurrent = currentId !== null && item.id === currentId;
+      const isRecent = timestamp !== null && now - timestamp <= RECENT_TOURNAMENT_WINDOW_MS;
+      if (isCurrent || isRecent) {
+        recent.push(item);
+      } else {
+        fallbackPool.push(item);
+      }
+    }
+
+    const sortByTimestampDesc = (left: TournamentSummary, right: TournamentSummary) => {
+      const leftTs = resolveTimestamp(left);
+      const rightTs = resolveTimestamp(right);
+      if (leftTs === null && rightTs === null) return 0;
+      if (leftTs === null) return 1;
+      if (rightTs === null) return -1;
+      return rightTs - leftTs;
+    };
+
+    recent.sort(sortByTimestampDesc);
+    fallbackPool.sort(sortByTimestampDesc);
+
+    if (recent.length >= MAX_VISIBLE_TOURNAMENTS) {
+      return recent.slice(0, MAX_VISIBLE_TOURNAMENTS);
+    }
+
+    const combined = [...recent];
+    for (const item of fallbackPool) {
+      combined.push(item);
+      if (combined.length >= MAX_VISIBLE_TOURNAMENTS) break;
+    }
+
+    return combined;
+  }, []);
+
+  const loadTournaments = useCallback(async () => {
+    if (!userReady) return;
+    setLoadingTournaments(true);
+    try {
+      const { data } = await axios.get('/api/tournaments');
+      const rawList = Array.isArray(data) ? (data as TournamentSummary[]) : [];
+      setAvailableTournaments(filterTournamentsForDisplay(rawList));
+    } catch (error) {
+      enqueueSnackbar({
+        message: 'Failed to load tournaments list',
+        variant: 'error',
+      });
+    } finally {
+      setLoadingTournaments(false);
+    }
+  }, [axios, enqueueSnackbar, filterTournamentsForDisplay, userReady]);
+
+  useEffect(() => {
+    if (!userReady || !user) return;
+    loadTournaments();
+  }, [loadTournaments, userReady, user]);
+
+  const resetActiveTournamentState = useCallback(() => {
+    setParticipants([]);
+    setBracket([]);
+    setPendingMatch(null);
+    pendingMatchRef.current = null;
+    setMatchCountdowns(new Map());
+    setLatestReadyMatches([]);
+    setTournamentStatus('draft');
+    setMaxParticipants(null);
+  }, []);
+
+  const refreshTournamentState = useCallback(async () => {
+    if (!activeTournamentId || !userReady) return;
+
+    try {
+      const [tournamentRes, participantsRes, matchesRes] = await Promise.all([
+        axios.get(`/api/tournaments/${activeTournamentId}`),
+        axios.get(`/api/tournaments/${activeTournamentId}/participants`),
+        axios.get(`/api/tournaments/${activeTournamentId}/matches`),
+      ]);
+
+      const tournamentData = tournamentRes.data as {
+        status: string;
+        maxParticipants: number | null;
+      };
+
+      setTournamentStatus(tournamentData.status);
+      setMaxParticipants(tournamentData.maxParticipants ?? TOURNAMENT_SIZE);
+
+      const participantPayload = participantsRes.data as Array<{
+        id: number;
+        alias: string;
+        seed: number | null;
+        status: string;
+        userUuid: string | null;
+      }>;
+
+      setParticipants(
+        participantPayload.map((participant) => ({
+          participantId: participant.id,
+          alias: participant.alias,
+          seed: participant.seed,
+          status: participant.status,
+          userUuid: participant.userUuid,
+        })),
+      );
+
+      const participantMap = new Map(participantPayload.map((participant) => [participant.id, participant]));
+
+      const matchPayload = matchesRes.data as Array<{
+        id: number;
+        roundNumber: number;
+        roundPosition: number;
+        status: string;
+        scheduledAt: string | null;
+        completedAt: string | null;
+        matchId: number | null;
+      }>;
+
+      const matches = (await Promise.all(
+        matchPayload.map(async (match) => {
+          const playersRes = await axios.get(
+            `/api/tournaments/${activeTournamentId}/matches/${match.id}/players`,
+          );
+          const players = (playersRes.data as Array<{ participantId: number; teamNumber: number }>).map((player) => {
+            const participant = participantMap.get(player.participantId);
+            return {
+              participantId: player.participantId,
+              teamNumber: player.teamNumber,
+              alias: participant?.alias ?? 'Unknown',
+              status: participant?.status ?? 'pending',
+            };
+          });
+
+          return {
+            tournamentMatchId: match.id,
+            roundNumber: match.roundNumber,
+            roundPosition: match.roundPosition,
+            status: match.status,
+            scheduledAt: match.scheduledAt,
+            completedAt: match.completedAt,
+            matchId: match.matchId,
+            players,
+          } satisfies TournamentMatchState;
+        }),
+      )) as TournamentMatchState[];
+
+      setBracket(matches);
+    } catch (error) {
+      enqueueSnackbar({ message: 'Failed to refresh tournament state', variant: 'error' });
+    }
+  }, [activeTournamentId, axios, enqueueSnackbar, userReady]);
+
+  useEffect(() => {
+    if (!activeTournamentId) return;
+    void refreshTournamentState();
+  }, [activeTournamentId, refreshTournamentState]);
+
+  const handleMessage = useCallback(
+    (msg: MatchmakingMessage) => {
+      switch (msg.type) {
+        case 'CONNECTED':
+          setConnectionReady(true);
+          break;
+        case 'ERROR':
+          enqueueSnackbar({ message: msg.message ?? 'Tournament error', variant: 'error' });
+          if (msg.code === 'AUTH') navigate('/login');
+          if (msg.code === 'TOURNAMENT_API') {
+            loadTournaments();
+          }
+          break;
+        case 'TOURNAMENT_LOBBY_UPDATED': {
+          setTournamentStatus(msg.status);
+          setMaxParticipants(msg.maxParticipants ?? TOURNAMENT_SIZE);
+          setParticipants(msg.participants);
+
+          const userUuid = user?.uuid;
+          const member = userUuid
+            ? msg.participants.some((participant) => participant.userUuid === userUuid)
+            : false;
+
+          if (member) {
+            setActiveTournamentId(msg.tournamentId);
+          } else if (activeTournamentIdRef.current === msg.tournamentId) {
+            setActiveTournamentId(null);
+            resetActiveTournamentState();
+          }
+
+          let needsRefresh = false;
+          setAvailableTournaments((prev) => {
+            const next = prev.slice();
+            const index = next.findIndex((item) => item.id === msg.tournamentId);
+            const timestamp = new Date().toISOString();
+            if (index === -1) {
+              next.push({
+                id: msg.tournamentId,
+                name: `Tournament #${msg.tournamentId}`,
+                status: msg.status,
+                maxParticipants: msg.maxParticipants ?? TOURNAMENT_SIZE,
+                updatedAt: timestamp,
+              });
+              needsRefresh = true;
+            } else {
+              const existing = next[index]!;
+              next[index] = {
+                ...existing,
+                status: msg.status,
+                maxParticipants: msg.maxParticipants ?? existing.maxParticipants ?? TOURNAMENT_SIZE,
+                updatedAt: timestamp,
+              };
+            }
+            return filterTournamentsForDisplay(next);
+          });
+          if (needsRefresh) {
+            void loadTournaments();
+          }
+          break;
+        }
+        case 'TOURNAMENT_BRACKET_SNAPSHOT': {
+          setBracket(msg.matches);
+          break;
+        }
+        case 'TOURNAMENT_MATCHES_READY': {
+          setLatestReadyMatches(msg.matches);
+          void refreshTournamentState();
+
+          setMatchCountdowns((prev) => {
+            const activeIds = new Set(msg.matches.map((match) => match.tournamentMatchId));
+            let changed = false;
+            const next = new Map<number, CountdownSnapshot>();
+            for (const [key, value] of prev.entries()) {
+              if (activeIds.has(key)) {
+                next.set(key, value);
+              } else {
+                changed = true;
+              }
+            }
+            return changed ? next : prev;
+          });
+
+          const userUuid = user?.uuid;
+          if (userUuid) {
+            const personal = msg.matches.find((match) =>
+              match.participants.some((participant) => participant.userUuid === userUuid),
+            );
+            if (personal) {
+              pendingMatchRef.current = personal;
+              setPendingMatch(personal);
+              setMatchPhase((phase) =>
+                phase === 'starting' || phase === 'playing' ? phase : 'awaiting_start',
+              );
+            } else {
+              pendingMatchRef.current = null;
+              setPendingMatch(null);
+            }
+          } else {
+            pendingMatchRef.current = null;
+            setPendingMatch(null);
+          }
+          break;
+        }
+        case 'TOURNAMENT_MATCH_COUNTDOWN': {
+          const payload = msg;
+          if (activeTournamentIdRef.current !== payload.tournamentId) break;
+
+          setMatchCountdowns((prev) => {
+            const next = new Map(prev);
+            next.set(payload.tournamentMatchId, {
+              tournamentMatchId: payload.tournamentMatchId,
+              tournamentId: payload.tournamentId,
+              stage: payload.stage,
+              status: payload.status,
+              targetStartEpochMs: payload.targetStartEpochMs,
+              secondsRemaining: payload.secondsRemaining,
+            });
+            return next;
+          });
+
+          const personalMatchId = pendingMatchRef.current?.tournamentMatchId;
+          if (personalMatchId === payload.tournamentMatchId) {
+            if (payload.status === 'started') {
+              setMatchPhase((phase) => (phase === 'playing' ? phase : 'starting'));
+            } else if (payload.status === 'cancelled') {
+              setMatchPhase((phase) =>
+                phase === 'starting' || phase === 'playing' ? phase : 'awaiting_start',
+              );
+            } else {
+              setMatchPhase((phase) =>
+                phase === 'starting' || phase === 'playing' ? phase : 'awaiting_start',
+              );
+            }
+          }
+          break;
+        }
+        case 'HANDOFF': {
+          const currentTournamentId = activeTournamentIdRef.current;
+          if (msg.tournament && msg.tournament.tournamentId === currentTournamentId) {
+            const previousMatchId = pendingMatchRef.current?.tournamentMatchId;
+            setPendingMatch(null);
+            pendingMatchRef.current = null;
+            if (typeof previousMatchId === 'number') {
+              setMatchCountdowns((prev) => {
+                if (!prev.has(previousMatchId)) return prev;
+                const next = new Map(prev);
+                next.delete(previousMatchId);
+                return next;
+              });
+            }
+            setMatchPhase('starting');
+            setHandoff({
+              matchId: msg.matchId,
+              roomIdentifier: msg.roomIdentifier,
+              gameServerWSUrl: msg.gameServerWSUrl,
+              joinToken: msg.joinToken,
+              randomSeed: msg.randomSeed,
+              side: msg.side,
+            });
+          }
+          break;
+        }
+        case 'HANDOFF_TIMEOUT': {
+          const payload = msg as HandoffTimeoutMessage;
+          const previousMatchId = pendingMatchRef.current?.tournamentMatchId;
+          enqueueSnackbar({ message: payload.message ?? 'Match handoff timed out', variant: 'error' });
+          setMatchPhase('idle');
+          pendingMatchRef.current = null;
+          setPendingMatch(null);
+          setMatchCountdowns((prev) => {
+            if (typeof previousMatchId !== 'number' || !prev.has(previousMatchId)) return prev;
+            const next = new Map(prev);
+            next.delete(previousMatchId);
+            return next;
+          });
+          break;
+        }
+        default:
+          break;
+      }
+    },
+    [enqueueSnackbar, filterTournamentsForDisplay, loadTournaments, navigate, refreshTournamentState, resetActiveTournamentState, user?.uuid],
+  );
+
+  useEffect(() => {
+    if (!userReady || !user) return;
+    const client = createMatchmakingClient(handleMessage);
+    clientRef.current = client;
+    return () => {
+      if (activeTournamentIdRef.current && clientRef.current) {
+        clientRef.current.leaveTournament(String(activeTournamentIdRef.current));
+      }
+      client.close();
+    };
+  }, [handleMessage, userReady, user]);
+
+  const handleCreateTournamentClick = useCallback(() => {
+    if (!clientRef.current) return;
+    clientRef.current.createTournament(TOURNAMENT_SIZE, tournamentName);
+    setTournamentName('');
+    enqueueSnackbar({ message: 'Tournament creation requested…', variant: 'info' });
+  }, [enqueueSnackbar, tournamentName]);
+
+  const handleJoinTournamentClick = useCallback(
+    (tournamentId: number) => {
+      if (!clientRef.current) return;
+      clientRef.current.joinTournament(tournamentId, aliasInput);
+      enqueueSnackbar({ message: 'Join request sent', variant: 'info' });
+    },
+    [aliasInput, enqueueSnackbar],
+  );
+
+  const handleLeaveTournamentClick = useCallback(() => {
+    if (!clientRef.current || activeTournamentId === null) return;
+    clientRef.current.leaveTournament(String(activeTournamentId));
+    setActiveTournamentId(null);
+    resetActiveTournamentState();
+  }, [activeTournamentId, resetActiveTournamentState]);
+
+  const handleForfeitTournamentClick = useCallback(() => {
+    if (!clientRef.current || activeTournamentId === null) return;
+    clientRef.current.forfeitTournament(String(activeTournamentId));
+    enqueueSnackbar({ message: 'Forfeit request sent', variant: 'warning' });
+  }, [activeTournamentId, enqueueSnackbar]);
+
+  const sortedParticipants = useMemo(() => {
+    return [...participants].sort((a, b) => {
+      const seedA = a.seed ?? Number.MAX_SAFE_INTEGER;
+      const seedB = b.seed ?? Number.MAX_SAFE_INTEGER;
+      if (seedA !== seedB) return seedA - seedB;
+      return a.alias.localeCompare(b.alias);
+    });
+  }, [participants]);
+
+  const currentParticipantId = useMemo(() => {
+    if (!user?.uuid) return null;
+    const entry = participants.find((participant) => participant.userUuid === user.uuid);
+    return entry?.participantId ?? null;
+  }, [participants, user?.uuid]);
+
+  const matchesByStage = useMemo(() => {
+    return [...bracket].sort((a, b) => {
+      if (a.roundNumber !== b.roundNumber) return a.roundNumber - b.roundNumber;
+      return a.roundPosition - b.roundPosition;
+    });
+  }, [bracket]);
+
+  const pendingCountdown = pendingMatch ? matchCountdowns.get(pendingMatch.tournamentMatchId) : undefined;
+  const countdownStatus = pendingCountdown?.status ?? null;
+  const countdownSecondsDisplay =
+    pendingCountdown?.status === 'running'
+      ? localCountdownSeconds ?? pendingCountdown.secondsRemaining
+      : pendingCountdown?.secondsRemaining ?? null;
+
+  const seat = handoff?.side === 'east' ? 'P1' : 'P2';
+  const isDetailView = activeTournamentId !== null;
+  const headerRefreshHandler = isDetailView ? refreshTournamentState : loadTournaments;
+
+  useEffect(() => {
+    if (!pendingCountdown) {
+      setLocalCountdownSeconds(null);
+      return;
+    }
+
+    if (pendingCountdown.status !== 'running') {
+      setLocalCountdownSeconds(pendingCountdown.secondsRemaining);
+      return;
+    }
+
+    const update = () => {
+      const remaining = Math.max(0, Math.ceil((pendingCountdown.targetStartEpochMs - Date.now()) / 1000));
+      setLocalCountdownSeconds(remaining);
+    };
+
+    update();
+    const timer = window.setInterval(update, 300);
+    return () => {
+      window.clearInterval(timer);
+    };
+  }, [pendingCountdown]);
+
+  useLayoutEffect(() => {
+    if (matchPhase !== 'starting' && matchPhase !== 'playing') return;
+    if (!canvasRef.current) return;
+    requestAnimationFrame(() => canvasRef.current?.focus({ preventScroll: true }));
+  }, [matchPhase]);
+
+  useEffect(() => {
+    if (matchPhase !== 'starting' || !handoff || !canvasRef.current) return;
+
+    let cancelled = false;
+
+    (async () => {
+      try {
+        const { bootstrapOnlinePong } = await import('../../../games/pong/host/online-embed');
+        if (cancelled) return;
+        const app = await bootstrapOnlinePong(canvasRef.current!, {
+          serverUrl: handoff.gameServerWSUrl,
+          matchId: handoff.matchId,
+          roomIdentifier: handoff.roomIdentifier,
+          seat,
+          joinToken: handoff.joinToken,
+          randomSeed: handoff.randomSeed,
+        });
+        if (cancelled) {
+          app.destroy();
+          return;
+        }
+        appRef.current = app;
+        setMatchPhase('playing');
+      } catch (error) {
+        enqueueSnackbar({ message: 'Failed to start tournament match', variant: 'error' });
+        setMatchPhase('idle');
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [enqueueSnackbar, handoff, seat, matchPhase]);
+
+  useEffect(() => () => {
+    appRef.current?.destroy();
+    appRef.current = null;
+  }, []);
+
+  useEffect(() => () => {
+    if (rejoinTimerRef.current) {
+      window.clearTimeout(rejoinTimerRef.current);
+      rejoinTimerRef.current = null;
+    }
+    if (refreshTimerRef.current) {
+      window.clearTimeout(refreshTimerRef.current);
+      refreshTimerRef.current = null;
+    }
+  }, []);
+
+  useEffect(() => {
+    if (matchPhase === 'starting' || matchPhase === 'playing') {
+      document.body.classList.add('pong-playing');
+    } else {
+      document.body.classList.remove('pong-playing');
+    }
+    return () => document.body.classList.remove('pong-playing');
+  }, [matchPhase]);
+
+  const handleQuitMatch = useCallback(() => {
+    appRef.current?.destroy();
+    appRef.current = null;
+    setMatchPhase('idle');
+    setHandoff(null);
+
+    if (rejoinTimerRef.current) {
+      window.clearTimeout(rejoinTimerRef.current);
+      rejoinTimerRef.current = null;
+    }
+
+    if (refreshTimerRef.current) {
+      window.clearTimeout(refreshTimerRef.current);
+      refreshTimerRef.current = null;
+    }
+
+    if (clientRef.current && user?.username) {
+      rejoinTimerRef.current = window.setTimeout(() => {
+        const tournamentId = activeTournamentIdRef.current;
+        if (!clientRef.current || !tournamentId) return;
+        clientRef.current.joinTournament(tournamentId, user.username);
+        enqueueSnackbar({ message: 'Rejoined tournament - waiting for next match', variant: 'info' });
+      }, 3000);
+
+      refreshTimerRef.current = window.setTimeout(() => {
+        void refreshTournamentState();
+      }, 3500);
+    }
+  }, [enqueueSnackbar, refreshTournamentState, user?.username]);
+
+  useEffect(() => {
+    if ((matchPhase !== 'starting' && matchPhase !== 'playing') || !canvasRef.current) return;
+    const canvas = canvasRef.current;
+    let timer: number | null = null;
+    const onMatchOver = () => {
+      timer = window.setTimeout(() => {
+        handleQuitMatch();
+        enqueueSnackbar({ message: 'Match finished', variant: 'success' });
+      }, 2500);
+    };
+    canvas.addEventListener('pong:matchOver', onMatchOver as EventListener);
+    return () => {
+      canvas.removeEventListener('pong:matchOver', onMatchOver as EventListener);
+      if (timer !== null) window.clearTimeout(timer);
+    };
+  }, [matchPhase, handleQuitMatch, enqueueSnackbar]);
+
+  return {
+    user,
+    userReady,
+    navigate,
+    connectionReady,
+    loadingTournaments,
+    availableTournaments,
+    activeTournamentId,
+    tournamentStatus,
+    aliasInput,
+    setAliasInput,
+    tournamentName,
+    setTournamentName,
+    handleCreateTournamentClick,
+    handleJoinTournamentClick,
+    handleLeaveTournamentClick,
+    handleForfeitTournamentClick,
+    sortedParticipants,
+    matchesByStage,
+    latestReadyMatches,
+    matchCountdowns,
+    pendingMatch,
+    countdownStatus,
+    countdownSecondsDisplay,
+    matchPhase,
+    canvasRef,
+    handleQuitMatch,
+    isDetailView,
+    headerRefreshHandler,
+    currentParticipantId,
+  };
+}
