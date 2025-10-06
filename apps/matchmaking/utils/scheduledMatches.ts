@@ -358,6 +358,49 @@ async function syncTournamentState(
   }
 }
 
+async function requestTournamentSync(
+  tournamentId: number,
+  clients: Map<string, ClientInfo>,
+  reason: 'matches_ready' | 'state_updated',
+) {
+  const tournamentClient = Array.from(clients.values()).find(
+    (client) => client.tournamentId === tournamentId && client.authenticated && client.siteToken,
+  );
+
+  if (!tournamentClient) {
+    log('No tournament clients found for bracket sync', {
+      tournamentId,
+      reason,
+      totalClients: clients.size,
+      tournamentClients: Array.from(clients.values()).filter(
+        (client) => client.tournamentId === tournamentId,
+      ).length,
+    });
+    return;
+  }
+
+  log('Found tournament client for bracket sync', {
+    tournamentId,
+    clientUuid: tournamentClient.uuid,
+    reason,
+  });
+
+  try {
+    await syncTournamentState(tournamentId, tournamentClient, clients);
+    log('Successfully synced tournament state', { tournamentId, reason });
+  } catch (error) {
+    log(
+      'Failed to sync tournament state',
+      {
+        tournamentId,
+        reason,
+        error: error instanceof Error ? error.message : 'unknown',
+      },
+      'warn',
+    );
+  }
+}
+
 function handleTournamentApiError(client: ClientInfo, error: unknown, fallbackMessage: string) {
   const details =
     error && typeof error === 'object' && 'response' in error
@@ -405,32 +448,15 @@ export async function handleTournamentMatchesReady(
   
   // Sync tournament state to update bracket for all connected players
   // Find any authenticated client for this tournament to use their token
-  const tournamentClient = Array.from(clients.values()).find(
-    client => client.tournamentId === payload.tournamentId && client.authenticated && client.siteToken
-  );
-  
-  if (tournamentClient) {
-    log('Found tournament client for bracket sync', { tournamentId: payload.tournamentId, clientUuid: tournamentClient.uuid });
-    try {
-      await syncTournamentState(payload.tournamentId, tournamentClient, clients);
-      log('Successfully synced tournament state after matches ready', { tournamentId: payload.tournamentId });
-    } catch (error) {
-      log(
-        'Failed to sync tournament state after matches ready',
-        { 
-          tournamentId: payload.tournamentId, 
-          error: error instanceof Error ? error.message : 'unknown' 
-        },
-        'warn',
-      );
-    }
-  } else {
-    log('No tournament clients found for bracket sync', { 
-      tournamentId: payload.tournamentId, 
-      totalClients: clients.size,
-      tournamentClients: Array.from(clients.values()).filter(c => c.tournamentId === payload.tournamentId).length
-    });
-  }
+  await requestTournamentSync(payload.tournamentId, clients, 'matches_ready');
+}
+
+export async function handleTournamentStateUpdated(
+  payload: { tournamentId: number },
+  clients: Map<string, ClientInfo>,
+) {
+  if (!payload || typeof payload.tournamentId !== 'number') return;
+  await requestTournamentSync(payload.tournamentId, clients, 'state_updated');
 }
 
 export async function handleCreateTournament(

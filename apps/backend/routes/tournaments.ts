@@ -10,7 +10,7 @@ import {
 } from '../db/queries/tournaments.ts';
 import { generateSingleEliminationBracket, processSemifinalResult } from '../services/tournamentOrchestrator.ts';
 import type { MatchProgression } from '../services/tournamentOrchestrator.ts';
-import { notifyMatchesReady } from '../services/matchmakingBridge.ts';
+import { notifyMatchesReady, notifyTournamentStateUpdated } from '../services/matchmakingBridge.ts';
 import {
   createTournamentParticipant,
   getTournamentParticipantById,
@@ -22,6 +22,7 @@ import {
   addTournamentMatchPlayer,
   createTournamentMatch,
   getTournamentMatchById,
+  getTournamentMatchByRoundAndPosition,
   getTournamentMatchPlayerById,
   listTournamentMatchPlayers,
   listTournamentMatches,
@@ -217,10 +218,24 @@ export async function tournamentRoutes(app: FastifyInstance) {
         if (!match || match.tournamentId !== tournamentId)
           return res.status(404).send({ message: 'Tournament match not found' });
 
+        const roster = listTournamentMatchPlayers(matchId);
+        const rosterParticipantIds = new Set(roster.map((player) => player.participantId));
+        if (
+          !rosterParticipantIds.has(body.winnerParticipantId) ||
+          !rosterParticipantIds.has(body.loserParticipantId)
+        ) {
+          return res
+            .status(400)
+            .send({ message: 'Submitted participants are not assigned to this match' });
+        }
+
         const updated = updateTournamentMatchStatus(matchId, 'completed', { setCompletedAt: true });
         if (!updated) return res.status(500).send({ message: 'Failed to update match status' });
 
         let progression: MatchProgression | undefined;
+        const participantStatusUpdates: Array<{ participantId: number; status: string }> = [];
+        let tournamentUpdate: ReturnType<typeof markTournamentCompleted> | undefined;
+
         if (match.roundNumber === 1) {
           progression = processSemifinalResult(matchId, {
             manualResult: {
@@ -228,11 +243,60 @@ export async function tournamentRoutes(app: FastifyInstance) {
               loserParticipantId: body.loserParticipantId,
             },
           });
-          if (progression?.readyMatches?.length)
+          if (progression?.readyMatches?.length) {
             await notifyMatchesReady(tournamentId, progression.readyMatches);
+          }
+        } else if (match.roundNumber === 2) {
+          const applyStatusUpdate = (participantId: number, status: string) => {
+            const participant = updateTournamentParticipant(participantId, { status });
+            if (!participant) throw new Error('Failed to update participant status');
+            participantStatusUpdates.push({ participantId: participant.id, status: participant.status });
+          };
+
+          try {
+            if (match.roundPosition === 1) {
+              applyStatusUpdate(body.winnerParticipantId, 'champion');
+              applyStatusUpdate(body.loserParticipantId, 'runner_up');
+            } else if (match.roundPosition === 2) {
+              applyStatusUpdate(body.winnerParticipantId, 'third_place');
+              applyStatusUpdate(body.loserParticipantId, 'eliminated');
+            }
+          } catch (error) {
+            req.log.error(
+              { error },
+              'Failed to update participant status after tournament result',
+            );
+            return res.status(500).send({ message: 'Failed to update participant status' });
+          }
+
+          const finalMatch = getTournamentMatchByRoundAndPosition(tournamentId, 2, 1);
+          const bronzeMatch = getTournamentMatchByRoundAndPosition(tournamentId, 2, 2);
+
+          if (finalMatch?.status === 'completed' && bronzeMatch?.status === 'completed') {
+            tournamentUpdate = markTournamentCompleted(tournamentId);
+            if (!tournamentUpdate) {
+              const fallback = updateTournamentStatus(tournamentId, 'completed');
+              if (fallback) tournamentUpdate = fallback;
+            }
+          }
         }
 
-        return res.status(200).send({ match: updated, progression: progression ?? null });
+        await notifyTournamentStateUpdated(tournamentId);
+
+        const responsePayload: Record<string, unknown> = {
+          match: updated,
+          progression: progression ?? null,
+        };
+
+        if (participantStatusUpdates.length) {
+          responsePayload.participantStatusUpdates = participantStatusUpdates;
+        }
+
+        if (tournamentUpdate) {
+          responsePayload.tournament = tournamentUpdate;
+        }
+
+        return res.status(200).send(responsePayload);
       } catch (error) {
         req.log.error({ error }, 'Failed to report tournament match result');
         return res.status(500).send({ message: 'Failed to report tournament match result' });

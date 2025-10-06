@@ -62,6 +62,29 @@ function readyStageLabel(match: ReadyMatch): string {
   }
 }
 
+const PARTICIPANT_STATUS_LABELS: Record<string, string> = {
+  pending: 'Pending',
+  accepted: 'Checked in',
+  active: 'Active',
+  champion: 'Champion',
+  runner_up: 'Runner-up',
+  third_place: 'Third place',
+  eliminated: 'Eliminated',
+  forfeited: 'Forfeited',
+};
+
+function participantStatusLabel(status: string | null | undefined): string {
+  if (!status) return 'Unknown';
+  const normalized = status.toLowerCase();
+  if (normalized in PARTICIPANT_STATUS_LABELS) {
+    return PARTICIPANT_STATUS_LABELS[normalized]!;
+  }
+  return status
+    .split('_')
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(' ');
+}
+
 const TournamentPage: React.FC = () => {
   const { enqueueSnackbar } = useSnackbar();
   const { user, userReady, axios, navigate } = useAppContext();
@@ -769,7 +792,7 @@ const TournamentPage: React.FC = () => {
                   >
                     <span>{participant.alias}</span>
                     <span className="text-xs uppercase tracking-[0.2em] text-white/40">
-                      {participant.status}
+                      {participantStatusLabel(participant.status)}
                     </span>
                   </li>
                 ))}
@@ -814,7 +837,7 @@ const TournamentPage: React.FC = () => {
                           {player.teamNumber === 1 ? 'West' : 'East'} · {player.alias ?? 'TBD'}
                         </span>
                         <span className="text-[10px] uppercase tracking-[0.3em] text-white/40">
-                          {player.status ?? 'pending'}
+                          {participantStatusLabel(player.status)}
                         </span>
                       </li>
                     ))}

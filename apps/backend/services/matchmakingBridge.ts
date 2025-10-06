@@ -64,3 +64,16 @@ export async function notifyMatchesReady(tournamentId: number, matchIds: number[
   }
 }
 
+type TournamentStateUpdatedMessage = {
+  tournamentId: number;
+};
+
+export async function notifyTournamentStateUpdated(tournamentId: number) {
+  const payload: TournamentStateUpdatedMessage = { tournamentId };
+  try {
+    await redis.publish('tournament:state_updated', JSON.stringify(payload));
+  } catch (error) {
+    console.error('[Tournament] Failed to publish state update', { error });
+  }
+}
+

@@ -21,6 +21,7 @@ import {
   handleAcceptScheduled,
   handleTournamentMatchesReady,
   handleClientDisconnectFromTournament,
+  handleTournamentStateUpdated,
   restoreTournamentMembership,
 } from './utils/scheduledMatches.ts';
 import { handleJoinQueue } from './utils/queue.ts';
@@ -31,6 +32,7 @@ const redisSub = new Redis(REDIS_URL);
 
 redisSub.subscribe('room_ready');
 redisSub.subscribe('tournament:matches_ready');
+redisSub.subscribe('tournament:state_updated');
 redisSub.on('connect', () => {
   log('Redis pub/sub connected');
 });
@@ -54,6 +56,17 @@ redisSub.on('message', (channel: string, message: string) => {
     } catch (err) {
       log(
         'Failed to handle tournament matches ready message',
+        { error: err instanceof Error ? err.message : 'Unknown error' },
+        'error',
+      );
+    }
+  } else if (channel === 'tournament:state_updated') {
+    try {
+      const payload = JSON.parse(message) as { tournamentId: number };
+      void handleTournamentStateUpdated(payload, clients);
+    } catch (err) {
+      log(
+        'Failed to handle tournament state updated message',
         { error: err instanceof Error ? err.message : 'Unknown error' },
         'error',
       );
