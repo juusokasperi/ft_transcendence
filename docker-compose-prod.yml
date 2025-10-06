@@ -118,6 +118,9 @@ services:
       - ./.env
     networks:
       - prod-private
+    depends_on:
+      redis:
+        condition: service_healthy
     logging: *logstash-logging
 
   # 6b) Game server 2
@@ -143,13 +146,18 @@ services:
     networks:
       - prod-private
     depends_on:
-      - redis
+      redis:
+        condition: service_healthy
     logging: *logstash-logging
 
   # Redis
   redis:
     image: redis:8.2.1-alpine
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      retries: 10
     volumes:
       - redis_data:/data
     networks:
@@ -175,9 +183,12 @@ services:
     networks:
       - prod-private
     depends_on:
-      - redis
-      - game-server
-      - game-server-2
+      game-server:
+        condition: service_started
+      game-server-2:
+        condition: service_started
+      redis:
+        condition: service_healthy
     logging: *logstash-logging
 
   # Game Gateway
@@ -199,5 +210,6 @@ services:
     ports:
       - "55550:55550"
     depends_on:
-      - redis
+      redis:
+        condition: service_healthy
     logging: *logstash-logging
