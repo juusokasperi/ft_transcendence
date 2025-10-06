@@ -50,6 +50,7 @@ const TournamentPage: React.FC<TournamentPageProps> = ({ onBack, focusTournament
   const currentUserUuid = user?.uuid ?? null;
   const hasActiveTournament = activeTournamentId !== null;
   const shouldShowOverlay = matchPhase === 'starting' || matchPhase === 'playing';
+  const overviewSectionClass = isDetailView ? 'grid gap-6' : 'grid gap-6 lg:grid-cols-[1.1fr_0.9fr]';
 
   if (userReady && !user) {
     return (
@@ -82,22 +83,23 @@ const TournamentPage: React.FC<TournamentPageProps> = ({ onBack, focusTournament
           onBack={isDetailView ? onBack : undefined}
         />
 
-        <section className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
-          <TournamentLobbyPanel
-            tournamentName={tournamentName}
-            onTournamentNameChange={setTournamentName}
-            onCreateTournament={handleCreateTournamentClick}
-            connectionReady={connectionReady}
-            availableTournaments={availableTournaments}
-            activeTournamentId={activeTournamentId}
-            aliasInput={aliasInput}
-            onAliasInputChange={setAliasInput}
-            onJoinTournament={handleJoinTournamentClick}
-            onLeaveTournament={handleLeaveTournamentClick}
-            onForfeitTournament={handleForfeitTournamentClick}
-            canForfeit={tournamentStatus === 'active'}
-          />
-
+        <section className={overviewSectionClass}>
+          {!isDetailView && (
+            <TournamentLobbyPanel
+              tournamentName={tournamentName}
+              onTournamentNameChange={setTournamentName}
+              onCreateTournament={handleCreateTournamentClick}
+              connectionReady={connectionReady}
+              availableTournaments={availableTournaments}
+              activeTournamentId={activeTournamentId}
+              aliasInput={aliasInput}
+              onAliasInputChange={setAliasInput}
+              onJoinTournament={handleJoinTournamentClick}
+              onLeaveTournament={handleLeaveTournamentClick}
+              onForfeitTournament={handleForfeitTournamentClick}
+              canForfeit={tournamentStatus === 'active'}
+            />
+          )}
           <TournamentParticipantsPanel
             participants={sortedParticipants}
             hasActiveTournament={hasActiveTournament}
