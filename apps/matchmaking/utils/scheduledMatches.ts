@@ -6,6 +6,8 @@ import type {
   MatchmakingMessage,
   TournamentBracketSnapshotMessage,
   TournamentLobbyUpdatedMessage,
+  TournamentMatchCountdownMessage,
+  TournamentMatchCountdownStatus,
   TournamentMatchesReadyMessage,
 } from '@pong/shared/protocol/net';
 import { createMatch } from './queue.ts';
@@ -17,13 +19,21 @@ const scheduledTournamentMatches = new Set<number>();
 
 const TOURNAMENT_REMINDER_DELAY_MS = 5000;
 const TOURNAMENT_MAX_REMINDERS = 3;
+const TOURNAMENT_MATCH_AUTO_START_DELAY_MS = 10_000;
+const TOURNAMENT_MATCH_COUNTDOWN_INTERVAL_MS = 1000;
 
 interface PendingTournamentMatch {
   tournamentId: number;
   match: TournamentMatchesReadyMessage['matches'][number];
-  accepted: Set<string>;
   reminder?: NodeJS.Timeout;
   attempts: number;
+  countdown?: {
+    interval?: NodeJS.Timeout;
+    execution?: NodeJS.Timeout;
+    targetStartEpochMs: number;
+    lastStatus?: TournamentMatchCountdownStatus;
+    lastSecondsRemaining?: number;
+  };
 }
 
 const pendingTournamentMatches = new Map<number, PendingTournamentMatch>();
@@ -67,7 +77,11 @@ function unsubscribeClientFromTournament(tournamentId: number, clientId: string)
 function broadcastToTournament(
   tournamentId: number,
   clients: Map<string, ClientInfo>,
-  payload: TournamentLobbyUpdatedMessage | TournamentBracketSnapshotMessage | TournamentMatchesReadyMessage,
+  payload:
+    | TournamentLobbyUpdatedMessage
+    | TournamentBracketSnapshotMessage
+    | TournamentMatchesReadyMessage
+    | TournamentMatchCountdownMessage,
 ) {
   const subscribers = tournamentSubscribers.get(tournamentId);
   if (!subscribers || !subscribers.size) return;
@@ -119,6 +133,220 @@ function scheduleTournamentReminder(
   });
 }
 
+function clearTournamentCountdown(pending: PendingTournamentMatch, remove = true) {
+  const countdown = pending.countdown;
+  if (!countdown) return;
+  if (countdown.interval) {
+    clearInterval(countdown.interval);
+    countdown.interval = undefined;
+  }
+  if (countdown.execution) {
+    clearTimeout(countdown.execution);
+    countdown.execution = undefined;
+  }
+  if (remove) {
+    pending.countdown = undefined;
+  }
+}
+
+function resolvePlayerClients(
+  match: TournamentMatchesReadyMessage['matches'][number],
+  clients: Map<string, ClientInfo>,
+): Array<ClientInfo | undefined> {
+  return match.participants.map((participant) =>
+    findClientByUuid(clients, participant.userUuid),
+  );
+}
+
+function evaluatePlayerAvailability(
+  pending: PendingTournamentMatch,
+  clients: Map<string, ClientInfo>,
+) {
+  const resolved = resolvePlayerClients(pending.match, clients);
+  const missing: string[] = [];
+  const readyClients: ClientInfo[] = [];
+
+  resolved.forEach((client, index) => {
+    const participant = pending.match.participants[index]!;
+    if (!client || client.tournamentId !== pending.tournamentId) {
+      missing.push(participant.userUuid);
+      return;
+    }
+    readyClients.push(client);
+  });
+
+  return {
+    ready: missing.length === 0,
+    missing,
+    clients: readyClients,
+  };
+}
+
+function countdownSecondsRemaining(targetStartEpochMs: number) {
+  return Math.max(0, Math.ceil((targetStartEpochMs - Date.now()) / 1000));
+}
+
+function emitTournamentCountdown(
+  pending: PendingTournamentMatch,
+  clients: Map<string, ClientInfo>,
+  status: TournamentMatchCountdownStatus,
+  secondsRemaining: number,
+  options: { force?: boolean } = {},
+) {
+  const countdown = pending.countdown;
+  if (!countdown) return;
+
+  if (!options.force) {
+    if (countdown.lastStatus === status && countdown.lastSecondsRemaining === secondsRemaining) {
+      return;
+    }
+  }
+
+  countdown.lastStatus = status;
+  countdown.lastSecondsRemaining = secondsRemaining;
+
+  const payload: TournamentMatchCountdownMessage = {
+    type: 'TOURNAMENT_MATCH_COUNTDOWN',
+    tournamentId: pending.tournamentId,
+    tournamentMatchId: pending.match.tournamentMatchId,
+    stage: pending.match.stage,
+    secondsRemaining,
+    targetStartEpochMs: countdown.targetStartEpochMs,
+    status,
+  };
+
+  broadcastToTournament(pending.tournamentId, clients, payload);
+
+  const playerClients = resolvePlayerClients(pending.match, clients);
+  for (const client of playerClients) {
+    if (client) {
+      sendToClient(client, payload);
+    }
+  }
+}
+
+function cancelTournamentCountdown(
+  pending: PendingTournamentMatch,
+  clients: Map<string, ClientInfo>,
+  reason: 'offline' | 'stopped' = 'offline',
+) {
+  if (!pending.countdown) return;
+  const secondsRemaining = countdownSecondsRemaining(pending.countdown.targetStartEpochMs);
+  emitTournamentCountdown(pending, clients, 'cancelled', secondsRemaining, { force: true });
+  clearTournamentCountdown(pending);
+  log('Cancelled tournament match countdown', {
+    tournamentId: pending.tournamentId,
+    matchId: pending.match.tournamentMatchId,
+    reason,
+  });
+}
+
+async function finalizeTournamentMatchLaunch(
+  pending: PendingTournamentMatch,
+  playerClients: ClientInfo[],
+  clients: Map<string, ClientInfo>,
+) {
+  emitTournamentCountdown(pending, clients, 'started', 0, { force: true });
+  clearTournamentCountdown(pending);
+
+  scheduledTournamentMatches.add(pending.match.tournamentMatchId);
+  pendingTournamentMatches.delete(pending.match.tournamentMatchId);
+
+  log('Launched tournament match after countdown', {
+    tournamentId: pending.tournamentId,
+    matchId: pending.match.tournamentMatchId,
+  });
+
+  await createMatch(playerClients[0]!, playerClients[1]!, 'tournament', {
+    tournament: {
+      tournamentId: pending.tournamentId,
+      tournamentMatchId: pending.match.tournamentMatchId,
+      tournamentStage: pending.match.stage,
+      participants: pending.match.participants.map((participant) => ({
+        participantId: participant.participantId,
+        userUuid: participant.userUuid,
+        alias: participant.alias,
+      })),
+    },
+  });
+}
+
+function startTournamentCountdown(
+  pending: PendingTournamentMatch,
+  clients: Map<string, ClientInfo>,
+) {
+  if (pending.countdown) {
+    emitTournamentCountdown(
+      pending,
+      clients,
+      pending.countdown.lastStatus ?? 'running',
+      pending.countdown.lastSecondsRemaining ?? countdownSecondsRemaining(
+        pending.countdown.targetStartEpochMs,
+      ),
+      { force: true },
+    );
+    return;
+  }
+
+  const targetStartEpochMs = Date.now() + TOURNAMENT_MATCH_AUTO_START_DELAY_MS;
+  pending.countdown = {
+    targetStartEpochMs,
+    lastStatus: undefined,
+    lastSecondsRemaining: undefined,
+  };
+
+  log('Started tournament match countdown', {
+    tournamentId: pending.tournamentId,
+    matchId: pending.match.tournamentMatchId,
+    targetStartEpochMs,
+  });
+
+  emitTournamentCountdown(pending, clients, 'running', countdownSecondsRemaining(targetStartEpochMs), {
+    force: true,
+  });
+
+  pending.countdown.interval = setInterval(() => {
+    const availability = evaluatePlayerAvailability(pending, clients);
+    if (!availability.ready) {
+      cancelTournamentCountdown(pending, clients, 'offline');
+      scheduleTournamentReminder(pending.match, pending.tournamentId, clients, pending.attempts);
+      return;
+    }
+
+    emitTournamentCountdown(
+      pending,
+      clients,
+      'running',
+      countdownSecondsRemaining(pending.countdown!.targetStartEpochMs),
+    );
+  }, TOURNAMENT_MATCH_COUNTDOWN_INTERVAL_MS);
+
+  pending.countdown.execution = setTimeout(async () => {
+    const availability = evaluatePlayerAvailability(pending, clients);
+    if (!availability.ready) {
+      cancelTournamentCountdown(pending, clients, 'offline');
+      scheduleTournamentReminder(pending.match, pending.tournamentId, clients, pending.attempts);
+      return;
+    }
+
+    try {
+      await finalizeTournamentMatchLaunch(pending, availability.clients, clients);
+    } catch (error) {
+      clearTournamentCountdown(pending);
+      log(
+        'Failed to launch tournament match after countdown',
+        {
+          tournamentId: pending.tournamentId,
+          matchId: pending.match.tournamentMatchId,
+          error: error instanceof Error ? error.message : 'unknown',
+        },
+        'warn',
+      );
+      scheduleTournamentReminder(pending.match, pending.tournamentId, clients, pending.attempts);
+    }
+  }, TOURNAMENT_MATCH_AUTO_START_DELAY_MS);
+}
+
 function handleSingleTournamentMatch(
   match: TournamentMatchesReadyMessage['matches'][number],
   tournamentId: number,
@@ -133,7 +361,6 @@ function handleSingleTournamentMatch(
     pending = {
       tournamentId,
       match,
-      accepted: new Set<string>(),
       attempts,
     } satisfies PendingTournamentMatch;
     pendingTournamentMatches.set(match.tournamentMatchId, pending);
@@ -141,38 +368,21 @@ function handleSingleTournamentMatch(
     pending.tournamentId = tournamentId;
     pending.match = match;
     pending.attempts = attempts;
-    for (const acceptedUuid of [...pending.accepted]) {
-      if (!match.participants.some((participant) => participant.userUuid === acceptedUuid)) {
-        pending.accepted.delete(acceptedUuid);
-      }
-    }
+    clearTournamentCountdown(pending);
   }
 
-  const playerClients = match.participants.map((participant) =>
-    findClientByUuid(clients, participant.userUuid),
-  );
-
-  if (playerClients.some((client) => !client)) {
-    const missingPlayers = match.participants
-      .map((participant, index) => ({ participant, client: playerClients[index] }))
-      .filter((item) => !item.client)
-      .map((item) => item.participant.userUuid);
-
+  const availability = evaluatePlayerAvailability(pending, clients);
+  if (!availability.ready) {
     log(
-      'Tournament match ready but player offline',
-      { tournamentId, matchId: match.tournamentMatchId, missingPlayers },
+      'Tournament match ready but player unavailable',
+      {
+        tournamentId,
+        matchId: match.tournamentMatchId,
+        missingPlayers: availability.missing,
+      },
       'warn',
     );
-    scheduleTournamentReminder(match, tournamentId, clients, attempts);
-    return;
-  }
-
-  if (playerClients.some((client) => client!.tournamentId !== tournamentId)) {
-    log(
-      'Tournament match players not assigned to this tournament',
-      { tournamentId, matchId: match.tournamentMatchId },
-      'warn',
-    );
+    cancelTournamentCountdown(pending, clients, 'offline');
     scheduleTournamentReminder(match, tournamentId, clients, attempts);
     return;
   }
@@ -183,11 +393,11 @@ function handleSingleTournamentMatch(
     matches: [match],
   };
 
-  for (const client of playerClients) {
-    sendToClient(client!, notification);
+  for (const client of availability.clients) {
+    sendToClient(client, notification);
   }
 
-  scheduleTournamentReminder(match, tournamentId, clients, attempts);
+  startTournamentCountdown(pending, clients);
 }
 
 function extractSiteToken(client: ClientInfo) {
@@ -653,6 +863,7 @@ export async function handleForfeitTournament(
     for (const [matchId, pending] of pendingTournamentMatches.entries()) {
       if (pending.match.participants.some((participant) => participant.userUuid === client.uuid)) {
         if (pending.reminder) clearTimeout(pending.reminder);
+        cancelTournamentCountdown(pending, clients, 'stopped');
         pendingTournamentMatches.delete(matchId);
       }
     }
@@ -663,7 +874,7 @@ export async function handleForfeitTournament(
   }
 }
 
-export async function handleAcceptScheduled(
+export function handleAcceptScheduled(
   data: AcceptScheduledRequest,
   client: ClientInfo,
   clients: Map<string, ClientInfo>,
@@ -685,54 +896,32 @@ export async function handleAcceptScheduled(
     return;
   }
 
-  pending.accepted.add(client.uuid);
-  log('Tournament player accepted directed match', {
+  log('Tournament player requested manual confirmation; countdown flow already active', {
     tournamentMatchId: data.tournamentMatchId,
     uuid: client.uuid,
-    acceptedCount: pending.accepted.size,
+    countdownActive: Boolean(pending.countdown),
   });
 
-  if (pending.match.participants.every((participant) => pending.accepted.has(participant.userUuid))) {
-    if (pending.reminder) {
-      clearTimeout(pending.reminder);
-      pending.reminder = undefined;
-    }
-
-    const opponents = pending.match.participants.map((participant) =>
-      findClientByUuid(clients, participant.userUuid),
-    );
-
-    if (opponents.some((opponent) => !opponent)) {
-      pending.accepted.clear();
-      scheduleTournamentReminder(pending.match, pending.tournamentId, clients, pending.attempts);
-      return;
-    }
-
-    scheduledTournamentMatches.add(pending.match.tournamentMatchId);
-    pendingTournamentMatches.delete(pending.match.tournamentMatchId);
-
-    await createMatch(opponents[0]!, opponents[1]!, 'tournament', {
-      tournament: {
-        tournamentId: pending.tournamentId,
-        tournamentMatchId: pending.match.tournamentMatchId,
-        tournamentStage: pending.match.stage,
-        participants: pending.match.participants.map((participant) => ({
-          participantId: participant.participantId,
-          userUuid: participant.userUuid,
-          alias: participant.alias,
-        })),
-      },
-    });
-  }
+  handleSingleTournamentMatch(pending.match, pending.tournamentId, clients, pending.attempts);
 }
 
-export function handleClientDisconnectFromTournament(client: ClientInfo) {
+export function handleClientDisconnectFromTournament(
+  client: ClientInfo,
+  clients: Map<string, ClientInfo>,
+) {
   if (client.tournamentId) {
     unsubscribeClientFromTournament(client.tournamentId, client.id);
   }
 
   for (const pending of pendingTournamentMatches.values()) {
-    pending.accepted.delete(client.uuid);
+    if (pending.match.participants.some((participant) => participant.userUuid === client.uuid)) {
+      cancelTournamentCountdown(pending, clients, 'offline');
+      if (pending.reminder) {
+        clearTimeout(pending.reminder);
+        pending.reminder = undefined;
+      }
+      scheduleTournamentReminder(pending.match, pending.tournamentId, clients, pending.attempts);
+    }
   }
 }
 

@@ -161,7 +161,7 @@ wss.on('connection', async (socket: WebSocket, req) => {
 
   socket.on('close', () => {
     log('Client disconnected', { id });
-    handleClientDisconnectFromTournament(client);
+    handleClientDisconnectFromTournament(client, clients);
     clients.delete(id);
     removeFromQueue(id);
     //removeFromTournamentLobby(id)
