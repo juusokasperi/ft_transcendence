@@ -1,12 +1,6 @@
 import db from '../client.ts';
-import type {
-  TournamentMatchDb,
-  TournamentMatchPlayerDb,
-} from '../../types/dbtypes.ts';
-import type {
-  TournamentMatch,
-  TournamentMatchPlayer,
-} from '../../types/types.ts';
+import type { TournamentMatchDb, TournamentMatchPlayerDb } from '../../types/dbtypes.ts';
+import type { TournamentMatch, TournamentMatchPlayer } from '../../types/types.ts';
 
 type CreateTournamentMatchInput = {
   tournamentId: number;
@@ -207,7 +201,6 @@ export function listTournamentMatchPlayers(tournamentMatchId: number): Tournamen
   return rows.map(mapMatchPlayerRecord);
 }
 
-
 export function getTournamentMatchRoster(matchId: number): TournamentMatchParticipantDetail[] {
   const rows = db
     .prepare(
@@ -219,7 +212,12 @@ export function getTournamentMatchRoster(matchId: number): TournamentMatchPartic
       ORDER BY tmp.team_number ASC, tmp.id ASC
     `,
     )
-    .all(matchId) as { participantId: number; userUuid: string | null; alias: string; teamNumber: number }[];
+    .all(matchId) as {
+    participantId: number;
+    userUuid: string | null;
+    alias: string;
+    teamNumber: number;
+  }[];
   return rows;
 }
 
@@ -234,7 +232,9 @@ export function removeTournamentMatchPlayer(id: number): boolean {
 
 export function clearTournamentMatchPlayers(tournamentMatchId: number): boolean {
   try {
-    db.prepare('DELETE FROM TournamentMatchPlayers WHERE tournament_match_id = ?').run(tournamentMatchId);
+    db.prepare('DELETE FROM TournamentMatchPlayers WHERE tournament_match_id = ?').run(
+      tournamentMatchId,
+    );
     return true;
   } catch (error) {
     return false;

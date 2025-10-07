@@ -58,7 +58,11 @@ const TournamentLobbyPanel: React.FC<TournamentLobbyPanelProps> = ({
           <ul className="space-y-3">
             {availableTournaments.map((tournament) => {
               const isCurrent = tournament.id === activeTournamentId;
-              const canJoin = !isCurrent && tournament.status === 'draft' && connectionReady && activeTournamentId === null;
+              const canJoin =
+                !isCurrent &&
+                tournament.status === 'draft' &&
+                connectionReady &&
+                activeTournamentId === null;
               return (
                 <li
                   key={tournament.id}

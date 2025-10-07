@@ -263,10 +263,10 @@ export type MatchEndMessage = {
   winner?: 'east' | 'west';
 };
 
-export type GameServerControlMessage = 
-  | RoomStateMessage 
-  | StartMessage 
-  | OpponentDisconnectedMessage 
+export type GameServerControlMessage =
+  | RoomStateMessage
+  | StartMessage
+  | OpponentDisconnectedMessage
   | OpponentReconnectedMessage
   | MatchEndMessage;
 

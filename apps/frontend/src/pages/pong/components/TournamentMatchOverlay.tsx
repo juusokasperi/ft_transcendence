@@ -18,7 +18,9 @@ const TournamentMatchOverlay: React.FC<TournamentMatchOverlayProps> = ({ canvasR
         aria-label="Quit match"
       >
         Quit
-        <span aria-hidden className="game-quit-hover-text">Quit</span>
+        <span aria-hidden className="game-quit-hover-text">
+          Quit
+        </span>
       </button>
     </div>
   );

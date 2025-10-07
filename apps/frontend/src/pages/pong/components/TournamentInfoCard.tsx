@@ -32,7 +32,8 @@ const TournamentInfoCard: React.FC<TournamentInfoCardProps> = ({
         {tournamentId !== null ? `Tournament #${tournamentId}` : 'Tournament lobby'}
       </h2>
       <p className="text-sm text-white/70">
-        Status: {tournamentStatus ?? 'unknown'} · Slots: {participantsCount}/{maxParticipants ?? '∞'}
+        Status: {tournamentStatus ?? 'unknown'} · Slots: {participantsCount}/
+        {maxParticipants ?? '∞'}
       </p>
       <div className="mt-4 flex flex-col gap-3 md:flex-row md:items-center">
         <input
@@ -58,7 +59,8 @@ const TournamentInfoCard: React.FC<TournamentInfoCardProps> = ({
       </div>
       {currentParticipantId === null && (
         <p className="mt-2 text-xs text-white/60">
-          Choose a nickname for the bracket before joining. You can update it until the matches start.
+          Choose a nickname for the bracket before joining. You can update it until the matches
+          start.
         </p>
       )}
     </div>

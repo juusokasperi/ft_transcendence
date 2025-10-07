@@ -102,8 +102,8 @@ export function createMatchmakingClient(
       safeSend({ type: 'AUTH' });
     },
     joinQueue(alias?: string) {
-    safeSend({ type: 'JOIN_QUEUE', alias });
-  },
+      safeSend({ type: 'JOIN_QUEUE', alias });
+    },
     leaveQueue() {
       safeSend({ type: 'LEAVE_QUEUE' });
     },
@@ -129,7 +129,12 @@ export function createMatchmakingClient(
       safeSend({ type: 'ready', lobbyId, ready });
     },
     createTournament(size: TournamentSize = 4, name?: string, alias?: string) {
-      const payload: { type: 'CREATE_TOURNAMENT'; size: TournamentSize; name?: string; alias?: string } = {
+      const payload: {
+        type: 'CREATE_TOURNAMENT';
+        size: TournamentSize;
+        name?: string;
+        alias?: string;
+      } = {
         type: 'CREATE_TOURNAMENT',
         size,
       };

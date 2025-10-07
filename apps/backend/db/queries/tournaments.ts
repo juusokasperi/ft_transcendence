@@ -52,7 +52,9 @@ export function listTournaments(options?: { status?: string }): Tournament[] {
       .all(options.status) as TournamentDb[];
     return rows.map(mapTournamentRecord);
   }
-  const rows = db.prepare('SELECT * FROM Tournaments ORDER BY created_at DESC').all() as TournamentDb[];
+  const rows = db
+    .prepare('SELECT * FROM Tournaments ORDER BY created_at DESC')
+    .all() as TournamentDb[];
   return rows.map(mapTournamentRecord);
 }
 

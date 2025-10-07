@@ -68,10 +68,10 @@ export async function handleAuth(
   // If user is already connected, close the old connection and allow the new one
   const existingClient = findExistingClient(user.uuid, clients);
   if (existingClient) {
-    log('User reconnecting, closing old connection', { 
-      oldClientId: existingClient.id, 
+    log('User reconnecting, closing old connection', {
+      oldClientId: existingClient.id,
       newClientId: client.id,
-      uuid: user.uuid 
+      uuid: user.uuid,
     });
     existingClient.socket.send(
       JSON.stringify({ type: 'INFO', message: 'New connection detected, closing this one' }),
@@ -105,7 +105,10 @@ function isUserAlreadyConnected(uuid: string, clients: Map<string, ClientInfo>):
   return false;
 }
 
-function findExistingClient(uuid: string, clients: Map<string, ClientInfo>): ClientInfo | undefined {
+function findExistingClient(
+  uuid: string,
+  clients: Map<string, ClientInfo>,
+): ClientInfo | undefined {
   for (const client of clients.values()) {
     if (client.uuid === uuid && client.authenticated) return client;
   }

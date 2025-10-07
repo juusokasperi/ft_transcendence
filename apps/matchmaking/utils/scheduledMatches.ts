@@ -153,9 +153,7 @@ function resolvePlayerClients(
   match: TournamentMatchesReadyMessage['matches'][number],
   clients: Map<string, ClientInfo>,
 ): Array<ClientInfo | undefined> {
-  return match.participants.map((participant) =>
-    findClientByUuid(clients, participant.userUuid),
-  );
+  return match.participants.map((participant) => findClientByUuid(clients, participant.userUuid));
 }
 
 function evaluatePlayerAvailability(
@@ -280,9 +278,8 @@ function startTournamentCountdown(
       pending,
       clients,
       pending.countdown.lastStatus ?? 'running',
-      pending.countdown.lastSecondsRemaining ?? countdownSecondsRemaining(
-        pending.countdown.targetStartEpochMs,
-      ),
+      pending.countdown.lastSecondsRemaining ??
+        countdownSecondsRemaining(pending.countdown.targetStartEpochMs),
       { force: true },
     );
     return;
@@ -301,9 +298,15 @@ function startTournamentCountdown(
     targetStartEpochMs,
   });
 
-  emitTournamentCountdown(pending, clients, 'running', countdownSecondsRemaining(targetStartEpochMs), {
-    force: true,
-  });
+  emitTournamentCountdown(
+    pending,
+    clients,
+    'running',
+    countdownSecondsRemaining(targetStartEpochMs),
+    {
+      force: true,
+    },
+  );
 
   pending.countdown.interval = setInterval(() => {
     const availability = evaluatePlayerAvailability(pending, clients);
@@ -414,25 +417,25 @@ function extractSiteToken(client: ClientInfo) {
 
 // Check for pending tournament matches for a specific player who just joined
 function checkPendingMatchesForPlayer(
-  client: ClientInfo, 
-  tournamentId: number, 
-  clients: Map<string, ClientInfo>
+  client: ClientInfo,
+  tournamentId: number,
+  clients: Map<string, ClientInfo>,
 ) {
   for (const [matchId, pending] of pendingTournamentMatches) {
     if (pending.tournamentId !== tournamentId) continue;
-    
+
     // Check if this player is part of the pending match
     const isPlayerInMatch = pending.match.participants.some(
-      participant => participant.userUuid === client.uuid
+      (participant) => participant.userUuid === client.uuid,
     );
-    
+
     if (isPlayerInMatch) {
       log('Resending tournament match invitation to rejoined player', {
         tournamentId,
         matchId,
-        playerUuid: client.uuid
+        playerUuid: client.uuid,
       });
-      
+
       // Retry the match with current clients
       handleSingleTournamentMatch(pending.match, tournamentId, clients, pending.attempts);
     }
@@ -455,10 +458,7 @@ interface TournamentState {
   matches: TournamentBracketSnapshotMessage['matches'];
 }
 
-async function fetchTournamentState(
-  tournamentId: number,
-  token: string,
-): Promise<TournamentState> {
+async function fetchTournamentState(tournamentId: number, token: string): Promise<TournamentState> {
   const headers = { Authorization: `Bearer ${token}` };
   const [tournamentRes, participantsRes, matchesRes] = await Promise.all([
     axios.get(`${API_URL}/api/tournaments/${tournamentId}`, { headers }),
@@ -491,7 +491,7 @@ async function fetchTournamentState(
         `${API_URL}/api/tournaments/${tournamentId}/matches/${match.id}/players`,
         { headers },
       );
-      
+
       // Fetch match result if match is completed
       let team1Score: number | null = null;
       let team2Score: number | null = null;
@@ -507,7 +507,7 @@ async function fetchTournamentState(
           log('Failed to fetch match score', { matchId: match.matchId, error }, 'warn');
         }
       }
-      
+
       const players = (playersRes.data as Array<{ participantId: number; teamNumber: number }>).map(
         (player) => {
           const participant = participantMap.get(player.participantId);
@@ -666,14 +666,17 @@ export async function handleTournamentMatchesReady(
   clients: Map<string, ClientInfo>,
 ) {
   if (!payload || !Array.isArray(payload.matches)) return;
-  
-  log('Handling tournament matches ready', { tournamentId: payload.tournamentId, matchCount: payload.matches.length });
-  
+
+  log('Handling tournament matches ready', {
+    tournamentId: payload.tournamentId,
+    matchCount: payload.matches.length,
+  });
+
   // Handle individual match invitations
   for (const match of payload.matches) {
     handleSingleTournamentMatch(match, payload.tournamentId, clients);
   }
-  
+
   // Sync tournament state to update bracket for all connected players
   // Find any authenticated client for this tournament to use their token
   await requestTournamentSync(payload.tournamentId, clients, 'matches_ready');
@@ -710,12 +713,10 @@ export async function handleCreateTournament(
 
   try {
     const activeRes = await axios.get(`${API_URL}/api/tournaments/my/active`, { headers });
-    const activePayload = activeRes.data as
-      | null
-      | {
-          tournament: { id: number };
-          participant: { id: number; alias: string };
-        };
+    const activePayload = activeRes.data as null | {
+      tournament: { id: number };
+      participant: { id: number; alias: string };
+    };
 
     if (activePayload) {
       client.tournamentId = activePayload.tournament.id;
@@ -759,7 +760,8 @@ export async function handleCreateTournament(
       { headers },
     );
 
-    const participant = (participantRes.data as { participant: { id: number; alias: string } }).participant;
+    const participant = (participantRes.data as { participant: { id: number; alias: string } })
+      .participant;
 
     client.tournamentId = tournamentId;
     client.tournamentParticipantId = participant.id;
@@ -812,7 +814,8 @@ export async function handleJoinTournament(
       { headers },
     );
 
-    const participant = (response.data as { participant: { id: number; alias: string } }).participant;
+    const participant = (response.data as { participant: { id: number; alias: string } })
+      .participant;
 
     client.tournamentId = tournamentId;
     client.tournamentParticipantId = participant.id;
@@ -820,7 +823,7 @@ export async function handleJoinTournament(
     subscribeClientToTournament(tournamentId, client);
 
     await syncTournamentState(tournamentId, client, clients);
-    
+
     // Check for any pending matches for this player who just rejoined
     checkPendingMatchesForPlayer(client, tournamentId, clients);
   } catch (error) {
@@ -828,10 +831,7 @@ export async function handleJoinTournament(
   }
 }
 
-export async function handleLeaveTournament(
-  client: ClientInfo,
-  clients: Map<string, ClientInfo>,
-) {
+export async function handleLeaveTournament(client: ClientInfo, clients: Map<string, ClientInfo>) {
   if (!client.tournamentId || !client.tournamentParticipantId) {
     log('Leave tournament ignored: no active membership', {
       uuid: client.uuid,
@@ -854,10 +854,9 @@ export async function handleLeaveTournament(
       tournamentId,
       participantId,
     });
-    await axios.delete(
-      `${API_URL}/api/tournaments/${tournamentId}/participants/${participantId}`,
-      { headers },
-    );
+    await axios.delete(`${API_URL}/api/tournaments/${tournamentId}/participants/${participantId}`, {
+      headers,
+    });
 
     log('Leave tournament API succeeded', {
       uuid: client.uuid,
@@ -1018,20 +1017,18 @@ export async function restoreTournamentMembership(
       headers: { Authorization: `Bearer ${token}` },
     });
 
-    const payload = response.data as
-      | null
-      | {
-          tournament: {
-            id: number;
-            status: string;
-            maxParticipants: number | null;
-          };
-          participant: {
-            id: number;
-            alias: string;
-            status: string;
-          };
-        };
+    const payload = response.data as null | {
+      tournament: {
+        id: number;
+        status: string;
+        maxParticipants: number | null;
+      };
+      participant: {
+        id: number;
+        alias: string;
+        status: string;
+      };
+    };
 
     if (!payload) {
       log('Restore tournament membership: no active tournament found', {

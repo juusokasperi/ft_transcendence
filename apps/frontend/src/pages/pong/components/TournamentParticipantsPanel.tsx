@@ -26,7 +26,9 @@ const TournamentParticipantsPanel: React.FC<TournamentParticipantsPanelProps> = 
             <li
               key={participant.participantId}
               className={`flex items-center justify-between rounded-lg border border-white/10 bg-black/40 px-3 py-2 text-sm ${
-                participant.userUuid === currentUserUuid ? 'border-indigo-400/40 bg-indigo-500/10' : ''
+                participant.userUuid === currentUserUuid
+                  ? 'border-indigo-400/40 bg-indigo-500/10'
+                  : ''
               }`}
             >
               <span>{participant.alias}</span>

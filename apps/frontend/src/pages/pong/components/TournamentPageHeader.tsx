@@ -52,7 +52,9 @@ const TournamentPageHeader: React.FC<TournamentPageHeaderProps> = ({
         )}
         <span>
           Connection:
-          <span className={`ml-2 font-semibold ${connectionReady ? 'text-emerald-400' : 'text-rose-400'}`}>
+          <span
+            className={`ml-2 font-semibold ${connectionReady ? 'text-emerald-400' : 'text-rose-400'}`}
+          >
             {connectionReady ? 'Ready' : 'Connecting…'}
           </span>
         </span>

@@ -44,7 +44,9 @@ describe('Tournament participant queries', () => {
 
   it('enforces unique aliases per tournament', async () => {
     const { createTournament } = await import('../../../db/queries/tournaments.ts');
-    const { createTournamentParticipant } = await import('../../../db/queries/tournamentParticipants.ts');
+    const { createTournamentParticipant } = await import(
+      '../../../db/queries/tournamentParticipants.ts'
+    );
 
     const tournament = createTournament({ name: 'Alias Clash' });
     expect(tournament).toBeDefined();
@@ -52,7 +54,10 @@ describe('Tournament participant queries', () => {
     const first = createTournamentParticipant({ tournamentId: tournament!.id, alias: 'Duplicate' });
     expect(first).toBeDefined();
 
-    const second = createTournamentParticipant({ tournamentId: tournament!.id, alias: 'Duplicate' });
+    const second = createTournamentParticipant({
+      tournamentId: tournament!.id,
+      alias: 'Duplicate',
+    });
     expect(second).toBeUndefined();
   });
 
@@ -63,7 +68,10 @@ describe('Tournament participant queries', () => {
     );
 
     const tournament = createTournament({ name: 'Seeding Cup' });
-    const participant = createTournamentParticipant({ tournamentId: tournament!.id, alias: 'Seeded' });
+    const participant = createTournamentParticipant({
+      tournamentId: tournament!.id,
+      alias: 'Seeded',
+    });
     expect(participant).toBeDefined();
 
     const updatedStatus = updateTournamentParticipant(participant!.id, { status: 'accepted' });
@@ -81,7 +89,10 @@ describe('Tournament participant queries', () => {
       await import('../../../db/queries/tournamentParticipants.ts');
 
     const tournament = createTournament({ name: 'Removal Cup' });
-    const participant = createTournamentParticipant({ tournamentId: tournament!.id, alias: 'Temp' });
+    const participant = createTournamentParticipant({
+      tournamentId: tournament!.id,
+      alias: 'Temp',
+    });
     expect(participant).toBeDefined();
 
     const removed = removeTournamentParticipant(participant!.id);

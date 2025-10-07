@@ -1,5 +1,8 @@
 import db from '../db/client.ts';
-import { listTournamentParticipants, updateTournamentParticipant } from '../db/queries/tournamentParticipants.ts';
+import {
+  listTournamentParticipants,
+  updateTournamentParticipant,
+} from '../db/queries/tournamentParticipants.ts';
 import {
   addTournamentMatchPlayer,
   createTournamentMatch,
@@ -11,9 +14,7 @@ import {
   updateTournamentMatchStatus,
 } from '../db/queries/tournamentMatches.ts';
 import { markTournamentCompleted, updateTournamentStatus } from '../db/queries/tournaments.ts';
-import type {
-  TournamentParticipant,
-} from '../types/types.ts';
+import type { TournamentParticipant } from '../types/types.ts';
 import { getMatchById } from '../db/queries/matches.ts';
 
 const REQUIRED_PARTICIPANTS = 4;
@@ -30,7 +31,9 @@ export type BracketGenerationSummary = {
   skippedReason?: 'awaitingParticipants' | 'matchesAlreadyExist';
 };
 
-function sortParticipantsForBracket(participants: TournamentParticipant[]): TournamentParticipant[] {
+function sortParticipantsForBracket(
+  participants: TournamentParticipant[],
+): TournamentParticipant[] {
   const withMeta = participants.map((participant, index) => ({
     participant,
     joinOrder: index,
@@ -90,7 +93,10 @@ export function generateSingleEliminationBracket(tournamentId: number): BracketG
     };
   }
 
-  const seeded: Array<TournamentParticipant | undefined> = participants.slice(0, REQUIRED_PARTICIPANTS);
+  const seeded: Array<TournamentParticipant | undefined> = participants.slice(
+    0,
+    REQUIRED_PARTICIPANTS,
+  );
   while (seeded.length < REQUIRED_PARTICIPANTS) seeded.push(undefined);
 
   const matchIds: Record<'semifinal1' | 'semifinal2' | 'final' | 'bronze', number> = {
@@ -112,7 +118,10 @@ export function generateSingleEliminationBracket(tournamentId: number): BracketG
       { key: 'bronze', roundNumber: 2, roundPosition: 2, slots: null },
     ] as const;
 
-    const participantLookup: Record<'semifinal1' | 'semifinal2', (TournamentParticipant | undefined)[]> = {
+    const participantLookup: Record<
+      'semifinal1' | 'semifinal2',
+      (TournamentParticipant | undefined)[]
+    > = {
       semifinal1: [],
       semifinal2: [],
     };
@@ -139,10 +148,7 @@ export function generateSingleEliminationBracket(tournamentId: number): BracketG
       }
     }
 
-    const finalizeSemifinal = (
-      key: 'semifinal1' | 'semifinal2',
-      finalTeam: 1 | 2,
-    ) => {
+    const finalizeSemifinal = (key: 'semifinal1' | 'semifinal2', finalTeam: 1 | 2) => {
       const matchId = matchIds[key];
       const players = participantLookup[key];
       const defined = players.filter((p): p is TournamentParticipant => Boolean(p));
@@ -188,7 +194,6 @@ export function generateSingleEliminationBracket(tournamentId: number): BracketG
   return result;
 }
 
-
 export type MatchProgression = {
   readyMatches: number[];
   autoAdvancedMatches: number[];
@@ -203,8 +208,7 @@ export function processSemifinalResult(
 ): MatchProgression | undefined {
   const tournamentMatch = getTournamentMatchById(tournamentMatchId);
   if (!tournamentMatch) return undefined;
-  if (tournamentMatch.roundNumber !== 1)
-    return { readyMatches: [], autoAdvancedMatches: [] };
+  if (tournamentMatch.roundNumber !== 1) return { readyMatches: [], autoAdvancedMatches: [] };
 
   const participants = listTournamentMatchPlayers(tournamentMatchId);
   const team1 = participants.find((p) => p.teamNumber === 1);
@@ -218,8 +222,7 @@ export function processSemifinalResult(
     winner = options.manualResult.winnerParticipantId;
     loser = options.manualResult.loserParticipantId;
   } else {
-    if (!tournamentMatch.matchId)
-      return { readyMatches: [], autoAdvancedMatches: [] };
+    if (!tournamentMatch.matchId) return { readyMatches: [], autoAdvancedMatches: [] };
     const scores = getMatchById(tournamentMatch.matchId);
     if (!scores) return undefined;
 
@@ -239,16 +242,8 @@ export function processSemifinalResult(
 
   if (!winner || !loser) return undefined;
 
-  const finalMatch = getTournamentMatchByRoundAndPosition(
-    tournamentMatch.tournamentId,
-    2,
-    1,
-  );
-  const bronzeMatch = getTournamentMatchByRoundAndPosition(
-    tournamentMatch.tournamentId,
-    2,
-    2,
-  );
+  const finalMatch = getTournamentMatchByRoundAndPosition(tournamentMatch.tournamentId, 2, 1);
+  const bronzeMatch = getTournamentMatchByRoundAndPosition(tournamentMatch.tournamentId, 2, 2);
   if (!finalMatch || !bronzeMatch) return undefined;
 
   setTournamentMatchPlayer(finalMatch.id, winner, tournamentMatch.roundPosition as 1 | 2);
@@ -279,25 +274,28 @@ export function processSemifinalResult(
  */
 export function checkAndAutoCompleteTournament(tournamentId: number): number | undefined {
   const participants = listTournamentParticipants(tournamentId);
-  
+
   // Filter for active participants (not eliminated, forfeited, etc.)
-  const activeParticipants = participants.filter((p) => 
-    p.status !== 'eliminated' && 
-    p.status !== 'forfeited' &&
-    p.status !== 'champion' &&
-    p.status !== 'silver' &&
-    p.status !== 'third_place'
+  const activeParticipants = participants.filter(
+    (p) =>
+      p.status !== 'eliminated' &&
+      p.status !== 'forfeited' &&
+      p.status !== 'champion' &&
+      p.status !== 'silver' &&
+      p.status !== 'third_place',
   );
 
   // If only one active participant remains, make them champion
   if (activeParticipants.length === 1) {
     const winner = activeParticipants[0]!;
-    
-    console.log(`[TournamentOrchestrator] Auto-completing tournament ${tournamentId}, only one participant remains: ${winner.alias} (ID: ${winner.id})`);
-    
+
+    console.log(
+      `[TournamentOrchestrator] Auto-completing tournament ${tournamentId}, only one participant remains: ${winner.alias} (ID: ${winner.id})`,
+    );
+
     // Mark winner as champion
     updateTournamentParticipant(winner.id, { status: 'champion' });
-    
+
     // Mark all incomplete matches as completed
     const matches = listTournamentMatches(tournamentId);
     for (const match of matches) {
@@ -305,13 +303,13 @@ export function checkAndAutoCompleteTournament(tournamentId: number): number | u
         updateTournamentMatchStatus(match.id, 'completed', { setCompletedAt: true });
       }
     }
-    
+
     // Complete the tournament
     const completed = markTournamentCompleted(tournamentId);
     if (!completed) {
       updateTournamentStatus(tournamentId, 'completed');
     }
-    
+
     return winner.id;
   }
 

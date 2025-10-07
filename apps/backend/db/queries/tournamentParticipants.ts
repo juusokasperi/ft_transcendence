@@ -61,7 +61,9 @@ export function getTournamentParticipantByAlias(
 
 export function listTournamentParticipants(tournamentId: number): TournamentParticipant[] {
   const rows = db
-    .prepare('SELECT * FROM TournamentParticipants WHERE tournament_id = ? ORDER BY joined_at ASC, id ASC')
+    .prepare(
+      'SELECT * FROM TournamentParticipants WHERE tournament_id = ? ORDER BY joined_at ASC, id ASC',
+    )
     .all(tournamentId) as TournamentParticipantDb[];
   return rows.map(mapParticipantRecord);
 }

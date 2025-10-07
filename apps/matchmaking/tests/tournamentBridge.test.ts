@@ -1,7 +1,10 @@
 import { describe, expect, it, beforeEach, vi } from 'vitest';
 import type { WebSocket } from 'ws';
 import type { ClientInfo } from '../types/types';
-import type { AcceptScheduledRequest, TournamentMatchesReadyMessage } from '@pong/shared/protocol/net';
+import type {
+  AcceptScheduledRequest,
+  TournamentMatchesReadyMessage,
+} from '@pong/shared/protocol/net';
 
 const axiosMocks = {
   post: vi.fn(),
@@ -136,7 +139,9 @@ describe('matchmaking tournament bridge', () => {
       return JSON.parse(String(payload)) as { type?: string };
     });
     expect(sentPayloads.some((message) => message.type === 'TOURNAMENT_LOBBY_UPDATED')).toBe(true);
-    expect(sentPayloads.some((message) => message.type === 'TOURNAMENT_BRACKET_SNAPSHOT')).toBe(true);
+    expect(sentPayloads.some((message) => message.type === 'TOURNAMENT_BRACKET_SNAPSHOT')).toBe(
+      true,
+    );
   });
 
   it('allocates directed match only after both players accept', async () => {
@@ -172,7 +177,10 @@ describe('matchmaking tournament bridge', () => {
     handleTournamentMatchesReady(readyPayload, clients);
     expect(createMatchMock).not.toHaveBeenCalled();
 
-    const acceptPayload: AcceptScheduledRequest = { type: 'ACCEPT_SCHEDULED', tournamentMatchId: 42 };
+    const acceptPayload: AcceptScheduledRequest = {
+      type: 'ACCEPT_SCHEDULED',
+      tournamentMatchId: 42,
+    };
     await handleAcceptScheduled(acceptPayload, clientA, clients);
     expect(createMatchMock).not.toHaveBeenCalled();
 

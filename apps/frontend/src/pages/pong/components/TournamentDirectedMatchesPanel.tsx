@@ -59,9 +59,10 @@ const TournamentDirectedMatchesPanel: React.FC<TournamentDirectedMatchesPanelPro
 
             if (countdownInfo) {
               if (countdownInfo.status === 'running') {
-                const seconds = isPersonalMatch && typeof pendingCountdownSeconds === 'number'
-                  ? Math.max(pendingCountdownSeconds, 0)
-                  : Math.max(countdownInfo.secondsRemaining, 0);
+                const seconds =
+                  isPersonalMatch && typeof pendingCountdownSeconds === 'number'
+                    ? Math.max(pendingCountdownSeconds, 0)
+                    : Math.max(countdownInfo.secondsRemaining, 0);
                 countdownText = `Auto-starting in ${seconds}s`;
                 countdownTone = 'text-emerald-300';
               } else if (countdownInfo.status === 'started') {

@@ -9,8 +9,8 @@ import {
   markTournamentCompleted,
   updateTournamentStatus,
 } from '../db/queries/tournaments.ts';
-import { 
-  generateSingleEliminationBracket, 
+import {
+  generateSingleEliminationBracket,
   processSemifinalResult,
   checkAndAutoCompleteTournament,
 } from '../services/tournamentOrchestrator.ts';
@@ -132,7 +132,9 @@ export async function tournamentRoutes(app: FastifyInstance) {
 
         const tournament = createTournament(body);
         if (!tournament)
-          return res.status(409).send({ message: 'Unable to create tournament with provided data' });
+          return res
+            .status(409)
+            .send({ message: 'Unable to create tournament with provided data' });
         return res.status(201).send(tournament);
       } catch (error) {
         req.log.error({ error }, 'Failed to create tournament');
@@ -176,7 +178,9 @@ export async function tournamentRoutes(app: FastifyInstance) {
           const participants = listTournamentParticipants(tournamentId);
           const maxParticipants = current.maxParticipants ?? 4;
           if (participants.length !== maxParticipants)
-            return res.status(409).send({ message: 'Tournament requires 4 participants before activation' });
+            return res
+              .status(409)
+              .send({ message: 'Tournament requires 4 participants before activation' });
         }
 
         const updated = updateTournamentStatus(tournamentId, status);
@@ -191,7 +195,7 @@ export async function tournamentRoutes(app: FastifyInstance) {
               updateTournamentParticipant(participant.id, { status: 'active' });
             }
           }
-          
+
           bracketSummary = generateSingleEliminationBracket(tournamentId);
         }
 
@@ -224,6 +228,8 @@ export async function tournamentRoutes(app: FastifyInstance) {
           loserParticipantId: number;
           winnerUserUuid?: string | null;
           loserUserUuid?: string | null;
+          eastParticipantId?: number;
+          westParticipantId?: number;
           gamesHistory?: Array<{ gameIndex: number; east: number; west: number; winner: string }>;
         };
 
@@ -246,31 +252,45 @@ export async function tournamentRoutes(app: FastifyInstance) {
         let createdMatchId: number | null = null;
         let actualWinnerParticipantId: number | null = null;
         let actualLoserParticipantId: number | null = null;
-        
-        if (body.winnerUserUuid && body.loserUserUuid && body.gamesHistory && body.gamesHistory.length > 0) {
+
+        if (
+          body.winnerUserUuid &&
+          body.loserUserUuid &&
+          body.gamesHistory &&
+          body.gamesHistory.length > 0
+        ) {
           try {
-            req.log.info({ 
-              matchId, 
-              gamesHistoryLength: body.gamesHistory.length,
-              gamesHistory: body.gamesHistory 
-            }, 'Processing tournament match result');
-            
+            req.log.info(
+              {
+                matchId,
+                gamesHistoryLength: body.gamesHistory.length,
+                gamesHistory: body.gamesHistory,
+              },
+              'Processing tournament match result',
+            );
+
             // Find which player is team1 (east) and team2 (west) based on roster
-            const winnerPlayer = roster.find(p => p.participantId === body.winnerParticipantId);
-            const loserPlayer = roster.find(p => p.participantId === body.loserParticipantId);
-            
+            const winnerPlayer = roster.find((p) => p.participantId === body.winnerParticipantId);
+            const loserPlayer = roster.find((p) => p.participantId === body.loserParticipantId);
+
             if (winnerPlayer && loserPlayer) {
               // Determine UUIDs based on team numbers (team1 = teamNumber 1, team2 = teamNumber 2)
               const team1Player = winnerPlayer.teamNumber === 1 ? winnerPlayer : loserPlayer;
               const team2Player = winnerPlayer.teamNumber === 1 ? loserPlayer : winnerPlayer;
-              const team1Uuid = team1Player.participantId === body.winnerParticipantId ? body.winnerUserUuid : body.loserUserUuid;
-              const team2Uuid = team2Player.participantId === body.winnerParticipantId ? body.winnerUserUuid : body.loserUserUuid;
+              const team1Uuid =
+                team1Player.participantId === body.winnerParticipantId
+                  ? body.winnerUserUuid
+                  : body.loserUserUuid;
+              const team2Uuid =
+                team2Player.participantId === body.winnerParticipantId
+                  ? body.winnerUserUuid
+                  : body.loserUserUuid;
 
               // Calculate scores from gamesHistory
               // If we have eastParticipantId and westParticipantId, use them to map correctly
               let team1Score = 0;
               let team2Score = 0;
-              
+
               if (body.eastParticipantId && body.westParticipantId) {
                 // We know which participant was on which side
                 for (const game of body.gamesHistory) {
@@ -297,7 +317,7 @@ export async function tournamentRoutes(app: FastifyInstance) {
                   else if (game.winner === 'west') team2Score++;
                 }
               }
-              
+
               // Determine actual winner based on score
               if (team1Score > team2Score) {
                 actualWinnerParticipantId = team1Player.participantId;
@@ -306,17 +326,20 @@ export async function tournamentRoutes(app: FastifyInstance) {
                 actualWinnerParticipantId = team2Player.participantId;
                 actualLoserParticipantId = team1Player.participantId;
               }
-              
-              req.log.info({ 
-                matchId, 
-                team1Score, 
-                team2Score,
-                team1ParticipantId: team1Player.participantId,
-                team2ParticipantId: team2Player.participantId,
-                actualWinnerParticipantId,
-                actualLoserParticipantId,
-                bodyWinnerParticipantId: body.winnerParticipantId
-              }, 'Calculated scores and winner from games history');
+
+              req.log.info(
+                {
+                  matchId,
+                  team1Score,
+                  team2Score,
+                  team1ParticipantId: team1Player.participantId,
+                  team2ParticipantId: team2Player.participantId,
+                  actualWinnerParticipantId,
+                  actualLoserParticipantId,
+                  bodyWinnerParticipantId: body.winnerParticipantId,
+                },
+                'Calculated scores and winner from games history',
+              );
 
               createdMatchId = addMatch(
                 team1Score,
@@ -326,13 +349,20 @@ export async function tournamentRoutes(app: FastifyInstance) {
                 0, // team1RankingDelta - ranking updated separately for tournaments
                 0, // team2RankingDelta
                 tournamentId,
-                match.roundNumber === 1 ? 'semifinal' : (match.roundPosition === 1 ? 'final' : 'bronze'),
+                match.roundNumber === 1
+                  ? 'semifinal'
+                  : match.roundPosition === 1
+                    ? 'final'
+                    : 'bronze',
               );
 
               // Link tournament match with the Match ID
               if (createdMatchId) {
                 linkTournamentMatchResult(matchId, createdMatchId);
-                req.log.info({ matchId, createdMatchId, team1Score, team2Score }, 'Created and linked Match record for tournament match');
+                req.log.info(
+                  { matchId, createdMatchId, team1Score, team2Score },
+                  'Created and linked Match record for tournament match',
+                );
               }
             }
           } catch (error) {
@@ -340,13 +370,16 @@ export async function tournamentRoutes(app: FastifyInstance) {
             // Don't fail the entire request if Match creation fails
           }
         } else {
-          req.log.warn({ 
-            matchId,
-            hasWinnerUuid: !!body.winnerUserUuid,
-            hasLoserUuid: !!body.loserUserUuid,
-            hasGamesHistory: !!body.gamesHistory,
-            gamesHistoryLength: body.gamesHistory?.length || 0
-          }, 'Skipping Match creation - missing required data');
+          req.log.warn(
+            {
+              matchId,
+              hasWinnerUuid: !!body.winnerUserUuid,
+              hasLoserUuid: !!body.loserUserUuid,
+              hasGamesHistory: !!body.gamesHistory,
+              gamesHistoryLength: body.gamesHistory?.length || 0,
+            },
+            'Skipping Match creation - missing required data',
+          );
         }
 
         // Update match status to completed AFTER creating Match record to ensure matchId is set
@@ -361,7 +394,7 @@ export async function tournamentRoutes(app: FastifyInstance) {
           // Use actual winner from score calculation if available, fallback to body
           const winnerForProgression = actualWinnerParticipantId ?? body.winnerParticipantId;
           const loserForProgression = actualLoserParticipantId ?? body.loserParticipantId;
-          
+
           progression = processSemifinalResult(matchId, {
             manualResult: {
               winnerParticipantId: winnerForProgression,
@@ -371,24 +404,30 @@ export async function tournamentRoutes(app: FastifyInstance) {
           if (progression?.readyMatches?.length) {
             await notifyMatchesReady(tournamentId, progression.readyMatches);
           }
-          
+
           // Check if only one participant remains (others forfeited/eliminated)
           const autoWinner = checkAndAutoCompleteTournament(tournamentId);
           if (autoWinner) {
-            req.log.info({ tournamentId, winnerId: autoWinner }, 'Tournament auto-completed with single remaining participant');
+            req.log.info(
+              { tournamentId, winnerId: autoWinner },
+              'Tournament auto-completed with single remaining participant',
+            );
           }
         } else if (match.roundNumber === 2) {
           const applyStatusUpdate = (participantId: number, status: string) => {
             const participant = updateTournamentParticipant(participantId, { status });
             if (!participant) throw new Error('Failed to update participant status');
-            participantStatusUpdates.push({ participantId: participant.id, status: participant.status });
+            participantStatusUpdates.push({
+              participantId: participant.id,
+              status: participant.status,
+            });
           };
 
           try {
             // Use actual winner from score calculation if available, fallback to body
             const finalWinner = actualWinnerParticipantId ?? body.winnerParticipantId;
             const finalLoser = actualLoserParticipantId ?? body.loserParticipantId;
-            
+
             if (match.roundPosition === 1) {
               applyStatusUpdate(finalWinner, 'champion');
               applyStatusUpdate(finalLoser, 'silver');
@@ -397,10 +436,7 @@ export async function tournamentRoutes(app: FastifyInstance) {
               applyStatusUpdate(finalLoser, 'eliminated');
             }
           } catch (error) {
-            req.log.error(
-              { error },
-              'Failed to update participant status after tournament result',
-            );
+            req.log.error({ error }, 'Failed to update participant status after tournament result');
             return res.status(500).send({ message: 'Failed to update participant status' });
           }
 
@@ -501,7 +537,9 @@ export async function tournamentRoutes(app: FastifyInstance) {
 
         const participant = createTournamentParticipant({ tournamentId, ...body });
         if (!participant)
-          return res.status(409).send({ message: 'Unable to register participant with provided data' });
+          return res
+            .status(409)
+            .send({ message: 'Unable to register participant with provided data' });
 
         const allParticipants = listTournamentParticipants(tournamentId);
         let activation;
@@ -530,7 +568,10 @@ export async function tournamentRoutes(app: FastifyInstance) {
     },
     async (req, res) => {
       try {
-        const { tournamentId, participantId } = req.params as { tournamentId: number; participantId: number };
+        const { tournamentId, participantId } = req.params as {
+          tournamentId: number;
+          participantId: number;
+        };
         const body = req.body as {
           alias?: string;
           seed?: number | null;
@@ -542,7 +583,9 @@ export async function tournamentRoutes(app: FastifyInstance) {
           return res.status(404).send({ message: 'Participant not found for tournament' });
         const updated = updateTournamentParticipant(participantId, body);
         if (!updated)
-          return res.status(409).send({ message: 'Unable to update participant with provided data' });
+          return res
+            .status(409)
+            .send({ message: 'Unable to update participant with provided data' });
         return res.status(200).send(updated);
       } catch (error) {
         req.log.error({ error }, 'Failed to update participant');
@@ -559,7 +602,10 @@ export async function tournamentRoutes(app: FastifyInstance) {
     },
     async (req, res) => {
       try {
-        const { tournamentId, participantId } = req.params as { tournamentId: number; participantId: number };
+        const { tournamentId, participantId } = req.params as {
+          tournamentId: number;
+          participantId: number;
+        };
         const existing = getTournamentParticipantById(participantId);
         if (!existing || existing.tournamentId !== tournamentId)
           return res.status(404).send({ message: 'Participant not found for tournament' });
@@ -579,9 +625,13 @@ export async function tournamentRoutes(app: FastifyInstance) {
         // This preserves bracket history and final standings
         if (tournament.status === 'active' || tournament.status === 'completed') {
           const updated = updateTournamentParticipant(participantId, { status: 'forfeited' });
-          if (!updated) return res.status(500).send({ message: 'Failed to mark participant as forfeited' });
-          
-          req.log.info({ tournamentId, participantId, alias: existing.alias }, 'Participant marked as forfeited');
+          if (!updated)
+            return res.status(500).send({ message: 'Failed to mark participant as forfeited' });
+
+          req.log.info(
+            { tournamentId, participantId, alias: existing.alias },
+            'Participant marked as forfeited',
+          );
         } else {
           // Tournament hasn't started yet (draft), safe to delete
           const removed = removeTournamentParticipant(participantId);
@@ -600,7 +650,10 @@ export async function tournamentRoutes(app: FastifyInstance) {
           // Check if only one participant remains after this removal/forfeit
           const autoWinner = checkAndAutoCompleteTournament(tournamentId);
           if (autoWinner) {
-            req.log.info({ tournamentId, winnerId: autoWinner }, 'Tournament auto-completed after participant removal');
+            req.log.info(
+              { tournamentId, winnerId: autoWinner },
+              'Tournament auto-completed after participant removal',
+            );
           }
         }
 
@@ -647,7 +700,9 @@ export async function tournamentRoutes(app: FastifyInstance) {
         };
         const match = createTournamentMatch({ tournamentId, ...body });
         if (!match)
-          return res.status(409).send({ message: 'Unable to create tournament match with provided data' });
+          return res
+            .status(409)
+            .send({ message: 'Unable to create tournament match with provided data' });
         return res.status(201).send(match);
       } catch (error) {
         req.log.error({ error }, 'Failed to create tournament match');
@@ -745,7 +800,8 @@ export async function tournamentRoutes(app: FastifyInstance) {
         if (!match || match.tournamentId !== tournamentId)
           return res.status(404).send({ message: 'Tournament match not found' });
         const cleared = clearTournamentMatchPlayers(matchId);
-        if (!cleared) return res.status(500).send({ message: 'Failed to clear match participants' });
+        if (!cleared)
+          return res.status(500).send({ message: 'Failed to clear match participants' });
         return res.status(204).send();
       } catch (error) {
         req.log.error({ error }, 'Failed to clear match participants');
@@ -798,7 +854,8 @@ export async function tournamentRoutes(app: FastifyInstance) {
         if (!assignment || assignment.tournamentMatchId !== matchId)
           return res.status(404).send({ message: 'Match participant not found' });
         const removed = removeTournamentMatchPlayer(matchPlayerId);
-        if (!removed) return res.status(500).send({ message: 'Failed to remove participant from match' });
+        if (!removed)
+          return res.status(500).send({ message: 'Failed to remove participant from match' });
         return res.status(204).send();
       } catch (error) {
         req.log.error({ error }, 'Failed to remove participant from match');

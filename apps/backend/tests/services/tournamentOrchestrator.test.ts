@@ -26,7 +26,9 @@ describe('tournamentOrchestrator', () => {
     const { listTournamentMatches, listTournamentMatchPlayers } = await import(
       '../../db/queries/tournamentMatches.ts'
     );
-    const { generateSingleEliminationBracket } = await import('../../services/tournamentOrchestrator.ts');
+    const { generateSingleEliminationBracket } = await import(
+      '../../services/tournamentOrchestrator.ts'
+    );
 
     const tournament = createTournament({ name: 'Championship' });
     expect(tournament).toBeDefined();
@@ -70,7 +72,9 @@ describe('tournamentOrchestrator', () => {
 
   it('skips generation when insufficient participants', async () => {
     const { createTournament } = await import('../../db/queries/tournaments.ts');
-    const { generateSingleEliminationBracket } = await import('../../services/tournamentOrchestrator.ts');
+    const { generateSingleEliminationBracket } = await import(
+      '../../services/tournamentOrchestrator.ts'
+    );
 
     const tournament = createTournament({ name: 'Tiny Cup' });
     const summary = generateSingleEliminationBracket(tournament!.id);
@@ -82,9 +86,13 @@ describe('tournamentOrchestrator', () => {
 
   it('skips regeneration if matches already exist', async () => {
     const { createTournament } = await import('../../db/queries/tournaments.ts');
-    const { createTournamentParticipant } = await import('../../db/queries/tournamentParticipants.ts');
+    const { createTournamentParticipant } = await import(
+      '../../db/queries/tournamentParticipants.ts'
+    );
     const { listTournamentMatches } = await import('../../db/queries/tournamentMatches.ts');
-    const { generateSingleEliminationBracket } = await import('../../services/tournamentOrchestrator.ts');
+    const { generateSingleEliminationBracket } = await import(
+      '../../services/tournamentOrchestrator.ts'
+    );
 
     const tournament = createTournament({ name: 'Repeat Cup' });
     createTournamentParticipant({ tournamentId: tournament!.id, alias: 'Alpha' });
@@ -101,84 +109,90 @@ describe('tournamentOrchestrator', () => {
     const matches = listTournamentMatches(tournament!.id);
     expect(matches).toHaveLength(first.createdMatches);
   });
-it('advances semifinal winners into final and bronze', async () => {
-  const { createTournament } = await import('../../db/queries/tournaments.ts');
-  const { createTournamentParticipant } = await import('../../db/queries/tournamentParticipants.ts');
-  const { listTournamentMatches, listTournamentMatchPlayers } = await import(
-    '../../db/queries/tournamentMatches.ts'
-  );
-  const { generateSingleEliminationBracket, processSemifinalResult } = await import(
-    '../../services/tournamentOrchestrator.ts'
-  );
-  const { linkTournamentMatchResult } = await import('../../db/queries/tournamentMatches.ts');
+  it('advances semifinal winners into final and bronze', async () => {
+    const { createTournament } = await import('../../db/queries/tournaments.ts');
+    const { createTournamentParticipant } = await import(
+      '../../db/queries/tournamentParticipants.ts'
+    );
+    const { listTournamentMatches, listTournamentMatchPlayers } = await import(
+      '../../db/queries/tournamentMatches.ts'
+    );
+    const { generateSingleEliminationBracket, processSemifinalResult } = await import(
+      '../../services/tournamentOrchestrator.ts'
+    );
+    const { linkTournamentMatchResult } = await import('../../db/queries/tournamentMatches.ts');
 
-  const tournament = createTournament({ name: 'Knockout' });
-  createTournamentParticipant({ tournamentId: tournament!.id, alias: 'Alpha', seed: 1 });
-  createTournamentParticipant({ tournamentId: tournament!.id, alias: 'Bravo', seed: 4 });
-  createTournamentParticipant({ tournamentId: tournament!.id, alias: 'Charlie', seed: 2 });
-  createTournamentParticipant({ tournamentId: tournament!.id, alias: 'Delta', seed: 3 });
+    const tournament = createTournament({ name: 'Knockout' });
+    createTournamentParticipant({ tournamentId: tournament!.id, alias: 'Alpha', seed: 1 });
+    createTournamentParticipant({ tournamentId: tournament!.id, alias: 'Bravo', seed: 4 });
+    createTournamentParticipant({ tournamentId: tournament!.id, alias: 'Charlie', seed: 2 });
+    createTournamentParticipant({ tournamentId: tournament!.id, alias: 'Delta', seed: 3 });
 
-  generateSingleEliminationBracket(tournament!.id);
-  const matches = listTournamentMatches(tournament!.id);
-  const semifinal1 = matches.find((m) => m.roundNumber === 1 && m.roundPosition === 1)!;
-  const semifinal2 = matches.find((m) => m.roundNumber === 1 && m.roundPosition === 2)!;
-  const finalMatch = matches.find((m) => m.roundNumber === 2 && m.roundPosition === 1)!;
-  const bronzeMatch = matches.find((m) => m.roundNumber === 2 && m.roundPosition === 2)!;
+    generateSingleEliminationBracket(tournament!.id);
+    const matches = listTournamentMatches(tournament!.id);
+    const semifinal1 = matches.find((m) => m.roundNumber === 1 && m.roundPosition === 1)!;
+    const semifinal2 = matches.find((m) => m.roundNumber === 1 && m.roundPosition === 2)!;
+    const finalMatch = matches.find((m) => m.roundNumber === 2 && m.roundPosition === 1)!;
+    const bronzeMatch = matches.find((m) => m.roundNumber === 2 && m.roundPosition === 2)!;
 
-  const matchId = testDb
-    .prepare('INSERT INTO Matches (team_1_score, team_2_score) VALUES (?, ?)')
-    .run(21, 14).lastInsertRowid as number;
-  linkTournamentMatchResult(semifinal1.id, matchId, { setCompleted: true });
-  const result = processSemifinalResult(semifinal1.id);
-  expect(result).toBeDefined();
-  expect(listTournamentMatchPlayers(finalMatch.id)).toHaveLength(1);
-  expect(listTournamentMatchPlayers(bronzeMatch.id)).toHaveLength(1);
+    const matchId = testDb
+      .prepare('INSERT INTO Matches (team_1_score, team_2_score) VALUES (?, ?)')
+      .run(21, 14).lastInsertRowid as number;
+    linkTournamentMatchResult(semifinal1.id, matchId, { setCompleted: true });
+    const result = processSemifinalResult(semifinal1.id);
+    expect(result).toBeDefined();
+    expect(listTournamentMatchPlayers(finalMatch.id)).toHaveLength(1);
+    expect(listTournamentMatchPlayers(bronzeMatch.id)).toHaveLength(1);
 
-  const matchId2 = testDb
-    .prepare('INSERT INTO Matches (team_1_score, team_2_score) VALUES (?, ?)')
-    .run(18, 21).lastInsertRowid as number;
-  linkTournamentMatchResult(semifinal2.id, matchId2, { setCompleted: true });
-  const finalProgress = processSemifinalResult(semifinal2.id);
-  expect(finalProgress).toBeDefined();
-  expect(finalProgress!.readyMatches).toContain(finalMatch.id);
-  expect(finalProgress!.readyMatches).toContain(bronzeMatch.id);
-  expect(listTournamentMatchPlayers(finalMatch.id)).toHaveLength(2);
-  expect(listTournamentMatchPlayers(bronzeMatch.id)).toHaveLength(2);
-});
-
-it('allows manual semifinal result reporting', async () => {
-  const { createTournament } = await import('../../db/queries/tournaments.ts');
-  const { createTournamentParticipant } = await import('../../db/queries/tournamentParticipants.ts');
-  const { listTournamentMatches, listTournamentMatchPlayers } = await import(
-    '../../db/queries/tournamentMatches.ts'
-  );
-  const { generateSingleEliminationBracket, processSemifinalResult } = await import(
-    '../../services/tournamentOrchestrator.ts'
-  );
-
-  const tournament = createTournament({ name: 'Manual Cup' });
-  createTournamentParticipant({ tournamentId: tournament!.id, alias: 'Alpha', seed: 1 });
-  createTournamentParticipant({ tournamentId: tournament!.id, alias: 'Bravo', seed: 4 });
-  createTournamentParticipant({ tournamentId: tournament!.id, alias: 'Charlie', seed: 2 });
-  createTournamentParticipant({ tournamentId: tournament!.id, alias: 'Delta', seed: 3 });
-
-  generateSingleEliminationBracket(tournament!.id);
-  const matches = listTournamentMatches(tournament!.id);
-  const semifinal = matches.find((m) => m.roundNumber === 1 && m.roundPosition === 1)!;
-  const finalMatch = matches.find((m) => m.roundNumber === 2 && m.roundPosition === 1)!;
-  const bronzeMatch = matches.find((m) => m.roundNumber === 2 && m.roundPosition === 2)!;
-
-  const semifinalPlayers = listTournamentMatchPlayers(semifinal.id);
-  const team1 = semifinalPlayers.find((p) => p.teamNumber === 1)!;
-  const team2 = semifinalPlayers.find((p) => p.teamNumber === 2)!;
-
-  const progression = processSemifinalResult(semifinal.id, {
-    manualResult: { winnerParticipantId: team1.participantId, loserParticipantId: team2.participantId },
+    const matchId2 = testDb
+      .prepare('INSERT INTO Matches (team_1_score, team_2_score) VALUES (?, ?)')
+      .run(18, 21).lastInsertRowid as number;
+    linkTournamentMatchResult(semifinal2.id, matchId2, { setCompleted: true });
+    const finalProgress = processSemifinalResult(semifinal2.id);
+    expect(finalProgress).toBeDefined();
+    expect(finalProgress!.readyMatches).toContain(finalMatch.id);
+    expect(finalProgress!.readyMatches).toContain(bronzeMatch.id);
+    expect(listTournamentMatchPlayers(finalMatch.id)).toHaveLength(2);
+    expect(listTournamentMatchPlayers(bronzeMatch.id)).toHaveLength(2);
   });
 
-  expect(progression).toBeDefined();
-  expect(listTournamentMatchPlayers(finalMatch.id)).toHaveLength(1);
-  expect(listTournamentMatchPlayers(bronzeMatch.id)).toHaveLength(1);
-});
+  it('allows manual semifinal result reporting', async () => {
+    const { createTournament } = await import('../../db/queries/tournaments.ts');
+    const { createTournamentParticipant } = await import(
+      '../../db/queries/tournamentParticipants.ts'
+    );
+    const { listTournamentMatches, listTournamentMatchPlayers } = await import(
+      '../../db/queries/tournamentMatches.ts'
+    );
+    const { generateSingleEliminationBracket, processSemifinalResult } = await import(
+      '../../services/tournamentOrchestrator.ts'
+    );
 
+    const tournament = createTournament({ name: 'Manual Cup' });
+    createTournamentParticipant({ tournamentId: tournament!.id, alias: 'Alpha', seed: 1 });
+    createTournamentParticipant({ tournamentId: tournament!.id, alias: 'Bravo', seed: 4 });
+    createTournamentParticipant({ tournamentId: tournament!.id, alias: 'Charlie', seed: 2 });
+    createTournamentParticipant({ tournamentId: tournament!.id, alias: 'Delta', seed: 3 });
+
+    generateSingleEliminationBracket(tournament!.id);
+    const matches = listTournamentMatches(tournament!.id);
+    const semifinal = matches.find((m) => m.roundNumber === 1 && m.roundPosition === 1)!;
+    const finalMatch = matches.find((m) => m.roundNumber === 2 && m.roundPosition === 1)!;
+    const bronzeMatch = matches.find((m) => m.roundNumber === 2 && m.roundPosition === 2)!;
+
+    const semifinalPlayers = listTournamentMatchPlayers(semifinal.id);
+    const team1 = semifinalPlayers.find((p) => p.teamNumber === 1)!;
+    const team2 = semifinalPlayers.find((p) => p.teamNumber === 2)!;
+
+    const progression = processSemifinalResult(semifinal.id, {
+      manualResult: {
+        winnerParticipantId: team1.participantId,
+        loserParticipantId: team2.participantId,
+      },
+    });
+
+    expect(progression).toBeDefined();
+    expect(listTournamentMatchPlayers(finalMatch.id)).toHaveLength(1);
+    expect(listTournamentMatchPlayers(bronzeMatch.id)).toHaveLength(1);
+  });
 });

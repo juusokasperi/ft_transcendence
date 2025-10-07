@@ -152,13 +152,13 @@ export async function createMatch(
       mode,
       region: 'default',
       players: [
-        { 
-          playerIdentifier: a.uuid, 
+        {
+          playerIdentifier: a.uuid,
           side: 'west',
           alias: a.alias || a.tournamentAlias || a.username,
         },
-        { 
-          playerIdentifier: b.uuid, 
+        {
+          playerIdentifier: b.uuid,
           side: 'east',
           alias: b.alias || b.tournamentAlias || b.username,
         },

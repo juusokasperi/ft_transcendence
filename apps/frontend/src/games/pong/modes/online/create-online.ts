@@ -94,7 +94,7 @@ export function createOnlineApp(
 
     const endTime = Date.now() + gracePeriodMs;
     const isTournament = gracePeriodMs <= 10000; // 10 seconds = tournament, 15 seconds = casual
-    
+
     const updateCountdown = () => {
       const remaining = Math.max(0, Math.ceil((endTime - Date.now()) / 1000));
       if (disconnectOverlay) {
@@ -146,7 +146,8 @@ export function createOnlineApp(
     if (reason === 'opponent_timeout') {
       if (winner) {
         // Both tournament and casual matches now have a winner
-        const youWon = (cfg.seat === 'P1' && winner === 'east') || (cfg.seat === 'P2' && winner === 'west');
+        const youWon =
+          (cfg.seat === 'P1' && winner === 'east') || (cfg.seat === 'P2' && winner === 'west');
         message = youWon ? 'You won! (Opponent disconnected)' : 'You lost (Disconnected)';
         overlay.style.borderColor = youWon ? '#10b981' : '#ef4444';
         overlay.style.color = youWon ? '#10b981' : '#ef4444';
@@ -286,14 +287,16 @@ export function createOnlineApp(
           const aliases = playerAliases; // TypeScript hint
           const eastAlias = snap.playerAtEnd.east === 'P1' ? aliases.P1 : aliases.P2;
           const westAlias = snap.playerAtEnd.west === 'P1' ? aliases.P1 : aliases.P2;
-          
+
           names = { east: eastAlias, west: westAlias };
           hud.setPlayerNames(eastAlias, westAlias);
           didSetPlayerNames = true;
-          
-          console.log(`[OnlineGame] Set player names based on actual positions: east=${eastAlias} (${snap.playerAtEnd.east}), west=${westAlias} (${snap.playerAtEnd.west})`);
+
+          console.log(
+            `[OnlineGame] Set player names based on actual positions: east=${eastAlias} (${snap.playerAtEnd.east}), west=${westAlias} (${snap.playerAtEnd.west})`,
+          );
         }
-        
+
         const ref = prevSnap ?? snap;
         const ballX = hasPrev ? lerp(ref.ball.x, snap.ball.x, alpha) : snap.ball.x;
         const ballVX = hasPrev
@@ -381,7 +384,7 @@ export function createOnlineApp(
       console.log('[OnlineGame] Match ended:', reason, 'winner:', winner);
       hideDisconnectOverlay();
       showMatchEndOverlay(reason, winner);
-      
+
       // Call external callback if provided
       if (cfg.onMatchEnd) {
         // Delay callback to allow user to see the overlay
@@ -511,7 +514,7 @@ export function createOnlineApp(
         server: startInfo.randomSeed,
       });
     }
-    
+
     // Store player aliases to set them once we know the actual positions
     if (startInfo.players) {
       playerAliases = {
@@ -535,10 +538,10 @@ export function createOnlineApp(
 
   const destroy = () => {
     console.log('[OnlineGame] Destroying online game');
-    
+
     // Clean up disconnect overlay
     hideDisconnectOverlay();
-    
+
     disposeWorld({
       loop,
       net,

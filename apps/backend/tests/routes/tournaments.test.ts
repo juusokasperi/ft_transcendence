@@ -50,6 +50,7 @@ vi.mock('../../db/queries/tournamentMatches.ts', () => ({
 vi.mock('../../services/tournamentOrchestrator.ts', () => ({
   generateSingleEliminationBracket: vi.fn(),
   processSemifinalResult: vi.fn(),
+  checkAndAutoCompleteTournament: vi.fn(),
 }));
 
 vi.mock('../../services/matchmakingBridge.ts', () => ({
@@ -61,7 +62,10 @@ import * as tournamentQueries from '../../db/queries/tournaments.ts';
 import * as participantQueries from '../../db/queries/tournamentParticipants.ts';
 import * as matchQueries from '../../db/queries/tournamentMatches.ts';
 import * as orchestrator from '../../services/tournamentOrchestrator.ts';
-import { notifyMatchesReady, notifyTournamentStateUpdated } from '../../services/matchmakingBridge.ts';
+import {
+  notifyMatchesReady,
+  notifyTournamentStateUpdated,
+} from '../../services/matchmakingBridge.ts';
 import { tournamentRoutes } from '../../routes/tournaments.ts';
 import { signAccessToken } from '../../utils/jwt.ts';
 
@@ -72,7 +76,9 @@ function buildApp() {
   return app;
 }
 
-const makeAuthHeader = () => ({ authorization: `Bearer ${signAccessToken({ uuid: 'user-1', username: 'tester' })}` });
+const makeAuthHeader = () => ({
+  authorization: `Bearer ${signAccessToken({ uuid: 'user-1', username: 'tester' })}`,
+});
 
 const sampleTournament = {
   id: 1,
@@ -196,8 +202,11 @@ describe('Tournament routes', () => {
       body: { name: 'Cup' },
     });
 
-  expect(res.statusCode).toBe(409);
-  expect(res.json()).toMatchObject({ code: 'tournament_active', tournamentId: sampleTournament.id });
+    expect(res.statusCode).toBe(409);
+    expect(res.json()).toMatchObject({
+      code: 'tournament_active',
+      tournamentId: sampleTournament.id,
+    });
     expect(tournamentQueries.createTournament).not.toHaveBeenCalled();
   });
 
@@ -237,10 +246,18 @@ describe('Tournament routes', () => {
   });
 
   it('PATCH /api/tournaments/:id/status updates status', async () => {
-    const participants = [sampleParticipant, { ...sampleParticipant, id: 11 }, { ...sampleParticipant, id: 12 }, { ...sampleParticipant, id: 13 }];
+    const participants = [
+      sampleParticipant,
+      { ...sampleParticipant, id: 11 },
+      { ...sampleParticipant, id: 12 },
+      { ...sampleParticipant, id: 13 },
+    ];
     (tournamentQueries.getTournamentById as Mock).mockReturnValue(sampleTournament);
     (participantQueries.listTournamentParticipants as Mock).mockReturnValue(participants);
-    (tournamentQueries.updateTournamentStatus as Mock).mockReturnValue({ ...sampleTournament, status: 'active' });
+    (tournamentQueries.updateTournamentStatus as Mock).mockReturnValue({
+      ...sampleTournament,
+      status: 'active',
+    });
     (orchestrator.generateSingleEliminationBracket as Mock).mockReturnValue(sampleBracketSummary);
 
     const res = await app.inject({
@@ -322,7 +339,10 @@ describe('Tournament routes', () => {
       .mockReturnValueOnce(existingParticipants)
       .mockReturnValueOnce(afterAdd);
     (participantQueries.createTournamentParticipant as Mock).mockReturnValue(sampleParticipant);
-    (tournamentQueries.updateTournamentStatus as Mock).mockReturnValue({ ...sampleTournament, status: 'active' });
+    (tournamentQueries.updateTournamentStatus as Mock).mockReturnValue({
+      ...sampleTournament,
+      status: 'active',
+    });
     (orchestrator.generateSingleEliminationBracket as Mock).mockReturnValue(sampleBracketSummary);
 
     const res = await app.inject({
@@ -361,7 +381,9 @@ describe('Tournament routes', () => {
 
     expect(res.statusCode).toBe(200);
     expect(res.json().status).toBe('accepted');
-    expect(participantQueries.updateTournamentParticipant).toHaveBeenCalledWith(10, { status: 'accepted' });
+    expect(participantQueries.updateTournamentParticipant).toHaveBeenCalledWith(10, {
+      status: 'accepted',
+    });
   });
 
   it('DELETE /api/tournaments/:id/participants/:participantId removes participant', async () => {
@@ -388,9 +410,14 @@ describe('Tournament routes', () => {
 
   it('DELETE /api/tournaments/:id/participants/:participantId keeps tournament active when others remain', async () => {
     const secondParticipant = { ...sampleParticipant, id: 11 };
+    (tournamentQueries.getTournamentById as Mock).mockReturnValue(sampleTournament);
     (participantQueries.getTournamentParticipantById as Mock).mockReturnValue(sampleParticipant);
-    (participantQueries.listTournamentParticipants as Mock).mockReturnValue([sampleParticipant, secondParticipant]);
+    (participantQueries.listTournamentParticipants as Mock).mockReturnValue([
+      sampleParticipant,
+      secondParticipant,
+    ]);
     (participantQueries.removeTournamentParticipant as Mock).mockReturnValue(true);
+    (orchestrator.checkAndAutoCompleteTournament as Mock).mockReturnValue(null);
 
     const res = await app.inject({
       method: 'DELETE',
@@ -439,34 +466,36 @@ describe('Tournament routes', () => {
     expect(res.json()).toEqual([sampleMatch]);
   });
 
+  it('PATCH /api/tournaments/:id/matches/:matchId triggers bracket progression', async () => {
+    const semifinalMatch = {
+      id: 5,
+      tournamentId: 1,
+      roundNumber: 1,
+      roundPosition: 1,
+      status: 'completed',
+      matchId: 42,
+      scheduledAt: null,
+      completedAt: new Date().toISOString(),
+    };
+    (matchQueries.getTournamentMatchById as Mock).mockReturnValue(semifinalMatch);
+    (matchQueries.updateTournamentMatchStatus as Mock).mockReturnValue(semifinalMatch);
+    (matchQueries.linkTournamentMatchResult as Mock).mockReturnValue(semifinalMatch);
+    (orchestrator.processSemifinalResult as Mock).mockReturnValue({
+      readyMatches: [77],
+      autoAdvancedMatches: [],
+    });
 
-it('PATCH /api/tournaments/:id/matches/:matchId triggers bracket progression', async () => {
-  const semifinalMatch = {
-    id: 5,
-    tournamentId: 1,
-    roundNumber: 1,
-    roundPosition: 1,
-    status: 'completed',
-    matchId: 42,
-    scheduledAt: null,
-    completedAt: new Date().toISOString(),
-  };
-  (matchQueries.getTournamentMatchById as Mock).mockReturnValue(semifinalMatch);
-  (matchQueries.updateTournamentMatchStatus as Mock).mockReturnValue(semifinalMatch);
-  (matchQueries.linkTournamentMatchResult as Mock).mockReturnValue(semifinalMatch);
-  (orchestrator.processSemifinalResult as Mock).mockReturnValue({ readyMatches: [77], autoAdvancedMatches: [] });
+    const res = await app.inject({
+      method: 'PATCH',
+      url: '/api/tournaments/1/matches/5',
+      headers: makeAuthHeader(),
+      body: { matchId: 123, setCompleted: true },
+    });
 
-  const res = await app.inject({
-    method: 'PATCH',
-    url: '/api/tournaments/1/matches/5',
-    headers: makeAuthHeader(),
-    body: { matchId: 123, setCompleted: true },
+    expect(res.statusCode).toBe(200);
+    expect(orchestrator.processSemifinalResult).toHaveBeenCalledWith(5);
+    expect(notifyMatchesReady).toHaveBeenCalledWith(1, [77]);
   });
-
-  expect(res.statusCode).toBe(200);
-  expect(orchestrator.processSemifinalResult).toHaveBeenCalledWith(5);
-  expect(notifyMatchesReady).toHaveBeenCalledWith(1, [77]);
-});
 
   it('POST /api/tournaments/:id/matches creates match', async () => {
     (matchQueries.createTournamentMatch as Mock).mockReturnValue(sampleMatch);

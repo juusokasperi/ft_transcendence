@@ -44,10 +44,11 @@ describe('Tournament match queries', () => {
 
   it('assigns participants to match slots and enforces uniqueness', async () => {
     const { createTournament } = await import('../../../db/queries/tournaments.ts');
-    const { createTournamentParticipant } = await import('../../../db/queries/tournamentParticipants.ts');
-    const { createTournamentMatch, addTournamentMatchPlayer, listTournamentMatchPlayers } = await import(
-      '../../../db/queries/tournamentMatches.ts'
+    const { createTournamentParticipant } = await import(
+      '../../../db/queries/tournamentParticipants.ts'
     );
+    const { createTournamentMatch, addTournamentMatchPlayer, listTournamentMatchPlayers } =
+      await import('../../../db/queries/tournamentMatches.ts');
 
     const tournament = createTournament({ name: 'Assignments' });
     const playerA = createTournamentParticipant({ tournamentId: tournament!.id, alias: 'Alpha' });
@@ -77,8 +78,12 @@ describe('Tournament match queries', () => {
 
   it('schedules and completes a match', async () => {
     const { createTournament } = await import('../../../db/queries/tournaments.ts');
-    const { createTournamentMatch, scheduleTournamentMatch, updateTournamentMatchStatus, linkTournamentMatchResult } =
-      await import('../../../db/queries/tournamentMatches.ts');
+    const {
+      createTournamentMatch,
+      scheduleTournamentMatch,
+      updateTournamentMatchStatus,
+      linkTournamentMatchResult,
+    } = await import('../../../db/queries/tournamentMatches.ts');
     const { addUser } = await import('../../../db/queries/users.ts');
     const { addMatch } = await import('../../../db/queries/matches.ts');
 

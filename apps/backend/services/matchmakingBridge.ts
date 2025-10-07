@@ -76,4 +76,3 @@ export async function notifyTournamentStateUpdated(tournamentId: number) {
     console.error('[Tournament] Failed to publish state update', { error });
   }
 }
-

@@ -1,7 +1,4 @@
-import {
-  ErrorResponseSchema,
-  ValidationErrorResponseSchema,
-} from './responseSchemas.ts';
+import { ErrorResponseSchema, ValidationErrorResponseSchema } from './responseSchemas.ts';
 import {
   TournamentSchema,
   TournamentStatusSchema,
@@ -15,7 +12,6 @@ import {
 } from './fieldSchemas.ts';
 import { USER_ROUTE_SECURITY } from './userSchemas.ts';
 import { MATCH_ROUTE_SECURITY } from './matchSchemas.ts';
-
 
 const BracketSummarySchema = {
   type: 'object',
@@ -329,7 +325,6 @@ export const createMatchSchema = {
     500: ErrorResponseSchema,
   },
 };
-
 
 export const listMatchPlayersSchema = {
   tags: ['Tournament Matches'],
