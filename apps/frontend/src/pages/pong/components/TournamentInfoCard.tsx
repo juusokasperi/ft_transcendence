@@ -12,8 +12,6 @@ export type TournamentInfoCardProps = {
   connectionReady: boolean;
   onJoin(): void;
   onLeave(): void;
-  onForfeit(): void;
-  canForfeit: boolean;
 };
 
 const TournamentInfoCard: React.FC<TournamentInfoCardProps> = ({
@@ -27,8 +25,6 @@ const TournamentInfoCard: React.FC<TournamentInfoCardProps> = ({
   connectionReady,
   onJoin,
   onLeave,
-  onForfeit,
-  canForfeit,
 }) => {
   return (
     <div className="rounded-2xl border border-white/10 bg-white/5 p-5 shadow-xl backdrop-blur">
@@ -46,16 +42,9 @@ const TournamentInfoCard: React.FC<TournamentInfoCardProps> = ({
           className="w-full rounded-full border border-white/10 bg-black/50 px-4 py-2 text-sm text-white placeholder:text-white/40 focus:border-indigo-400 focus:outline-none md:max-w-xs"
         />
         {currentParticipantId !== null ? (
-          <div className="flex flex-wrap gap-2">
-            <Button variant="outline" size="sm" onClick={onLeave}>
-              Leave tournament
-            </Button>
-            {canForfeit && (
-              <Button variant="dangerSecondary" size="sm" onClick={onForfeit}>
-                Forfeit
-              </Button>
-            )}
-          </div>
+          <Button variant="outline" size="sm" onClick={onLeave}>
+            Leave tournament
+          </Button>
         ) : (
           <Button
             variant="primary"

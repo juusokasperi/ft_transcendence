@@ -35,7 +35,6 @@ type TournamentControllerReturn = {
   handleCreateTournamentClick: () => void;
   handleJoinTournamentClick: (tournamentId: number) => void;
   handleLeaveTournamentClick: () => void;
-  handleForfeitTournamentClick: () => void;
   sortedParticipants: TournamentParticipantState[];
   matchesByStage: TournamentMatchState[];
   latestReadyMatches: ReadyMatch[];
@@ -760,13 +759,6 @@ export function useTournamentPageController(
     debugLog('action:leave-tournament', { tournamentId });
   }, [activeTournamentId, debugLog, loadTournaments, navigate, resetActiveTournamentState]);
 
-  const handleForfeitTournamentClick = useCallback(() => {
-    if (!clientRef.current || activeTournamentId === null) return;
-    clientRef.current.forfeitTournament(String(activeTournamentId));
-    debugLog('action:forfeit-tournament', { tournamentId: activeTournamentId });
-    enqueueSnackbar({ message: 'Forfeit request sent', variant: 'warning' });
-  }, [activeTournamentId, debugLog, enqueueSnackbar]);
-
   const sortedParticipants = useMemo(() => {
     // Define placement order for sorting
     const statusOrder: Record<string, number> = {
@@ -926,8 +918,13 @@ export function useTournamentPageController(
   }, [matchPhase]);
 
   const handleQuitMatch = useCallback(() => {
-    appRef.current?.destroy();
-    appRef.current = null;
+    debugLog('action:quit-match', { phase: 'start' });
+
+    // Clean up game (unless already cleaned up by onMatchEnd)
+    if (appRef.current) {
+      appRef.current.destroy();
+      appRef.current = null;
+    }
     setMatchPhase('idle');
     setHandoff(null);
 
@@ -941,41 +938,17 @@ export function useTournamentPageController(
       refreshTimerRef.current = null;
     }
 
-    // Only rejoin if match was manually quit (not ended naturally)
-    if (clientRef.current && user?.username && !matchEndedNaturallyRef.current) {
-      rejoinTimerRef.current = window.setTimeout(() => {
-        const tournamentId = activeTournamentIdRef.current;
-        if (!clientRef.current || !tournamentId) return;
-        clientRef.current.joinTournament(tournamentId, user.username);
-        enqueueSnackbar({ message: 'Rejoined tournament - waiting for next match', variant: 'info' });
-      }, 3000);
-    }
-
-    // Always refresh tournament state after quitting
+    // Tournament participants don't need to rejoin - they're already in the tournament
+    // Just refresh the state to get updates about next matches
+    debugLog('action:quit-match', { phase: 'scheduling-refresh' });
     refreshTimerRef.current = window.setTimeout(() => {
+      debugLog('action:quit-match', { phase: 'refreshing' });
       void refreshTournamentState();
-    }, matchEndedNaturallyRef.current ? 1000 : 3500);
+    }, 1000);
 
-    // Reset the flag for next match
+    // Reset the natural end flag for next match
     matchEndedNaturallyRef.current = false;
-  }, [enqueueSnackbar, refreshTournamentState, user?.username]);
-
-  useEffect(() => {
-    if ((matchPhase !== 'starting' && matchPhase !== 'playing') || !canvasRef.current) return;
-    const canvas = canvasRef.current;
-    let timer: number | null = null;
-    const onMatchOver = () => {
-      timer = window.setTimeout(() => {
-        handleQuitMatch();
-        enqueueSnackbar({ message: 'Match finished', variant: 'success' });
-      }, 2500);
-    };
-    canvas.addEventListener('pong:matchOver', onMatchOver as EventListener);
-    return () => {
-      canvas.removeEventListener('pong:matchOver', onMatchOver as EventListener);
-      if (timer !== null) window.clearTimeout(timer);
-    };
-  }, [matchPhase, handleQuitMatch, enqueueSnackbar]);
+  }, [debugLog, refreshTournamentState]);
 
   return {
     user,
@@ -994,7 +967,6 @@ export function useTournamentPageController(
     handleCreateTournamentClick,
     handleJoinTournamentClick,
     handleLeaveTournamentClick,
-    handleForfeitTournamentClick,
     sortedParticipants,
     matchesByStage,
     latestReadyMatches,

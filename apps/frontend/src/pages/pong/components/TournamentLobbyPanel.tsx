@@ -50,50 +50,54 @@ const TournamentLobbyPanel: React.FC<TournamentLobbyPanelProps> = ({
           <ul className="space-y-3">
             {availableTournaments.map((tournament) => {
               const isCurrent = tournament.id === activeTournamentId;
+              const canJoin = !isCurrent && tournament.status === 'draft' && connectionReady && activeTournamentId === null;
               return (
                 <li
                   key={tournament.id}
-                  className="flex flex-col gap-2 rounded-xl border border-white/10 bg-black/30 p-4 md:flex-row md:items-center md:justify-between"
+                  className="flex flex-col gap-3 rounded-xl border border-white/10 bg-black/30 p-4"
                 >
-                  <div>
-                    <p className="text-base font-semibold">{tournament.name}</p>
-                    <p className="text-xs uppercase tracking-widest text-white/50">
-                      Status: {tournament.status}
-                    </p>
+                  <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+                    <div>
+                      <p className="text-base font-semibold">{tournament.name}</p>
+                      <p className="text-xs uppercase tracking-widest text-white/50">
+                        Status: {tournament.status}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {isCurrent ? (
+                        <span className="rounded-full border border-emerald-400/30 bg-emerald-500/20 px-3 py-1 text-xs font-semibold uppercase tracking-widest text-emerald-200">
+                          Joined
+                        </span>
+                      ) : tournament.status !== 'draft' ? (
+                        <span className="rounded-full border border-white/20 bg-white/10 px-3 py-1 text-xs font-semibold uppercase tracking-widest text-white/60">
+                          {tournament.status === 'active' ? 'In progress' : tournament.status}
+                        </span>
+                      ) : null}
+                    </div>
                   </div>
-                  <div className="flex items-center gap-2">
-                    {isCurrent ? (
-                      <span className="rounded-full border border-emerald-400/30 bg-emerald-500/20 px-3 py-1 text-xs font-semibold uppercase tracking-widest text-emerald-200">
-                        Joined
-                      </span>
-                    ) : tournament.status !== 'draft' ? (
-                      <span className="rounded-full border border-white/20 bg-white/10 px-3 py-1 text-xs font-semibold uppercase tracking-widest text-white/60">
-                        {tournament.status === 'active' ? 'In progress' : tournament.status}
-                      </span>
-                    ) : (
+                  {canJoin && (
+                    <div className="flex flex-col gap-2 md:flex-row md:items-center">
+                      <input
+                        value={aliasInput}
+                        onChange={(event) => onAliasInputChange(event.target.value)}
+                        placeholder="Your alias (optional)"
+                        className="flex-1 rounded-full border border-white/10 bg-black/50 px-4 py-2 text-sm text-white placeholder:text-white/40 focus:border-indigo-400 focus:outline-none"
+                      />
                       <Button
                         variant="secondary"
                         size="sm"
                         onClick={() => onJoinTournament(tournament.id)}
-                        disabled={!connectionReady || activeTournamentId !== null || tournament.status !== 'draft'}
+                        disabled={!connectionReady || activeTournamentId !== null}
                       >
                         Join
                       </Button>
-                    )}
-                  </div>
+                    </div>
+                  )}
                 </li>
               );
             })}
           </ul>
         )}
-        <div className="mt-4">
-          <input
-            value={aliasInput}
-            onChange={(event) => onAliasInputChange(event.target.value)}
-            placeholder="Preferred alias"
-            className="w-full rounded-full border border-white/10 bg-black/50 px-4 py-2 text-sm text-white placeholder:text-white/40 focus:border-indigo-400 focus:outline-none md:max-w-xs"
-          />
-        </div>
       </div>
     </div>
   );

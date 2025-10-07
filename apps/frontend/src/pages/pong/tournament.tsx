@@ -32,7 +32,6 @@ const TournamentPage: React.FC<TournamentPageProps> = ({ onBack, focusTournament
     handleCreateTournamentClick,
     handleJoinTournamentClick,
     handleLeaveTournamentClick,
-    handleForfeitTournamentClick,
     sortedParticipants,
     matchesByStage,
     latestReadyMatches,
@@ -83,8 +82,6 @@ const TournamentPage: React.FC<TournamentPageProps> = ({ onBack, focusTournament
           loading={loadingTournaments}
           onRefresh={headerRefreshHandler}
           onLeaveTournament={isDetailView ? handleLeaveTournamentClick : undefined}
-          onForfeitTournament={isDetailView ? handleForfeitTournamentClick : undefined}
-          canForfeit={isDetailView && tournamentStatus === 'active'}
         />
 
         <section className={overviewSectionClass}>
