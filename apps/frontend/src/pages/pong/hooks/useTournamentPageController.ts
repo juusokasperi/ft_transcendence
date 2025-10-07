@@ -763,10 +763,30 @@ export function useTournamentPageController(
   }, [activeTournamentId, debugLog, enqueueSnackbar]);
 
   const sortedParticipants = useMemo(() => {
+    // Define placement order for sorting
+    const statusOrder: Record<string, number> = {
+      champion: 1,      // 🥇 Gold (1st place)
+      silver: 2,        // 🥈 Silver (2nd place)
+      third_place: 3,   // 🥉 Bronze (3rd place)
+      eliminated: 4,    // 4th place
+      forfeited: 5,     // Forfeited
+      active: 6,        // In progress
+      pending: 7,       // Joined (waiting to start)
+      accepted: 8,      // Checked in
+    };
+
     return [...participants].sort((a, b) => {
+      // First, sort by status (winners first)
+      const orderA = statusOrder[a.status] ?? 99;
+      const orderB = statusOrder[b.status] ?? 99;
+      if (orderA !== orderB) return orderA - orderB;
+
+      // If same status, sort by seed
       const seedA = a.seed ?? Number.MAX_SAFE_INTEGER;
       const seedB = b.seed ?? Number.MAX_SAFE_INTEGER;
       if (seedA !== seedB) return seedA - seedB;
+
+      // Finally, sort by alias
       return a.alias.localeCompare(b.alias);
     });
   }, [participants]);

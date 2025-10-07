@@ -114,7 +114,7 @@ const TournamentPage: React.FC<TournamentPageProps> = ({ onBack, focusTournament
           currentParticipantId={currentParticipantId}
         />
 
-        {hasActiveTournament && (
+        {hasActiveTournament && tournamentStatus !== 'completed' && (
           <TournamentDirectedMatchesPanel
             matches={latestReadyMatches}
             countdowns={matchCountdowns}
