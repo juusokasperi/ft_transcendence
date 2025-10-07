@@ -106,6 +106,7 @@ export function useTournamentPageController(
   const [tournamentName, setTournamentName] = useState('');
   const rejoinTimerRef = useRef<number | null>(null);
   const refreshTimerRef = useRef<number | null>(null);
+  const matchEndedNaturallyRef = useRef(false);
 
   useEffect(() => {
     setAliasInput(user?.username ?? '');
@@ -839,6 +840,23 @@ export function useTournamentPageController(
           seat,
           joinToken: handoff.joinToken,
           randomSeed: handoff.randomSeed,
+          onMatchEnd: (reason: string, winner?: 'east' | 'west') => {
+            // Automatically quit and return to tournament after match ends
+            debugLog('match-end-auto-quit', { reason, winner });
+            matchEndedNaturallyRef.current = true;
+            setTimeout(() => {
+              // Clean up game
+              appRef.current?.destroy();
+              appRef.current = null;
+              setMatchPhase('idle');
+              setHandoff(null);
+
+              // Refresh tournament state after a short delay
+              setTimeout(() => {
+                void refreshTournamentState();
+              }, 1000);
+            }, 5000); // 5 seconds to see the result overlay
+          },
         });
         if (cancelled) {
           app.destroy();
@@ -855,7 +873,7 @@ export function useTournamentPageController(
     return () => {
       cancelled = true;
     };
-  }, [enqueueSnackbar, handoff, seat, matchPhase]);
+  }, [debugLog, enqueueSnackbar, handoff, refreshTournamentState, seat, matchPhase]);
 
   useEffect(() => () => {
     appRef.current?.destroy();
@@ -898,18 +916,23 @@ export function useTournamentPageController(
       refreshTimerRef.current = null;
     }
 
-    if (clientRef.current && user?.username) {
+    // Only rejoin if match was manually quit (not ended naturally)
+    if (clientRef.current && user?.username && !matchEndedNaturallyRef.current) {
       rejoinTimerRef.current = window.setTimeout(() => {
         const tournamentId = activeTournamentIdRef.current;
         if (!clientRef.current || !tournamentId) return;
         clientRef.current.joinTournament(tournamentId, user.username);
         enqueueSnackbar({ message: 'Rejoined tournament - waiting for next match', variant: 'info' });
       }, 3000);
-
-      refreshTimerRef.current = window.setTimeout(() => {
-        void refreshTournamentState();
-      }, 3500);
     }
+
+    // Always refresh tournament state after quitting
+    refreshTimerRef.current = window.setTimeout(() => {
+      void refreshTournamentState();
+    }, matchEndedNaturallyRef.current ? 1000 : 3500);
+
+    // Reset the flag for next match
+    matchEndedNaturallyRef.current = false;
   }, [enqueueSnackbar, refreshTournamentState, user?.username]);
 
   useEffect(() => {

@@ -439,6 +439,9 @@ export async function tournamentRoutes(app: FastifyInstance) {
         if (!existing || existing.tournamentId !== tournamentId)
           return res.status(404).send({ message: 'Participant not found for tournament' });
 
+        const tournament = getTournamentById(tournamentId);
+        if (!tournament) return res.status(404).send({ message: 'Tournament not found' });
+
         const participantsBefore = listTournamentParticipants(tournamentId);
         const wasOnlyParticipant =
           participantsBefore.length === 1 && participantsBefore[0]?.id === participantId;
@@ -447,8 +450,18 @@ export async function tournamentRoutes(app: FastifyInstance) {
           (match) => match.completedAt !== null || match.status === 'completed',
         );
 
-        const removed = removeTournamentParticipant(participantId);
-        if (!removed) return res.status(500).send({ message: 'Failed to remove participant' });
+        // If tournament has started (active/completed), mark as forfeited instead of deleting
+        // This preserves bracket history and final standings
+        if (tournament.status === 'active' || tournament.status === 'completed') {
+          const updated = updateTournamentParticipant(participantId, { status: 'forfeited' });
+          if (!updated) return res.status(500).send({ message: 'Failed to mark participant as forfeited' });
+          
+          req.log.info({ tournamentId, participantId, alias: existing.alias }, 'Participant marked as forfeited');
+        } else {
+          // Tournament hasn't started yet (draft), safe to delete
+          const removed = removeTournamentParticipant(participantId);
+          if (!removed) return res.status(500).send({ message: 'Failed to remove participant' });
+        }
 
         if (wasOnlyParticipant && !hasCompletedMatches) {
           const cancelled = updateTournamentStatus(tournamentId, 'cancelled');
@@ -459,7 +472,7 @@ export async function tournamentRoutes(app: FastifyInstance) {
             );
           }
         } else {
-          // Check if only one participant remains after this removal
+          // Check if only one participant remains after this removal/forfeit
           const autoWinner = checkAndAutoCompleteTournament(tournamentId);
           if (autoWinner) {
             req.log.info({ tournamentId, winnerId: autoWinner }, 'Tournament auto-completed after participant removal');
