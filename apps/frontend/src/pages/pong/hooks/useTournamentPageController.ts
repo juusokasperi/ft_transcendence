@@ -76,6 +76,7 @@ export function useTournamentPageController(
   const appRef = useRef<{ destroy(): void } | null>(null);
   const manualCloseRef = useRef(false);
   const connectionErrorShownRef = useRef(false);
+  const hadSuccessfulConnectionRef = useRef(false);
   const reconnectTimerRef = useRef<number | null>(null);
   const connectionStateRef = useRef<'idle' | 'connecting' | 'open'>('idle');
   const backoffDelayRef = useRef(1500);
@@ -586,6 +587,7 @@ export function useTournamentPageController(
     manualCloseRef.current = false;
     connectionStateRef.current = 'idle';
     backoffDelayRef.current = 1500;
+    hadSuccessfulConnectionRef.current = false;
     setConnectionReady(false);
     debugLog('connection:effect-mounted', { userUuid: user.uuid });
 
@@ -641,6 +643,7 @@ export function useTournamentPageController(
             connectionStateRef.current = 'open';
             backoffDelayRef.current = DEFAULT_RECONNECT_DELAY;
             connectionErrorShownRef.current = false;
+            hadSuccessfulConnectionRef.current = true;
             setConnectionReady(true);
             debugLog('connection:open');
           },
@@ -649,7 +652,8 @@ export function useTournamentPageController(
             connectionStateRef.current = 'idle';
             lastDisconnectRef.current = Date.now();
             setConnectionReady(false);
-            if (!connectionErrorShownRef.current) {
+            // Only show error snackbar if this isn't a quick remount scenario
+            if (!connectionErrorShownRef.current && backoffDelayRef.current > 1500) {
               enqueueSnackbar({ message: 'Tournament connection error. Retrying…', variant: 'error' });
               connectionErrorShownRef.current = true;
             }
@@ -661,16 +665,24 @@ export function useTournamentPageController(
             if (manualCloseRef.current) return;
             connectionStateRef.current = 'idle';
             lastDisconnectRef.current = Date.now();
-            const abnormal = !event.wasClean && event.code !== 1000;
-            if (abnormal && !connectionErrorShownRef.current) {
-              enqueueSnackbar({ message: 'Tournament connection lost. Reconnecting…', variant: 'warning' });
-              connectionErrorShownRef.current = true;
-            }
+            // Codes 1000 (Normal), 1001 (Going Away), 1005 (No Status) are normal closures
+            const normalCloseCodes = [1000, 1001, 1005];
+            const abnormal = !event.wasClean || !normalCloseCodes.includes(event.code);
             debugLog('connection:closed', {
               wasClean: event.wasClean,
               code: event.code,
               reason: event.reason,
+              abnormal,
+              errorShown: connectionErrorShownRef.current,
+              hadSuccessfulConnection: hadSuccessfulConnectionRef.current,
+              willShowError: abnormal && !connectionErrorShownRef.current && hadSuccessfulConnectionRef.current,
             });
+            // Only show error if we had at least one successful connection (not first mount failure)
+            if (abnormal && !connectionErrorShownRef.current && hadSuccessfulConnectionRef.current) {
+              enqueueSnackbar({ message: 'Tournament connection lost. Reconnecting…', variant: 'warning' });
+              connectionErrorShownRef.current = true;
+              debugLog('connection:error-snackbar-shown');
+            }
             queueReconnect();
           },
         });
