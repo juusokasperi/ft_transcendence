@@ -507,13 +507,30 @@ async function handleMatchCompletion(match: Match, matchOverEvent: { winner: str
       else if (game.winner === 'west') westScore++;
     }
 
-    // If no games were played but we have a winner (disconnect timeout), award the win
-    if (eastScore === 0 && westScore === 0) {
-      if (matchOverEvent.winner === 'east') {
-        eastScore = 2;
-      } else if (matchOverEvent.winner === 'west') {
-        westScore = 2;
+    // If no games were played but we have a winner (disconnect timeout), award technical victory
+    let technicalGamesHistory = gamesHistory;
+    if (eastScore === 0 && westScore === 0 && matchOverEvent.winner) {
+      // Tournament matches get 3:0 technical score, casual matches get 2:0
+      const technicalScore = match.reservation.tournament ? 3 : 2;
+      const winner = matchOverEvent.winner as 'east' | 'west';
+      
+      if (winner === 'east') {
+        eastScore = technicalScore;
+      } else if (winner === 'west') {
+        westScore = technicalScore;
       }
+      
+      console.log(`[GameServer] Technical victory awarded: ${winner} wins ${technicalScore}:0 (${match.reservation.tournament ? 'tournament' : 'casual'})`);
+      
+      // Create synthetic games history for technical victory
+      technicalGamesHistory = Array.from({ length: technicalScore }, (_, i) => ({
+        gameIndex: i + 1,
+        east: winner === 'east' ? 11 : 0,
+        west: winner === 'west' ? 11 : 0,
+        winner: winner,
+      }));
+      
+      console.log(`[GameServer] Created synthetic games history for technical victory:`, technicalGamesHistory);
     }
 
     // Create proper JWT token for match service authentication
@@ -533,10 +550,13 @@ async function handleMatchCompletion(match: Match, matchOverEvent: { winner: str
       
       const tournament = match.reservation.tournament;
       
+      // Determine winner based on final scores (eastScore and westScore already calculated above)
+      const actualWinner = eastScore > westScore ? 'east' : 'west';
+      
       let winnerParticipantId: number;
       let loserParticipantId: number;
       
-      if (matchOverEvent.winner === 'east') {
+      if (actualWinner === 'east') {
         winnerParticipantId = eastParticipantId || 0;
         loserParticipantId = westParticipantId || 0;
       } else {
@@ -549,12 +569,14 @@ async function handleMatchCompletion(match: Match, matchOverEvent: { winner: str
         return;
       }
       
+      console.log(`[GameServer] Tournament match winner: ${actualWinner} (score: ${eastScore}:${westScore}), winnerParticipantId: ${winnerParticipantId}, loserParticipantId: ${loserParticipantId}`);
+      
       const resultPayload = {
         winnerParticipantId,
         loserParticipantId,
-        winnerUserUuid: matchOverEvent.winner === 'east' ? eastPlayerIdentifier : westPlayerIdentifier,
-        loserUserUuid: matchOverEvent.winner === 'east' ? westPlayerIdentifier : eastPlayerIdentifier,
-        gamesHistory: gamesHistory.map(game => ({
+        winnerUserUuid: actualWinner === 'east' ? eastPlayerIdentifier : westPlayerIdentifier,
+        loserUserUuid: actualWinner === 'east' ? westPlayerIdentifier : eastPlayerIdentifier,
+        gamesHistory: technicalGamesHistory.map(game => ({
           gameIndex: game.gameIndex,
           east: game.east,
           west: game.west,

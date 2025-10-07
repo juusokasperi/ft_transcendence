@@ -65,13 +65,19 @@ export async function handleAuth(
     client.socket.close();
     return false;
   }
-  if (isUserAlreadyConnected(user.uuid, clients)) {
-    log('Error: User already connected, closing socket', { clientId: client.id });
-    client.socket.send(
-      JSON.stringify({ type: 'ERROR', code: 'AUTH', message: 'User already connected' }),
+  // If user is already connected, close the old connection and allow the new one
+  const existingClient = findExistingClient(user.uuid, clients);
+  if (existingClient) {
+    log('User reconnecting, closing old connection', { 
+      oldClientId: existingClient.id, 
+      newClientId: client.id,
+      uuid: user.uuid 
+    });
+    existingClient.socket.send(
+      JSON.stringify({ type: 'INFO', message: 'New connection detected, closing this one' }),
     );
-    client.socket.close();
-    return false;
+    existingClient.socket.close();
+    clients.delete(existingClient.id);
   }
   const mmr = await fetchUserMMR(user.uuid, token);
   if (typeof mmr !== 'number') {
@@ -97,6 +103,13 @@ function isUserAlreadyConnected(uuid: string, clients: Map<string, ClientInfo>):
     if (client.uuid === uuid && client.authenticated) return true;
   }
   return false;
+}
+
+function findExistingClient(uuid: string, clients: Map<string, ClientInfo>): ClientInfo | undefined {
+  for (const client of clients.values()) {
+    if (client.uuid === uuid && client.authenticated) return client;
+  }
+  return undefined;
 }
 
 export function isAuthenticated(client: ClientInfo): boolean {

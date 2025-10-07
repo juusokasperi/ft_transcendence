@@ -42,16 +42,17 @@ const TournamentBracketPanel: React.FC<TournamentBracketPanelProps> = ({
                 {match.players.map((player) => (
                   <li
                     key={`${player.participantId}-${player.teamNumber}`}
-                    className={`flex items-center justify-between rounded-lg px-3 py-2 ${
+                    className={`grid grid-cols-[1fr_auto_auto] items-center gap-3 rounded-lg px-3 py-2 ${
                       player.participantId === currentParticipantId
                         ? 'bg-indigo-500/10 text-indigo-200'
                         : 'bg-white/5 text-white/80'
                     }`}
                   >
-                    <span>
-                      {player.teamNumber === 1 ? 'West' : 'East'} · {player.alias ?? 'TBD'}
+                    <span className="truncate">{player.alias ?? 'TBD'}</span>
+                    <span className="w-8 text-center font-mono text-lg font-bold tabular-nums">
+                      {player.score !== null ? player.score : '—'}
                     </span>
-                    <span className="text-[10px] uppercase tracking-[0.3em] text-white/40">
+                    <span className="w-24 text-right text-[10px] uppercase tracking-[0.3em] text-white/40">
                       {participantStatusLabel(player.status)}
                     </span>
                   </li>

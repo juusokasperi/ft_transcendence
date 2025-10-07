@@ -120,7 +120,7 @@ export const TournamentStageSchema = {
   anyOf: [
     {
       type: 'string',
-      enum: ['quarterfinal', 'semifinal', 'final'],
+      enum: ['quarterfinal', 'semifinal', 'final', 'bronze'],
     },
     { type: 'null' },
   ],

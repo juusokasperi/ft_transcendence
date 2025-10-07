@@ -1,5 +1,6 @@
 import type { FastifyInstance } from 'fastify';
 import { authPreHandler, matchAuthPreHandler } from '../hooks/auth.ts';
+import { addMatch } from '../db/queries/matches.ts';
 import {
   createTournament,
   getTournamentById,
@@ -27,10 +28,10 @@ import {
   createTournamentMatch,
   getTournamentMatchById,
   getTournamentMatchByRoundAndPosition,
+  linkTournamentMatchResult,
   getTournamentMatchPlayerById,
   listTournamentMatchPlayers,
   listTournamentMatches,
-  linkTournamentMatchResult,
   removeTournamentMatchPlayer,
   scheduleTournamentMatch,
   updateTournamentMatchStatus,
@@ -241,6 +242,91 @@ export async function tournamentRoutes(app: FastifyInstance) {
             .send({ message: 'Submitted participants are not assigned to this match' });
         }
 
+        // Create a Match record for the completed tournament match to track scores
+        let createdMatchId: number | null = null;
+        let actualWinnerParticipantId: number | null = null;
+        let actualLoserParticipantId: number | null = null;
+        
+        if (body.winnerUserUuid && body.loserUserUuid && body.gamesHistory && body.gamesHistory.length > 0) {
+          try {
+            req.log.info({ 
+              matchId, 
+              gamesHistoryLength: body.gamesHistory.length,
+              gamesHistory: body.gamesHistory 
+            }, 'Processing tournament match result');
+            
+            // Find which player is team1 (east) and team2 (west) based on roster
+            const winnerPlayer = roster.find(p => p.participantId === body.winnerParticipantId);
+            const loserPlayer = roster.find(p => p.participantId === body.loserParticipantId);
+            
+            if (winnerPlayer && loserPlayer) {
+              // Determine UUIDs based on team numbers (team1 = teamNumber 1, team2 = teamNumber 2)
+              const team1Player = winnerPlayer.teamNumber === 1 ? winnerPlayer : loserPlayer;
+              const team2Player = winnerPlayer.teamNumber === 1 ? loserPlayer : winnerPlayer;
+              const team1Uuid = team1Player.participantId === body.winnerParticipantId ? body.winnerUserUuid : body.loserUserUuid;
+              const team2Uuid = team2Player.participantId === body.winnerParticipantId ? body.winnerUserUuid : body.loserUserUuid;
+
+              // Calculate scores based on team assignment
+              // teamNumber 1 is always east, teamNumber 2 is always west
+              let team1Score = 0;
+              let team2Score = 0;
+              for (const game of body.gamesHistory) {
+                if (game.winner === 'east') team1Score++; // team1 (teamNumber 1) is east
+                else if (game.winner === 'west') team2Score++; // team2 (teamNumber 2) is west
+              }
+              
+              // Determine actual winner based on score
+              if (team1Score > team2Score) {
+                actualWinnerParticipantId = team1Player.participantId;
+                actualLoserParticipantId = team2Player.participantId;
+              } else {
+                actualWinnerParticipantId = team2Player.participantId;
+                actualLoserParticipantId = team1Player.participantId;
+              }
+              
+              req.log.info({ 
+                matchId, 
+                team1Score, 
+                team2Score,
+                team1ParticipantId: team1Player.participantId,
+                team2ParticipantId: team2Player.participantId,
+                actualWinnerParticipantId,
+                actualLoserParticipantId,
+                bodyWinnerParticipantId: body.winnerParticipantId
+              }, 'Calculated scores and winner from games history');
+
+              createdMatchId = addMatch(
+                team1Score,
+                team2Score,
+                [team1Uuid],
+                [team2Uuid],
+                0, // team1RankingDelta - ranking updated separately for tournaments
+                0, // team2RankingDelta
+                tournamentId,
+                match.roundNumber === 1 ? 'semifinal' : (match.roundPosition === 1 ? 'final' : 'bronze'),
+              );
+
+              // Link tournament match with the Match ID
+              if (createdMatchId) {
+                linkTournamentMatchResult(matchId, createdMatchId);
+                req.log.info({ matchId, createdMatchId, team1Score, team2Score }, 'Created and linked Match record for tournament match');
+              }
+            }
+          } catch (error) {
+            req.log.error({ error }, 'Failed to create Match record for tournament match');
+            // Don't fail the entire request if Match creation fails
+          }
+        } else {
+          req.log.warn({ 
+            matchId,
+            hasWinnerUuid: !!body.winnerUserUuid,
+            hasLoserUuid: !!body.loserUserUuid,
+            hasGamesHistory: !!body.gamesHistory,
+            gamesHistoryLength: body.gamesHistory?.length || 0
+          }, 'Skipping Match creation - missing required data');
+        }
+
+        // Update match status to completed AFTER creating Match record to ensure matchId is set
         const updated = updateTournamentMatchStatus(matchId, 'completed', { setCompletedAt: true });
         if (!updated) return res.status(500).send({ message: 'Failed to update match status' });
 
@@ -249,10 +335,14 @@ export async function tournamentRoutes(app: FastifyInstance) {
         let tournamentUpdate: ReturnType<typeof markTournamentCompleted> | undefined;
 
         if (match.roundNumber === 1) {
+          // Use actual winner from score calculation if available, fallback to body
+          const winnerForProgression = actualWinnerParticipantId ?? body.winnerParticipantId;
+          const loserForProgression = actualLoserParticipantId ?? body.loserParticipantId;
+          
           progression = processSemifinalResult(matchId, {
             manualResult: {
-              winnerParticipantId: body.winnerParticipantId,
-              loserParticipantId: body.loserParticipantId,
+              winnerParticipantId: winnerForProgression,
+              loserParticipantId: loserForProgression,
             },
           });
           if (progression?.readyMatches?.length) {
@@ -272,12 +362,16 @@ export async function tournamentRoutes(app: FastifyInstance) {
           };
 
           try {
+            // Use actual winner from score calculation if available, fallback to body
+            const finalWinner = actualWinnerParticipantId ?? body.winnerParticipantId;
+            const finalLoser = actualLoserParticipantId ?? body.loserParticipantId;
+            
             if (match.roundPosition === 1) {
-              applyStatusUpdate(body.winnerParticipantId, 'champion');
-              applyStatusUpdate(body.loserParticipantId, 'silver');
+              applyStatusUpdate(finalWinner, 'champion');
+              applyStatusUpdate(finalLoser, 'silver');
             } else if (match.roundPosition === 2) {
-              applyStatusUpdate(body.winnerParticipantId, 'third_place');
-              applyStatusUpdate(body.loserParticipantId, 'eliminated');
+              applyStatusUpdate(finalWinner, 'third_place');
+              applyStatusUpdate(finalLoser, 'eliminated');
             }
           } catch (error) {
             req.log.error(

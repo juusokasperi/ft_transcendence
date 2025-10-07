@@ -74,6 +74,7 @@ export type TournamentMatchPlayerState = {
   teamNumber: number;
   alias: string;
   status: string;
+  score: number | null;
 };
 
 export type TournamentMatchState = {

@@ -491,6 +491,23 @@ async function fetchTournamentState(
         `${API_URL}/api/tournaments/${tournamentId}/matches/${match.id}/players`,
         { headers },
       );
+      
+      // Fetch match result if match is completed
+      let team1Score: number | null = null;
+      let team2Score: number | null = null;
+      if (match.matchId && match.status === 'completed') {
+        try {
+          const matchRes = await axios.get(`${API_URL}/api/matches/${match.matchId}`, { headers });
+          log('Fetched match score from API', { matchId: match.matchId, data: matchRes.data });
+          const matchData = matchRes.data as { team1Score: number; team2Score: number };
+          team1Score = matchData.team1Score;
+          team2Score = matchData.team2Score;
+          log('Parsed match scores', { matchId: match.matchId, team1Score, team2Score });
+        } catch (error) {
+          log('Failed to fetch match score', { matchId: match.matchId, error }, 'warn');
+        }
+      }
+      
       const players = (playersRes.data as Array<{ participantId: number; teamNumber: number }>).map(
         (player) => {
           const participant = participantMap.get(player.participantId);
@@ -499,6 +516,7 @@ async function fetchTournamentState(
             teamNumber: player.teamNumber,
             alias: participant?.alias ?? 'Unknown',
             status: participant?.status ?? 'pending',
+            score: player.teamNumber === 1 ? team1Score : team2Score,
           };
         },
       );
