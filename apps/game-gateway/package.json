@@ -12,6 +12,7 @@
   "main": "dist/index.js",
   "scripts": {
     "dev": "tsx --tsconfig ./tsconfig.json --watch index.ts",
+    "build:vite": "vite build",
     "check-format": "pnpm -F ft_transcendence check-format",
     "fix-format": "pnpm -F ft_transcendence fix-format",
     "typecheck": "tsc -p tsconfig.json --noEmit",
@@ -26,7 +27,8 @@
     "http-proxy": "^1.18.1",
     "ioredis": "^5.8.0",
     "uuid": "^13.0.0",
-    "ws": "^8.18.3"
+    "ws": "^8.18.3",
+    "@pong/shared": "workspace:*"
   },
   "devDependencies": {
     "@types/http-proxy": "^1.17.16",

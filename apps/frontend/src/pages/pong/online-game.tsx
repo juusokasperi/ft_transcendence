@@ -8,6 +8,7 @@ import type { Lobby } from '../../services/matchmaking';
 import Navbar from '../../components/Navbar';
 import { useSnackbar } from '../../context/SnackbarContext';
 import Button from '../../components/Button';
+import gifImg from '../../assets/gif.mp4';
 
 interface LobbyListProps {
   lobbies: Lobby[];
@@ -392,7 +393,7 @@ const OnlineGame: React.FC = () => {
           playsInline
           className="pointer-events-none absolute inset-0 z-0 h-full w-full object-cover opacity-60"
         >
-          <source src="/src/assets/gif.mp4" type="video/mp4" />
+          <source src={gifImg} type="video/mp4" />
         </video>
         <div className="absolute inset-0 z-0 bg-black/60" />
         <div className="relative z-10 mx-auto flex min-h-[calc(100vh-6rem)] max-w-7xl flex-col items-center justify-center gap-6 p-4 text-white">
