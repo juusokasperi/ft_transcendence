@@ -1,4 +1,5 @@
-import { WebSocketServer, type WebSocket, type RawData } from 'ws';
+import fastify from 'fastify';
+import websocket from '@fastify/websocket';
 import dotenv from 'dotenv';
 import Redis from 'ioredis';
 import axios from 'axios';
@@ -35,6 +36,9 @@ const RECONNECT_GRACE_PERIOD_MS = 10000; // 10 seconds grace period for tourname
 const CASUAL_RECONNECT_GRACE_PERIOD_MS = 15000; // 15 seconds for casual matches
 
 const redis = new Redis(REDIS_URL);
+const app = fastify({ logger: true });
+await app.register(websocket);
+
 interface Player {
   socket: WebSocket;
   seat: 'P1' | 'P2';
@@ -666,20 +670,18 @@ async function handleMatchCompletion(match: Match, matchOverEvent: { winner: str
   }
 }
 
-wss.on('connection', (socket, req) => {
-  (async () => {
-    const url = new URL(req.url || '/', 'http://localhost');
-    const pathMatch = url.pathname.match(/^\/g\/([a-zA-Z0-9_-]+)/);
-    const roomIdentifier = pathMatch?.[1];
+app.register(async function (fastify) {
+  fastify.get('/g/:roomId', { websocket: true }, async (connection, req) => {
+    const { roomId: roomIdentifier } = req.params as { roomId: string };
     if (!roomIdentifier) {
       console.warn('[GameServer] Connection without valid room path', req.url);
-      socket.close(4404, 'room-not-found');
+      connection.close(4404, 'room-not-found');
       return;
     }
     const protocolHeader = req.headers['sec-websocket-protocol'];
     if (typeof protocolHeader !== 'string') {
       console.warn('[GameServer] Missing subprotocol header for room', roomIdentifier);
-      socket.close(4401, 'missing-token');
+      connection.close(4401, 'missing-token');
       return;
     }
     const requestedProtocols = protocolHeader
@@ -690,7 +692,7 @@ wss.on('connection', (socket, req) => {
     const joinToken = bearerIndex !== -1 ? requestedProtocols[bearerIndex + 1] : undefined;
     if (!joinToken) {
       console.warn('[GameServer] Missing join token protocol for room', roomIdentifier);
-      socket.close(4401, 'missing-token');
+      connection.close(4401, 'missing-token');
       return;
     }
 
@@ -702,7 +704,7 @@ wss.on('connection', (socket, req) => {
       claims.iss !== 'mm'
     ) {
       console.warn('[GameServer] Invalid join token for room', roomIdentifier);
-      socket.close(4401, 'invalid-token');
+      connection.close(4401, 'invalid-token');
       return;
     }
 
@@ -714,30 +716,30 @@ wss.on('connection', (socket, req) => {
           roomIdentifier,
           jti: claims.jti,
         });
-        socket.close(4403, 'token-reused');
+        connection.close(4403, 'token-reused');
         return;
       }
     } catch (err) {
       console.error('[GameServer] Failed to check join token state', err);
-      socket.close(1011, 'server-error');
+      connection.close(1011, 'server-error');
       return;
     }
     const reservation = rooms.get(roomIdentifier);
     if (!reservation) {
       console.warn('[GameServer] No reservation found for room', roomIdentifier);
-      socket.close(4404, 'room-not-found');
+      connection.close(4404, 'room-not-found');
       return;
     }
 
     if (Date.now() > reservation.joinDeadlineAtEpochMs) {
       console.warn('[GameServer] Join deadline exceeded for room', roomIdentifier);
-      socket.close(4408, 'join-window-expired');
+      connection.close(4408, 'join-window-expired');
       return;
     }
 
     if (reservation.consumedJtis.has(claims.jti)) {
       console.warn('[GameServer] Token replay detected for room', roomIdentifier);
-      socket.close(4403, 'token-reused');
+      connection.close(4403, 'token-reused');
       return;
     }
 
@@ -747,7 +749,7 @@ wss.on('connection', (socket, req) => {
         roomIdentifier,
         player: claims.sub,
       });
-      socket.close(4403, 'player-not-authorized');
+      connection.close(4403, 'player-not-authorized');
       return;
     }
     if (expected.side !== claims.side) {
@@ -757,7 +759,7 @@ wss.on('connection', (socket, req) => {
         expectedSide: expected.side,
         tokenSide: claims.side,
       });
-      socket.close(4403, 'side-mismatch');
+      connection.close(4403, 'side-mismatch');
       return;
     }
     if (expected.joined) {
@@ -766,7 +768,7 @@ wss.on('connection', (socket, req) => {
         seat: expected.seat,
         player: claims.sub,
       });
-      socket.close(4402, 'seat-occupied');
+      connection.close(4402, 'seat-occupied');
       return;
     }
 
@@ -799,11 +801,11 @@ wss.on('connection', (socket, req) => {
         seat,
         player: claims.sub,
       });
-      socket.close(4402, 'seat-occupied');
+      connection.close(4402, 'seat-occupied');
       return;
     }
     const player: Player = {
-      socket,
+      socket: connection,
       seat,
       axis: 0,
       playerIdentifier: claims.sub,
@@ -841,7 +843,7 @@ wss.on('connection', (socket, req) => {
 
     broadcastRoomState(match);
 
-    socket.on('message', (raw: RawData) => {
+    connection.on('message', (raw) => {
       try {
         const data = JSON.parse(raw.toString());
         if (data.type === 'axis') {
@@ -855,7 +857,7 @@ wss.on('connection', (socket, req) => {
       }
     });
 
-    socket.on('close', () => {
+    connection.on('close', () => {
       console.log(`[GameServer] Player disconnected room=${roomIdentifier} seat=${seat}`);
       const currentMatch = matches.get(roomIdentifier);
       const reservationForRoom = rooms.get(roomIdentifier);
@@ -924,14 +926,17 @@ wss.on('connection', (socket, req) => {
       );
       scheduleMatchStart(match);
     }
-  })().catch((err) => {
-    console.error('[GameServer] Unexpected error during connection flow', err);
-    try {
-      socket.close(1011, 'server-error');
-    } catch {
-      /* ignore */
-    }
   });
 });
 
-console.log(`Game server listening on ws://localhost:${PORT}`);
+const start = async () => {
+  try {
+    await app.listen({ port: PORT, host: '0.0.0.0' });
+    console.log(`[GameServer] Listening on port ${PORT}`);
+  } catch (err) {
+    app.log.error(err);
+    process.exit(1);
+  }
+};
+
+start();

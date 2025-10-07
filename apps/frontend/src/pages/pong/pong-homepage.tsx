@@ -1,6 +1,7 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import Navbar from '../../components/Navbar';
+import gifImg from '../../assets/gif.mp4';
 
 const PingPong: React.FC = () => {
   const navigate = useNavigate();
@@ -21,7 +22,7 @@ const PingPong: React.FC = () => {
           playsInline
           className="absolute left-0 top-0 h-full w-full bg-black object-contain object-[center_80%] md:object-cover"
         >
-          <source src="/src/assets/gif.mp4" type="video/mp4" />
+          <source src={gifImg} type="video/mp4" />
         </video>
 
         {/* Neon Menu */}

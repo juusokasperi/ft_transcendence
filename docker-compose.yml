@@ -142,7 +142,7 @@ services:
       - pnpm-store:/pnpm/store
       - node_modules:/work/node_modules:ro
       - matchmaking_node_modules:/work/apps/matchmaking/node_modules:ro
-    command: bash -lc "corepack enable && corepack prepare pnpm@9.12.3 --activate && pnpm dev"
+    command: bash -lc "corepack enable && corepack prepare pnpm@${PNPM_VERSION:-9.12.3} --activate && pnpm dev"
     depends_on:
       deps:
         condition: service_completed_successfully
@@ -171,7 +171,7 @@ services:
       - pnpm-store:/pnpm/store
       - node_modules:/work/node_modules:ro
       - game_server_node_modules:/work/apps/game-server/node_modules:ro
-    command: bash -lc "corepack enable && corepack prepare pnpm@9.12.3 --activate && pnpm dev"
+    command: bash -lc "corepack enable && corepack prepare pnpm@${PNPM_VERSION:-9.12.3} --activate && pnpm dev"
     depends_on:
       deps:
         condition: service_completed_successfully
@@ -203,7 +203,7 @@ services:
       - pnpm-store:/pnpm/store
       - node_modules:/work/node_modules:ro
       - allocator_node_modules:/work/apps/allocator/node_modules:ro
-    command: bash -lc "corepack enable && corepack prepare pnpm@9.12.3 --activate && pnpm dev"
+    command: bash -lc "corepack enable && corepack prepare pnpm@${PNPM_VERSION:-9.12.3} --activate && pnpm dev"
     depends_on:
       deps:
         condition: service_completed_successfully
@@ -248,7 +248,7 @@ services:
       - pnpm-store:/pnpm/store
       - node_modules:/work/node_modules:ro
       - scorer_node_modules:/work/apps/scorer/node_modules:ro
-    command: bash -lc "corepack enable && corepack prepare pnpm@9.12.3 --activate && pnpm dev"
+    command: bash -lc "corepack enable && corepack prepare pnpm@${PNPM_VERSION:-9.12.3} --activate && pnpm dev"
     depends_on:
       deps:
         condition: service_completed_successfully
@@ -274,7 +274,7 @@ services:
     environment:
       PNPM_STORE_DIR: /pnpm/store
       CHOKIDAR_USEPOLLING: "true"
-    command: bash -lc "corepack enable && corepack prepare pnpm@9.12.3 --activate && pnpm dev"
+    command: bash -lc "corepack enable && corepack prepare pnpm@${PNPM_VERSION:-9.12.3} --activate && pnpm dev"
     volumes:
       - .:/work:cached
       - pnpm-store:/pnpm/store

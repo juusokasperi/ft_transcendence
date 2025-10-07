@@ -1,5 +1,6 @@
 import Redis from 'ioredis';
 import axios from 'axios';
+import fastify from 'fastify';
 import {
   REDIS_URL,
   GAME_NODES_AMOUNT,
@@ -9,6 +10,7 @@ import {
 } from './config';
 
 const redis = new Redis(REDIS_URL);
+const app = fastify({ logger: true });
 
 const nodes = Array.from({ length: GAME_NODES_AMOUNT }, (_, i) => {
   let host = GAME_SERVER_SERVICE;
@@ -19,6 +21,8 @@ const nodes = Array.from({ length: GAME_NODES_AMOUNT }, (_, i) => {
     ws: `ws://${host}:${GAME_SERVER_PORT}`,
   };
 });
+
+app.get('/health', async () => ({ status: 'ok' }));
 
 async function updateScores() {
   for (const node of nodes) {
@@ -42,10 +46,19 @@ async function updateScores() {
   }
 }
 
-console.log(
-  `[Scorer] Running scorer with nodes:`,
-  nodes.map((n) => n.id),
-);
+const start = async () => {
+  try {
+    await app.listen({ port: 3000, host: '0.0.0.0' });
+    console.log(
+      `[Scorer] Running scorer with nodes:`,
+      nodes.map((n) => n.id),
+    );
+    setInterval(updateScores, 5000);
+    updateScores();
+  } catch (err) {
+    app.log.error(err);
+    process.exit(1);
+  }
+};
 
-setInterval(updateScores, 5000);
-updateScores();
+start();

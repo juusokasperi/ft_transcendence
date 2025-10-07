@@ -12,6 +12,7 @@
   "main": "dist/index.js",
   "scripts": {
     "dev": "tsx --tsconfig ./tsconfig.json --watch index.ts",
+    "build:vite": "vite build",
     "check-format": "pnpm -F ft_transcendence check-format",
     "fix-format": "pnpm -F ft_transcendence fix-format",
     "typecheck": "tsc -p tsconfig.json --noEmit",
@@ -19,6 +20,7 @@
     "start": "node dist/index.js"
   },
   "dependencies": {
+    "@fastify/websocket": "^11.2.0",
     "@pong/game-logic": "workspace:*",
     "@pong/shared": "workspace:*",
     "axios": "^1.12.0",
