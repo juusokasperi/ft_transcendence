@@ -21,7 +21,7 @@ export async function fetchUserMMR(uuid: string, siteToken: string): Promise<num
       return null;
     }
     const data = await res.json();
-    return typeof data.ranking === 'number' ? data.ranking : null;
+    return typeof data.ranking === 'number' ? data.ranking : 1000;
   } catch {
     log('Auth: failed to fetch MMR');
     return null;
