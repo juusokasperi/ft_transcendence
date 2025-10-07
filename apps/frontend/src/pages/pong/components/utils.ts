@@ -2,13 +2,13 @@ import type { TournamentMatchState } from '@pong/shared/protocol/net';
 import type { ReadyMatch } from './types';
 
 const PARTICIPANT_STATUS_LABELS: Record<string, string> = {
-  pending: 'Pending',
+  pending: 'Joined',
   accepted: 'Checked in',
-  active: 'Active',
-  champion: 'Champion',
-  silver: 'Silver',
-  third_place: 'Third place',
-  eliminated: 'Eliminated',
+  active: 'In progress',
+  champion: '🥇 Gold',
+  silver: '🥈 Silver',
+  third_place: '🥉 Bronze',
+  eliminated: '4th place',
   forfeited: 'Forfeited',
 };
 

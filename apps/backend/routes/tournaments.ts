@@ -183,6 +183,14 @@ export async function tournamentRoutes(app: FastifyInstance) {
 
         let bracketSummary;
         if (current.status !== 'active' && updated.status === 'active') {
+          // Update all participants to 'active' status when tournament starts
+          const participants = listTournamentParticipants(tournamentId);
+          for (const participant of participants) {
+            if (participant.status === 'pending') {
+              updateTournamentParticipant(participant.id, { status: 'active' });
+            }
+          }
+          
           bracketSummary = generateSingleEliminationBracket(tournamentId);
         }
 
