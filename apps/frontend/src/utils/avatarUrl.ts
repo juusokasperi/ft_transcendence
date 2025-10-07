@@ -1,4 +1,6 @@
-export const PLACEHOLDER = '/src/assets/react.svg'; // put any existing asset/public file
+import placeHolderImg from '../assets/react.svg';
+
+export const PLACEHOLDER = placeHolderImg; // put any existing asset/public file
 
 // Turn whatever is in user.avatar into a usable URL for <img src>
 export function resolveAvatarUrl(avatar: string | undefined | null, axiosBase?: string): string {
