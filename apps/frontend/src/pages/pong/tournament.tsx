@@ -82,7 +82,9 @@ const TournamentPage: React.FC<TournamentPageProps> = ({ onBack, focusTournament
           connectionReady={connectionReady}
           loading={loadingTournaments}
           onRefresh={headerRefreshHandler}
-          onBack={isDetailView ? onBack : undefined}
+          onLeaveTournament={isDetailView ? handleLeaveTournamentClick : undefined}
+          onForfeitTournament={isDetailView ? handleForfeitTournamentClick : undefined}
+          canForfeit={isDetailView && tournamentStatus === 'active'}
         />
 
         <section className={overviewSectionClass}>
@@ -97,9 +99,6 @@ const TournamentPage: React.FC<TournamentPageProps> = ({ onBack, focusTournament
               aliasInput={aliasInput}
               onAliasInputChange={setAliasInput}
               onJoinTournament={handleJoinTournamentClick}
-              onLeaveTournament={handleLeaveTournamentClick}
-              onForfeitTournament={handleForfeitTournamentClick}
-              canForfeit={tournamentStatus === 'active'}
             />
           )}
           <TournamentParticipantsPanel

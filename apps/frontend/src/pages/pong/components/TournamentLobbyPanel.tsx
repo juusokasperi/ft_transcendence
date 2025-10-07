@@ -12,9 +12,6 @@ export type TournamentLobbyPanelProps = {
   aliasInput: string;
   onAliasInputChange(value: string): void;
   onJoinTournament(tournamentId: number): void;
-  onLeaveTournament(): void;
-  onForfeitTournament(): void;
-  canForfeit: boolean;
 };
 
 const TournamentLobbyPanel: React.FC<TournamentLobbyPanelProps> = ({
@@ -27,9 +24,6 @@ const TournamentLobbyPanel: React.FC<TournamentLobbyPanelProps> = ({
   aliasInput,
   onAliasInputChange,
   onJoinTournament,
-  onLeaveTournament,
-  onForfeitTournament,
-  canForfeit,
 }) => {
   return (
     <div className="flex flex-col gap-6">
@@ -92,25 +86,13 @@ const TournamentLobbyPanel: React.FC<TournamentLobbyPanelProps> = ({
             })}
           </ul>
         )}
-        <div className="mt-4 flex flex-col gap-2 md:flex-row md:items-center">
+        <div className="mt-4">
           <input
             value={aliasInput}
             onChange={(event) => onAliasInputChange(event.target.value)}
             placeholder="Preferred alias"
             className="w-full rounded-full border border-white/10 bg-black/50 px-4 py-2 text-sm text-white placeholder:text-white/40 focus:border-indigo-400 focus:outline-none md:max-w-xs"
           />
-          {activeTournamentId !== null && (
-            <div className="flex flex-wrap gap-2">
-              <Button variant="outline" size="sm" onClick={onLeaveTournament}>
-                Leave tournament
-              </Button>
-              {canForfeit && (
-                <Button variant="dangerSecondary" size="sm" onClick={onForfeitTournament}>
-                  Forfeit
-                </Button>
-              )}
-            </div>
-          )}
         </div>
       </div>
     </div>

@@ -8,7 +8,9 @@ export type TournamentPageHeaderProps = {
   connectionReady: boolean;
   loading: boolean;
   onRefresh(): void;
-  onBack?(): void;
+  onLeaveTournament?(): void;
+  onForfeitTournament?(): void;
+  canForfeit?: boolean;
 };
 
 const TournamentPageHeader: React.FC<TournamentPageHeaderProps> = ({
@@ -18,7 +20,9 @@ const TournamentPageHeader: React.FC<TournamentPageHeaderProps> = ({
   connectionReady,
   loading,
   onRefresh,
-  onBack,
+  onLeaveTournament,
+  onForfeitTournament,
+  canForfeit,
 }) => {
   // Generate display title for detail view
   const detailTitle = (() => {
@@ -45,9 +49,14 @@ const TournamentPageHeader: React.FC<TournamentPageHeaderProps> = ({
         </p>
       </div>
       <div className="flex flex-wrap items-center gap-3 text-sm text-white/70">
-        {isDetailView && onBack && (
-          <Button variant="outline" size="sm" onClick={onBack}>
-            Back to list
+        {isDetailView && onLeaveTournament && (
+          <Button variant="outline" size="sm" onClick={onLeaveTournament}>
+            Leave tournament
+          </Button>
+        )}
+        {isDetailView && canForfeit && onForfeitTournament && (
+          <Button variant="dangerSecondary" size="sm" onClick={onForfeitTournament}>
+            Forfeit
           </Button>
         )}
         <span>
