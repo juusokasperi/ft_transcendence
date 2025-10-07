@@ -11,13 +11,14 @@ volumes:
     driver: local
 
 services:
+
   elastic_cert_setup:
     profiles:
       - elk
     build:
       context: ./elastic_cert_setup/
       args:
-        STACK_VERSION: ${STACK_VERSION:?STACK_VERSION must be set}
+        STACK_VERSION: ${STACK_VERSION:-9.1.5}
       labels:
         - project=transcendence
     volumes:
@@ -40,7 +41,7 @@ services:
     build:
       context: ./elasticsearch/
       args:
-        STACK_VERSION: ${STACK_VERSION:?STACK_VERSION must be set}
+        STACK_VERSION: ${STACK_VERSION:-9.1.5}
       labels:
         - project=transcendence
     depends_on:
@@ -91,7 +92,7 @@ services:
     build:
       context: ./kibana/
       args:
-        STACK_VERSION: ${STACK_VERSION:?STACK_VERSION must be set}
+        STACK_VERSION: ${STACK_VERSION:-9.1.5}
       labels:
         - project=transcendence
     depends_on:
@@ -144,7 +145,7 @@ services:
     build:
       context: ./logstash/
       args:
-        STACK_VERSION: ${STACK_VERSION:?STACK_VERSION must be set}
+        STACK_VERSION: ${STACK_VERSION:-9.1.5}
       labels:
         - project=transcendence
     depends_on:
