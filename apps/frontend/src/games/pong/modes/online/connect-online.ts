@@ -11,6 +11,10 @@ export type StartSignal = {
   startAtEpochMs: number;
   randomSeed: number;
   tickRateHz: number;
+  players?: {
+    P1?: { alias?: string };
+    P2?: { alias?: string };
+  };
 };
 
 export type OnlineClient = {
@@ -127,6 +131,7 @@ export async function connectOnline(cfg: ConnectConfig): Promise<OnlineClient> {
                 typeof startMsg.randomSeed === 'number' ? startMsg.randomSeed : cfg.randomSeed,
               tickRateHz:
                 typeof startMsg.tickRateHz === 'number' ? startMsg.tickRateHz : CLIENT_TICK_RATE_HZ,
+              players: startMsg.players,
             };
             notifyStart(payload);
             break;

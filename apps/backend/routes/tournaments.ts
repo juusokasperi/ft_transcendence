@@ -266,13 +266,36 @@ export async function tournamentRoutes(app: FastifyInstance) {
               const team1Uuid = team1Player.participantId === body.winnerParticipantId ? body.winnerUserUuid : body.loserUserUuid;
               const team2Uuid = team2Player.participantId === body.winnerParticipantId ? body.winnerUserUuid : body.loserUserUuid;
 
-              // Calculate scores based on team assignment
-              // teamNumber 1 is always east, teamNumber 2 is always west
+              // Calculate scores from gamesHistory
+              // If we have eastParticipantId and westParticipantId, use them to map correctly
               let team1Score = 0;
               let team2Score = 0;
-              for (const game of body.gamesHistory) {
-                if (game.winner === 'east') team1Score++; // team1 (teamNumber 1) is east
-                else if (game.winner === 'west') team2Score++; // team2 (teamNumber 2) is west
+              
+              if (body.eastParticipantId && body.westParticipantId) {
+                // We know which participant was on which side
+                for (const game of body.gamesHistory) {
+                  if (game.winner === 'east') {
+                    // East won this game - check if east was team1 or team2
+                    if (body.eastParticipantId === team1Player.participantId) {
+                      team1Score++;
+                    } else {
+                      team2Score++;
+                    }
+                  } else if (game.winner === 'west') {
+                    // West won this game
+                    if (body.westParticipantId === team1Player.participantId) {
+                      team1Score++;
+                    } else {
+                      team2Score++;
+                    }
+                  }
+                }
+              } else {
+                // Fallback: assume team1=east, team2=west (may be incorrect if sides swapped)
+                for (const game of body.gamesHistory) {
+                  if (game.winner === 'east') team1Score++;
+                  else if (game.winner === 'west') team2Score++;
+                }
               }
               
               // Determine actual winner based on score

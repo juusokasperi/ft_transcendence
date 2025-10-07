@@ -170,7 +170,7 @@ export function createOnlineApp(
   const detachInput = attachLocalInput(canvas);
   scene.onDisposeObservable.add(detachInput);
 
-  const names = { east: 'Magenta', west: 'Green' } as const;
+  let names = { east: 'Magenta', west: 'Green' };
 
   const { bounds } = computeBounds(world);
   const fx = new FXManager(scene, {
@@ -230,6 +230,8 @@ export function createOnlineApp(
   let latestMatch: MatchSnapshot | undefined;
   let spinningUntilMs = 0;
   let didBetweenGamesSpin = false;
+  let didSetPlayerNames = false;
+  let playerAliases: { P1: string; P2: string } | null = null;
 
   let rowsMirrored = false;
   let startCountdownTimer: number | null = null;
@@ -279,6 +281,19 @@ export function createOnlineApp(
 
       const snap = latest ?? prevSnap;
       if (snap) {
+        // Set player names once we have playerAtEnd info
+        if (!didSetPlayerNames && playerAliases !== null && snap.playerAtEnd) {
+          const aliases = playerAliases; // TypeScript hint
+          const eastAlias = snap.playerAtEnd.east === 'P1' ? aliases.P1 : aliases.P2;
+          const westAlias = snap.playerAtEnd.west === 'P1' ? aliases.P1 : aliases.P2;
+          
+          names = { east: eastAlias, west: westAlias };
+          hud.setPlayerNames(eastAlias, westAlias);
+          didSetPlayerNames = true;
+          
+          console.log(`[OnlineGame] Set player names based on actual positions: east=${eastAlias} (${snap.playerAtEnd.east}), west=${westAlias} (${snap.playerAtEnd.west})`);
+        }
+        
         const ref = prevSnap ?? snap;
         const ballX = hasPrev ? lerp(ref.ball.x, snap.ball.x, alpha) : snap.ball.x;
         const ballVX = hasPrev
@@ -495,6 +510,15 @@ export function createOnlineApp(
         handoff: cfg.randomSeed,
         server: startInfo.randomSeed,
       });
+    }
+    
+    // Store player aliases to set them once we know the actual positions
+    if (startInfo.players) {
+      playerAliases = {
+        P1: startInfo.players.P1?.alias || 'Player 1',
+        P2: startInfo.players.P2?.alias || 'Player 2',
+      };
+      console.log('[OnlineGame] Player aliases from server:', playerAliases);
     }
 
     const waitMs = Math.max(0, startInfo.startAtEpochMs - Date.now());

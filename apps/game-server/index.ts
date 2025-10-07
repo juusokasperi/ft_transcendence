@@ -232,12 +232,24 @@ function scheduleMatchStart(match: Match) {
   const target = Math.max(match.reservation.simulationStartTick, now + MIN_START_DELAY_MS);
   match.reservation.simulationStartTick = target;
   match.startAtEpochMs = target;
+  
+  // Gather player aliases from reservation
+  const players: { P1?: { alias?: string }; P2?: { alias?: string } } = {};
+  for (const [playerIdentifier, playerInfo] of match.reservation.expectedPlayers.entries()) {
+    if (playerInfo.seat === 'P1') {
+      players.P1 = { alias: playerInfo.alias };
+    } else if (playerInfo.seat === 'P2') {
+      players.P2 = { alias: playerInfo.alias };
+    }
+  }
+  
   const payload = {
     type: 'START' as const,
     roomIdentifier: match.id,
     startAtEpochMs: target,
     randomSeed: match.reservation.randomSeed,
     tickRateHz: TICK_RATE_HZ,
+    players,
   };
 
   console.log(
@@ -414,7 +426,7 @@ async function handleDisconnectGracePeriod(match: Match, disconnectedSeat: 'P1' 
     
     // Determine winner based on which seat remains
     // Need to check playerAtEnd to know which side the remaining player is on
-    const playerAtEnd = currentMatch.lastMatch?.playerAtEnd;
+    const playerAtEnd = currentMatch.state.playerAtEnd;
     let winnerSide: 'east' | 'west';
     
     if (playerAtEnd) {
@@ -470,9 +482,16 @@ async function handleMatchCompletion(match: Match, matchOverEvent: { winner: str
   match.resultSubmitting = true;
   
   try {
-    // Get player info - might be undefined if disconnected
-    const eastPlayer = match.players.P1; // P1 is always east initially
-    const westPlayer = match.players.P2; // P2 is always west initially
+    // Determine which player is on which side using playerAtEnd from game state
+    const playerAtEnd = match.state.playerAtEnd;
+    const eastSeat = playerAtEnd.east; // 'P1' or 'P2'
+    const westSeat = playerAtEnd.west; // 'P1' or 'P2'
+    
+    console.log(`[GameServer] Player positions at match end: east=${eastSeat}, west=${westSeat}`);
+    
+    // Get player info based on actual positions
+    const eastPlayer = match.players[eastSeat];
+    const westPlayer = match.players[westSeat];
     
     // For disconnection timeout, we need at least one player
     if (!eastPlayer && !westPlayer) {
@@ -491,12 +510,12 @@ async function handleMatchCompletion(match: Match, matchOverEvent: { winner: str
     if (!eastPlayerIdentifier || !westPlayerIdentifier) {
       // Try to get from expectedPlayers in reservation (Map key is playerIdentifier)
       for (const [playerIdentifier, playerInfo] of match.reservation.expectedPlayers.entries()) {
-        if (playerInfo.seat === 'P1' && !eastPlayerIdentifier) {
+        if (playerInfo.seat === eastSeat && !eastPlayerIdentifier) {
           eastPlayerIdentifier = playerIdentifier;
           eastParticipantId = playerInfo.participantId;
           eastAlias = playerInfo.alias;
         }
-        if (playerInfo.seat === 'P2' && !westPlayerIdentifier) {
+        if (playerInfo.seat === westSeat && !westPlayerIdentifier) {
           westPlayerIdentifier = playerIdentifier;
           westParticipantId = playerInfo.participantId;
           westAlias = playerInfo.alias;
@@ -588,6 +607,8 @@ async function handleMatchCompletion(match: Match, matchOverEvent: { winner: str
         loserParticipantId,
         winnerUserUuid: actualWinner === 'east' ? eastPlayerIdentifier : westPlayerIdentifier,
         loserUserUuid: actualWinner === 'east' ? westPlayerIdentifier : eastPlayerIdentifier,
+        eastParticipantId,
+        westParticipantId,
         gamesHistory: technicalGamesHistory.map(game => ({
           gameIndex: game.gameIndex,
           east: game.east,
