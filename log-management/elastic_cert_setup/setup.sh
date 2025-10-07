@@ -49,7 +49,7 @@ echo "Waiting for Elasticsearch availability";
 until curl -s --cacert config/certs/ca/ca.crt https://elasticsearch:9200 \
 	| grep -q "missing authentication credentials";
 do
-	sleep 30;
+	sleep 5;
 done;
 	
 echo "Setting kibana_system password";
@@ -60,7 +60,7 @@ until curl -s -X POST --cacert config/certs/ca/ca.crt \
 	-d "{\"password\":\"${KIBANA_PASSWORD}\"}" \
 	| grep -q "^{}";
 do
-	sleep 10;
+	sleep 5;
 done;
 
 echo "All done!";
