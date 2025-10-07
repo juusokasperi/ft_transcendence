@@ -54,7 +54,6 @@ export function createHttpServer({
         const message = err instanceof Error ? err.message : 'unknown error';
         reply.status(400).send({ error: message });
       }
-      reply.send({ status: 'room created' });
     },
   );
 

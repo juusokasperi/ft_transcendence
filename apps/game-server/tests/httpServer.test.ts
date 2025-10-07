@@ -129,10 +129,7 @@ describe('createHttpServer', () => {
     await handler(request, reply);
 
     expect(onCreateRoom).toHaveBeenCalledWith(request.body);
-    expect(reply.send.mock.calls.map((call) => call[0])).toEqual([
-      { status: 'registered' },
-      { status: 'room created' },
-    ]);
+    expect(reply.send).toHaveBeenCalledWith({ status: 'registered' });
   });
 
   it('returns bad request when onCreateRoom throws', async () => {
@@ -154,9 +151,6 @@ describe('createHttpServer', () => {
 
     expect(onCreateRoom).toHaveBeenCalledWith(request.body);
     expect(reply.status).toHaveBeenCalledWith(400);
-    expect(reply.send.mock.calls.map((call) => call[0])).toEqual([
-      { error: 'invalid payload' },
-      { status: 'room created' },
-    ]);
+    expect(reply.send).toHaveBeenCalledWith({ error: 'invalid payload' });
   });
 });
