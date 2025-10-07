@@ -16,6 +16,7 @@ export const AllocateSchema = {
             playerIdentifier: { type: 'string', format: 'uuid' },
             side: { type: 'string', enum: ['west', 'east'] },
             tournamentParticipantId: { type: 'integer', minimum: 1 },
+            alias: { type: 'string' },
           },
         },
       },

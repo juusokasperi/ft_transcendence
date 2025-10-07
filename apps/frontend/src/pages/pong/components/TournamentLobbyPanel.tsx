@@ -29,16 +29,24 @@ const TournamentLobbyPanel: React.FC<TournamentLobbyPanelProps> = ({
     <div className="flex flex-col gap-6">
       <div className="rounded-2xl border border-white/10 bg-white/5 p-5 shadow-xl backdrop-blur">
         <h2 className="mb-4 text-lg font-semibold">Create a new tournament</h2>
-        <div className="flex flex-col gap-3 md:flex-row md:items-center">
+        <div className="flex flex-col gap-3">
           <input
             value={tournamentName}
             onChange={(event) => onTournamentNameChange(event.target.value)}
             placeholder="Tournament name"
             className="w-full rounded-full border border-white/10 bg-black/50 px-4 py-2 text-sm text-white placeholder:text-white/40 focus:border-indigo-400 focus:outline-none"
           />
-          <Button variant="primary" onClick={onCreateTournament} disabled={!connectionReady}>
-            Create tournament
-          </Button>
+          <div className="flex flex-col gap-3 md:flex-row md:items-center">
+            <input
+              value={aliasInput}
+              onChange={(event) => onAliasInputChange(event.target.value)}
+              placeholder="Your alias (optional)"
+              className="w-full rounded-full border border-white/10 bg-black/50 px-4 py-2 text-sm text-white placeholder:text-white/40 focus:border-indigo-400 focus:outline-none"
+            />
+            <Button variant="primary" onClick={onCreateTournament} disabled={!connectionReady}>
+              Create tournament
+            </Button>
+          </div>
         </div>
       </div>
 

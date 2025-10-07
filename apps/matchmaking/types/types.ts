@@ -8,6 +8,7 @@ export interface ClientInfo {
   tournamentId?: number;
   tournamentParticipantId?: number;
   tournamentAlias?: string;
+  alias?: string;
   siteToken?: string;
   ready: boolean;
   uuid: string;

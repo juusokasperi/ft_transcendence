@@ -83,6 +83,7 @@ const OnlineGame: React.FC = () => {
   const [joinLobbyId, setJoinLobbyId] = useState('');
   const [ready, setReady] = useState(false);
   const [lobbies, setLobbies] = useState<Lobby[]>([]);
+  const [aliasInput, setAliasInput] = useState('');
 
   useEffect(() => {
     if (status === 'in_queue') {
@@ -319,7 +320,7 @@ const OnlineGame: React.FC = () => {
 
   const handleJoinQueue = () => {
     console.info('[Matchmaking] Join queue request');
-    clientRef.current?.joinQueue();
+    clientRef.current?.joinQueue(aliasInput.trim() || undefined);
   };
 
   const handleLeaveQueue = () => {
@@ -446,15 +447,23 @@ const OnlineGame: React.FC = () => {
             </div>
 
             {status === 'idle' && (
-              <Button
-                type="button"
-                variant="primary"
-                fullWidth
-                onClick={handleJoinQueue}
-                className="gap-3"
-              >
-                Find a Match
-              </Button>
+              <div className="flex flex-col gap-3">
+                <input
+                  value={aliasInput}
+                  onChange={(e) => setAliasInput(e.target.value)}
+                  placeholder="Your alias (optional)"
+                  className="w-full rounded-full border border-white/10 bg-black/50 px-4 py-2 text-sm text-white placeholder:text-white/40 focus:border-indigo-400 focus:outline-none"
+                />
+                <Button
+                  type="button"
+                  variant="primary"
+                  fullWidth
+                  onClick={handleJoinQueue}
+                  className="gap-3"
+                >
+                  Find a Match
+                </Button>
+              </div>
             )}
 
             {status === 'in_queue' && (

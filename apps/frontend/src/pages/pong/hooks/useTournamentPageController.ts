@@ -727,11 +727,12 @@ export function useTournamentPageController(
 
   const handleCreateTournamentClick = useCallback(() => {
     if (!clientRef.current) return;
-    clientRef.current.createTournament(TOURNAMENT_SIZE, tournamentName);
+    clientRef.current.createTournament(TOURNAMENT_SIZE, tournamentName, aliasInput);
     setTournamentName('');
-    debugLog('action:create-tournament', { name: tournamentName });
+    setAliasInput('');
+    debugLog('action:create-tournament', { name: tournamentName, alias: aliasInput });
     enqueueSnackbar({ message: 'Tournament creation requested…', variant: 'info' });
-  }, [debugLog, enqueueSnackbar, tournamentName]);
+  }, [debugLog, enqueueSnackbar, tournamentName, aliasInput, setAliasInput]);
 
   const handleJoinTournamentClick = useCallback(
     (tournamentId: number) => {

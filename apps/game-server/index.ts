@@ -123,7 +123,11 @@ createHttpServer({
       idempotencyKey?: string;
       roomIdentifier?: string;
       capacity?: number;
-      expectedPlayers?: Array<{ playerIdentifier: string; side: 'west' | 'east' }>;
+      expectedPlayers?: Array<{ 
+        playerIdentifier: string; 
+        side: 'west' | 'east';
+        alias?: string;
+      }>;
       randomSeed?: number;
       simulationStartTick?: number;
       joinDeadlineAtEpochMs?: number;
@@ -171,7 +175,7 @@ createHttpServer({
         seat: seatForSide(p.side),
         joined: false,
         participantId: participant?.participantId,
-        alias: participant?.alias,
+        alias: participant?.alias || p.alias,
       });
     }
 

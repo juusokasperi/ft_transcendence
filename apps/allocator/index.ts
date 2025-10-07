@@ -29,6 +29,7 @@ app.post(
             playerIdentifier: string;
             side: 'west' | 'east';
             tournamentParticipantId?: number;
+            alias?: string;
           }>;
           simulationStartTick: number;
           randomSeed: number;

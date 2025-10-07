@@ -749,7 +749,7 @@ export async function handleCreateTournament(
 
     const tournamentId = (tournamentRes.data as { id: number }).id;
 
-    const alias = client.username;
+    const alias = data.alias?.trim() || client.username;
     const participantRes = await axios.post(
       `${API_URL}/api/tournaments/${tournamentId}/participants`,
       {

@@ -41,9 +41,12 @@ export function handleLeaveQueue(client: ClientInfo) {
   }
 }
 
-export async function handleJoinQueue(client: ClientInfo) {
+export async function handleJoinQueue(client: ClientInfo, alias?: string) {
   if (!isAuthenticated(client)) return;
   client.joinedAt = Date.now();
+  if (alias) {
+    client.alias = alias;
+  }
   queue.push(client);
   log(`Client joined queue`, { uuid: client.uuid, queueSize: queue.length });
   client.socket.send(JSON.stringify({ type: 'QUEUE_JOINED' }));
@@ -149,8 +152,16 @@ export async function createMatch(
       mode,
       region: 'default',
       players: [
-        { playerIdentifier: a.uuid, side: 'west' },
-        { playerIdentifier: b.uuid, side: 'east' },
+        { 
+          playerIdentifier: a.uuid, 
+          side: 'west',
+          alias: a.alias || a.tournamentAlias || a.username,
+        },
+        { 
+          playerIdentifier: b.uuid, 
+          side: 'east',
+          alias: b.alias || b.tournamentAlias || b.username,
+        },
       ],
       randomSeed,
       simulationStartTick,

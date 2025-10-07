@@ -125,7 +125,7 @@ wss.on('connection', async (socket: WebSocket, req) => {
     }
     switch (data.type) {
       case 'JOIN_QUEUE':
-        handleJoinQueue(client);
+        handleJoinQueue(client, data.alias);
         break;
       case 'LEAVE_QUEUE':
         handleLeaveQueue(client);
