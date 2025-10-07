@@ -413,10 +413,22 @@ async function handleDisconnectGracePeriod(match: Match, disconnectedSeat: 'P1' 
     console.log(`[GameServer] Grace period expired for ${disconnectedSeat}`);
     
     // Determine winner based on which seat remains
-    const winnerSide = remainingSeat === 'P1' ? 'east' : 'west';
+    // Need to check playerAtEnd to know which side the remaining player is on
+    const playerAtEnd = currentMatch.lastMatch?.playerAtEnd;
+    let winnerSide: 'east' | 'west';
+    
+    if (playerAtEnd) {
+      // Check which side the remaining player is on
+      winnerSide = playerAtEnd.east === remainingSeat ? 'east' : 'west';
+      console.log(`[GameServer] Player positions: east=${playerAtEnd.east}, west=${playerAtEnd.west}, remaining=${remainingSeat} -> winner side=${winnerSide}`);
+    } else {
+      // Fallback: assume P1=east, P2=west
+      winnerSide = remainingSeat === 'P1' ? 'east' : 'west';
+      console.log(`[GameServer] No playerAtEnd info, using fallback: ${remainingSeat} -> ${winnerSide}`);
+    }
     
     // Award victory to remaining player for both tournament and casual matches
-    console.log(`[GameServer] ${isTournament ? 'Tournament' : 'Casual'} match - awarding win to ${remainingSeat} due to opponent timeout`);
+    console.log(`[GameServer] ${isTournament ? 'Tournament' : 'Casual'} match - awarding win to ${remainingSeat} (side: ${winnerSide}) due to opponent timeout`);
     await handleMatchCompletion(currentMatch, { winner: winnerSide });
 
     // Notify remaining player of match end
