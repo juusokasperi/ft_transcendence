@@ -26,6 +26,7 @@ type TournamentControllerReturn = {
   loadingTournaments: boolean;
   availableTournaments: TournamentSummary[];
   activeTournamentId: number | null;
+  activeTournamentName: string | null;
   tournamentStatus: string;
   aliasInput: string;
   setAliasInput: (value: string) => void;
@@ -92,6 +93,7 @@ export function useTournamentPageController(
   const [loadingTournaments, setLoadingTournaments] = useState(false);
   const [availableTournaments, setAvailableTournaments] = useState<TournamentSummary[]>([]);
   const [activeTournamentId, setActiveTournamentId] = useState<number | null>(null);
+  const [activeTournamentName, setActiveTournamentName] = useState<string | null>(null);
   const [tournamentStatus, setTournamentStatus] = useState<string>('draft');
   const [maxParticipants, setMaxParticipants] = useState<number | null>(null);
   const [participants, setParticipants] = useState<TournamentParticipantState[]>([]);
@@ -231,6 +233,7 @@ export function useTournamentPageController(
     setLatestReadyMatches([]);
     setTournamentStatus('draft');
     setMaxParticipants(null);
+    setActiveTournamentName(null);
     debugLog('reset-active-tournament');
   }, [debugLog]);
 
@@ -261,10 +264,12 @@ export function useTournamentPageController(
       const tournamentData = tournamentRes.data as {
         status: string;
         maxParticipants: number | null;
+        name?: string | null;
       };
 
       setTournamentStatus(tournamentData.status);
       setMaxParticipants(tournamentData.maxParticipants ?? TOURNAMENT_SIZE);
+      setActiveTournamentName(tournamentData.name ?? null);
 
       const participantPayload = participantsRes.data as Array<{
         id: number;
@@ -980,6 +985,7 @@ export function useTournamentPageController(
     loadingTournaments,
     availableTournaments,
     activeTournamentId,
+    activeTournamentName,
     tournamentStatus,
     aliasInput,
     setAliasInput,

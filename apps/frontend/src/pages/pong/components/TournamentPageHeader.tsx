@@ -4,6 +4,7 @@ import Button from '../../../components/Button';
 export type TournamentPageHeaderProps = {
   isDetailView: boolean;
   displayTournamentId: number | null;
+  displayTournamentName: string | null;
   connectionReady: boolean;
   loading: boolean;
   onRefresh(): void;
@@ -13,20 +14,29 @@ export type TournamentPageHeaderProps = {
 const TournamentPageHeader: React.FC<TournamentPageHeaderProps> = ({
   isDetailView,
   displayTournamentId,
+  displayTournamentName,
   connectionReady,
   loading,
   onRefresh,
   onBack,
 }) => {
+  // Generate display title for detail view
+  const detailTitle = (() => {
+    if (!isDetailView) return '';
+    if (displayTournamentName) {
+      return displayTournamentName;
+    }
+    if (displayTournamentId !== null) {
+      return `Tournament #${displayTournamentId}`;
+    }
+    return 'Tournament lobby';
+  })();
+
   return (
     <header className="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
       <div>
         <h1 className="text-3xl font-semibold">
-          {isDetailView
-            ? displayTournamentId !== null
-              ? `Tournament #${displayTournamentId}`
-              : 'Tournament lobby'
-            : 'Ping Pong Tournaments'}
+          {isDetailView ? detailTitle : 'Ping Pong Tournaments'}
         </h1>
         <p className="text-white/60">
           {isDetailView

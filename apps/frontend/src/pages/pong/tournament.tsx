@@ -23,6 +23,7 @@ const TournamentPage: React.FC<TournamentPageProps> = ({ onBack, focusTournament
     loadingTournaments,
     availableTournaments,
     activeTournamentId,
+    activeTournamentName,
     tournamentStatus,
     aliasInput,
     setAliasInput,
@@ -77,6 +78,7 @@ const TournamentPage: React.FC<TournamentPageProps> = ({ onBack, focusTournament
         <TournamentPageHeader
           isDetailView={isDetailView}
           displayTournamentId={activeTournamentId}
+          displayTournamentName={activeTournamentName}
           connectionReady={connectionReady}
           loading={loadingTournaments}
           onRefresh={headerRefreshHandler}
