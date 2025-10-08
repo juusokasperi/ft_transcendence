@@ -32,6 +32,10 @@ vi.mock('../utils/config.ts', () => ({
   JOIN_TOKEN_TTL_SECONDS: 60,
   LOBBY_TTL_MS: 300000,
   LOBBY_SIZE: 2,
+  TOURNAMENT_REMINDER_DELAY_MS: 20,
+  TOURNAMENT_MAX_REMINDERS: 2,
+  TOURNAMENT_MATCH_AUTO_START_DELAY_MS: 50,
+  TOURNAMENT_MATCH_COUNTDOWN_INTERVAL_MS: 10,
 }));
 
 type TestClient = ClientInfo & { __sendMock: ReturnType<typeof vi.fn> };
@@ -55,6 +59,56 @@ function makeClient(overrides: Partial<ClientInfo> = {}): TestClient {
   };
 }
 
+function setupTournamentStateMocks() {
+  axiosMocks.get.mockImplementation((url: string) => {
+    if (url.endsWith('/api/tournaments/my/active')) {
+      return Promise.resolve({ data: null });
+    }
+    if (url.endsWith('/api/tournaments/1')) {
+      return Promise.resolve({ data: { id: 1, status: 'draft', maxParticipants: 4 } });
+    }
+    if (url.endsWith('/api/tournaments/1/participants')) {
+      return Promise.resolve({
+        data: [
+          {
+            id: 10,
+            alias: 'Tester',
+            seed: null,
+            status: 'pending',
+            userUuid: 'uuid-1',
+          },
+        ],
+      });
+    }
+    if (url.endsWith('/api/tournaments/1/matches')) {
+      return Promise.resolve({
+        data: [
+          {
+            id: 21,
+            roundNumber: 1,
+            roundPosition: 1,
+            status: 'pending',
+            scheduledAt: null,
+            completedAt: null,
+            matchId: null,
+          },
+        ],
+      });
+    }
+    if (url.includes('/api/tournaments/1/matches/21/players')) {
+      return Promise.resolve({
+        data: [
+          {
+            participantId: 10,
+            teamNumber: 1,
+          },
+        ],
+      });
+    }
+    return Promise.resolve({ data: [] });
+  });
+}
+
 describe('matchmaking tournament bridge', () => {
   beforeEach(() => {
     vi.resetModules();
@@ -75,50 +129,7 @@ describe('matchmaking tournament bridge', () => {
       return Promise.resolve({ data: {} });
     });
 
-    axiosMocks.get.mockImplementation((url: string) => {
-      if (url.endsWith('/api/tournaments/1')) {
-        return Promise.resolve({ data: { id: 1, status: 'draft', maxParticipants: 4 } });
-      }
-      if (url.endsWith('/api/tournaments/1/participants')) {
-        return Promise.resolve({
-          data: [
-            {
-              id: 10,
-              alias: 'Tester',
-              seed: null,
-              status: 'pending',
-              userUuid: 'uuid-1',
-            },
-          ],
-        });
-      }
-      if (url.endsWith('/api/tournaments/1/matches')) {
-        return Promise.resolve({
-          data: [
-            {
-              id: 21,
-              roundNumber: 1,
-              roundPosition: 1,
-              status: 'pending',
-              scheduledAt: null,
-              completedAt: null,
-              matchId: null,
-            },
-          ],
-        });
-      }
-      if (url.includes('/api/tournaments/1/matches/21/players')) {
-        return Promise.resolve({
-          data: [
-            {
-              participantId: 10,
-              teamNumber: 1,
-            },
-          ],
-        });
-      }
-      return Promise.resolve({ data: [] });
-    });
+    setupTournamentStateMocks();
 
     const client = makeClient();
     const clients = new Map([[client.id, client]]);
@@ -151,6 +162,7 @@ describe('matchmaking tournament bridge', () => {
     );
 
     createMatchMock.mockResolvedValue(undefined);
+    setupTournamentStateMocks();
 
     const clientA = makeClient({ id: 'a', uuid: 'uuid-a', tournamentId: 1 });
     const clientB = makeClient({ id: 'b', uuid: 'uuid-b', tournamentId: 1 });
@@ -185,6 +197,9 @@ describe('matchmaking tournament bridge', () => {
     expect(createMatchMock).not.toHaveBeenCalled();
 
     await handleAcceptScheduled(acceptPayload, clientB, clients);
+    vi.advanceTimersByTime(51);
+    await Promise.resolve();
+
     expect(createMatchMock).toHaveBeenCalledTimes(1);
     const [playerA, playerB, mode, context] = createMatchMock.mock.calls[0] as [
       ClientInfo,
