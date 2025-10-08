@@ -17,6 +17,7 @@ import { pickInitialServer, SERVE_SELECT_TOTAL_MS } from '@pong/shared';
 import { createHttpServer } from './utils/httpServer.ts';
 import { verifyJoinToken } from '@pong/shared/auth/tokenSign';
 import type { RoomState } from '@pong/shared/protocol/net';
+import type { WebSocket } from 'ws';
 
 dotenv.config();
 
@@ -103,7 +104,6 @@ export interface Match {
   };
 }
 
-const wss = new WebSocketServer({ port: PORT, host: '0.0.0.0' });
 const matches = new Map<string, Match>();
 const rooms = new Map<string, RoomReservation>();
 

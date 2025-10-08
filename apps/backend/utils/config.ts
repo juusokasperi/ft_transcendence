@@ -19,6 +19,13 @@ for (const k of REQUIRED) {
   if (!process.env[k]) throw new Error(`Missing env: ${k}`);
 }
 
+const numberFromEnv = (value: string | undefined, fallback: number) => {
+  if (!value) return fallback;
+  const parsed = Number.parseInt(value, 10);
+  if (Number.isNaN(parsed)) return fallback;
+  return parsed;
+};
+
 // Treat the backend working dir as project root
 const projectRoot = process.cwd();
 
@@ -50,6 +57,10 @@ export const JWT_2FA_TTL = process.env.JWT_2FA_TTL || '10m';
 export const TFA_ISSUER = process.env.TFA_ISSUER || 'BabylonPong';
 export const TFA_CODE_DIGITS = Number(process.env.TFA_CODE_DIGITS || '6');
 export const ENABLE_SQLITE_METRICS = process.env.ENABLE_SQLITE_METRICS as string;
+export const TOURNAMENT_REQUIRED_PARTICIPANTS = numberFromEnv(
+  process.env.TOURNAMENT_REQUIRED_PARTICIPANTS,
+  4,
+);
 
 const accessTokenCookieEnv = process.env.ACCESS_TOKEN_COOKIE_NAME?.trim();
 const refreshTokenCookieEnv = process.env.REFRESH_TOKEN_COOKIE_NAME?.trim();

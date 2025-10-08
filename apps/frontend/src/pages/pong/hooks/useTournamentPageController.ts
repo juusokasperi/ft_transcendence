@@ -17,10 +17,11 @@ import type {
   ReadyMatch,
   TournamentSummary,
 } from '../components/types';
-
-const TOURNAMENT_SIZE = 4;
-const RECENT_TOURNAMENT_WINDOW_MS = 6 * 60 * 60 * 1000; // 6 hours
-const MAX_VISIBLE_TOURNAMENTS = 8;
+import {
+  MAX_VISIBLE_TOURNAMENTS,
+  RECENT_TOURNAMENT_WINDOW_MS,
+  TOURNAMENT_SIZE,
+} from '../../../config';
 
 export type MatchPhase = 'idle' | 'awaiting_start' | 'starting' | 'playing';
 

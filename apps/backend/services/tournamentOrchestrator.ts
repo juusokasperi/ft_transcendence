@@ -16,8 +16,9 @@ import {
 import { markTournamentCompleted, updateTournamentStatus } from '../db/queries/tournaments.ts';
 import type { TournamentParticipant } from '../types/types.ts';
 import { getMatchById } from '../db/queries/matches.ts';
+import { TOURNAMENT_REQUIRED_PARTICIPANTS } from '../utils/config.ts';
 
-const REQUIRED_PARTICIPANTS = 4;
+const REQUIRED_PARTICIPANTS = TOURNAMENT_REQUIRED_PARTICIPANTS;
 
 export type BracketGenerationSummary = {
   tournamentId: number;
