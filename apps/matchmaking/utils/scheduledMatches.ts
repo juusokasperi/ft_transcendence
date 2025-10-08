@@ -13,14 +13,15 @@ import type {
 import { createMatch } from './queue.ts';
 import type { ClientInfo } from '../types/types.ts';
 import { log } from './log.ts';
-import { API_URL } from './config.ts';
+import {
+  API_URL,
+  TOURNAMENT_MATCH_AUTO_START_DELAY_MS,
+  TOURNAMENT_MATCH_COUNTDOWN_INTERVAL_MS,
+  TOURNAMENT_MAX_REMINDERS,
+  TOURNAMENT_REMINDER_DELAY_MS,
+} from './config.ts';
 
 const scheduledTournamentMatches = new Set<number>();
-
-const TOURNAMENT_REMINDER_DELAY_MS = 5000;
-const TOURNAMENT_MAX_REMINDERS = 3;
-const TOURNAMENT_MATCH_AUTO_START_DELAY_MS = 10_000;
-const TOURNAMENT_MATCH_COUNTDOWN_INTERVAL_MS = 1000;
 
 interface PendingTournamentMatch {
   tournamentId: number;
