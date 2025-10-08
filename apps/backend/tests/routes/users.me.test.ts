@@ -6,11 +6,15 @@ import cookie from '@fastify/cookie';
 // 1) Mock config BEFORE importing app code (safe: no external refs)
 vi.mock('../../utils/config.ts', () => ({
   SECRET: 'testsecret',
+  REFRESH_SECRET: 'refreshsecret',
   DATABASE_PATH: ':memory:',
   JWT_ACCESS_TTL: '4h',
+  JWT_REFRESH_TTL: '30d',
   JWT_2FA_TTL: '10m',
   TFA_CODE_DIGITS: 6,
   TFA_ISSUER: 'TestApp',
+  ACCESS_TOKEN_COOKIE_NAME: 'token',
+  REFRESH_TOKEN_COOKIE_NAME: 'refresh_token',
 }));
 
 // 2) Make updateLastSeen a no-op (preHandler requires it)
@@ -27,13 +31,22 @@ vi.mock('../../db/queries/users.ts', () => {
     updatePassword: vi.fn(),
     updateAvatar: vi.fn(),
     getUserByUsername: vi.fn(),
+    getUserByEmail: vi.fn(),
+    markEmailChange: vi.fn(),
+    confirmEmailChange: vi.fn(),
     getUserSettings: vi.fn(),
     updateUserSettings: vi.fn(),
   };
 });
 
+// 4) Mock nodemailer utils
+vi.mock('../../utils/nodemailer/index.ts', () => ({
+  sendEmailChangeEmail: vi.fn(),
+}));
+
 // 4) Now import modules that use those mocks
 import * as usersQueries from '../../db/queries/users.ts';
+import * as nodemailerUtils from '../../utils/nodemailer/index.ts';
 import { userRoutes } from '../../routes/users.ts';
 import { signAccessToken } from '../../utils/jwt.ts';
 
@@ -111,5 +124,171 @@ describe('GET /api/users/me', () => {
       avatar: 'https://example.com/a.png',
       tfa: false,
     });
+  });
+});
+
+describe('PATCH /api/users/me/email', () => {
+  const USER_UUID = '33333333-3333-3333-3333-333333333333';
+  const app = buildApp();
+
+  beforeAll(async () => {
+    await app.ready();
+  });
+
+  afterAll(async () => {
+    await app.close();
+    vi.restoreAllMocks();
+  });
+
+  it('401 when token is missing', async () => {
+    const res = await app.inject({
+      method: 'PATCH',
+      url: '/api/users/me/email',
+      payload: { newEmail: 'new@example.com' },
+    });
+    expect(res.statusCode).toBe(401);
+  });
+
+  it('404 when user not found', async () => {
+    (usersQueries.getUserByUuid as unknown as Mock).mockReturnValueOnce(null);
+    const token = makeToken(USER_UUID);
+
+    const res = await app.inject({
+      method: 'PATCH',
+      url: '/api/users/me/email',
+      headers: { cookie: `token=${token}` },
+      payload: { newEmail: 'new@example.com' },
+    });
+
+    expect(res.statusCode).toBe(404);
+    expect(res.json().message).toMatch(/User not found/i);
+  });
+
+  it('400 when email already in use', async () => {
+    (usersQueries.getUserByUuid as unknown as Mock).mockReturnValueOnce({
+      uuid: USER_UUID,
+      username: 'testuser',
+      email: 'old@example.com',
+    });
+    (usersQueries.getUserByEmail as unknown as Mock).mockReturnValueOnce({
+      uuid: 'different-uuid',
+      username: 'otheruser',
+    });
+    const token = makeToken(USER_UUID);
+
+    const res = await app.inject({
+      method: 'PATCH',
+      url: '/api/users/me/email',
+      headers: { cookie: `token=${token}` },
+      payload: { newEmail: 'existing@example.com' },
+    });
+
+    expect(res.statusCode).toBe(400);
+    expect(res.json().message).toMatch(/Email already in use/i);
+  });
+
+  it('400 when markEmailChange fails', async () => {
+    (usersQueries.getUserByUuid as unknown as Mock).mockReturnValueOnce({
+      uuid: USER_UUID,
+      username: 'testuser',
+      email: 'old@example.com',
+    });
+    (usersQueries.getUserByEmail as unknown as Mock).mockReturnValueOnce(null);
+    (usersQueries.markEmailChange as unknown as Mock).mockReturnValueOnce(false);
+    const token = makeToken(USER_UUID);
+
+    const res = await app.inject({
+      method: 'PATCH',
+      url: '/api/users/me/email',
+      headers: { cookie: `token=${token}` },
+      payload: { newEmail: 'new@example.com' },
+    });
+
+    expect(res.statusCode).toBe(400);
+    expect(res.json().message).toMatch(/Failed to initiate email change/i);
+  });
+
+  it('500 when email sending fails', async () => {
+    (usersQueries.getUserByUuid as unknown as Mock).mockReturnValueOnce({
+      uuid: USER_UUID,
+      username: 'testuser',
+      email: 'old@example.com',
+    });
+    (usersQueries.getUserByEmail as unknown as Mock).mockReturnValueOnce(null);
+    (usersQueries.markEmailChange as unknown as Mock).mockReturnValueOnce(true);
+    (nodemailerUtils.sendEmailChangeEmail as unknown as Mock).mockResolvedValueOnce(false);
+    const token = makeToken(USER_UUID);
+
+    const res = await app.inject({
+      method: 'PATCH',
+      url: '/api/users/me/email',
+      headers: { cookie: `token=${token}` },
+      payload: { newEmail: 'new@example.com' },
+    });
+
+    expect(res.statusCode).toBe(500);
+    expect(res.json().message).toMatch(/Failed to send confirmation email/i);
+  });
+
+  it('200 when email change request succeeds', async () => {
+    (usersQueries.getUserByUuid as unknown as Mock).mockReturnValueOnce({
+      uuid: USER_UUID,
+      username: 'testuser',
+      email: 'old@example.com',
+    });
+    (usersQueries.getUserByEmail as unknown as Mock).mockReturnValueOnce(null);
+    (usersQueries.markEmailChange as unknown as Mock).mockReturnValueOnce(true);
+    (nodemailerUtils.sendEmailChangeEmail as unknown as Mock).mockResolvedValueOnce(true);
+    const token = makeToken(USER_UUID);
+
+    const res = await app.inject({
+      method: 'PATCH',
+      url: '/api/users/me/email',
+      headers: { cookie: `token=${token}` },
+      payload: { newEmail: 'new@example.com' },
+    });
+
+    expect(res.statusCode).toBe(200);
+    expect(res.json().success).toMatch(/Confirmation email sent/i);
+  });
+});
+
+describe('POST /api/users/confirm-email/:token', () => {
+  const app = buildApp();
+
+  beforeAll(async () => {
+    await app.ready();
+  });
+
+  afterAll(async () => {
+    await app.close();
+    vi.restoreAllMocks();
+  });
+
+  it('400 when token is invalid', async () => {
+    (usersQueries.confirmEmailChange as unknown as Mock).mockReturnValueOnce(null);
+
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/users/confirm-email/abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890',
+    });
+
+    expect(res.statusCode).toBe(400);
+    expect(res.json().message).toMatch(/Invalid or expired token/i);
+  });
+
+  it('200 when email confirmation succeeds', async () => {
+    (usersQueries.confirmEmailChange as unknown as Mock).mockReturnValueOnce({
+      uuid: 'user-uuid',
+      newEmail: 'confirmed@example.com',
+    });
+
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/users/confirm-email/abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890',
+    });
+
+    expect(res.statusCode).toBe(200);
+    expect(res.json().success).toMatch(/Email successfully updated/i);
   });
 });

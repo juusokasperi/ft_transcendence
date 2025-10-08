@@ -9,9 +9,10 @@ declare module 'fastify' {
 export interface JWTPayload {
   uuid: string;
   username: string;
+  tokenId?: string; // for refresh tokens to allow revocation (stateful)
   iat?: number;
   exp?: number;
-  purpose?: 'access' | 'two-factor';
+  purpose?: 'access' | 'two-factor' | 'refresh';
 }
 
 export interface User {
@@ -59,6 +60,7 @@ export interface MatchPlayerStatsMe extends MatchPlayerStats {
   matchesWon: number;
   matchesLost: number;
   ranking: number;
+  createdAt: string | null;
 }
 
 // Public user info within the context of a match.
@@ -87,3 +89,5 @@ export interface UserSettings {
   colorBlindMode: number;
   photoSensitiveMode: number;
 }
+
+export type FriendshipStatus = 'friends' | 'request_sent' | 'request_received' | 'none';

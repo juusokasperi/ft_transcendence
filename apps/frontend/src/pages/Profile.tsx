@@ -6,17 +6,22 @@ import { PLACEHOLDER, resolveAvatarUrl } from '../utils/avatarUrl';
 import TwoFactorSettings from '../components/TwoFactorSettings';
 import PasswordSettings from '../components/PasswordSettings';
 import Button from '../components/Button';
-import { validateUsername } from '../utils/validation';
+import { validateUsername, validateEmail } from '../utils/validation';
 import ConfirmDialog from '../components/ConfirmDialog';
 import { useSnackbar } from '../context/SnackbarContext';
+
+const MAX_USERNAME_LENGTH = 24;
+const MAX_EMAIL_LENGTH = 254;
 
 const Profile: React.FC = () => {
   const { axios, user, setUser } = useAppContext();
 
   const [image, setImage] = useState<File | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [usernameError, setUsernameError] = useState<string | null>(null);
+  const [emailError, setEmailError] = useState<string | null>(null);
   const [imagePreview, setImagePreview] = useState<string>(PLACEHOLDER);
   const [username, setUsername] = useState<string>('');
+  const [email, setEmail] = useState<string>('');
   const [isEditing, setIsEditing] = useState<boolean>(false);
 
   const [loading, setLoading] = useState<boolean>(false);
@@ -25,22 +30,28 @@ const Profile: React.FC = () => {
   const { enqueueSnackbar } = useSnackbar();
 
   const baseUsername = user?.username ?? '';
+  const baseEmail = user?.email ?? '';
   const isUsernameDirty = isEditing && username !== baseUsername;
+  const isEmailDirty = isEditing && email !== baseEmail;
   const isAvatarDirty = isEditing && Boolean(image);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const resetForm = () => {
     setImage(null);
     setUsername(baseUsername);
-    setError(null);
+    setEmail(baseEmail);
+    setUsernameError(null);
+    setEmailError(null);
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
   };
 
   const startEditing = () => {
-    setError(null);
+    setUsernameError(null);
+    setEmailError(null);
     setUsername(baseUsername);
+    setEmail(baseEmail);
     setImage(null);
     setImagePreview(resolveAvatarUrl(user?.avatar, axios.defaults.baseURL));
     setIsEditing(true);
@@ -69,12 +80,43 @@ const Profile: React.FC = () => {
     }
   };
 
+  const applyUsernameInput = (raw: string) => {
+    const sanitized = raw.replace(/[^a-zA-Z0-9-]/g, '').slice(0, MAX_USERNAME_LENGTH);
+    setUsername(sanitized);
+
+    if (!isEditing) return;
+
+    if (!sanitized) {
+      setUsernameError(null);
+      return;
+    }
+
+    const validation = validateUsername(sanitized);
+    setUsernameError(validation.state === 'valid' ? null : validation.msg);
+  };
+
+  const applyEmailInput = (raw: string) => {
+    const normalized = raw.replace(/[\s]/g, '').slice(0, MAX_EMAIL_LENGTH);
+    setEmail(normalized);
+
+    if (!isEditing) return;
+
+    if (!normalized) {
+      setEmailError(null);
+      return;
+    }
+
+    setEmailError(validateEmail(normalized) ? null : 'Please enter a valid email address.');
+  };
+
   const handleUsernameChange = async (): Promise<boolean> => {
     if (!username || username === baseUsername) return true;
 
+    setUsernameError(null);
     const userVal = validateUsername(username);
     if (userVal.state !== 'valid') {
-      setError(userVal.msg);
+      setUsernameError(userVal.msg);
+      setEmailError(null);
       return false;
     }
 
@@ -106,12 +148,48 @@ const Profile: React.FC = () => {
         message: 'Account username changed',
         variant: 'success',
       });
+      setUsernameError(null);
       return true;
     } catch (err: any) {
       const axiosErr = err as AxiosError<{ error?: string }>;
       const message = axiosErr?.response?.data?.error;
+      setUsernameError(String(message ?? 'Unable to change username'));
+      setEmailError(null);
       enqueueSnackbar({
         message: String(message ?? 'Unable to change username'),
+        variant: 'error',
+      });
+      return false;
+    }
+  };
+
+  const handleEmailChange = async (): Promise<boolean> => {
+    if (!isEmailDirty || !email || email === baseEmail) return true;
+
+    setEmailError(null);
+    if (!validateEmail(email)) {
+      setEmailError('Please enter a valid email address.');
+      setUsernameError(null);
+      return false;
+    }
+
+    try {
+      const res = await axios.patch('/api/users/me/email', {
+        newEmail: email,
+      });
+      enqueueSnackbar({
+        message: 'Confirmation email sent to new email address',
+        variant: 'success',
+      });
+      setEmailError(null);
+      return true;
+    } catch (err: any) {
+      const axiosErr = err as AxiosError<{ message?: string }>;
+      const message = axiosErr?.response?.data?.message;
+      setEmailError(String(message ?? 'Unable to request email change'));
+      setUsernameError(null);
+      enqueueSnackbar({
+        message: String(message ?? 'Unable to request email change'),
         variant: 'error',
       });
       return false;
@@ -122,11 +200,34 @@ const Profile: React.FC = () => {
     e.preventDefault();
     if (!isEditing) return;
 
+    setUsernameError(null);
+    setEmailError(null);
+
+    const usernameNeedsUpdate = isUsernameDirty;
+    const emailNeedsUpdate = isEmailDirty;
+
+    if (usernameNeedsUpdate) {
+      const validation = validateUsername(username);
+      if (validation.state !== 'valid') {
+        setUsernameError(validation.msg);
+        return;
+      }
+    }
+
+    if (emailNeedsUpdate) {
+      if (!validateEmail(email)) {
+        setEmailError('Please enter a valid email address.');
+        return;
+      }
+    }
+
     setLoading(true);
-    setError(null);
 
     try {
       const usernameResult = await handleUsernameChange();
+      if (!usernameResult) {
+        return;
+      }
       let avatarResult = true;
 
       if (image) {
@@ -173,7 +274,9 @@ const Profile: React.FC = () => {
         }
       }
 
-      if (usernameResult && avatarResult) {
+      const emailResult = await handleEmailChange();
+
+      if (usernameResult && avatarResult && emailResult) {
         resetForm();
         setIsEditing(false);
       }
@@ -227,7 +330,7 @@ const Profile: React.FC = () => {
         <div className="absolute bottom-0 right-0 h-52 w-52 rounded-full bg-purple-500/10 blur-3xl" />
       </div>
 
-      <div className="relative mx-auto flex w-full max-w-5xl flex-col gap-8 px-4 pb-16 pt-6 sm:px-6 lg:px-10">
+      <div className="relative mx-auto flex w-full max-w-6xl flex-col gap-8 pb-16 pt-6">
         <section className="rounded-3xl border border-white/10 bg-slate-900/60 p-6 shadow-xl shadow-indigo-950/30 backdrop-blur">
           <header className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
             <div>
@@ -246,7 +349,7 @@ const Profile: React.FC = () => {
             </div>
           </header>
 
-          <form className="grid gap-8 lg:grid-cols-[auto,1fr]" onSubmit={handleUpdate}>
+          <form className="grid gap-8 lg:grid-cols-[auto,1fr]" onSubmit={handleUpdate} noValidate>
             <div className="flex flex-col items-center gap-4">
               <div
                 className={`relative inline-flex h-28 w-28 items-center justify-center rounded-full border-4 border-white/10 bg-slate-800/80 ${
@@ -337,13 +440,45 @@ const Profile: React.FC = () => {
                   type="text"
                   value={isEditing ? username : (user?.username ?? '')}
                   placeholder={user?.username}
-                  onChange={(e) => setUsername(e.target.value)}
+                  onChange={(e) => applyUsernameInput(e.target.value)}
                   disabled={!isEditing}
                   className={`w-full rounded-2xl border border-white/15 bg-white/5 px-4 py-3 text-sm text-white transition placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-400/60 disabled:cursor-not-allowed disabled:opacity-60 ${
-                    isUsernameDirty ? 'ring-2 ring-emerald-400/70' : ''
+                    isEditing && usernameError
+                      ? 'ring-2 ring-rose-400/70'
+                      : isUsernameDirty
+                        ? 'ring-2 ring-emerald-400/70'
+                        : ''
                   }`}
                 />
-                {error && isEditing && <p className="text-sm text-rose-400">{error}</p>}
+                {isEditing && usernameError && (
+                  <p className="text-sm text-rose-400">{usernameError}</p>
+                )}
+              </div>
+
+              <div className="space-y-4">
+                {isEditing && (
+                  <label className="text-sm font-semibold text-slate-200">Change email</label>
+                )}
+                <input
+                  type="email"
+                  value={isEditing ? email : (user?.email ?? '')}
+                  placeholder={user?.email}
+                  onChange={(e) => applyEmailInput(e.target.value)}
+                  disabled={!isEditing}
+                  className={`w-full rounded-2xl border border-white/15 bg-white/5 px-4 py-3 text-sm text-white transition placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-400/60 disabled:cursor-not-allowed disabled:opacity-60 ${
+                    isEditing && emailError
+                      ? 'ring-2 ring-rose-400/70'
+                      : isEmailDirty
+                        ? 'ring-2 ring-emerald-400/70'
+                        : ''
+                  }`}
+                />
+                {isEditing && (
+                  <p className="text-xs text-slate-400">
+                    A confirmation email will be sent to your new email address
+                  </p>
+                )}
+                {isEditing && emailError && <p className="text-sm text-rose-400">{emailError}</p>}
               </div>
 
               {isEditing && (

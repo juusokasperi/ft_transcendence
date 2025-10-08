@@ -36,7 +36,8 @@ export type Phase =
  * - games: games won within the match (best of N)
  */
 export type GameState = {
-  paddles: { P1: Paddle; P2: Paddle };
+  /** Physics channels are keyed by table end to avoid identity overload. */
+  paddles: { east: Paddle; west: Paddle };
   ball: Ball;
 
   /** Current game's points. */
@@ -88,6 +89,8 @@ export type GameState = {
     ballSpeed: number; // base rally speed (m/s)
     zEnglish: number; // how much paddle vz affects ball.vz (0..1+)
     restitutionWall: number;
+    /** Default serve angle in degrees (0 = straight). */
+    serveAngleDeg?: number;
 
     /** Scoring/service rules (table-tennis style by default) */
     targetScore: number; // points to win a game (e.g., 11)
@@ -120,7 +123,7 @@ export function createInitialState(
   const targetGames = Math.ceil(bestOf / 2);
 
   return {
-    paddles: { P1: { z: 0, vz: 0 }, P2: { z: 0, vz: 0 } },
+    paddles: { east: { z: 0, vz: 0 }, west: { z: 0, vz: 0 } },
     ball: { x: 0, z: 0, vx: 0, vz: 0 },
 
     points: { east: 0, west: 0 },
@@ -138,6 +141,7 @@ export function createInitialState(
       ballSpeed: 1.8, // Avoid setting ballSpeed from 1.41 to 1.59 due to known physics instability in this range, which can cause predictable ball trajectories and gameplay bugs.
       zEnglish: 0.75,
       restitutionWall: 1.0,
+      serveAngleDeg: 0,
       targetScore,
       winBy,
       servesPerTurn,

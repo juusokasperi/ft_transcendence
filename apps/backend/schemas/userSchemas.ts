@@ -13,7 +13,13 @@ import {
   PaddleColorSchema,
   ColorBlindSchema,
   PhotoSensitiveSchema,
+  EmailSchema,
 } from './fieldSchemas.ts';
+
+export const USER_ROUTE_SECURITY = [
+  { bearerAuth: [] as readonly string[] } as Record<string, readonly string[]>,
+  { tokenAuth: [] as readonly string[] } as Record<string, readonly string[]>,
+] as ReadonlyArray<Record<string, readonly string[]>>;
 
 const TwoFactorSetupResponseSchema = {
   type: 'object',
@@ -53,6 +59,7 @@ export const getAllUsersSchema = {
 export const getUserSchema = {
   tags: ['User'],
   summary: 'Get user by UUID',
+  security: USER_ROUTE_SECURITY,
   params: {
     type: 'object',
     required: ['uuid'],
@@ -66,11 +73,6 @@ export const getUserSchema = {
     500: ErrorResponseSchema,
   },
 };
-
-export const USER_ROUTE_SECURITY = [
-  { bearerAuth: [] as readonly string[] } as Record<string, readonly string[]>,
-  { tokenAuth: [] as readonly string[] } as Record<string, readonly string[]>,
-] as ReadonlyArray<Record<string, readonly string[]>>;
 
 export const getMeSchema = {
   tags: ['User'],
@@ -92,6 +94,7 @@ export const getMeSchema = {
       properties: {
         username: UsernameSchema,
         uuid: UuidSchema,
+        email: EmailSchema,
         avatar: { anyOf: [{ type: 'string' }, { type: 'null' }] },
         tfa: { type: 'boolean' },
         hasPass: { type: 'boolean' },
@@ -155,6 +158,50 @@ export const updateUsernameSchema = {
     200: UsersSchema,
     404: ErrorResponseSchema,
     400: ValidationErrorResponseSchema,
+    500: ErrorResponseSchema,
+  },
+};
+
+export const updateEmailSchema = {
+  tags: ['User'],
+  summary: 'Update email address',
+  security: USER_ROUTE_SECURITY,
+  body: {
+    type: 'object',
+    properties: {
+      newEmail: EmailSchema,
+    },
+    additionalProperties: false,
+    required: ['newEmail'],
+  },
+  response: {
+    200: SuccessResponseSchema,
+    404: ErrorResponseSchema,
+    400: ValidationErrorResponseSchema,
+    500: ErrorResponseSchema,
+  },
+};
+
+export const emailConfirmSchema = {
+  tags: ['User'],
+  summary: 'Confirm email change',
+  params: {
+    type: 'object',
+    required: ['token'],
+    properties: {
+      token: {
+        type: 'string',
+        minLength: 64,
+        maxLength: 64,
+        pattern: '^[a-f0-9]+$',
+        description: 'Email change confirmation token from email',
+      },
+    },
+    additionalProperties: false,
+  },
+  response: {
+    200: SuccessResponseSchema,
+    400: ErrorResponseSchema,
     500: ErrorResponseSchema,
   },
 };

@@ -2,4 +2,4 @@
 # Script to export the current directory tree to a text file
 # Usage: ./export-tree.sh
 
-tree -a -I '.git|node_modules|dist|build|.cache|.next|.vite' -N > scripts/output/project-tree.txt
+tree -a -I '.git|node_modules|dist|build|.cache|.next|.vite|.venv|.pnpm-store' -N > scripts/output/project-tree.txt

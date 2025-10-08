@@ -3,7 +3,7 @@ import { getUserByEmail, updatePassword } from '../db/queries/users.ts';
 import {
   clearResetTokensForId,
   createResetToken,
-  clearExpiredTokens,
+  purgeExpiredPasswordResetTokens,
   findAndClearResetToken,
 } from '../db/queries/passwordResets.ts';
 import bcrypt from 'bcrypt';
@@ -50,8 +50,7 @@ export async function resetPasswordRoutes(app: FastifyInstance) {
         const { newPassword } = req.body as { newPassword: string };
         if (!newPassword) return res.status(400).send({ message: 'New password is required.' });
 
-        // REMOVE THIS and add a interval based cleanup?
-        clearExpiredTokens();
+        purgeExpiredPasswordResetTokens();
 
         const uuid = findAndClearResetToken(resetToken);
         if (!uuid) return res.status(400).send({ message: 'Invalid or expired token.' });

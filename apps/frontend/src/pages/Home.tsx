@@ -6,6 +6,9 @@ import { Link } from 'react-router-dom';
 import Chat from '../components/Chat';
 import SplitButton from '../components/ui/SplitButton';
 import Navbar from '../components/Navbar';
+import backgroundImg from '../assets/background.png';
+import tetristImg from '../assets/tetrist.jpg';
+import snakeImg from '../assets/snake.jpeg';
 
 const containerVariants: Variants = {
   hidden: {},
@@ -28,17 +31,17 @@ const itemVariants: Variants = {
 
 const heroScreens = [
   {
-    src: '/src/assets/background.png',
+    src: backgroundImg,
     alt: 'Pong showdown screenshot',
     className: 'z-30 -translate-x-4 -translate-y-6 rotate-1 shadow-indigo-900/40',
   },
   {
-    src: '/src/assets/tetrist.jpg',
+    src: tetristImg,
     alt: 'Tetris game teaser',
     className: 'z-20 translate-x-6 translate-y-4 -rotate-3 shadow-purple-900/40',
   },
   {
-    src: '/src/assets/snake.jpeg',
+    src: snakeImg,
     alt: 'Snake classic preview',
     className: 'z-10 -translate-x-2 translate-y-12 rotate-6 shadow-blue-900/40',
   },

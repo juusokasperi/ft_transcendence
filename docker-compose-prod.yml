@@ -1,0 +1,216 @@
+name: ft-transcendence-prod
+
+networks:
+  prod-private:
+    driver: bridge
+    internal: true
+  prod-public:
+    driver: bridge
+
+volumes:
+  redis_data: {}
+  frontend_dist: {}
+
+# YAML anchor
+x-logstash-logging: &logstash-logging
+  driver: gelf
+  options:
+    gelf-address: udp://localhost:12201
+
+services:
+
+  # Backend
+  # Needs outbound internet access to send confirmation mails, hence prod-public
+  backend:
+    build:
+      context: .
+      dockerfile: ./node.template.dockerfile
+      args:
+        PNPM_VERSION: ${PNPM_VERSION:-9.12.3}
+        SERVICE_NAME: api
+        SERVICE_DIR: backend
+    image: ft-transcendence-backend-prod:latest
+    init: true
+    restart: unless-stopped
+    env_file:
+      - ./.env
+    networks:
+      - prod-public
+      - prod-private
+    volumes:
+      - ./apps/backend/data/sqlite:/data
+      - ./apps/backend/data/sqlite/uploads:/data/uploads
+    logging: *logstash-logging
+
+  # Frontend builds the site and then exits
+  frontend-builder:
+    build:
+      context: .
+      dockerfile: ./apps/frontend/prod.dockerfile
+      args:
+        PNPM_VERSION: ${PNPM_VERSION:-9.12.3}
+    image: ft-transcendence-frontend-builder:latest
+    volumes:
+      - .:/work:cached
+      - frontend_dist:/work/apps/frontend/dist
+    networks:
+      - prod-private
+    logging: *logstash-logging
+
+  # Nginx gateway (public entrypoint)
+  nginx:
+    image: nginxinc/nginx-unprivileged:1.29-alpine
+    restart: unless-stopped
+    depends_on:
+      backend:
+        condition: service_started
+      game-server:
+        condition: service_started
+      frontend-builder:
+        condition: service_completed_successfully
+    ports:
+      - "${NGINX_PORT:-80}:80"
+      - "${NGINX_HTTPS_PORT:-443}:443"
+    environment:
+      - NGINX_HTTPS_PORT=${NGINX_HTTPS_PORT:-443}
+      - BACKEND_PORT=${BACKEND_PORT:-3001}
+    volumes:
+      - ./nginx/prod.conf.template:/etc/nginx/templates/default.conf.template:ro
+      - frontend_dist:/usr/share/nginx/html:ro
+      - ./certs:/etc/nginx/certs:ro
+    networks:
+      - prod-public
+      - prod-private
+    logging: *logstash-logging
+
+  # Matchmaking service
+  matchmaking-service:
+    build:
+      context: .
+      dockerfile: ./node.template.dockerfile
+      args:
+        PNPM_VERSION: ${PNPM_VERSION:-9.12.3}
+        SERVICE_NAME: matchmaking
+        SERVICE_DIR: matchmaking
+    image: ft-transcendence-matchmaking-prod:latest
+    init: true
+    restart: unless-stopped
+    env_file:
+      - ./.env
+    networks:
+      - prod-private
+    depends_on:
+      - allocator
+    logging: *logstash-logging
+
+  # Game server(s)
+  game-server: &game-server-template
+    build:
+      context: .
+      dockerfile: ./node.template.dockerfile
+      args:
+        PNPM_VERSION: ${PNPM_VERSION:-9.12.3}
+        SERVICE_NAME: game-server
+        SERVICE_DIR: game-server
+    image: ft-transcendence-game-server-prod:latest
+    init: true
+    restart: unless-stopped
+    env_file:
+      - ./.env
+    networks:
+      - prod-private
+    depends_on:
+      redis:
+        condition: service_healthy
+    logging: *logstash-logging
+
+  # 6b) Game server 2
+  game-server-2:
+    <<: *game-server-template
+
+  # Allocator
+  allocator:
+    build:
+      context: .
+      dockerfile: ./node.template.dockerfile
+      args:
+        PNPM_VERSION: ${PNPM_VERSION:-9.12.3}
+        SERVICE_NAME: allocator
+        SERVICE_DIR: allocator
+    image: ft-transcendence-allocator-prod:latest
+    init: true
+    restart: unless-stopped
+    env_file:
+      - ./.env
+    environment:
+      REDIS_URL: redis://redis:6379
+    networks:
+      - prod-private
+    depends_on:
+      redis:
+        condition: service_healthy
+    logging: *logstash-logging
+
+  # Redis
+  redis:
+    image: redis:8.2.1-alpine
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      retries: 10
+    volumes:
+      - redis_data:/data
+    networks:
+      - prod-private
+    logging: *logstash-logging
+
+  # Scorer
+  scorer:
+    build:
+      context: .
+      dockerfile: ./node.template.dockerfile
+      args:
+        PNPM_VERSION: ${PNPM_VERSION:-9.12.3}
+        SERVICE_NAME: scorer
+        SERVICE_DIR: scorer
+    image: ft-transcendence-scorer-prod:latest
+    init: true
+    restart: unless-stopped
+    env_file:
+      - ./.env
+    environment:
+      REDIS_URL: redis://redis:6379
+    networks:
+      - prod-private
+    depends_on:
+      game-server:
+        condition: service_started
+      game-server-2:
+        condition: service_started
+      redis:
+        condition: service_healthy
+    logging: *logstash-logging
+
+  # Game Gateway
+  game-gateway:
+    build:
+      context: .
+      dockerfile: ./node.template.dockerfile
+      args:
+        PNPM_VERSION: ${PNPM_VERSION:-9.12.3}
+        SERVICE_NAME: game-gateway
+        SERVICE_DIR: game-gateway
+    image: ft-transcendence-game-gateway-prod:latest
+    init: true
+    restart: unless-stopped
+    env_file:
+      - ./.env
+    networks:
+      - prod-private
+    ports:
+      - "55550:55550"
+    depends_on:
+      redis:
+        condition: service_healthy
+    logging: *logstash-logging

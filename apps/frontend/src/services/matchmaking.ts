@@ -1,3 +1,5 @@
+import type { MatchmakingMessage } from '@pong/shared/protocol/net';
+
 export type Lobby = {
   lobbyId: string;
   hostName: string;
@@ -5,25 +7,17 @@ export type Lobby = {
   membersCount: number;
 };
 
-export type MatchmakingMessage =
-  | { type: 'connected'; clientId: string }
-  | { type: 'lobbyList'; lobbies: Lobby[] }
-  | { type: 'lobbyAdded'; lobby: Lobby }
-  | { type: 'lobbyUpdated'; lobby: Lobby }
-  | { type: 'lobbyCreated'; lobbyId: string }
-  | { type: 'lobbyRemoved'; lobbyId: string }
-  | { type: 'invited'; lobbyId: string; from: string }
-  | { type: 'inviteAccepted'; memberId: string }
-  | { type: 'inviteDeclined'; memberId: string }
-  | { type: 'memberReady'; memberId: string; ready: boolean }
-  | { type: 'lobbyReady'; lobbyId: string }
-  | {
-      type: 'matchFound';
-      lobbyId: string;
-      matchId: string;
-      gameServerUrl: string;
-      seat: 'P1' | 'P2';
-    };
+// export type MatchmakingMessage =
+// | { type: 'lobbyList'; lobbies: Lobby[] }
+// | { type: 'lobbyAdded'; lobby: Lobby }
+// | { type: 'lobbyUpdated'; lobby: Lobby }
+// | { type: 'lobbyCreated'; lobbyId: string }
+// | { type: 'lobbyRemoved'; lobbyId: string }
+// | { type: 'invited'; lobbyId: string; from: string }
+// | { type: 'inviteAccepted'; memberId: string }
+// | { type: 'inviteDeclined'; memberId: string }
+// | { type: 'memberReady'; memberId: string; ready: boolean }
+// | { type: 'lobbyReady'; lobbyId: string };
 
 import { wsUrl } from '../utils/url';
 
@@ -39,6 +33,21 @@ export function createMatchmakingClient(onMessage: (msg: MatchmakingMessage) => 
 
   return {
     socket,
+    auth() {
+      socket.send(JSON.stringify({ type: 'AUTH' }));
+    },
+    joinQueue() {
+      socket.send(JSON.stringify({ type: 'JOIN_QUEUE' }));
+    },
+    leaveQueue() {
+      socket.send(JSON.stringify({ type: 'LEAVE_QUEUE' }));
+    },
+    acceptMatch(matchId: string) {
+      socket.send(JSON.stringify({ type: 'ACCEPT_MATCH', matchId }));
+    },
+    declineMatch(matchId: string) {
+      socket.send(JSON.stringify({ type: 'DECLINE_MATCH', matchId }));
+    },
     createLobby(username: string) {
       socket.send(JSON.stringify({ type: 'createLobby', username }));
     },

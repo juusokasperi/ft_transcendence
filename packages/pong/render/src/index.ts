@@ -14,9 +14,11 @@ export { orbitCameraFor } from './client/scene/camera/camera';
 export {
   attachLocalInput,
   readIntent,
+  setControlsMirrored,
   toggleControlsMirrored,
   blockInputFor,
   setBindingProfile,
+  overrideBindings,
 } from './client/input/aggregate';
 
 // ── FX / Visuals ───────────────────────────────────────────────────────────────

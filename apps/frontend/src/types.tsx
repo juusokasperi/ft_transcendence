@@ -10,3 +10,5 @@ export interface User {
   createdAt: string;
   tfaEnabled: boolean;
 }
+
+export type Friendship = 'friends' | 'request_sent' | 'request_received' | 'none';

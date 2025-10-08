@@ -3,6 +3,7 @@ import { useAppContext } from '../context/AppContext';
 import { AxiosError } from 'axios';
 import { resolveAvatarUrl } from '../utils/avatarUrl';
 import { useSnackbar } from '../context/SnackbarContext';
+import { Link } from 'react-router-dom';
 
 interface FriendRequest {
   username: string;
@@ -10,6 +11,7 @@ interface FriendRequest {
 }
 type Friend = {
   username: string;
+  uuid: string;
   avatar: string;
   online: boolean;
 };
@@ -172,7 +174,9 @@ const Friends: React.FC = () => {
                 />
               </span>
               <div>
-                <p className="text-sm font-medium text-white">{friend.username}</p>
+                <Link to={`/users/${friend.uuid}`} className="text-sm font-medium text-white">
+                  {friend.username}
+                </Link>
                 <p className="text-xs uppercase tracking-[0.25em] text-slate-400">
                   {friend.online ? 'Online' : 'Offline'}
                 </p>
@@ -299,7 +303,9 @@ const Friends: React.FC = () => {
                           key={f.uuid}
                           className="flex items-center justify-between rounded-lg border border-white/10 bg-slate-900/60 px-3 py-2"
                         >
-                          <span>{f.username}</span>
+                          <Link to={`/users/${f.uuid}`} className="font-medium">
+                            {f.username}
+                          </Link>
                           <span className="text-xs uppercase tracking-[0.3em] text-slate-500">
                             pending
                           </span>
@@ -322,7 +328,9 @@ const Friends: React.FC = () => {
                           key={f.uuid}
                           className="flex items-center justify-between gap-3 rounded-lg border border-white/10 bg-slate-900/60 px-3 py-3"
                         >
-                          <span className="font-medium">{f.username}</span>
+                          <Link to={`/users/${f.uuid}`} className="font-medium">
+                            {f.username}
+                          </Link>
                           <div className="flex gap-2">
                             <button
                               onClick={() => handleAcceptFriend(f.uuid)}

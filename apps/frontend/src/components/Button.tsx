@@ -1,6 +1,14 @@
 import React from 'react';
 
-type ButtonVariant = 'primary' | 'danger' | 'secondary' | 'ghost' | 'outline' | 'success';
+export type ButtonVariant =
+  | 'primary'
+  | 'danger'
+  | 'secondary'
+  | 'ghost'
+  | 'outline'
+  | 'success'
+  | 'successSecondary'
+  | 'dangerSecondary';
 
 type ButtonTone = 'default' | 'subtle';
 
@@ -53,6 +61,18 @@ const variantClasses: Record<ButtonVariant, Record<ButtonTone, string>> = {
   ghost: {
     default: 'text-white hover:bg-white/10 focus-visible:ring-white/20',
     subtle: 'text-slate-200 hover:bg-white/5 focus-visible:ring-white/10',
+  },
+  successSecondary: {
+    default:
+      'border border-emerald-500/80 bg-gradient-to-r from-emerald-500/60 to-teal-500/60 text-white shadow shadow-emerald-900/30 transition hover:from-emerald-400 hover:to-teal-400 focus-visible:ring-emerald-400/40',
+    subtle:
+      'border border-emerald-500/20 bg-transparent text-white hover:bg-white/10 focus-visible:ring-white/20',
+  },
+  dangerSecondary: {
+    default:
+      'border border-rose-500/60 bg-gradient-to-r from-rose-500/50 to-red-500/50 text-white shadow shadow-rose-900/40 hover:from-rose-400 hover:to-red-400 focus-visible:ring-rose-400/60',
+    subtle:
+      'border border-rose-500/10 bg-rose-500/10 text-rose-200 hover:bg-rose-500/20 focus-visible:ring-rose-400/40',
   },
 };
 

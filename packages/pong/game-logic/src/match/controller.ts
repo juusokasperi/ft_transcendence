@@ -22,7 +22,6 @@ export function createMatchController(
   const gamesWonByPlayer: Record<'P1' | 'P2', number> = { P1: 0, P2: 0 };
 
   let matchWinner: TableEnd | undefined;
-  let endsFlippedThisGame = false;
   let midSwapDoneThisGame = false;
   let initialServerThisGame: TableEnd = initialServer;
 
@@ -112,11 +111,9 @@ export function createMatchController(
     // Transition out of between-games pause when timer hits 0
     if (game.phase === 'pauseBetweenGames' && (game.tPauseBtwGamesMs ?? 0) <= 0) {
       currentGameIndex++;
-      endsFlippedThisGame = false;
       midSwapDoneThisGame = false;
 
       if (rules.match.switchEndsEachGame) {
-        endsFlippedThisGame = true;
         p1AtEastNow = !p1AtEastNow; // sides actually swap at game start
         events.swapSidesNow = true;
       }
@@ -128,7 +125,11 @@ export function createMatchController(
 
       // Fresh state with correct player occupancy for the new game
       const freshBase = createInitialState(game.bounds, nextInitialServer, p1AtEastNow);
-      const fresh = addRulesToState(freshBase, rules);
+      let fresh = addRulesToState(freshBase, rules);
+      // Carry over any pre-armed serve angle configured during the pause window
+      if (game.params.serveAngleDeg != null) {
+        fresh = { ...fresh, params: { ...fresh.params, serveAngleDeg: game.params.serveAngleDeg } };
+      }
       game = serveFrom(nextInitialServer, fresh);
 
       return { state: game, events };

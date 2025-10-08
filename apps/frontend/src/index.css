@@ -5,6 +5,17 @@
   --color-secondary: #fbbf24;
 }
 
+html,
+body,
+#root {
+  min-height: 100%;
+}
+
+body {
+  background-color: #020617; /* slate-950 */
+  overflow-x: hidden;
+}
+
 /* Hide navbar during gameplay (toggled by LocalGame via body class) */
 body.pong-playing [data-app-navbar] {
   display: none !important;
