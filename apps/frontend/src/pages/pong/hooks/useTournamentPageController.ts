@@ -5,6 +5,7 @@ import { createMatchmakingClient } from '../../../services/matchmaking';
 import type {
   HandoffTimeoutMessage,
   MatchmakingMessage,
+  TournamentMatchCountdownMessage,
   TournamentMatchState,
   TournamentParticipantState,
 } from '@pong/shared/protocol/net';
@@ -21,7 +22,7 @@ const TOURNAMENT_SIZE = 4;
 const RECENT_TOURNAMENT_WINDOW_MS = 6 * 60 * 60 * 1000; // 6 hours
 const MAX_VISIBLE_TOURNAMENTS = 8;
 
-type MatchPhase = 'idle' | 'awaiting_start' | 'starting' | 'playing';
+export type MatchPhase = 'idle' | 'awaiting_start' | 'starting' | 'playing';
 
 type TournamentControllerReturn = {
   user: ReturnType<typeof useAppContext>['user'];
@@ -58,6 +59,38 @@ type TournamentControllerReturn = {
 type UseTournamentPageControllerOptions = {
   focusTournamentId?: number | null;
 };
+
+export function createCountdownSnapshot(
+  payload: TournamentMatchCountdownMessage,
+): CountdownSnapshot {
+  return {
+    tournamentMatchId: payload.tournamentMatchId,
+    tournamentId: payload.tournamentId,
+    stage: payload.stage,
+    status: payload.status,
+    targetStartEpochMs: payload.targetStartEpochMs,
+    secondsRemaining: payload.secondsRemaining,
+  };
+}
+
+export function nextMatchPhaseForCountdown(
+  currentPhase: MatchPhase,
+  payload: TournamentMatchCountdownMessage,
+  isPersonalMatch: boolean,
+): MatchPhase {
+  if (!isPersonalMatch) return currentPhase;
+  if (payload.status === 'started') {
+    return currentPhase === 'playing' ? 'playing' : 'starting';
+  }
+  if (payload.status === 'cancelled') {
+    return currentPhase === 'starting' || currentPhase === 'playing'
+      ? currentPhase
+      : 'awaiting_start';
+  }
+  return currentPhase === 'starting' || currentPhase === 'playing'
+    ? currentPhase
+    : 'awaiting_start';
+}
 
 export function useTournamentPageController(
   options: UseTournamentPageControllerOptions = {},
@@ -524,30 +557,14 @@ export function useTournamentPageController(
 
           setMatchCountdowns((prev) => {
             const next = new Map(prev);
-            next.set(payload.tournamentMatchId, {
-              tournamentMatchId: payload.tournamentMatchId,
-              tournamentId: payload.tournamentId,
-              stage: payload.stage,
-              status: payload.status,
-              targetStartEpochMs: payload.targetStartEpochMs,
-              secondsRemaining: payload.secondsRemaining,
-            });
+            next.set(payload.tournamentMatchId, createCountdownSnapshot(payload));
             return next;
           });
 
-          const personalMatchId = pendingMatchRef.current?.tournamentMatchId;
-          if (personalMatchId === payload.tournamentMatchId) {
-            if (payload.status === 'started') {
-              setMatchPhase((phase) => (phase === 'playing' ? phase : 'starting'));
-            } else if (payload.status === 'cancelled') {
-              setMatchPhase((phase) =>
-                phase === 'starting' || phase === 'playing' ? phase : 'awaiting_start',
-              );
-            } else {
-              setMatchPhase((phase) =>
-                phase === 'starting' || phase === 'playing' ? phase : 'awaiting_start',
-              );
-            }
+          const isPersonalMatch =
+            pendingMatchRef.current?.tournamentMatchId === payload.tournamentMatchId;
+          if (isPersonalMatch) {
+            setMatchPhase((phase) => nextMatchPhaseForCountdown(phase, payload, true));
           }
           break;
         }
