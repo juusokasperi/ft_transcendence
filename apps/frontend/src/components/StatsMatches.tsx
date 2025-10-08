@@ -63,7 +63,7 @@ export const DesktopMatches: React.FC<{ match: Match; colorClass: string }> = ({
       <span>{match.players.team1[0]!.stats?.pointsConceded ?? 0}</span>
 
       {/* Biggest lead */}
-      <span>{match.players.team1[0]!.stats?.maxPointLead ?? 0}</span>
+      <span>{match.players.team1[0]?.stats?.maxPointLead ?? 0}</span>
 
       {/* Played at */}
       <span className="text-slate-400">{formatDate(match.playedAt, 'short')}</span>

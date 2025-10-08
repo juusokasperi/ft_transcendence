@@ -114,6 +114,7 @@ function scheduleTournamentReminder(
       clearTimeout(pending.reminder);
       pending.reminder = undefined;
     }
+    pendingTournamentMatches.delete(match.tournamentMatchId);
     return;
   }
 
