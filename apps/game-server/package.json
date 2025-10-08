@@ -17,7 +17,9 @@
     "fix-format": "pnpm -F ft_transcendence fix-format",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "typecheck:watch": "tsc -p tsconfig.json --noEmit --watch",
-    "start": "node dist/index.js"
+    "start": "node dist/index.js",
+    "test": "vitest run --config vitest.config.ts",
+    "test:watch": "vitest watch --config vitest.config.ts"
   },
   "dependencies": {
     "@fastify/websocket": "^11.2.0",
