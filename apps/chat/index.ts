@@ -39,6 +39,10 @@ function sendUserList(channel: string) {
   });
 }
 
+function findClientByUsername(username: string): Client | undefined {
+  return Array.from(clients.values()).find((c) => c.username === username);
+}
+
 wss.on("connection", (socket: WebSocket) => {
   const id = uuid();
   const client: Client = { id, socket, blocked: new Set() };
@@ -66,46 +70,33 @@ wss.on("connection", (socket: WebSocket) => {
     // Join a channel
     if (data.type === "joinChannel") {
       client.channel = data.channel;
-      console.log(
-        `[CHAT] ${client.username || id} joined channel: ${data.channel}`
-      );
+      console.log(`[CHAT] ${client.username} joined channel: ${data.channel}`);
 
-      // Notify others
       broadcast(
-        {
-          type: "userJoined",
-          userId: id,
-          username: client.username || "Unknown",
-        },
+        { type: "userJoined", userId: id, username: client.username },
         data.channel,
         id
       );
 
-      // Confirm to client
       socket.send(
         JSON.stringify({ type: "channelJoined", channel: data.channel })
       );
 
-      // Always send updated user list (to everyone in channel, including self)
+      // Update everyone’s list
       sendUserList(data.channel);
       return;
     }
 
-    // Chat message
+    // Public chat message
     if (data.type === "chat") {
-      if (!client.channel) {
-        console.log(`[CHAT] ${id} tried to send message without channel`);
-        return;
-      }
+      if (!client.channel) return;
 
-      console.log(
-        `[CHAT][${client.channel}] ${client.username || id}: ${data.message}`
-      );
+      console.log(`[CHAT][${client.channel}] ${client.username}: ${data.message}`);
 
       broadcast(
         {
           type: "chat",
-          from: client.username || id,
+          from: client.username,
           message: data.message,
         },
         client.channel
@@ -113,7 +104,44 @@ wss.on("connection", (socket: WebSocket) => {
       return;
     }
 
-    // Block user
+    // Private message
+    if (data.type === "privateMessage") {
+      const targetClient = findClientByUsername(data.to);
+      if (!targetClient) {
+        socket.send(
+          JSON.stringify({
+            type: "error",
+            message: `User ${data.to} not found.`,
+          })
+        );
+        return;
+      }
+
+      if (targetClient.blocked?.has(client.username!)) {
+        socket.send(
+          JSON.stringify({
+            type: "error",
+            message: `User ${data.to} has blocked you.`,
+          })
+        );
+        return;
+      }
+
+      const msg = {
+        type: "privateMessage",
+        from: client.username,
+        message: data.message,
+      };
+
+      // Send to receiver and also confirm to sender
+      targetClient.socket.send(JSON.stringify(msg));
+      socket.send(JSON.stringify(msg));
+
+      console.log(`[PM] ${client.username} → ${data.to}: ${data.message}`);
+      return;
+    }
+
+    // Block / Unblock
     if (data.type === "blockUser") {
       client.blocked?.add(data.username);
       socket.send(
@@ -122,7 +150,6 @@ wss.on("connection", (socket: WebSocket) => {
       return;
     }
 
-    // Unblock user
     if (data.type === "unblockUser") {
       client.blocked?.delete(data.username);
       socket.send(
@@ -143,9 +170,9 @@ wss.on("connection", (socket: WebSocket) => {
         },
         client.channel
       );
-      // Update user list after leaving
+      // Update everyone’s user list
+      clients.delete(id);
       sendUserList(client.channel);
     }
-    clients.delete(id);
   });
 });
