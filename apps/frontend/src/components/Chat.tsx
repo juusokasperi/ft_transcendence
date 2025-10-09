@@ -3,9 +3,30 @@ import { motion } from "framer-motion";
 import { X } from "lucide-react";
 import { useAppContext } from "../context/AppContext";
 import SplitButton from "./ui/SplitButton";
+import axios from "axios";
 
 const WS_URL = `${window.location.protocol === "https:" ? "wss" : "ws"}://${window.location.hostname}:8080/chat`;
 
+async function fetchUserUuidByUsername(axios: any, targetUser: string): Promise<string | null> {
+  try {
+    const res = await axios.get("/api/users");
+    const users = Array.isArray(res.data)
+      ? res.data
+      : res.data?.users ?? [];
+
+    const target = users.find(
+      (u: any) => u.username?.toLowerCase() === targetUser.toLowerCase()
+    );
+
+    if (target?.userId || target?.uuid || target?.id) {
+      return target.userId ?? target.uuid ?? target.id;
+    }
+    return null;
+  } catch (err) {
+    console.error("Error fetching users:", err);
+    return null;
+  }
+}
 type ChatMessage = {
   from?: string;
   to?: string;
@@ -41,7 +62,8 @@ export default function Chat({
   size = "md",
   defaultOpen = true,
 }: ChatProps) {
-  const { user } = useAppContext();
+  const { user, navigate } = useAppContext();
+
   const chatUsername = user?.username || username;
 
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -255,7 +277,7 @@ export default function Chat({
     setInput("");
   };
 
-  const handleAction = (action: string, targetUser: string) => {
+  const handleAction = async (action: string, targetUser: string) => {
     const ws = wsRef.current;
     // actions should be allowed regardless of cooldown (they don't send many messages)
     if (!ws || ws.readyState !== WebSocket.OPEN) return;
@@ -271,14 +293,20 @@ export default function Chat({
         ws.send(JSON.stringify({ type: "unblockUser", username: targetUser }));
         break;
       case "Invite to game":
-        ws.send(JSON.stringify({ type: "inviteGame", to: targetUser, gameId: Date.now().toString() }));
         setMessages((prev) => [...prev, { system: true, message: `🎮 Invite sent to ${targetUser}` }]);
         break;
-      case "View profile":
-        ws.send(JSON.stringify({ type: "getProfile", username: targetUser }));
+      case "View profile": {
+        const uid = await fetchUserUuidByUsername(axios, targetUser);
+        if (uid) {
+          navigate(`/profile/${uid}`);
+        } else {
+          setMessages((prev) => [
+            ...prev,
+            { system: true, message: `⚠️ Invalid or missing profile for ${targetUser}` },
+          ]);
+        }
         break;
-      default:
-        break;
+      }
     }
   };
 
@@ -392,6 +420,7 @@ export default function Chat({
           You're sending messages too fast — please wait a moment.
         </div>
       )}
+
     </motion.div>
   );
 }

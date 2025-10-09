@@ -17,6 +17,7 @@ import ResetPassword from './pages/ResetPassword';
 import PublicUser from './pages/PublicUser';
 import { SidebarProvider } from './context/SidebarContext';
 import { SnackbarProvider } from './context/SnackbarContext';
+import UserProfile from './pages/UserProfile';
 
 function App() {
   return (
@@ -36,6 +37,8 @@ function App() {
             <Route path={'/delete-user/:confirmationToken'} element={<DeleteUser />} />
             <Route path={'/confirm-email/:token'} element={<ConfirmEmail />} />
             <Route path={'/profile'} element={<Layout />}>
+            <Route path="/profile/:uuid" element={<UserProfile />} />
+
               <Route index element={<Profile />} />
               <Route path={'/profile/stats'} element={<Stats />} />
               <Route path={'/profile/friends'} element={<Friends />} />
