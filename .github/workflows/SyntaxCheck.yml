@@ -1,4 +1,4 @@
-name: Syntax Check
+name: Syntax and Type Check
 
 on:
   workflow_dispatch:
@@ -40,6 +40,9 @@ jobs:
       - name: Syntax Check (all packages)
         run: pnpm run check-format
 
+      - name: Typecheck (all workspaces)
+        run: pnpm typecheck
+
       - name: Comment on PR if failed
         if: ${{ failure() && github.event_name == 'pull_request' }}
         uses: actions/github-script@v7
@@ -51,7 +54,7 @@ jobs:
               return;
             }
             const body = [
-              '**SyntaxCheck CI** failed for the monorepo.',
+              '**SyntaxTypeCheck CI** failed for the monorepo.',
               `Commit: \`${process.env.GITHUB_SHA.slice(0,7)}\``,
               `Run: ${process.env.GITHUB_SERVER_URL}/${process.env.GITHUB_REPOSITORY}/actions/runs/${process.env.GITHUB_RUN_ID}`
             ].join('\n');
