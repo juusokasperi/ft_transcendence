@@ -40,6 +40,9 @@ jobs:
       - name: Syntax Check (all packages)
         run: pnpm run check-format
 
+      - name: Build shared libs
+        run: pnpm run build:libs
+
       - name: Typecheck (all workspaces)
         run: pnpm typecheck
 
