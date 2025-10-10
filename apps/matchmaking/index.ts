@@ -19,6 +19,10 @@ import {
   handleLeaveTournament,
   handleForfeitTournament,
   handleAcceptScheduled,
+  handleTournamentMatchesReady,
+  handleClientDisconnectFromTournament,
+  handleTournamentStateUpdated,
+  restoreTournamentMembership,
 } from './utils/scheduledMatches.ts';
 import { handleJoinQueue } from './utils/queue.ts';
 import Redis from 'ioredis';
@@ -27,6 +31,8 @@ import { handleAdmitConfirmed } from './utils/pendingHandoffs.ts';
 const redisSub = new Redis(REDIS_URL);
 
 redisSub.subscribe('room_ready');
+redisSub.subscribe('tournament:matches_ready');
+redisSub.subscribe('tournament:state_updated');
 redisSub.on('connect', () => {
   log('Redis pub/sub connected');
 });
@@ -39,9 +45,29 @@ redisSub.on('message', (channel: string, message: string) => {
     } catch (err) {
       log(
         'Error parsing roomIdentifier from redis',
-        {
-          error: err instanceof Error ? err.message : 'Unknown error',
-        },
+        { error: err instanceof Error ? err.message : 'Unknown error' },
+        'error',
+      );
+    }
+  } else if (channel === 'tournament:matches_ready') {
+    try {
+      const payload = JSON.parse(message);
+      void handleTournamentMatchesReady(payload, clients);
+    } catch (err) {
+      log(
+        'Failed to handle tournament matches ready message',
+        { error: err instanceof Error ? err.message : 'Unknown error' },
+        'error',
+      );
+    }
+  } else if (channel === 'tournament:state_updated') {
+    try {
+      const payload = JSON.parse(message) as { tournamentId: number };
+      void handleTournamentStateUpdated(payload, clients);
+    } catch (err) {
+      log(
+        'Failed to handle tournament state updated message',
+        { error: err instanceof Error ? err.message : 'Unknown error' },
         'error',
       );
     }
@@ -87,6 +113,7 @@ wss.on('connection', async (socket: WebSocket, req) => {
   clients.set(id, client);
 
   socket.send(JSON.stringify({ type: 'CONNECTED', clientId: id }));
+  void restoreTournamentMembership(client, clients);
   // broadcastLobbies(client, lobbies, clients); Maybe for tournament system..
   socket.on('message', (raw: RawData) => {
     let data: MatchmakingClientMessage;
@@ -98,7 +125,7 @@ wss.on('connection', async (socket: WebSocket, req) => {
     }
     switch (data.type) {
       case 'JOIN_QUEUE':
-        handleJoinQueue(client);
+        handleJoinQueue(client, data.alias);
         break;
       case 'LEAVE_QUEUE':
         handleLeaveQueue(client);
@@ -110,19 +137,19 @@ wss.on('connection', async (socket: WebSocket, req) => {
         handleDeclineMatch(data.matchId, client, pendingMatches);
         break;
       case 'CREATE_TOURNAMENT':
-        handleCreateTournament(data, client);
+        void handleCreateTournament(data, client, clients);
         break;
       case 'JOIN_TOURNAMENT':
-        handleJoinTournament(data, client);
+        void handleJoinTournament(data, client, clients);
         break;
       case 'LEAVE_TOURNAMENT':
-        handleLeaveTournament(client);
+        void handleLeaveTournament(client, clients);
         break;
       case 'FORFEIT_TOURNAMENT':
-        handleForfeitTournament(client);
+        void handleForfeitTournament(client, clients);
         break;
       case 'ACCEPT_SCHEDULED':
-        handleAcceptScheduled(client);
+        void handleAcceptScheduled(data, client, clients);
         break;
       default:
         log('Unknown message', { type: (data as any).type ?? 'UNKNOWN' });
@@ -134,6 +161,7 @@ wss.on('connection', async (socket: WebSocket, req) => {
 
   socket.on('close', () => {
     log('Client disconnected', { id });
+    handleClientDisconnectFromTournament(client, clients);
     clients.delete(id);
     removeFromQueue(id);
     //removeFromTournamentLobby(id)

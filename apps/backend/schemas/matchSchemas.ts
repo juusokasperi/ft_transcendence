@@ -9,7 +9,7 @@ import {
 } from './fieldSchemas.ts';
 import { USER_ROUTE_SECURITY } from './userSchemas.ts';
 
-const MATCH_ROUTE_SECURITY = [
+export const MATCH_ROUTE_SECURITY = [
   { bearerAuth: [] as readonly string[] } as Record<string, readonly string[]>,
 ] as ReadonlyArray<Record<string, readonly string[]>>;
 

@@ -14,6 +14,7 @@ export type CreateAppOptions = {
     seat: PlayerSeat;
     joinToken: string;
     randomSeed: number;
+    onMatchEnd?: (reason: string, winner?: 'east' | 'west') => void;
   };
   preferences?: Preferences;
 };

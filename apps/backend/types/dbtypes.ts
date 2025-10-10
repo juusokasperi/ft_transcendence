@@ -49,6 +49,51 @@ export interface MatchPlayer {
   maxPointLead?: number | null;
 }
 
+// TournamentDb stores global tournament metadata used across the backend.
+export interface TournamentDb {
+  id: number;
+  name: string; // public tournament title shown in the UI
+  description: string; // optional long-form copy for lobby pages
+  format: string; // bracket format identifier (e.g. single_elimination)
+  status: string; // lifecycle state such as draft/active/completed
+  max_participants: number | null; // cap for registered players; null allows open size
+  start_at: string | null; // scheduled start timestamp
+  completed_at: string | null; // when the tournament finished
+  created_at: string; // creation timestamp
+  updated_at: string; // last metadata update
+}
+
+// TournamentParticipantDb ties registered players or aliases to a tournament entry.
+export interface TournamentParticipantDb {
+  id: number;
+  tournament_id: number;
+  user_uuid: string | null; // linked user when available; null for guest alias
+  alias: string; // display name used throughout the bracket
+  seed: number | null; // bracket seed ordering; null when not seeded yet
+  status: string; // registration state (pending/accepted/eliminated)
+  joined_at: string; // when the participant enrolled
+}
+
+// TournamentMatchDb captures bracket positions that map to eventual matches.
+export interface TournamentMatchDb {
+  id: number;
+  tournament_id: number;
+  round_number: number; // sequential round index starting at 1
+  round_position: number; // slot within the round (used to build bracket)
+  status: string; // match lifecycle (pending/scheduled/completed)
+  match_id: number | null; // reference to the actual Matches row once played
+  scheduled_at: string | null; // planned start time
+  completed_at: string | null; // when results were reported
+}
+
+// TournamentMatchPlayerDb tracks which participant occupies each slot of a bracket match.
+export interface TournamentMatchPlayerDb {
+  id: number;
+  tournament_match_id: number;
+  participant_id: number;
+  team_number: number; // current team slot (1 or 2 for 1v1 brackets)
+}
+
 export interface MatchWithPlayersForUserDb {
   match_id: number;
   team_1_score: number;

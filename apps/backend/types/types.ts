@@ -69,6 +69,48 @@ export interface MatchPlayerPublic extends PublicUser {
   stats?: MatchPlayerStats; // optional per-player match stats
 }
 
+// Domain models for tournament subsystem.
+export interface Tournament {
+  id: number;
+  name: string;
+  description: string;
+  format: string;
+  status: string;
+  maxParticipants: number | null;
+  startAt: string | null;
+  completedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface TournamentParticipant {
+  id: number;
+  tournamentId: number;
+  userUuid: string | null;
+  alias: string;
+  seed: number | null;
+  status: string;
+  joinedAt: string;
+}
+
+export interface TournamentMatch {
+  id: number;
+  tournamentId: number;
+  roundNumber: number;
+  roundPosition: number;
+  status: string;
+  matchId: number | null;
+  scheduledAt: string | null;
+  completedAt: string | null;
+}
+
+export interface TournamentMatchPlayer {
+  id: number;
+  tournamentMatchId: number;
+  participantId: number;
+  teamNumber: number;
+}
+
 // Per-match, per-player statistics. Does not include ELO changes (see rankingDelta above).
 export interface MatchWithPlayers {
   id: number;

@@ -104,6 +104,11 @@ export function addMatch(
   }
 }
 
+export function getMatchById(matchId: number): MatchDb | undefined {
+  const row = db.prepare('SELECT * FROM Matches WHERE id = ?').get(matchId) as MatchDb | null;
+  return row ?? undefined;
+}
+
 export function getMatchWithPlayers(matchId: number): MatchWithPlayers | null {
   try {
     const match = db.prepare(`SELECT * FROM Matches where id = ?`).get(matchId) as MatchDb | null;
