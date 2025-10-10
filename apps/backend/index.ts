@@ -32,11 +32,15 @@ import { setupPurgeSchedulers } from './maintenance/purgeSchedulers.ts';
 import { runMigrations } from './db/migrations.ts';
 import { prettierErrorMessages } from './utils/errorHandler.ts';
 import './types/types.ts';
+import { ecsFormat } from '@elastic/ecs-pino-format';
 
 if (ENABLE_SQLITE_METRICS === 'true') initSqliteMetrics();
 
 const app = fastify({
-  logger: true,
+  logger: {
+		level: 'info', //log this level and all higher levels
+		...ecsFormat(),
+	},
   // trustProxy: true,
   ajv: {
     customOptions: { allErrors: true, removeAdditional: true },
@@ -107,7 +111,7 @@ await app.register(swaggerUi, {
 await app.ready();
 app.swagger();
 
-console.log(
+app.log.info(
   `\x1b[0;33mSwagger API documentation served at http://localhost:${BACKEND_PORT}/docs\x1b[0m`,
 );
 
