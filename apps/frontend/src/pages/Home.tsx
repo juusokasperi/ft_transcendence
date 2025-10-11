@@ -81,7 +81,7 @@ const Hero: React.FC = () => {
         variants={containerVariants}
         initial="hidden"
         animate="visible"
-        >
+      >
         <div className="relative">
           <div className="pointer-events-none absolute inset-x-0 top-0 h-80 bg-gradient-to-b from-indigo-600/30 via-indigo-400/10 to-transparent blur-3xl" />
         </div>
