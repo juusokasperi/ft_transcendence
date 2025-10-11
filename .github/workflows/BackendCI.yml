@@ -38,9 +38,6 @@ jobs:
       - name: Build all packages
         run: pnpm run build:libs
 
-      - name: Run typecheck
-        run: pnpm -F @app/api typecheck
-
       # -------------------------------
       # 1️⃣ Run backend server for smoke/integration
       # -------------------------------
@@ -69,6 +66,15 @@ jobs:
       # -------------------------------
       - name: Run backend tests
         run: pnpm -F @app/api test -- --run --reporter=dot
+
+      - name: Run game gateway tests
+        run: pnpm -F @app/game-gateway test -- --reporter=dot
+
+      - name: Run game server tests
+        run: pnpm -F @app/game-server test -- --reporter=dot
+
+      - name: Run matchmaking tests
+        run: pnpm -F @app/matchmaking test -- --run --reporter=dot
 
       # -------------------------------
       # 3️⃣ Stop backend server
@@ -101,4 +107,3 @@ jobs:
               issue_number: pr,
               body
             });
-

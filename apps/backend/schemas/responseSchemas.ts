@@ -37,7 +37,10 @@ export const ErrorResponseSchema = {
   type: 'object',
   properties: {
     message: { type: 'string' },
+    code: { type: 'string' },
+    tournamentId: { type: 'integer' },
   },
+  additionalProperties: true,
 };
 
 export const UsersSchema = {

@@ -1,3 +1,16 @@
+export type TournamentParticipantMapping = {
+  participantId: number;
+  userUuid: string;
+  alias?: string;
+};
+
+export type TournamentContext = {
+  tournamentId: number;
+  tournamentMatchId: number;
+  tournamentStage: 'semifinal' | 'final' | 'bronze';
+  participants?: TournamentParticipantMapping[];
+};
+
 export type HandoffMessage = {
   type: 'HANDOFF';
   matchId: string;
@@ -8,6 +21,7 @@ export type HandoffMessage = {
   joinTokenTTLSeconds: number;
   randomSeed: number;
   simulationStartTick: number;
+  tournament?: TournamentContext;
 };
 
 export type ConnectedMessage = {
@@ -41,6 +55,80 @@ export type MatchTimeoutMessage = {
   type: 'MATCH_TIMEOUT';
 };
 
+export type HandoffTimeoutMessage = {
+  type: 'HANDOFF_TIMEOUT';
+  roomIdentifier: string;
+  message: string;
+};
+
+export type TournamentParticipantState = {
+  participantId: number;
+  alias: string;
+  userUuid: string | null;
+  seed: number | null;
+  status: string;
+};
+
+export type TournamentMatchPlayerState = {
+  participantId: number;
+  teamNumber: number;
+  alias: string;
+  status: string;
+  score: number | null;
+};
+
+export type TournamentMatchState = {
+  tournamentMatchId: number;
+  roundNumber: number;
+  roundPosition: number;
+  status: string;
+  scheduledAt: string | null;
+  completedAt: string | null;
+  matchId: number | null;
+  players: TournamentMatchPlayerState[];
+};
+
+export type TournamentLobbyUpdatedMessage = {
+  type: 'TOURNAMENT_LOBBY_UPDATED';
+  tournamentId: number;
+  status: string;
+  maxParticipants: number | null;
+  participants: TournamentParticipantState[];
+};
+
+export type TournamentBracketSnapshotMessage = {
+  type: 'TOURNAMENT_BRACKET_SNAPSHOT';
+  tournamentId: number;
+  matches: TournamentMatchState[];
+};
+
+export type TournamentMatchesReadyMessage = {
+  type: 'TOURNAMENT_MATCHES_READY';
+  tournamentId: number;
+  matches: Array<{
+    tournamentMatchId: number;
+    stage: 'semifinal' | 'final' | 'bronze';
+    participants: Array<{
+      userUuid: string;
+      alias: string;
+      participantId: number;
+      teamNumber: number;
+    }>;
+  }>;
+};
+
+export type TournamentMatchCountdownStatus = 'running' | 'cancelled' | 'started';
+
+export type TournamentMatchCountdownMessage = {
+  type: 'TOURNAMENT_MATCH_COUNTDOWN';
+  tournamentId: number;
+  tournamentMatchId: number;
+  stage: 'semifinal' | 'final' | 'bronze';
+  secondsRemaining: number;
+  targetStartEpochMs: number;
+  status: TournamentMatchCountdownStatus;
+};
+
 export type MatchmakingMessage =
   | ConnectedMessage
   | QueueJoinedMessage
@@ -49,6 +137,11 @@ export type MatchmakingMessage =
   | MatchDeclinedMessage
   | HandoffMessage
   | MatchTimeoutMessage
+  | HandoffTimeoutMessage
+  | TournamentLobbyUpdatedMessage
+  | TournamentBracketSnapshotMessage
+  | TournamentMatchesReadyMessage
+  | TournamentMatchCountdownMessage
   | ErrorMessage;
 
 export type JoinTokenClaims = {
@@ -62,7 +155,7 @@ export type JoinTokenClaims = {
   side: 'west' | 'east';
   simulationStartTick: number;
   region?: string;
-};
+} & Partial<TournamentContext>;
 
 export type ErrorMessage = {
   type: 'ERROR';
@@ -73,6 +166,7 @@ export type ErrorMessage = {
 export type JoinQueueRequest = {
   type: 'JOIN_QUEUE';
   preferredSide?: 'west' | 'east';
+  alias?: string;
 };
 
 export type LeaveQueueRequest = {
@@ -95,11 +189,13 @@ export type CreateTournamentRequest = {
   type: 'CREATE_TOURNAMENT';
   size: TournamentSize;
   name?: string;
+  alias?: string;
 };
 
 export type JoinTournamentRequest = {
   type: 'JOIN_TOURNAMENT';
   tournamentId: string;
+  alias?: string;
 };
 
 export type LeaveTournamentRequest = {
@@ -114,6 +210,7 @@ export type ForfeitTournamentRequest = {
 
 export type AcceptScheduledRequest = {
   type: 'ACCEPT_SCHEDULED';
+  tournamentMatchId: number;
 };
 
 export type MatchmakingClientMessage =
@@ -145,9 +242,33 @@ export type StartMessage = {
   startAtEpochMs: number;
   randomSeed: number;
   tickRateHz: number;
+  players?: {
+    P1?: { alias?: string };
+    P2?: { alias?: string };
+  };
 };
 
-export type GameServerControlMessage = RoomStateMessage | StartMessage;
+export type OpponentDisconnectedMessage = {
+  type: 'OPPONENT_DISCONNECTED';
+  gracePeriodMs: number;
+};
+
+export type OpponentReconnectedMessage = {
+  type: 'OPPONENT_RECONNECTED';
+};
+
+export type MatchEndMessage = {
+  type: 'MATCH_END';
+  reason: 'opponent_timeout' | 'completed' | 'error';
+  winner?: 'east' | 'west';
+};
+
+export type GameServerControlMessage =
+  | RoomStateMessage
+  | StartMessage
+  | OpponentDisconnectedMessage
+  | OpponentReconnectedMessage
+  | MatchEndMessage;
 
 // Types that were in blueprint but not implemented:
 

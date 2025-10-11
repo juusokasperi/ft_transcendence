@@ -1,4 +1,7 @@
-import { WebSocketServer, type WebSocket, type RawData } from 'ws';
+import Fastify from 'fastify';
+import websocket from '@fastify/websocket';
+import type { FastifyRequest } from 'fastify';
+import type { WebSocket, RawData } from 'ws';
 import { v4 as uuid } from 'uuid';
 import { PORT, REDIS_URL } from './utils/config.ts';
 import type { ClientInfo, PendingMatch } from './types/types.ts';
@@ -19,14 +22,23 @@ import {
   handleLeaveTournament,
   handleForfeitTournament,
   handleAcceptScheduled,
+  handleTournamentMatchesReady,
+  handleClientDisconnectFromTournament,
+  handleTournamentStateUpdated,
+  restoreTournamentMembership,
 } from './utils/scheduledMatches.ts';
 import { handleJoinQueue } from './utils/queue.ts';
 import Redis from 'ioredis';
 import { handleAdmitConfirmed } from './utils/pendingHandoffs.ts';
 
 const redisSub = new Redis(REDIS_URL);
+const app = Fastify({
+  logger: true,
+});
 
 redisSub.subscribe('room_ready');
+redisSub.subscribe('tournament:matches_ready');
+redisSub.subscribe('tournament:state_updated');
 redisSub.on('connect', () => {
   log('Redis pub/sub connected');
 });
@@ -39,9 +51,29 @@ redisSub.on('message', (channel: string, message: string) => {
     } catch (err) {
       log(
         'Error parsing roomIdentifier from redis',
-        {
-          error: err instanceof Error ? err.message : 'Unknown error',
-        },
+        { error: err instanceof Error ? err.message : 'Unknown error' },
+        'error',
+      );
+    }
+  } else if (channel === 'tournament:matches_ready') {
+    try {
+      const payload = JSON.parse(message);
+      void handleTournamentMatchesReady(payload, clients);
+    } catch (err) {
+      log(
+        'Failed to handle tournament matches ready message',
+        { error: err instanceof Error ? err.message : 'Unknown error' },
+        'error',
+      );
+    }
+  } else if (channel === 'tournament:state_updated') {
+    try {
+      const payload = JSON.parse(message) as { tournamentId: number };
+      void handleTournamentStateUpdated(payload, clients);
+    } catch (err) {
+      log(
+        'Failed to handle tournament state updated message',
+        { error: err instanceof Error ? err.message : 'Unknown error' },
         'error',
       );
     }
@@ -55,19 +87,22 @@ redisSub.on('error', (err: Error) => {
   );
 });
 
-const wss = new WebSocketServer({ port: PORT });
+await app.register(websocket);
+
 const clients = new Map<string, ClientInfo>();
 const pendingMatches = new Map<string, PendingMatch>();
-
-console.log(`Matchmaking WebSocket server listening on ${PORT}`);
-log('Server started', { port: PORT });
-
-setInterval(() => {
+const queueTicker = setInterval(() => {
   tryMatchQueue(pendingMatches);
 }, 500);
 
-wss.on('connection', async (socket: WebSocket, req) => {
-  const token = extractToken(socket, req);
+app.get('/health', async () => ({ status: 'ok' }));
+
+app.get('/matchmaking', { websocket: true }, (socket: WebSocket, req) => {
+  void handleConnection(socket, req);
+});
+
+async function handleConnection(socket: WebSocket, req: FastifyRequest) {
+  const token = extractToken(socket, req.raw);
   if (!token) return;
 
   const id = uuid();
@@ -87,18 +122,19 @@ wss.on('connection', async (socket: WebSocket, req) => {
   clients.set(id, client);
 
   socket.send(JSON.stringify({ type: 'CONNECTED', clientId: id }));
+  void restoreTournamentMembership(client, clients);
   // broadcastLobbies(client, lobbies, clients); Maybe for tournament system..
   socket.on('message', (raw: RawData) => {
     let data: MatchmakingClientMessage;
     try {
       data = JSON.parse(raw.toString());
     } catch {
-      log(`Invalid message from ${id}:`, raw.toString(), 'warn');
+      log(`Invalid message from ${id}:`, { raw: raw.toString() }, 'warn');
       return;
     }
     switch (data.type) {
       case 'JOIN_QUEUE':
-        handleJoinQueue(client);
+        handleJoinQueue(client, data.alias);
         break;
       case 'LEAVE_QUEUE':
         handleLeaveQueue(client);
@@ -110,19 +146,19 @@ wss.on('connection', async (socket: WebSocket, req) => {
         handleDeclineMatch(data.matchId, client, pendingMatches);
         break;
       case 'CREATE_TOURNAMENT':
-        handleCreateTournament(data, client);
+        void handleCreateTournament(data, client, clients);
         break;
       case 'JOIN_TOURNAMENT':
-        handleJoinTournament(data, client);
+        void handleJoinTournament(data, client, clients);
         break;
       case 'LEAVE_TOURNAMENT':
-        handleLeaveTournament(client);
+        void handleLeaveTournament(client, clients);
         break;
       case 'FORFEIT_TOURNAMENT':
-        handleForfeitTournament(client);
+        void handleForfeitTournament(client, clients);
         break;
       case 'ACCEPT_SCHEDULED':
-        handleAcceptScheduled(client);
+        void handleAcceptScheduled(data, client, clients);
         break;
       default:
         log('Unknown message', { type: (data as any).type ?? 'UNKNOWN' });
@@ -134,17 +170,47 @@ wss.on('connection', async (socket: WebSocket, req) => {
 
   socket.on('close', () => {
     log('Client disconnected', { id });
+    handleClientDisconnectFromTournament(client, clients);
     clients.delete(id);
     removeFromQueue(id);
     //removeFromTournamentLobby(id)
     //which broadcasts TOURNAMENT_LOBBY_UPDATE or something similar to clients in lobby
     //waiting for tournament to start
   });
-});
+}
 
-wss.on('close', () => {
-  log('Server closed, cleaning up');
+app.addHook('onClose', async () => {
+  clearInterval(queueTicker);
+  clients.forEach((client) => {
+    try {
+      client.socket.close();
+    } catch {
+      // ignore close errors during shutdown
+    }
+  });
   clients.clear();
   clearQueue();
-  //clearScheduledMatches();
+  pendingMatches.forEach((match) => {
+    clearTimeout(match.timer);
+  });
+  pendingMatches.clear();
+  try {
+    await redisSub.quit();
+  } catch (err) {
+    log(
+      'Failed to close redis connection',
+      { error: err instanceof Error ? err.message : 'Unknown error' },
+      'error',
+    );
+  }
 });
+
+try {
+  await app.listen({ host: '0.0.0.0', port: PORT });
+  app.log.info(`Matchmaking Fastify server listening on ${PORT}`);
+  console.log(`Matchmaking Fastify server listening on ${PORT}`);
+  log('Server started', { port: PORT });
+} catch (err) {
+  app.log.error(err);
+  process.exit(1);
+}

@@ -12,6 +12,8 @@ import LocalGame from './pages/pong/local/local-game';
 import DeleteUser from './pages/DeleteUser';
 import ConfirmEmail from './pages/ConfirmEmail';
 import OnlineGame from './pages/pong/online-game';
+import Tournament from './pages/pong/tournament';
+import TournamentDetail from './pages/pong/tournament-detail';
 import ForgotPassword from './pages/ForgotPassword';
 import ResetPassword from './pages/ResetPassword';
 import PublicUser from './pages/PublicUser';
@@ -33,6 +35,8 @@ function App() {
             <Route path={'/ping-pong'} element={<PingPong />} />
             <Route path={'/ping-pong/local'} element={<LocalGame />} />
             <Route path={'/ping-pong/online'} element={<OnlineGame />} />
+            <Route path={'/ping-pong/tournaments'} element={<Tournament />} />
+            <Route path={'/ping-pong/tournaments/:tournamentId'} element={<TournamentDetail />} />
             <Route path={'/confirm/:confirmationToken'} element={<Confirmation />} />
             <Route path={'/delete-user/:confirmationToken'} element={<DeleteUser />} />
             <Route path={'/confirm-email/:token'} element={<ConfirmEmail />} />
