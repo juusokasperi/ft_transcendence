@@ -80,19 +80,6 @@ const PingPong: React.FC = () => {
         .neon-blue { color: #4dc9ff; }
         .neon-purple { color: #b48bff; }
       `}</style>
-
-      {/* Floating chat button */}
-      {user && !chatOpen && (
-        <button
-          onClick={() => setChatOpen(true)}
-          className="fixed bottom-6 right-6 z-40 rounded-full bg-indigo-600 p-4 text-white shadow-lg hover:bg-indigo-500"
-        >
-          💬
-        </button>
-      )}
-
-      {/* Chat popup */}
-      {user && chatOpen && <Chat onClose={() => setChatOpen(false)} channel="pong" />}
       </div>
     </div>
   );

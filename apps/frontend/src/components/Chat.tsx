@@ -202,9 +202,6 @@ export default function Chat({
       }
     };
 
-    ws.onclose = () => {
-      setMessages((prev) => [...prev, { system: true, message: "⚠️ Disconnected from chat" }]);
-    };
 
     return () => {
       try {
@@ -298,7 +295,7 @@ export default function Chat({
       case "View profile": {
         const uid = await fetchUserUuidByUsername(axios, targetUser);
         if (uid) {
-          navigate(`/profile/${uid}`);
+          navigate(`/users/${uid}`);
         } else {
           setMessages((prev) => [
             ...prev,
