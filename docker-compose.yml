@@ -298,7 +298,7 @@ services:
     command: bash -lc "corepack enable && corepack prepare pnpm@${PNPM_VERSION:-9.12.3} --activate && pnpm dev"
     volumes:
       - .:/work:cached
-      - pnpm-store:/pnpn/store
+      - pnpm-store:/pnpm/store
       - node_modules:/work/node_modules:ro
       - game_gateway_node_modules:/work/apps/game-gateway/node_modules:ro
     depends_on:
