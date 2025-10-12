@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import type { GameHistoryEntry } from '@pong/shared';
 
 type MatchOverDetail = {
@@ -23,6 +23,17 @@ export function useMatchOverEvent({
   onAutoExit,
   autoExitDelayMs = 3000,
 }: UseMatchOverEventOptions) {
+  const onMatchOverRef = useRef(onMatchOver);
+  const onAutoExitRef = useRef(onAutoExit);
+
+  useEffect(() => {
+    onMatchOverRef.current = onMatchOver;
+  }, [onMatchOver]);
+
+  useEffect(() => {
+    onAutoExitRef.current = onAutoExit;
+  }, [onAutoExit]);
+
   useEffect(() => {
     if (!playing) return;
     const canvas = canvasRef.current;
@@ -33,10 +44,10 @@ export function useMatchOverEvent({
     const handler = (event: Event) => {
       const detail = (event as CustomEvent<MatchOverDetail>).detail;
       if (!detail) return;
-      onMatchOver(detail);
+      onMatchOverRef.current(detail);
       if (autoExitDelayMs >= 0) {
         timer = window.setTimeout(() => {
-          onAutoExit();
+          onAutoExitRef.current();
         }, autoExitDelayMs);
       }
     };

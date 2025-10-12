@@ -30,9 +30,7 @@ export const PostMatchView: React.FC<PostMatchViewProps> = ({
     hud.attachToElement(hudContainerRef.current);
     hud.setPlayerNames(summary.names.east, summary.names.west);
     hud.setGames(summary.gamesHistory, summary.bestOf);
-    return () => {
-      hud.dispose();
-    };
+    return () => hud.dispose();
   }, [summary]);
 
   const westName = summary.names.west || 'Player 2';
@@ -42,7 +40,7 @@ export const PostMatchView: React.FC<PostMatchViewProps> = ({
   const winnerName = winnerRow === 'east' ? eastName : westName;
 
   return (
-    <div className="flex min-h-screen items-center justify-center">
+    <div className="flex w-full justify-center">
       <Card
         title={
           <span className="block w-full text-center text-2xl font-semibold">
@@ -51,16 +49,10 @@ export const PostMatchView: React.FC<PostMatchViewProps> = ({
           </span>
         }
       >
-        <div ref={hudContainerRef} className="w-full" style={{ height: 150 }} />
-
+        <div ref={hudContainerRef} className="w-full z-10" style={{ height: 150 }} />
         <div className="flex w-full items-center justify-center gap-4">
-          <PlayButton color="cyan" onClick={onPlayAgain}>
-            PLAY AGAIN
-          </PlayButton>
-
-          <PlayButton color="crimson" onClick={onReturnToMenu}>
-            MENU
-          </PlayButton>
+          <PlayButton color="cyan" onClick={onPlayAgain}>PLAY AGAIN</PlayButton>
+          <PlayButton color="crimson" onClick={onReturnToMenu}>MENU</PlayButton>
         </div>
       </Card>
     </div>

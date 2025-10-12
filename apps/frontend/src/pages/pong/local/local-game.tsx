@@ -1,3 +1,4 @@
+// apps/frontend/src/pages/pong/local/local-game.tsx
 import React, { useCallback, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { GameHistoryEntry } from '@pong/shared';
@@ -71,7 +72,9 @@ const LocalGame: React.FC = () => {
     canvasRef,
     playing: isPlaying,
     onMatchOver: (detail) => setPostMatch(detail),
+    // Make teardown immediate so we’re not stuck in the PlayingView branch.
     onAutoExit: () => setIsPlaying(false),
+    autoExitDelayMs: 0,
   });
 
   const handleQuit = useCallback(() => {
@@ -116,63 +119,61 @@ const LocalGame: React.FC = () => {
     navigate('/ping-pong');
   }, [navigate]);
 
-  if (isPlaying) {
-    return <PlayingView canvasRef={canvasRef} onQuit={handleQuit} />;
-  }
-
   if (postMatch) {
     return (
-      <div className="relative min-h-screen text-white overflow-x-hidden">
-        {/* Fixed site navigation */}
+      <div className="fixed inset-0 overflow-hidden text-white">
         <Navbar />
 
-        {/* Content area scrolls; offset under fixed navbar */}
         <main
           aria-labelledby="postmatch-title"
-          className="relative w-full min-h-[calc(100vh-var(--navbar-h,80px))] pt-[var(--navbar-h,80px)]"
+          className="absolute inset-x-0 bottom-0 top-[var(--navbar-h,80px)]"
         >
-          {/* Decorative background (does not affect layout/scroll) */}
           <BackgroundVideo src={gifImg} fit="contain" position="center" />
 
-          <h1 id="postmatch-title" className="sr-only">
-            Match Summary
-          </h1>
+          <h1 id="postmatch-title" className="sr-only">Match Summary</h1>
 
-          {/* Foreground content; allow vertical scroll on small screens */}
-          <div className="relative z-10 mx-auto w-full max-w-5xl p-6">
-            <div className="rounded-2xl p-6">
-              <PostMatchView
-                summary={postMatch}
-                onPlayAgain={handlePlayAgain}
-                onReturnToMenu={handleReturnToMenu}
-              />
+          <section
+            aria-labelledby="summary-heading"
+            className="relative z-10 h-full w-full overflow-y-auto"
+          >
+            <div className="mx-auto w-full max-w-5xl p-6">
+              <h2 id="summary-heading" className="sr-only">Match result</h2>
+
+              <div className="mt-6 md:mt-10">
+                <PostMatchView
+                  summary={postMatch}
+                  onPlayAgain={handlePlayAgain}
+                  onReturnToMenu={handleReturnToMenu}
+                />
+              </div>
             </div>
-          </div>
+          </section>
         </main>
       </div>
     );
   }
 
-  return (
-    <div className="relative min-h-screen text-white overflow-x-hidden">
-      {/* Fixed site navigation */}
-      <Navbar />
+  if (isPlaying) {
+    return <PlayingView canvasRef={canvasRef} onQuit={handleQuit} />;
+  }
 
-      {/* Content area scrolls; offset under fixed navbar */}
-      <main
-        aria-labelledby="settings-title"
-        className="relative w-full min-h-[calc(100vh-var(--navbar-h,80px))] pt-[var(--navbar-h,80px)]"
-      >
-        {/* Decorative background (does not affect layout/scroll) */}
-        <BackgroundVideo src={gifImg} fit="contain" position="center" />
+return (
+  <div className="fixed inset-0 overflow-hidden text-white">
+    <Navbar />
 
-        <h1 id="settings-title" className="sr-only">
-          Local Match Settings
-        </h1>
+    <main
+      aria-labelledby="settings-title"
+      className="absolute inset-x-0 bottom-0 top-[var(--navbar-h,80px)]"
+    >
+      <BackgroundVideo src={gifImg} fit="contain" position="center" />
 
-        {/* Foreground content; allow vertical scroll on small screens */}
-        <div className="relative z-10 mx-auto w-full max-w-4xl p-6">
-          <div className="rounded-2xl p-6">
+      <h1 id="settings-title" className="sr-only">
+        Local Match Settings
+      </h1>
+
+      <section className="relative z-10 h-full w-full overflow-y-auto">
+        <div className="mx-auto w-full max-w-4xl p-6">
+          <div className="mt-6 md:mt-10 rounded-2xl">
             <SettingsView
               settings={settings}
               onUpdateSettings={update}
@@ -188,9 +189,10 @@ const LocalGame: React.FC = () => {
             />
           </div>
         </div>
-      </main>
-    </div>
-  );
+      </section>
+    </main>
+  </div>
+);
 };
 
 export default LocalGame;
