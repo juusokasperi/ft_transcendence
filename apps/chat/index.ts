@@ -1,5 +1,5 @@
-import { WebSocketServer, type WebSocket, type RawData } from "ws";
-import { v4 as uuid } from "uuid";
+import { WebSocketServer, type WebSocket, type RawData } from 'ws';
+import { v4 as uuid } from 'uuid';
 
 interface Client {
   id: string;
@@ -34,7 +34,7 @@ function sendUserList(channel: string) {
 
   clients.forEach((c) => {
     if (c.channel === channel) {
-      c.socket.send(JSON.stringify({ type: "userList", users }));
+      c.socket.send(JSON.stringify({ type: 'userList', users }));
     }
   });
 }
@@ -43,15 +43,15 @@ function findClientByUsername(username: string): Client | undefined {
   return Array.from(clients.values()).find((c) => c.username === username);
 }
 
-wss.on("connection", (socket: WebSocket) => {
+wss.on('connection', (socket: WebSocket) => {
   const id = uuid();
   const client: Client = { id, socket, blocked: new Set() };
   clients.set(id, client);
 
   console.log(`[CHAT] Client connected: ${id}`);
-  socket.send(JSON.stringify({ type: "connected", clientId: id }));
+  socket.send(JSON.stringify({ type: 'connected', clientId: id }));
 
-  socket.on("message", (raw: RawData) => {
+  socket.on('message', (raw: RawData) => {
     let data: any;
     try {
       data = JSON.parse(raw.toString());
@@ -61,26 +61,20 @@ wss.on("connection", (socket: WebSocket) => {
     }
 
     // Set username
-    if (data.type === "setName") {
+    if (data.type === 'setName') {
       client.username = data.username;
       console.log(`[CHAT] ${id} set username: ${data.username}`);
       return;
     }
 
     // Join a channel
-    if (data.type === "joinChannel") {
+    if (data.type === 'joinChannel') {
       client.channel = data.channel;
       console.log(`[CHAT] ${client.username} joined channel: ${data.channel}`);
 
-      broadcast(
-        { type: "userJoined", userId: id, username: client.username },
-        data.channel,
-        id
-      );
+      broadcast({ type: 'userJoined', userId: id, username: client.username }, data.channel, id);
 
-      socket.send(
-        JSON.stringify({ type: "channelJoined", channel: data.channel })
-      );
+      socket.send(JSON.stringify({ type: 'channelJoined', channel: data.channel }));
 
       // Update everyone’s list
       sendUserList(data.channel);
@@ -88,31 +82,31 @@ wss.on("connection", (socket: WebSocket) => {
     }
 
     // Public chat message
-    if (data.type === "chat") {
+    if (data.type === 'chat') {
       if (!client.channel) return;
 
       console.log(`[CHAT][${client.channel}] ${client.username}: ${data.message}`);
 
       broadcast(
         {
-          type: "chat",
+          type: 'chat',
           from: client.username,
           message: data.message,
         },
-        client.channel
+        client.channel,
       );
       return;
     }
 
     // Private message
-    if (data.type === "privateMessage") {
+    if (data.type === 'privateMessage') {
       const targetClient = findClientByUsername(data.to);
       if (!targetClient) {
         socket.send(
           JSON.stringify({
-            type: "error",
+            type: 'error',
             message: `User ${data.to} not found.`,
-          })
+          }),
         );
         return;
       }
@@ -120,15 +114,15 @@ wss.on("connection", (socket: WebSocket) => {
       if (targetClient.blocked?.has(client.username!)) {
         socket.send(
           JSON.stringify({
-            type: "error",
+            type: 'error',
             message: `User ${data.to} has blocked you.`,
-          })
+          }),
         );
         return;
       }
 
       const msg = {
-        type: "privateMessage",
+        type: 'privateMessage',
         from: client.username,
         message: data.message,
       };
@@ -142,33 +136,29 @@ wss.on("connection", (socket: WebSocket) => {
     }
 
     // Block / Unblock
-    if (data.type === "blockUser") {
+    if (data.type === 'blockUser') {
       client.blocked?.add(data.username);
-      socket.send(
-        JSON.stringify({ type: "userBlocked", username: data.username })
-      );
+      socket.send(JSON.stringify({ type: 'userBlocked', username: data.username }));
       return;
     }
 
-    if (data.type === "unblockUser") {
+    if (data.type === 'unblockUser') {
       client.blocked?.delete(data.username);
-      socket.send(
-        JSON.stringify({ type: "userUnblocked", username: data.username })
-      );
+      socket.send(JSON.stringify({ type: 'userUnblocked', username: data.username }));
       return;
     }
   });
 
-  socket.on("close", () => {
+  socket.on('close', () => {
     console.log(`[CHAT] Client disconnected: ${id}`);
     if (client.username && client.channel) {
       broadcast(
         {
-          type: "userLeft",
+          type: 'userLeft',
           userId: id,
           username: client.username,
         },
-        client.channel
+        client.channel,
       );
       // Update everyone’s user list
       clients.delete(id);
