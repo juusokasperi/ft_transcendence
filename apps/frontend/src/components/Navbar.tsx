@@ -38,7 +38,9 @@ const Navbar = () => {
 
     const setVar = () => {
       const h = el.offsetHeight || 0;
-      const current = getComputedStyle(document.documentElement).getPropertyValue('--navbar-h').trim();
+      const current = getComputedStyle(document.documentElement)
+        .getPropertyValue('--navbar-h')
+        .trim();
       const next = `${h}px`;
       if (current !== next) {
         document.documentElement.style.setProperty('--navbar-h', next);
@@ -177,7 +179,7 @@ const Navbar = () => {
       {/* Mobile drawer + scrim */}
       {sidebarOpen && (
         <div
-          className="fixed inset-x-0 bottom-0 z-40 bg-slate-950/60 backdrop-blur md:hidden top-[var(--navbar-h,80px)]"
+          className="fixed inset-x-0 bottom-0 top-[var(--navbar-h,80px)] z-40 bg-slate-950/60 backdrop-blur md:hidden"
           onClick={closeSidebar}
           aria-hidden="true"
         >
@@ -215,7 +217,10 @@ const Navbar = () => {
                     }`}
                   >
                     {link.label}
-                    <span className="text-xs uppercase tracking-[0.3em] text-slate-400" aria-hidden="true">
+                    <span
+                      className="text-xs uppercase tracking-[0.3em] text-slate-400"
+                      aria-hidden="true"
+                    >
                       →
                     </span>
                   </Link>

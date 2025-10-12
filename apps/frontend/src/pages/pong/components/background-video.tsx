@@ -12,14 +12,14 @@ type ObjectPosition =
 
 export type BackgroundVideoProps = {
   src: string;
-  type?: string;                 // default: "video/mp4"
-  fit?: ObjectFit;               // default: "contain" (keeps your letterbox look)
-  position?: ObjectPosition;     // default: "center"
-  className?: string;            // extra classes for the wrapping layer
-  zIndexClass?: string;          // default: "z-0"
+  type?: string; // default: "video/mp4"
+  fit?: ObjectFit; // default: "contain" (keeps your letterbox look)
+  position?: ObjectPosition; // default: "center"
+  className?: string; // extra classes for the wrapping layer
+  zIndexClass?: string; // default: "z-0"
   poster?: string;
-  ariaHidden?: boolean;          // default: true (decorative)
-  pauseOnReducedMotion?: boolean;// default: true
+  ariaHidden?: boolean; // default: true (decorative)
+  pauseOnReducedMotion?: boolean; // default: true
 };
 
 const posToClass: Record<ObjectPosition, string> = {

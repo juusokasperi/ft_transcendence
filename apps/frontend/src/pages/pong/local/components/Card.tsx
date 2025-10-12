@@ -60,8 +60,8 @@ const Card: React.FC<CardProps> = ({
     effectiveAlign === 'between'
       ? 'mb-4 flex items-start justify-between gap-4'
       : effectiveAlign === 'center'
-      ? 'mb-4 flex flex-col items-center gap-1 text-center'
-      : 'mb-4 flex flex-col gap-1';
+        ? 'mb-4 flex flex-col items-center gap-1 text-center'
+        : 'mb-4 flex flex-col gap-1';
 
   const titleClass =
     effectiveAlign === 'center'

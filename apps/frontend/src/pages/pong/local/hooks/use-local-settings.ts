@@ -62,12 +62,18 @@ export function useLocalSettings(options: UseLocalSettingsOptions = {}): UseLoca
     };
   }, []);
 
-  const update = useCallback((updater: SetStateAction<UserSettings>) => {
-    setSettings((prev) => {
-      const draft = typeof updater === 'function' ? (updater as (p: UserSettings) => UserSettings)(prev) : updater;
-      return applyUpdate(draft);
-    });
-  }, [applyUpdate]);
+  const update = useCallback(
+    (updater: SetStateAction<UserSettings>) => {
+      setSettings((prev) => {
+        const draft =
+          typeof updater === 'function'
+            ? (updater as (p: UserSettings) => UserSettings)(prev)
+            : updater;
+        return applyUpdate(draft);
+      });
+    },
+    [applyUpdate],
+  );
 
   const restore = useCallback(() => {
     const storage = storageRef.current;
@@ -102,10 +108,13 @@ export function useLocalSettings(options: UseLocalSettingsOptions = {}): UseLoca
     }
   }, [storageKey]);
 
-  const defaultRules = useMemo(() => ({
-    game: { ...defaultSettings.rules.game },
-    match: { ...defaultSettings.rules.match },
-  }), []);
+  const defaultRules = useMemo(
+    () => ({
+      game: { ...defaultSettings.rules.game },
+      match: { ...defaultSettings.rules.match },
+    }),
+    [],
+  );
 
   const defaults = useMemo(() => cloneSettings(defaultSettings), []);
 

@@ -14,7 +14,7 @@ const InfoTip: React.FC<{ text: string; side?: 'left' | 'right' }> = ({ text, si
   const id = useId();
   const sideCls = side === 'right' ? 'left-full ml-2 origin-left' : 'right-full mr-2 origin-right';
   return (
-    <span className="relative group inline-flex items-center">
+    <span className="group relative inline-flex items-center">
       <span
         tabIndex={0}
         aria-describedby={id}
@@ -25,7 +25,7 @@ const InfoTip: React.FC<{ text: string; side?: 'left' | 'right' }> = ({ text, si
       <span
         role="tooltip"
         id={id}
-        className={`pointer-events-none absolute top-1/2 -translate-y-1/2 ${sideCls} z-20 w-64 rounded-md border border-white/15 bg-black/80 p-2 text-sm text-white opacity-0 shadow-lg backdrop-blur-md transition-opacity duration-100 group-hover:opacity-100 group-focus-within:opacity-100`}
+        className={`pointer-events-none absolute top-1/2 -translate-y-1/2 ${sideCls} z-20 w-64 rounded-md border border-white/15 bg-black/80 p-2 text-sm text-white opacity-0 shadow-lg backdrop-blur-md transition-opacity duration-100 group-focus-within:opacity-100 group-hover:opacity-100`}
       >
         {text}
       </span>
@@ -133,7 +133,7 @@ export const MatchRules: React.FC<MatchRulesProps> = ({ rules, onUpdate, onReset
             {/* Match: Best Of (left column → tooltip on the right) */}
             <FieldRow
               label="Best Of"
-              tip='Number of games in the match. “Best of 5” means first to 3 games wins the match (3→2, 5→3, 7→4).'
+              tip="Number of games in the match. “Best of 5” means first to 3 games wins the match (3→2, 5→3, 7→4)."
               tipSide="right"
             >
               <SelectField
@@ -199,9 +199,7 @@ export const MatchRules: React.FC<MatchRulesProps> = ({ rules, onUpdate, onReset
             >
               <CheckboxField
                 checked={rules.match.alternateInitialServerEachGame}
-                onChange={(e) =>
-                  updateMatch('alternateInitialServerEachGame', e.target.checked)
-                }
+                onChange={(e) => updateMatch('alternateInitialServerEachGame', e.target.checked)}
               />
             </FieldRow>
           </div>

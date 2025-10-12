@@ -24,7 +24,9 @@
   align-items: center;
   justify-content: center;
 
-  transition: box-shadow 200ms ease, transform 120ms ease;
+  transition:
+    box-shadow 200ms ease,
+    transform 120ms ease;
 }
 
 .button:hover {

@@ -8,13 +8,13 @@ type PlayingViewProps = {
 };
 
 const TABLE_LENGTH_X = 2.74;
-const TABLE_WIDTH_Z  = 1.525;
-const PAD_X = 0.20;
-const PAD_Z = 0.20;
+const TABLE_WIDTH_Z = 1.525;
+const PAD_X = 0.2;
+const PAD_Z = 0.2;
 
 function defaultWorldAspect(): number {
   const framedX = TABLE_LENGTH_X / 2 + PAD_X;
-  const framedZ = TABLE_WIDTH_Z  / 2 + PAD_Z;
+  const framedZ = TABLE_WIDTH_Z / 2 + PAD_Z;
   return framedX / framedZ;
 }
 
@@ -29,7 +29,11 @@ function containSize(viewW: number, viewH: number, aspect: number) {
   return { w, h };
 }
 
-export const PlayingView: React.FC<PlayingViewProps> = ({ canvasRef, onQuit, aspect = defaultWorldAspect() }) => {
+export const PlayingView: React.FC<PlayingViewProps> = ({
+  canvasRef,
+  onQuit,
+  aspect = defaultWorldAspect(),
+}) => {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const [size, setSize] = useState<{ w: number; h: number }>({ w: 0, h: 0 });
 
@@ -78,7 +82,9 @@ export const PlayingView: React.FC<PlayingViewProps> = ({ canvasRef, onQuit, asp
         aria-label="Quit game"
       >
         Quit
-        <span aria-hidden className="game-quit-hover-text">Quit</span>
+        <span aria-hidden className="game-quit-hover-text">
+          Quit
+        </span>
       </button>
     </div>
   );

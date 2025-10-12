@@ -49,10 +49,14 @@ export const PostMatchView: React.FC<PostMatchViewProps> = ({
           </span>
         }
       >
-        <div ref={hudContainerRef} className="w-full z-10" style={{ height: 150 }} />
+        <div ref={hudContainerRef} className="z-10 w-full" style={{ height: 150 }} />
         <div className="flex w-full items-center justify-center gap-4">
-          <PlayButton color="cyan" onClick={onPlayAgain}>PLAY AGAIN</PlayButton>
-          <PlayButton color="crimson" onClick={onReturnToMenu}>MENU</PlayButton>
+          <PlayButton color="cyan" onClick={onPlayAgain}>
+            PLAY AGAIN
+          </PlayButton>
+          <PlayButton color="crimson" onClick={onReturnToMenu}>
+            MENU
+          </PlayButton>
         </div>
       </Card>
     </div>

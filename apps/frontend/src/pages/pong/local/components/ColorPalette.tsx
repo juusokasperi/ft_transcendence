@@ -35,14 +35,13 @@ const ColorPalette: React.FC<ColorPaletteProps> = ({
   ariaLabel,
   showLabels = false,
 }) => {
-  const isSelected = (hex: string) =>
-    (selected ?? '').toLowerCase() === hex.toLowerCase();
+  const isSelected = (hex: string) => (selected ?? '').toLowerCase() === hex.toLowerCase();
 
   const rounded = shape === 'circle' ? 'rounded-full' : 'rounded-md';
 
   return (
     <div
-      className={["flex flex-wrap gap-2", className].filter(Boolean).join(" ")}
+      className={['flex flex-wrap gap-2', className].filter(Boolean).join(' ')}
       aria-label={ariaLabel || 'Color palette'}
     >
       {palette.map((c) => {
@@ -63,17 +62,21 @@ const ColorPalette: React.FC<ColorPaletteProps> = ({
             style={{ backgroundColor: c.hex }}
           >
             <span className="sr-only">{c.name}</span>
-            {active && <span className={`pointer-events-none absolute inset-0 ${rounded} ring-1 ring-white/70`} />}
+            {active && (
+              <span
+                className={`pointer-events-none absolute inset-0 ${rounded} ring-1 ring-white/70`}
+              />
+            )}
           </button>
         );
       })}
-      {showLabels && (
-        <div className="basis-full" aria-hidden />
-      )}
+      {showLabels && <div className="basis-full" aria-hidden />}
       {showLabels && (
         <div className="mt-2 grid w-full grid-cols-7 gap-2 text-center text-xs text-slate-300">
           {palette.map((c) => (
-            <span key={c.hex} className="truncate">{c.name}</span>
+            <span key={c.hex} className="truncate">
+              {c.name}
+            </span>
           ))}
         </div>
       )}

@@ -170,11 +170,7 @@ function normalizeRules(value: unknown, fallback: Ruleset): Ruleset {
       targetScore: getNumber(game.targetScore, fallback.game.targetScore, 1),
       winBy: getNumber(game.winBy, fallback.game.winBy, 1),
       servesPerTurn: getNumber(game.servesPerTurn, fallback.game.servesPerTurn, 1),
-      deuceServesPerTurn: getNumber(
-        game.deuceServesPerTurn,
-        fallback.game.deuceServesPerTurn,
-        1,
-      ),
+      deuceServesPerTurn: getNumber(game.deuceServesPerTurn, fallback.game.deuceServesPerTurn, 1),
       deuceAt: getNumberOrUndefined(game.deuceAt, fallback.game.deuceAt, 1),
     },
     match: {

@@ -10,8 +10,7 @@ type CSSVars = React.CSSProperties & {
 
 export type PlayButtonSize = 'sm' | 'md' | 'lg';
 
-export interface PlayButtonProps
-  extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+export interface PlayButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   label?: string;
   color?: React.CSSProperties['color']; // optional, strongly typed
   size?: PlayButtonSize;
@@ -19,24 +18,15 @@ export interface PlayButtonProps
 }
 
 const SIZE_VARS: Record<PlayButtonSize, Partial<CSSVars>> = {
-  sm: { ['--btn-w']: '8.5em', ['--btn-h']: '3em',  ['--btn-font']: '14px', ['--btn-border']: '2px' },
+  sm: { ['--btn-w']: '8.5em', ['--btn-h']: '3em', ['--btn-font']: '14px', ['--btn-border']: '2px' },
   md: {}, // default CSS
-  lg: { ['--btn-w']: '12em',  ['--btn-h']: '4em',  ['--btn-font']: '18px', ['--btn-border']: '3px' },
+  lg: { ['--btn-w']: '12em', ['--btn-h']: '4em', ['--btn-font']: '18px', ['--btn-border']: '3px' },
 };
 
 export const PlayButton = React.forwardRef<HTMLButtonElement, PlayButtonProps>(
   (
-    {
-      label = 'PLAY',
-      children,
-      className,
-      color,
-      size = 'md',
-      fullWidth = false,
-      style,
-      ...props
-    },
-    ref
+    { label = 'PLAY', children, className, color, size = 'md', fullWidth = false, style, ...props },
+    ref,
   ) => {
     const varStyle: CSSVars = {
       ...style,
@@ -56,7 +46,7 @@ export const PlayButton = React.forwardRef<HTMLButtonElement, PlayButtonProps>(
         {children ?? label}
       </button>
     );
-  }
+  },
 );
 
 PlayButton.displayName = 'PlayButton';

@@ -130,14 +130,18 @@ const LocalGame: React.FC = () => {
         >
           <BackgroundVideo src={gifImg} fit="contain" position="center" />
 
-          <h1 id="postmatch-title" className="sr-only">Match Summary</h1>
+          <h1 id="postmatch-title" className="sr-only">
+            Match Summary
+          </h1>
 
           <section
             aria-labelledby="summary-heading"
             className="relative z-10 h-full w-full overflow-y-auto"
           >
             <div className="mx-auto w-full max-w-5xl p-6">
-              <h2 id="summary-heading" className="sr-only">Match result</h2>
+              <h2 id="summary-heading" className="sr-only">
+                Match result
+              </h2>
 
               <div className="mt-6 md:mt-10">
                 <PostMatchView
@@ -157,42 +161,42 @@ const LocalGame: React.FC = () => {
     return <PlayingView canvasRef={canvasRef} onQuit={handleQuit} />;
   }
 
-return (
-  <div className="fixed inset-0 overflow-hidden text-white">
-    <Navbar />
+  return (
+    <div className="fixed inset-0 overflow-hidden text-white">
+      <Navbar />
 
-    <main
-      aria-labelledby="settings-title"
-      className="absolute inset-x-0 bottom-0 top-[var(--navbar-h,80px)]"
-    >
-      <BackgroundVideo src={gifImg} fit="contain" position="center" />
+      <main
+        aria-labelledby="settings-title"
+        className="absolute inset-x-0 bottom-0 top-[var(--navbar-h,80px)]"
+      >
+        <BackgroundVideo src={gifImg} fit="contain" position="center" />
 
-      <h1 id="settings-title" className="sr-only">
-        Local Match Settings
-      </h1>
+        <h1 id="settings-title" className="sr-only">
+          Local Match Settings
+        </h1>
 
-      <section className="relative z-10 h-full w-full overflow-y-auto">
-        <div className="mx-auto w-full max-w-4xl p-6">
-          <div className="mt-6 md:mt-10 rounded-2xl">
-            <SettingsView
-              settings={settings}
-              onUpdateSettings={update}
-              onSave={handleSave}
-              onReset={handleReset}
-              onResetRules={resetRules}
-              onPlay={handlePlay}
-              aiEnabled={aiEnabled}
-              botDifficulty={botDifficulty}
-              onToggleAI={(enabled) => setAiEnabled(enabled)}
-              onDifficultyChange={(difficulty) => setBotDifficulty(difficulty)}
-              arrowSeatLabel={arrowSeatLabel}
-            />
+        <section className="relative z-10 h-full w-full overflow-y-auto">
+          <div className="mx-auto w-full max-w-4xl p-6">
+            <div className="mt-6 rounded-2xl md:mt-10">
+              <SettingsView
+                settings={settings}
+                onUpdateSettings={update}
+                onSave={handleSave}
+                onReset={handleReset}
+                onResetRules={resetRules}
+                onPlay={handlePlay}
+                aiEnabled={aiEnabled}
+                botDifficulty={botDifficulty}
+                onToggleAI={(enabled) => setAiEnabled(enabled)}
+                onDifficultyChange={(difficulty) => setBotDifficulty(difficulty)}
+                arrowSeatLabel={arrowSeatLabel}
+              />
+            </div>
           </div>
-        </div>
-      </section>
-    </main>
-  </div>
-);
+        </section>
+      </main>
+    </div>
+  );
 };
 
 export default LocalGame;

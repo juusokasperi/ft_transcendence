@@ -92,20 +92,13 @@ export function usePongRuntime({
       player2: settings.player2,
       rules: settings.rules,
     });
-  }, [
-    playing,
-    settings.player1,
-    settings.player2,
-    settings.rules,
-  ]);
+  }, [playing, settings.player1, settings.player2, settings.rules]);
 
   useLayoutEffect(() => {
     if (!playing) return;
     const canvas = canvasRef.current;
     if (!canvas) return;
-    const handle = requestAnimationFrame(() =>
-      canvas.focus({ preventScroll: true }),
-    );
+    const handle = requestAnimationFrame(() => canvas.focus({ preventScroll: true }));
     return () => cancelAnimationFrame(handle);
   }, [playing, canvasRef]);
 
