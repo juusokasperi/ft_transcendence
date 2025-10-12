@@ -9,7 +9,7 @@ type Size = 'sm' | 'md' | 'lg';
 type Shape = 'circle' | 'square';
 
 export interface ColorPaletteProps {
-  palette: ColorOption[];
+  palette: ReadonlyArray<ColorOption>;
   selected?: string | null;
   onSelect: (color: ColorOption) => void;
   size?: Size;

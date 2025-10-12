@@ -1,6 +1,6 @@
 import type { ColorOption } from './ColorPalette';
 
-export const DEFAULT_PONG_PALETTE: ColorOption[] = [
+export const DEFAULT_PONG_PALETTE: ReadonlyArray<ColorOption> = [
   { name: 'Red', hex: '#ff3b3b' },
   { name: 'Orange', hex: '#ff8c1a' },
   { name: 'Yellow', hex: '#ffff33' },
@@ -9,4 +9,3 @@ export const DEFAULT_PONG_PALETTE: ColorOption[] = [
   { name: 'Indigo', hex: '#7a5cff' },
   { name: 'Violet', hex: '#bf5fff' },
 ];
-

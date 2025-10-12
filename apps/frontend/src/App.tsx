@@ -11,7 +11,7 @@ import PingPong from './pages/pong/pong-homepage';
 import LocalGame from './pages/pong/local/local-game';
 import DeleteUser from './pages/DeleteUser';
 import ConfirmEmail from './pages/ConfirmEmail';
-import OnlineGame from './pages/pong/online-game';
+import OnlineGame from './pages/pong/online/online-game';
 import Tournament from './pages/pong/tournament/tournament';
 import TournamentDetail from './pages/pong/tournament/tournament-detail';
 import ForgotPassword from './pages/ForgotPassword';

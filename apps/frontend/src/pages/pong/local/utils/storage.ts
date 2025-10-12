@@ -1,5 +1,5 @@
 import type { Ruleset } from '@pong/shared';
-import type { ControllerScheme } from '../../../games/pong/modes/preferences';
+import type { ControllerScheme } from '../../../../games/pong/modes/preferences';
 
 export type AccessibilitySettings = {
   colorBlindMode: 'none' | 'protanopia' | 'deuteranopia' | 'tritanopia' | 'highContrast';
@@ -19,7 +19,7 @@ export type UserSettings = {
   rules: Ruleset;
 };
 
-const colorBlindModes: AccessibilitySettings['colorBlindMode'][] = [
+const COLOR_BLIND_MODES: ReadonlyArray<AccessibilitySettings['colorBlindMode']> = [
   'none',
   'protanopia',
   'deuteranopia',
@@ -27,15 +27,15 @@ const colorBlindModes: AccessibilitySettings['colorBlindMode'][] = [
   'highContrast',
 ];
 
-const photoSensitiveModes: AccessibilitySettings['photoSensitiveMode'][] = [
+const PHOTO_SENSITIVE_MODES: ReadonlyArray<AccessibilitySettings['photoSensitiveMode']> = [
   'none',
   'reducedFX',
   'noFlash',
 ];
 
-const controllerSchemes: ControllerScheme[] = ['wasd', 'arrows'];
+const CONTROLLER_SCHEMES: ReadonlyArray<ControllerScheme> = ['wasd', 'arrows'];
 
-const bestOfModes: Ruleset['match']['bestOf'][] = [3, 5, 7];
+const BEST_OF_MODES: ReadonlyArray<Ruleset['match']['bestOf']> = [3, 5, 7];
 
 export function readSettingsFromStorage(
   storage: Storage,
@@ -46,7 +46,6 @@ export function readSettingsFromStorage(
   if (!saved) {
     return defaults;
   }
-
   return parseStoredSettings(saved, defaults);
 }
 
@@ -62,23 +61,45 @@ export function clearStoredSettings(storage: Storage, key: string): void {
   storage.removeItem(key);
 }
 
+export function getBestOf(
+  value: unknown,
+  fallback: Ruleset['match']['bestOf'],
+): Ruleset['match']['bestOf'] {
+  const numeric = typeof value === 'number' ? value : Number(value);
+  if (BEST_OF_MODES.includes(numeric as Ruleset['match']['bestOf'])) {
+    return numeric as Ruleset['match']['bestOf'];
+  }
+  return fallback;
+}
+
+export function ensureDistinctControllers(
+  player1: PlayerSettings,
+  player2: PlayerSettings,
+): { player1: PlayerSettings; player2: PlayerSettings } {
+  if (player1.controller === player2.controller) {
+    if (player1.controller === 'wasd') {
+      return {
+        player1,
+        player2: { ...player2, controller: 'arrows' },
+      };
+    }
+    return {
+      player1: { ...player1, controller: 'wasd' },
+      player2,
+    };
+  }
+  return { player1, player2 };
+}
+
 function parseStoredSettings(raw: string, defaults: UserSettings): UserSettings {
   try {
     const parsed = JSON.parse(raw);
     const player1 = normalizePlayerSettings(parsed?.player1, defaults.player1);
     const player2 = normalizePlayerSettings(parsed?.player2, defaults.player2);
-    let adjustedP1 = player1;
-    let adjustedP2 = player2;
-    if (player1.controller === player2.controller) {
-      if (player1.controller === 'wasd') {
-        adjustedP2 = { ...player2, controller: 'arrows' };
-      } else {
-        adjustedP1 = { ...player1, controller: 'wasd' };
-      }
-    }
+    const adjusted = ensureDistinctControllers(player1, player2);
     return {
-      player1: adjustedP1,
-      player2: adjustedP2,
+      player1: adjusted.player1,
+      player2: adjusted.player2,
       accessibility: normalizeAccessibility(parsed?.accessibility, defaults.accessibility),
       rules: normalizeRules(parsed?.rules, defaults.rules),
     };
@@ -98,7 +119,7 @@ function normalizePlayerSettings(value: unknown, fallback: PlayerSettings): Play
     typeof record.paddleColor === 'string' && record.paddleColor.trim()
       ? record.paddleColor
       : fallback.paddleColor;
-  const controller = controllerSchemes.includes(record.controller as ControllerScheme)
+  const controller = CONTROLLER_SCHEMES.includes(record.controller as ControllerScheme)
     ? (record.controller as ControllerScheme)
     : fallback.controller;
 
@@ -149,7 +170,11 @@ function normalizeRules(value: unknown, fallback: Ruleset): Ruleset {
       targetScore: getNumber(game.targetScore, fallback.game.targetScore, 1),
       winBy: getNumber(game.winBy, fallback.game.winBy, 1),
       servesPerTurn: getNumber(game.servesPerTurn, fallback.game.servesPerTurn, 1),
-      deuceServesPerTurn: getNumber(game.deuceServesPerTurn, fallback.game.deuceServesPerTurn, 1),
+      deuceServesPerTurn: getNumber(
+        game.deuceServesPerTurn,
+        fallback.game.deuceServesPerTurn,
+        1,
+      ),
       deuceAt: getNumberOrUndefined(game.deuceAt, fallback.game.deuceAt, 1),
     },
     match: {
@@ -168,28 +193,17 @@ function normalizeRules(value: unknown, fallback: Ruleset): Ruleset {
   };
 }
 
-export function getBestOf(
-  value: unknown,
-  fallback: Ruleset['match']['bestOf'],
-): Ruleset['match']['bestOf'] {
-  const numeric = typeof value === 'number' ? value : Number(value);
-  if (bestOfModes.includes(numeric as Ruleset['match']['bestOf'])) {
-    return numeric as Ruleset['match']['bestOf'];
-  }
-  return fallback;
-}
-
 function isValidColorBlindMode(value: unknown): boolean {
   return (
     typeof value === 'string' &&
-    colorBlindModes.includes(value as AccessibilitySettings['colorBlindMode'])
+    COLOR_BLIND_MODES.includes(value as AccessibilitySettings['colorBlindMode'])
   );
 }
 
 function isValidPhotoSensitiveMode(value: unknown): boolean {
   return (
     typeof value === 'string' &&
-    photoSensitiveModes.includes(value as AccessibilitySettings['photoSensitiveMode'])
+    PHOTO_SENSITIVE_MODES.includes(value as AccessibilitySettings['photoSensitiveMode'])
   );
 }
 

@@ -1,7 +1,7 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import Navbar from '../../components/Navbar';
-import { BackgroundVideo } from './pong-ui/background-video';
+import { BackgroundVideo } from './components/background-video';
 import gifImg from '../../assets/gif.mp4';
 import { Card, PlayButton } from './local/components';
 
