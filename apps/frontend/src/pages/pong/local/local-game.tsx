@@ -8,12 +8,7 @@ import { createScoreboard } from '@pong/render';
 import type { BotDifficulty, Observation } from '../../../games/pong/ai/bot-controller';
 import type { ControllerScheme, Preferences } from '../../../games/pong/modes/preferences';
 import Navbar from '../../../components/Navbar';
-import {
-  Card,
-  ColorPalette,
-  DEFAULT_PONG_PALETTE,
-  PlayButton,
-} from '../pong-ui/local';
+import { Card, ColorPalette, DEFAULT_PONG_PALETTE, PlayButton } from './components';
 import {
   clearStoredSettings,
   getBestOf,
@@ -700,9 +695,11 @@ const LocalGame: React.FC = () => {
                   </div>
                   {/* Rules-only reset */}
                   <div className="flex justify-end">
-                    <PlayButton color="gold"
-                      onClick={() => setSettings({ ...settings, rules: defaultSettings.rules })}>
-                        RESET RULES
+                    <PlayButton
+                      color="gold"
+                      onClick={() => setSettings({ ...settings, rules: defaultSettings.rules })}
+                    >
+                      RESET RULES
                     </PlayButton>
                   </div>
                 </div>
@@ -711,13 +708,22 @@ const LocalGame: React.FC = () => {
 
             {/* Save/Reset Settings Buttons */}
             <div className="flex flex-wrap justify-center gap-4">
-              <PlayButton color="limegreen" onClick={saveSettings}>  SAVE SETTINGS  </PlayButton>
-              <PlayButton color="crimson"   onClick={resetSettings}> RESET SETTINGS </PlayButton>
+              <PlayButton color="limegreen" onClick={saveSettings}>
+                {' '}
+                SAVE SETTINGS{' '}
+              </PlayButton>
+              <PlayButton color="crimson" onClick={resetSettings}>
+                {' '}
+                RESET SETTINGS{' '}
+              </PlayButton>
             </div>
 
             {/* Play Button */}
             <div className="flex justify-center">
-              <PlayButton color="cyan"      onClick={handlePlay}>        PLAY         </PlayButton>
+              <PlayButton color="cyan" onClick={handlePlay}>
+                {' '}
+                PLAY{' '}
+              </PlayButton>
             </div>
           </Card>
           {/* end card */}
@@ -738,7 +744,7 @@ const LocalGame: React.FC = () => {
     <div className="relative min-h-screen w-full overflow-auto">
       <Navbar />
       {/* Decorative background video (letterboxed, centered). Hidden from ATs. */}
-        <BackgroundVideo src={gifImg} fit="contain" position="center" />
+      <BackgroundVideo src={gifImg} fit="contain" position="center" />
 
       {/* Results Overlay */}
       <div className="flex min-h-screen items-center justify-center">
@@ -755,7 +761,8 @@ const LocalGame: React.FC = () => {
 
           {/* Buttons row centered */}
           <div className="flex w-full items-center justify-center gap-4">
-            <PlayButton color="cyan"
+            <PlayButton
+              color="cyan"
               onClick={() => {
                 setPostMatch(null);
                 setIsPlaying(true);

@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
-import type { ReadyMatch, CountdownSnapshot } from './types';
-import { readyStageLabel } from './utils';
+import type { ReadyMatch, CountdownSnapshot } from '../types';
+import { readyStageLabel } from '../utils';
 
 export type TournamentDirectedMatchesPanelProps = {
   matches: ReadyMatch[];

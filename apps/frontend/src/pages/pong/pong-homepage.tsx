@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import Navbar from '../../components/Navbar';
 import { BackgroundVideo } from './pong-ui/background-video';
 import gifImg from '../../assets/gif.mp4';
-import { Card, PlayButton } from './pong-ui/local';
+import { Card, PlayButton } from './local/components';
 
 const PingPong: React.FC = () => {
   const navigate = useNavigate();
@@ -14,7 +14,7 @@ const PingPong: React.FC = () => {
 
   return (
     // Fixed, full-viewport layer with hidden overflow => no scrollbars
-    <div className="fixed inset-0 bg-black text-white overflow-hidden">
+    <div className="fixed inset-0 overflow-hidden bg-black text-white">
       {/* Global site navigation (fixed). */}
       <Navbar />
 
@@ -44,15 +44,33 @@ const PingPong: React.FC = () => {
             }
           >
             <nav aria-label="Choose a game mode" className="mt-6 flex flex-col items-center gap-4">
-              <PlayButton size="lg" color="limegreen" onClick={handleLocalPlay} aria-label="Play local mode" type="button">
+              <PlayButton
+                size="lg"
+                color="limegreen"
+                onClick={handleLocalPlay}
+                aria-label="Play local mode"
+                type="button"
+              >
                 PLAY LOCAL
               </PlayButton>
 
-              <PlayButton size="lg" color="cyan" onClick={handleOnlinePlay} aria-label="Play online mode" type="button">
+              <PlayButton
+                size="lg"
+                color="cyan"
+                onClick={handleOnlinePlay}
+                aria-label="Play online mode"
+                type="button"
+              >
                 PLAY ONLINE
               </PlayButton>
 
-              <PlayButton size="lg" color="magenta" onClick={handleTournaments} aria-label="Enter tournament mode" type="button">
+              <PlayButton
+                size="lg"
+                color="magenta"
+                onClick={handleTournaments}
+                aria-label="Enter tournament mode"
+                type="button"
+              >
                 TOURNAMENT
               </PlayButton>
             </nav>
