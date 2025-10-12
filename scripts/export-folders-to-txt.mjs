@@ -28,7 +28,8 @@ const DEFAULT_DIRS = [
   'packages/pong/game-logic',
   'packages/pong/render',
   'packages/pong/shared',
-  'apps/frontend/src/pages/pong/local'
+  'apps/frontend/src/pages/pong/local',
+  'packages/pong/render/src/client/engine'
 ];
 
 const MAX_FILE_BYTES = 1024 * 1024; // 1MB guard
