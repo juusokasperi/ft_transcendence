@@ -1,12 +1,12 @@
 import React from 'react';
 import Navbar from '../../components/Navbar';
 import Button from '../../components/Button';
-import TournamentParticipantsPanel from './components/TournamentParticipantsPanel';
-import TournamentBracketPanel from './components/TournamentBracketPanel';
-import TournamentDirectedMatchesPanel from './components/TournamentDirectedMatchesPanel';
-import TournamentLobbyPanel from './components/TournamentLobbyPanel';
-import TournamentMatchOverlay from './components/TournamentMatchOverlay';
-import TournamentPageHeader from './components/TournamentPageHeader';
+import TournamentParticipantsPanel from './pong-ui/tournament/TournamentParticipantsPanel';
+import TournamentBracketPanel from './pong-ui/tournament/TournamentBracketPanel';
+import TournamentDirectedMatchesPanel from './pong-ui/tournament/TournamentDirectedMatchesPanel';
+import TournamentLobbyPanel from './pong-ui/tournament/TournamentLobbyPanel';
+import TournamentMatchOverlay from './pong-ui/tournament/TournamentMatchOverlay';
+import TournamentPageHeader from './pong-ui/tournament/TournamentPageHeader';
 import { useTournamentPageController } from './hooks/useTournamentPageController';
 
 type TournamentPageProps = {

@@ -16,7 +16,7 @@ import type {
   CountdownSnapshot,
   ReadyMatch,
   TournamentSummary,
-} from '../components/types';
+} from '../pong-ui/tournament/types';
 import {
   MAX_VISIBLE_TOURNAMENTS,
   RECENT_TOURNAMENT_WINDOW_MS,

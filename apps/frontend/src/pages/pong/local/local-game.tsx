@@ -8,14 +8,19 @@ import { createScoreboard } from '@pong/render';
 import type { BotDifficulty, Observation } from '../../../games/pong/ai/bot-controller';
 import type { ControllerScheme, Preferences } from '../../../games/pong/modes/preferences';
 import Navbar from '../../../components/Navbar';
-import { Card, ColorPalette, DEFAULT_PONG_PALETTE, PlayButton } from '../../../components/pong-ui';
+import {
+  Card,
+  ColorPalette,
+  DEFAULT_PONG_PALETTE,
+  PlayButton,
+} from '../pong-ui/local';
 import {
   clearStoredSettings,
   getBestOf,
   readSettingsFromStorage,
   writeSettingsToStorage,
 } from './utils';
-import type { AccessibilitySettings, UserSettings } from './utils';
+import type { UserSettings } from './utils';
 import gifImg from '../../../assets/gif.mp4';
 
 const defaultSettings: UserSettings = {
@@ -340,11 +345,10 @@ const LocalGame: React.FC = () => {
         <div className="relative z-10 flex min-h-screen flex-col items-center justify-center space-y-6 bg-black/60 pt-24 text-white">
           {/* Unified card container */}
           <Card
-            title={<div className="text-center w-full">Local Game Settings</div>}
+            title={<div className="w-full text-center">Local Game Settings</div>}
             accent="from-pink-500 via-purple-500 to-indigo-500"
             className="w-full max-w-4xl space-y-6 backdrop-blur"
           >
-
             {/* Player Settings Row */}
             <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
               {/* Player 1 Settings */}
@@ -703,36 +707,24 @@ const LocalGame: React.FC = () => {
                   </div>
                   {/* Rules-only reset */}
                   <div className="flex justify-end">
-                    <button
-                      onClick={() => setSettings({ ...settings, rules: defaultSettings.rules })}
-                      className="rounded border border-yellow-400 px-4 py-2 text-yellow-400 transition hover:bg-yellow-400 hover:text-black"
-                    >
-                      Use defaults (rules)
-                    </button>
+                    <PlayButton color="gold"
+                      onClick={() => setSettings({ ...settings, rules: defaultSettings.rules })}>
+                        RESET RULES
+                    </PlayButton>
                   </div>
                 </div>
               )}
             </div>
 
-            {/* Buttons */}
+            {/* Save/Reset Settings Buttons */}
             <div className="flex flex-wrap justify-center gap-4">
-              <button
-                onClick={saveSettings}
-                className="cursor-pointer rounded border border-green-400 px-6 py-2 text-green-400 transition hover:bg-green-400 hover:text-black"
-              >
-                Save as Default
-              </button>
-              <button
-                onClick={resetSettings}
-                className="cursor-pointer rounded border border-red-400 px-6 py-2 text-red-400 transition hover:bg-red-400 hover:text-black"
-              >
-                Reset to Default
-              </button>
+              <PlayButton color="limegreen" onClick={saveSettings}>  SAVE SETTINGS  </PlayButton>
+              <PlayButton color="crimson"   onClick={resetSettings}> RESET SETTINGS </PlayButton>
             </div>
 
-            {/* Play button */}
+            {/* Play Button */}
             <div className="flex justify-center">
-              <PlayButton onClick={handlePlay}>PLAY</PlayButton>
+              <PlayButton color="cyan"      onClick={handlePlay}>        PLAY         </PlayButton>
             </div>
           </Card>
           {/* end card */}
@@ -758,7 +750,7 @@ const LocalGame: React.FC = () => {
         loop
         muted
         playsInline
-        className="absolute left-0 top-20 z-0 h-full w-full object-cover"
+        className="absolute h-full w-full"
       >
         <source src={gifImg} type="video/mp4" />
       </video>
@@ -767,8 +759,9 @@ const LocalGame: React.FC = () => {
       <div className="flex min-h-screen items-center justify-center">
         <Card
           title={
-            <span className="block w-full text-2xl font-semibold text-center">
-              The winner of this match is <span className="font-bold text-emerald-400">{winnerName}</span>!
+            <span className="block w-full text-center text-2xl font-semibold">
+              The winner of this match is{' '}
+              <span className="font-bold text-emerald-400">{winnerName}</span>!
             </span>
           }
         >
@@ -777,7 +770,7 @@ const LocalGame: React.FC = () => {
 
           {/* Buttons row centered */}
           <div className="flex w-full items-center justify-center gap-4">
-            <PlayButton accent="cyan"
+            <PlayButton color="cyan"
               onClick={() => {
                 setPostMatch(null);
                 setIsPlaying(true);
@@ -786,9 +779,7 @@ const LocalGame: React.FC = () => {
               PLAY AGAIN
             </PlayButton>
 
-            <PlayButton accent="crimson"
-              onClick={() => navigate('/ping-pong')}
-            >
+            <PlayButton color="crimson" onClick={() => navigate('/ping-pong')}>
               MENU
             </PlayButton>
           </div>

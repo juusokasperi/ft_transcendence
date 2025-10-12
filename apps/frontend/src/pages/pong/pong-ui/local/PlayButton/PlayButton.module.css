@@ -1,0 +1,43 @@
+/* PlayButton.module.css */
+.button {
+  /* layout */
+  --btn-w: 10em;
+  --btn-h: 3.5em;
+  --btn-font: 16px;
+  --btn-border: 3px;
+
+  width: var(--btn-w);
+  height: var(--btn-h);
+  position: relative;
+
+  /* single source of truth: currentColor */
+  background: transparent;
+  color: currentColor;
+  border: var(--btn-border) ridge currentColor;
+
+  border-radius: 0.3em;
+  font-size: var(--btn-font);
+  font-weight: bold;
+
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  transition: box-shadow 200ms ease, transform 120ms ease;
+}
+
+.button:hover {
+  box-shadow: inset 0 0 25px currentColor;
+}
+
+.button:focus-visible {
+  outline: none;
+  box-shadow:
+    0 0 0 3px currentColor,
+    inset 0 0 25px currentColor;
+}
+
+.button:active {
+  transform: translateY(1px);
+}
