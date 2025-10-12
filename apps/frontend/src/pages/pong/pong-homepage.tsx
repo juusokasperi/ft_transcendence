@@ -1,6 +1,7 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import Navbar from '../../components/Navbar';
+import { BackgroundVideo } from './pong-ui/background-video';
 import gifImg from '../../assets/gif.mp4';
 import { Card, PlayButton } from './pong-ui/local';
 
@@ -23,16 +24,7 @@ const PingPong: React.FC = () => {
         className="absolute inset-x-0 bottom-0 top-[var(--navbar-h,80px)]"
       >
         {/* Decorative background video (letterboxed, centered). Hidden from ATs. */}
-        <video
-          className="absolute inset-0 z-0 h-full w-full object-co object-center pointer-events-none"
-          autoPlay
-          loop
-          muted
-          playsInline
-          aria-hidden="true"
-        >
-          <source src={gifImg} type="video/mp4" />
-        </video>
+        <BackgroundVideo src={gifImg} fit="contain" position="center" />
 
         {/* Page title (accessible) */}
         <h1 id="page-title" className="sr-only">

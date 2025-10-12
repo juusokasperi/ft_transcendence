@@ -21,6 +21,7 @@ import {
   writeSettingsToStorage,
 } from './utils';
 import type { UserSettings } from './utils';
+import { BackgroundVideo } from '../pong-ui/background-video';
 import gifImg from '../../../assets/gif.mp4';
 
 const defaultSettings: UserSettings = {
@@ -330,16 +331,8 @@ const LocalGame: React.FC = () => {
     return (
       <div className="relative min-h-screen w-full overflow-auto">
         <Navbar />
-        {/* Video Background */}
-        <video
-          autoPlay
-          loop
-          muted
-          playsInline
-          className="absolute left-0 top-0 z-0 h-full w-full object-cover"
-        >
-          <source src={gifImg} type="video/mp4" />
-        </video>
+        {/* Decorative background video (letterboxed, centered). Hidden from ATs. */}
+        <BackgroundVideo src={gifImg} fit="contain" position="center" />
 
         {/* Overlay Content */}
         <div className="relative z-10 flex min-h-screen flex-col items-center justify-center space-y-6 bg-black/60 pt-24 text-white">
@@ -744,16 +737,8 @@ const LocalGame: React.FC = () => {
   return (
     <div className="relative min-h-screen w-full overflow-auto">
       <Navbar />
-      {/* Video Background */}
-      <video
-        autoPlay
-        loop
-        muted
-        playsInline
-        className="absolute h-full w-full"
-      >
-        <source src={gifImg} type="video/mp4" />
-      </video>
+      {/* Decorative background video (letterboxed, centered). Hidden from ATs. */}
+        <BackgroundVideo src={gifImg} fit="contain" position="center" />
 
       {/* Results Overlay */}
       <div className="flex min-h-screen items-center justify-center">
