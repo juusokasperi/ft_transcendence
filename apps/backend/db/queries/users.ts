@@ -69,8 +69,8 @@ export function addUser(
     const result = db
       .prepare(
         `
-					INSERT INTO Users (uuid, username, password_hash, email, avatar)
-					VALUES (?, ?, ?, ?, ?)
+					INSERT INTO Users (uuid, username, password_hash, email, avatar, ranking)
+					VALUES (?, ?, ?, ?, ?, 1000)
 					`,
       )
       .run(uuid, username, passwordHash, email, avatar ? avatar : null);
@@ -107,8 +107,8 @@ export function createUserFromGoogle(profile: {
     const uuid = crypto.randomUUID();
     const username = ensureUniqueUsername(profile.name ?? profile.email?.split('@')[0] ?? 'user');
     db.prepare(
-      `INSERT INTO Users (uuid, username, email, avatar, google_id)
-       VALUES (?, ?, ?, ?, ?)`,
+      `INSERT INTO Users (uuid, username, email, avatar, google_id, ranking)
+       VALUES (?, ?, ?, ?, ?, 1000)`,
     ).run(uuid, username, profile.email ?? null, profile.picture ?? null, profile.googleId);
     return getUser(uuid);
   } catch {

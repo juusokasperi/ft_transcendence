@@ -57,13 +57,13 @@ export const DesktopMatches: React.FC<{ match: Match; colorClass: string }> = ({
       </span>
 
       {/* Points scored */}
-      <span>{match.players.team1[0]!.stats?.pointsScored ?? '-'}</span>
+      <span>{match.players.team1[0]!.stats?.pointsScored ?? 0}</span>
 
       {/* Points conceded */}
-      <span>{match.players.team1[0]!.stats?.pointsConceded ?? '-'}</span>
+      <span>{match.players.team1[0]!.stats?.pointsConceded ?? 0}</span>
 
       {/* Biggest lead */}
-      <span>{match.players.team1[0]!.stats?.maxPointLead ?? '-'}</span>
+      <span>{match.players.team1[0]?.stats?.maxPointLead ?? 0}</span>
 
       {/* Played at */}
       <span className="text-slate-400">{formatDate(match.playedAt, 'short')}</span>
@@ -130,19 +130,19 @@ export const MobileMatches: React.FC<{ match: Match; colorClass: string }> = ({
         <div className="rounded bg-slate-900/50 px-3 py-2">
           <div className="text-slate-400">Points Scored</div>
           <div className="font-semibold text-white">
-            {match.players.team1[0]?.stats?.pointsScored ?? '-'}
+            {match.players.team1[0]?.stats?.pointsScored ?? 0}
           </div>
         </div>
         <div className="rounded bg-slate-900/50 px-3 py-2">
           <div className="text-slate-400">Points Conceded</div>
           <div className="font-semibold text-white">
-            {match.players.team1[0]?.stats?.pointsConceded ?? '-'}
+            {match.players.team1[0]?.stats?.pointsConceded ?? 0}
           </div>
         </div>
         <div className="rounded bg-slate-900/50 px-3 py-2">
           <div className="text-slate-400">Biggest Lead</div>
           <div className="font-semibold text-white">
-            {match.players.team1[0]?.stats?.maxPointLead ?? '-'}
+            {match.players.team1[0]?.stats?.maxPointLead ?? 0}
           </div>
         </div>
         <div className="rounded bg-slate-900/50 px-3 py-2">

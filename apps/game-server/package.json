@@ -12,19 +12,29 @@
   "main": "dist/index.js",
   "scripts": {
     "dev": "tsx --tsconfig ./tsconfig.json --watch index.ts",
+    "build:vite": "vite build",
     "check-format": "pnpm -F ft_transcendence check-format",
     "fix-format": "pnpm -F ft_transcendence fix-format",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "typecheck:watch": "tsc -p tsconfig.json --noEmit --watch",
-    "start": "node dist/index.js"
+    "start": "node dist/index.js",
+    "test": "vitest run --config vitest.config.ts",
+    "test:watch": "vitest watch --config vitest.config.ts"
   },
   "dependencies": {
     "@fastify/websocket": "^11.2.0",
     "@pong/game-logic": "workspace:*",
     "@pong/shared": "workspace:*",
+    "axios": "^1.12.0",
     "dotenv": "^17.2.2",
     "fastify": "^5.6.0",
     "ioredis": "^5.8.0",
-    "uuid": "^13.0.0"
+    "jsonwebtoken": "^9.0.2",
+    "uuid": "^13.0.0",
+    "ws": "^8.18.3"
+  },
+  "devDependencies": {
+    "@types/jsonwebtoken": "^9.0.10",
+    "@types/ws": "^8.18.1"
   }
 }

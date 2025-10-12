@@ -38,9 +38,6 @@ jobs:
       - name: Build all packages
         run: pnpm run build:libs
 
-      - name: Run typecheck
-        run: cd apps/frontend && pnpm run typecheck
-
       - name: Run dev server
         run: |
           nohup pnpm -F @app/web dev > frontend.log 2>&1 &

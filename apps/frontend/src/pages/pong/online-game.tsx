@@ -8,6 +8,7 @@ import type { Lobby } from '../../services/matchmaking';
 import Navbar from '../../components/Navbar';
 import { useSnackbar } from '../../context/SnackbarContext';
 import Button from '../../components/Button';
+import gifImg from '../../assets/gif.mp4';
 
 interface LobbyListProps {
   lobbies: Lobby[];
@@ -83,6 +84,7 @@ const OnlineGame: React.FC = () => {
   const [joinLobbyId, setJoinLobbyId] = useState('');
   const [ready, setReady] = useState(false);
   const [lobbies, setLobbies] = useState<Lobby[]>([]);
+  const [aliasInput, setAliasInput] = useState('');
 
   useEffect(() => {
     if (status === 'in_queue') {
@@ -192,6 +194,10 @@ const OnlineGame: React.FC = () => {
             });
           }
           break;
+        case 'TOURNAMENT_LOBBY_UPDATED':
+        case 'TOURNAMENT_BRACKET_SNAPSHOT':
+          // Tournament messages - handled in tournament pages, ignore here
+          break;
         // case 'lobbyList':
         //   setLobbies(msg.lobbies);
         //   break;
@@ -260,6 +266,38 @@ const OnlineGame: React.FC = () => {
           seat,
           joinToken,
           randomSeed,
+          onMatchEnd: (reason: string, winner?: 'east' | 'west') => {
+            console.log('[OnlineGame] Match ended callback:', reason, winner);
+
+            // Show notification about match result
+            if (reason === 'opponent_timeout' && winner) {
+              const youWon =
+                (seat === 'P1' && winner === 'east') || (seat === 'P2' && winner === 'west');
+              enqueueSnackbar({
+                message: youWon
+                  ? 'You won! Opponent disconnected.'
+                  : 'Match ended. Opponent timed out.',
+                variant: youWon ? 'success' : 'info',
+              });
+            }
+
+            // Return to idle state after match ends
+            setServerUrl('');
+            setRoomIdentifier('');
+            setJoinToken(null);
+            setRandomSeed(null);
+            setMatchId('');
+            setOpponentInfo({ username: null, mmr: 0 });
+
+            // Reconnect to matchmaking if connection was closed
+            if (clientRef.current && clientRef.current.socket.readyState !== WebSocket.OPEN) {
+              console.log('[OnlineGame] Matchmaking connection closed, reconnecting...');
+              setStatus('connecting');
+              setShouldReconnect((prev) => (prev + 1) % 2);
+            } else {
+              setStatus('idle');
+            }
+          },
         });
         appRef.current = app;
         setStatus('playing');
@@ -286,7 +324,7 @@ const OnlineGame: React.FC = () => {
 
   const handleJoinQueue = () => {
     console.info('[Matchmaking] Join queue request');
-    clientRef.current?.joinQueue();
+    clientRef.current?.joinQueue(aliasInput.trim() || undefined);
   };
 
   const handleLeaveQueue = () => {
@@ -392,7 +430,7 @@ const OnlineGame: React.FC = () => {
           playsInline
           className="pointer-events-none absolute inset-0 z-0 h-full w-full object-cover opacity-60"
         >
-          <source src="/src/assets/gif.mp4" type="video/mp4" />
+          <source src={gifImg} type="video/mp4" />
         </video>
         <div className="absolute inset-0 z-0 bg-black/60" />
         <div className="relative z-10 mx-auto flex min-h-[calc(100vh-6rem)] max-w-7xl flex-col items-center justify-center gap-6 p-4 text-white">
@@ -413,15 +451,23 @@ const OnlineGame: React.FC = () => {
             </div>
 
             {status === 'idle' && (
-              <Button
-                type="button"
-                variant="primary"
-                fullWidth
-                onClick={handleJoinQueue}
-                className="gap-3"
-              >
-                Find a Match
-              </Button>
+              <div className="flex flex-col gap-3">
+                <input
+                  value={aliasInput}
+                  onChange={(e) => setAliasInput(e.target.value)}
+                  placeholder="Your alias (optional)"
+                  className="w-full rounded-full border border-white/10 bg-black/50 px-4 py-2 text-sm text-white placeholder:text-white/40 focus:border-indigo-400 focus:outline-none"
+                />
+                <Button
+                  type="button"
+                  variant="primary"
+                  fullWidth
+                  onClick={handleJoinQueue}
+                  className="gap-3"
+                >
+                  Find a Match
+                </Button>
+              </div>
             )}
 
             {status === 'in_queue' && (

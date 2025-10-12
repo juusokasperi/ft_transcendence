@@ -4,7 +4,7 @@ import fastify from 'fastify';
 import { v4 as uuid } from 'uuid';
 import type { FastifyRequest, FastifyReply } from 'fastify';
 import { signJoinToken } from '@pong/shared/auth/tokenSign';
-import type { JoinTokenClaims } from '@pong/shared/protocol/net';
+import type { JoinTokenClaims, TournamentContext } from '@pong/shared/protocol/net';
 import axios from 'axios';
 import Redis from 'ioredis';
 import { AllocateSchema } from './utils/schema.ts';
@@ -20,14 +20,20 @@ app.post(
   },
   async (request: FastifyRequest, reply: FastifyReply) => {
     try {
-      const { idempotencyKey, mode, region, players, randomSeed, simulationStartTick } =
+      const { idempotencyKey, mode, region, players, randomSeed, simulationStartTick, tournament } =
         request.body as {
           idempotencyKey: string;
-          mode: string;
+          mode: 'ranked' | 'tournament' | 'invite';
           region: string;
-          players: Array<{ playerIdentifier: string; side: 'west' | 'east' }>;
+          players: Array<{
+            playerIdentifier: string;
+            side: 'west' | 'east';
+            tournamentParticipantId?: number;
+            alias?: string;
+          }>;
           simulationStartTick: number;
           randomSeed: number;
+          tournament?: TournamentContext;
         };
 
       const cached = await redis.get(IDEMPOTENCY_PREFIX + idempotencyKey);
@@ -73,6 +79,7 @@ app.post(
             randomSeed,
             simulationStartTick,
             joinDeadlineAtEpochMs,
+            tournament,
           },
           {
             headers: {
@@ -104,6 +111,11 @@ app.post(
           side: p.side,
           simulationStartTick,
         };
+        if (mode === 'tournament' && tournament) {
+          claims.tournamentId = tournament.tournamentId;
+          claims.tournamentMatchId = tournament.tournamentMatchId;
+          claims.tournamentStage = tournament.tournamentStage;
+        }
         perPlayerJoinTokens[p.playerIdentifier] = signJoinToken(claims);
       }
 

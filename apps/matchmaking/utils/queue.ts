@@ -6,6 +6,13 @@ import axios from 'axios';
 import { isAuthenticated } from '../auth/auth.ts';
 import { handleHandoff } from './pendingHandoffs.ts';
 
+export interface TournamentMatchContext {
+  tournamentId: number;
+  tournamentMatchId: number;
+  tournamentStage: 'semifinal' | 'final' | 'bronze';
+  participants?: Array<{ participantId: number; userUuid: string; alias?: string }>;
+}
+
 const queue: ClientInfo[] = [];
 
 export function tryMatchQueue(pendingMatches: Map<string, PendingMatch>) {
@@ -34,9 +41,12 @@ export function handleLeaveQueue(client: ClientInfo) {
   }
 }
 
-export async function handleJoinQueue(client: ClientInfo) {
+export async function handleJoinQueue(client: ClientInfo, alias?: string) {
   if (!isAuthenticated(client)) return;
   client.joinedAt = Date.now();
+  if (alias) {
+    client.alias = alias;
+  }
   queue.push(client);
   log(`Client joined queue`, { uuid: client.uuid, queueSize: queue.length });
   client.socket.send(JSON.stringify({ type: 'QUEUE_JOINED' }));
@@ -118,7 +128,12 @@ export function handleDeclineMatch(
   pendingMatches.delete(matchId);
 }
 
-export async function createMatch(a: ClientInfo, b: ClientInfo, mode: MatchMode) {
+export async function createMatch(
+  a: ClientInfo,
+  b: ClientInfo,
+  mode: MatchMode,
+  options?: { tournament?: TournamentMatchContext },
+) {
   const matchId = uuid();
   const randomSeed = Math.floor(Math.random() * 0x100000000);
   const simulationStartTick = Date.now() + 5000;
@@ -137,11 +152,20 @@ export async function createMatch(a: ClientInfo, b: ClientInfo, mode: MatchMode)
       mode,
       region: 'default',
       players: [
-        { playerIdentifier: a.uuid, side: 'west' },
-        { playerIdentifier: b.uuid, side: 'east' },
+        {
+          playerIdentifier: a.uuid,
+          side: 'west',
+          alias: a.alias || a.tournamentAlias || a.username,
+        },
+        {
+          playerIdentifier: b.uuid,
+          side: 'east',
+          alias: b.alias || b.tournamentAlias || b.username,
+        },
       ],
       randomSeed,
       simulationStartTick,
+      tournament: options?.tournament,
     });
   } catch (err) {
     log(
@@ -176,6 +200,7 @@ export async function createMatch(a: ClientInfo, b: ClientInfo, mode: MatchMode)
         joinTokenTTLSeconds: JOIN_TOKEN_TTL_SECONDS,
         randomSeed,
         simulationStartTick,
+        tournament: options?.tournament,
       }),
     );
     handleHandoff(player, roomIdentifier, mode);
@@ -184,6 +209,7 @@ export async function createMatch(a: ClientInfo, b: ClientInfo, mode: MatchMode)
     matchId,
     playerA: { username: a.username, uuid: a.uuid },
     playerB: { username: b.username, uuid: b.uuid },
+    tournament: options?.tournament,
   });
 }
 

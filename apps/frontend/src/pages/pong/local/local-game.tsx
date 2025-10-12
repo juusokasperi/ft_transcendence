@@ -16,6 +16,7 @@ import {
   writeSettingsToStorage,
 } from './utils';
 import type { AccessibilitySettings, UserSettings } from './utils';
+import gifImg from '../../../assets/gif.mp4';
 
 const defaultSettings: UserSettings = {
   player1: { name: 'Player 1', paddleColor: '#00ff66', controller: 'wasd' }, // Green
@@ -332,7 +333,7 @@ const LocalGame: React.FC = () => {
           playsInline
           className="absolute left-0 top-0 z-0 h-full w-full object-cover"
         >
-          <source src="/src/assets/gif.mp4" type="video/mp4" />
+          <source src={gifImg} type="video/mp4" />
         </video>
 
         {/* Overlay Content */}
@@ -759,7 +760,7 @@ const LocalGame: React.FC = () => {
         playsInline
         className="absolute left-0 top-20 z-0 h-full w-full object-cover"
       >
-        <source src="/src/assets/gif.mp4" type="video/mp4" />
+        <source src={gifImg} type="video/mp4" />
       </video>
 
       {/* Results Overlay */}

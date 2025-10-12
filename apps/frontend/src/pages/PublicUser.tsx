@@ -258,7 +258,7 @@ const PublicUser: React.FC = () => {
 
           <section className="relative overflow-hidden rounded-3xl border border-white/10 bg-slate-900/70 shadow-xl shadow-indigo-950/30 backdrop-blur">
             <div className="border-b border-white/10 px-6 py-4">
-              <h2 className="text-lg font-semibold">Recent 1v1 matches</h2>
+              <h2 className="text-lg font-semibold">Recent matches</h2>
             </div>
 
             {loading ? (

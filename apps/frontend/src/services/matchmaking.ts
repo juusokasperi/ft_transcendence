@@ -1,4 +1,4 @@
-import type { MatchmakingMessage } from '@pong/shared/protocol/net';
+import type { MatchmakingMessage, TournamentSize } from '@pong/shared/protocol/net';
 
 export type Lobby = {
   lobbyId: string;
@@ -21,8 +21,26 @@ export type Lobby = {
 
 import { wsUrl } from '../utils/url';
 
-export function createMatchmakingClient(onMessage: (msg: MatchmakingMessage) => void) {
+type MatchmakingClientLifecycleHandlers = {
+  onOpen?(event: Event): void;
+  onError?(event: Event): void;
+  onClose?(event: CloseEvent): void;
+};
+
+const READY_STATE_OPEN = WebSocket.OPEN;
+const READY_STATE_CONNECTING = WebSocket.CONNECTING;
+
+function serialize(payload: unknown) {
+  return JSON.stringify(payload);
+}
+
+export function createMatchmakingClient(
+  onMessage: (msg: MatchmakingMessage) => void,
+  lifecycleHandlers: MatchmakingClientLifecycleHandlers = {},
+) {
   const socket = new WebSocket(wsUrl('/matchmaking'));
+  const pendingMessages: string[] = [];
+
   socket.addEventListener('message', (ev) => {
     try {
       onMessage(JSON.parse(ev.data) as MatchmakingMessage);
@@ -31,37 +49,120 @@ export function createMatchmakingClient(onMessage: (msg: MatchmakingMessage) => 
     }
   });
 
+  socket.addEventListener('open', (event) => {
+    while (pendingMessages.length > 0 && socket.readyState === READY_STATE_OPEN) {
+      const next = pendingMessages.shift();
+      if (next !== undefined) {
+        try {
+          socket.send(next);
+        } catch {
+          pendingMessages.unshift(next);
+          break;
+        }
+      }
+    }
+    lifecycleHandlers.onOpen?.(event);
+  });
+
+  socket.addEventListener('error', (event) => {
+    lifecycleHandlers.onError?.(event);
+  });
+
+  socket.addEventListener('close', (event) => {
+    pendingMessages.length = 0;
+    lifecycleHandlers.onClose?.(event);
+  });
+
+  const safeSend = (payload: unknown) => {
+    const serialized = serialize(payload);
+    const state = socket.readyState;
+    if (state === READY_STATE_OPEN) {
+      try {
+        socket.send(serialized);
+      } catch (error) {
+        console.warn('[matchmaking] failed to send payload', error);
+      }
+      return;
+    }
+
+    if (state === READY_STATE_CONNECTING) {
+      pendingMessages.push(serialized);
+      return;
+    }
+
+    console.warn('[matchmaking] dropping message because socket is not open', {
+      readyState: state,
+      payload,
+    });
+  };
+
   return {
     socket,
     auth() {
-      socket.send(JSON.stringify({ type: 'AUTH' }));
+      safeSend({ type: 'AUTH' });
     },
-    joinQueue() {
-      socket.send(JSON.stringify({ type: 'JOIN_QUEUE' }));
+    joinQueue(alias?: string) {
+      safeSend({ type: 'JOIN_QUEUE', alias });
     },
     leaveQueue() {
-      socket.send(JSON.stringify({ type: 'LEAVE_QUEUE' }));
+      safeSend({ type: 'LEAVE_QUEUE' });
     },
     acceptMatch(matchId: string) {
-      socket.send(JSON.stringify({ type: 'ACCEPT_MATCH', matchId }));
+      safeSend({ type: 'ACCEPT_MATCH', matchId });
     },
     declineMatch(matchId: string) {
-      socket.send(JSON.stringify({ type: 'DECLINE_MATCH', matchId }));
+      safeSend({ type: 'DECLINE_MATCH', matchId });
     },
     createLobby(username: string) {
-      socket.send(JSON.stringify({ type: 'createLobby', username }));
+      safeSend({ type: 'createLobby', username });
     },
     invite(targetId: string, lobbyId: string) {
-      socket.send(JSON.stringify({ type: 'invite', targetId, lobbyId }));
+      safeSend({ type: 'invite', targetId, lobbyId });
     },
     acceptInvite(lobbyId: string) {
-      socket.send(JSON.stringify({ type: 'acceptInvite', lobbyId }));
+      safeSend({ type: 'acceptInvite', lobbyId });
     },
     declineInvite(lobbyId: string) {
-      socket.send(JSON.stringify({ type: 'declineInvite', lobbyId }));
+      safeSend({ type: 'declineInvite', lobbyId });
     },
     setReady(lobbyId: string, ready: boolean) {
-      socket.send(JSON.stringify({ type: 'ready', lobbyId, ready }));
+      safeSend({ type: 'ready', lobbyId, ready });
+    },
+    createTournament(size: TournamentSize = 4, name?: string, alias?: string) {
+      const payload: {
+        type: 'CREATE_TOURNAMENT';
+        size: TournamentSize;
+        name?: string;
+        alias?: string;
+      } = {
+        type: 'CREATE_TOURNAMENT',
+        size,
+      };
+      if (name && name.trim().length) payload.name = name.trim();
+      if (alias && alias.trim().length) payload.alias = alias.trim();
+      safeSend(payload);
+    },
+    joinTournament(tournamentId: string | number, alias?: string) {
+      const payload: { type: 'JOIN_TOURNAMENT'; tournamentId: string; alias?: string } = {
+        type: 'JOIN_TOURNAMENT',
+        tournamentId: String(tournamentId),
+      };
+      if (alias && alias.trim().length) payload.alias = alias.trim();
+      safeSend(payload);
+    },
+    leaveTournament(tournamentId: string | number) {
+      const payload = { type: 'LEAVE_TOURNAMENT', tournamentId: String(tournamentId) } as const;
+      safeSend(payload);
+    },
+    forfeitTournament(tournamentId: string | number) {
+      const payload = { type: 'FORFEIT_TOURNAMENT', tournamentId: String(tournamentId) } as const;
+      safeSend(payload);
+    },
+    acceptScheduled(tournamentMatchId: number) {
+      safeSend({ type: 'ACCEPT_SCHEDULED', tournamentMatchId });
+    },
+    close() {
+      socket.close();
     },
   } as const;
 }

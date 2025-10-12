@@ -37,13 +37,6 @@ export type AudioManifest = {
 };
 
 /**
- * Helper to resolve asset URLs relative to this file so Vite can bundle them.
- */
-function asset(relPath: string): string {
-  return new URL(relPath, import.meta.url).href;
-}
-
-/**
  * Default audio manifest for Pong.
  * SFX are .ogg and music is .mp3
  */
@@ -52,7 +45,7 @@ export const DefaultAudioManifest: AudioManifest = {
     {
       id: 'ballHitPaddle',
       type: 'sfx',
-      url: asset('../../audio/sfx/ballHitPaddle.ogg'),
+      url: new URL('../../audio/sfx/ballHitPaddle.ogg', import.meta.url).href,
       pool: 6,
       preload: true,
       volume: 0.9,
@@ -60,7 +53,7 @@ export const DefaultAudioManifest: AudioManifest = {
     {
       id: 'ballHitTable',
       type: 'sfx',
-      url: asset('../../audio/sfx/ballHitTable.ogg'),
+      url: new URL('../../audio/sfx/ballHitTable.ogg', import.meta.url).href,
       pool: 4,
       preload: true,
       volume: 0.8,
@@ -68,7 +61,7 @@ export const DefaultAudioManifest: AudioManifest = {
     {
       id: 'ballHitWall',
       type: 'sfx',
-      url: asset('../../audio/sfx/ballHitWall.ogg'),
+      url: new URL('../../audio/sfx/ballHitWall.ogg', import.meta.url).href,
       pool: 6,
       preload: true,
       volume: 0.75,
@@ -76,7 +69,7 @@ export const DefaultAudioManifest: AudioManifest = {
     {
       id: 'scoreExplosion',
       type: 'sfx',
-      url: asset('../../audio/sfx/scoreExplosion.ogg'),
+      url: new URL('../../audio/sfx/scoreExplosion.ogg', import.meta.url).href,
       pool: 3,
       preload: true,
       volume: 0.9,
@@ -86,21 +79,26 @@ export const DefaultAudioManifest: AudioManifest = {
     {
       id: 'bgm_shadowRunner',
       type: 'music',
-      url: asset('../../audio/music/shadow-runner-mountaineer-main-version-21965-02-22.mp3'),
+      url: new URL(
+        '../../audio/music/shadow-runner-mountaineer-main-version-21965-02-22.mp3',
+        import.meta.url,
+      ).href,
       loop: true,
       volume: 0.5,
     },
     {
       id: 'bgm_quake',
       type: 'music',
-      url: asset('../../audio/music/quake-aavirall-main-version-33794-02-15.mp3'),
+      url: new URL('../../audio/music/quake-aavirall-main-version-33794-02-15.mp3', import.meta.url)
+        .href,
       loop: true,
       volume: 0.5,
     },
     {
       id: 'bgm_eclipseMoire',
       type: 'music',
-      url: asset('../../audio/music/eclipse-moire-main-version-01-58-12188.mp3'),
+      url: new URL('../../audio/music/eclipse-moire-main-version-01-58-12188.mp3', import.meta.url)
+        .href,
       loop: true,
       volume: 0.5,
     },
