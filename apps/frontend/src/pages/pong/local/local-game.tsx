@@ -8,6 +8,7 @@ import { createScoreboard } from '@pong/render';
 import type { BotDifficulty, Observation } from '../../../games/pong/ai/bot-controller';
 import type { ControllerScheme, Preferences } from '../../../games/pong/modes/preferences';
 import Navbar from '../../../components/Navbar';
+import { Card, ColorPalette, DEFAULT_PONG_PALETTE, PlayButton } from '../../../components/pong-ui';
 import {
   clearStoredSettings,
   getBestOf,
@@ -337,14 +338,16 @@ const LocalGame: React.FC = () => {
         {/* Overlay Content */}
         <div className="relative z-10 flex min-h-screen flex-col items-center justify-center space-y-6 bg-black/60 pt-24 text-white">
           {/* Unified card container */}
-          <div className="w-full max-w-4xl space-y-6 rounded-xl border border-white/20 bg-black/40 p-6 backdrop-blur">
-            <h2 className="text-center text-3xl font-bold">Local Game Settings</h2>
+          <Card
+            title={<div className="text-center w-full">Local Game Settings</div>}
+            accent="from-pink-500 via-purple-500 to-indigo-500"
+            className="w-full max-w-4xl space-y-6 backdrop-blur"
+          >
 
             {/* Player Settings Row */}
             <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
               {/* Player 1 Settings */}
-              <div className="flex flex-col items-center space-y-4 rounded-md border border-white/10 p-4 text-center">
-                <h3 className="text-xl font-semibold">Player 1</h3>
+              <Card title="Player 1" className="flex flex-col items-center space-y-4 text-center">
                 <label className="block w-full text-center text-sm font-semibold md:text-base">
                   Choose player name
                 </label>
@@ -363,41 +366,16 @@ const LocalGame: React.FC = () => {
                 <label className="block w-full text-center text-sm font-semibold md:text-base">
                   Choose a paddle color
                 </label>
-                <div className="flex flex-wrap justify-center gap-2">
-                  {[
-                    { name: 'Red', hex: '#ff3b3b' },
-                    { name: 'Orange', hex: '#ff8c1a' },
-                    { name: 'Yellow', hex: '#ffff33' },
-                    { name: 'Green', hex: '#00ff66' },
-                    { name: 'Blue', hex: '#3399ff' },
-                    { name: 'Indigo', hex: '#7a5cff' },
-                    { name: 'Violet', hex: '#bf5fff' },
-                  ].map((c) => {
-                    const selected =
-                      settings.player1.paddleColor.toLowerCase() === c.hex.toLowerCase();
-                    return (
-                      <button
-                        key={c.name}
-                        type="button"
-                        aria-label={c.name}
-                        title={c.name}
-                        onClick={() =>
-                          setSettings({
-                            ...settings,
-                            player1: { ...settings.player1, paddleColor: c.hex },
-                          })
-                        }
-                        className={
-                          'h-8 w-8 cursor-pointer rounded-full border-2 transition ' +
-                          (selected
-                            ? 'scale-110 border-white'
-                            : 'border-white/30 hover:border-white/60')
-                        }
-                        style={{ backgroundColor: c.hex }}
-                      />
-                    );
-                  })}
-                </div>
+                <ColorPalette
+                  palette={DEFAULT_PONG_PALETTE}
+                  selected={settings.player1.paddleColor}
+                  onSelect={(c) =>
+                    setSettings({
+                      ...settings,
+                      player1: { ...settings.player1, paddleColor: c.hex },
+                    })
+                  }
+                />
                 <label className="block w-full pt-2 text-center text-sm font-semibold md:text-base">
                   Choose controls
                 </label>
@@ -427,11 +405,10 @@ const LocalGame: React.FC = () => {
                     </option>
                   ))}
                 </select>
-              </div>
+              </Card>
 
               {/* Player 2 Settings */}
-              <div className="flex flex-col items-center space-y-4 rounded-md border border-white/10 p-4 text-center">
-                <h3 className="text-xl font-semibold">Player 2</h3>
+              <Card title="Player 2" className="flex flex-col items-center space-y-4 text-center">
                 <label className="block w-full text-center text-sm font-semibold md:text-base">
                   Choose a player name
                 </label>
@@ -450,41 +427,16 @@ const LocalGame: React.FC = () => {
                 <label className="block w-full text-center text-sm font-semibold md:text-base">
                   Choose a paddle color
                 </label>
-                <div className="flex flex-wrap justify-center gap-2">
-                  {[
-                    { name: 'Red', hex: '#ff3b3b' },
-                    { name: 'Orange', hex: '#ff8c1a' },
-                    { name: 'Yellow', hex: '#ffff33' },
-                    { name: 'Green', hex: '#00ff66' },
-                    { name: 'Blue', hex: '#3399ff' },
-                    { name: 'Indigo', hex: '#7a5cff' },
-                    { name: 'Violet', hex: '#bf5fff' },
-                  ].map((c) => {
-                    const selected =
-                      settings.player2.paddleColor.toLowerCase() === c.hex.toLowerCase();
-                    return (
-                      <button
-                        key={c.name}
-                        type="button"
-                        aria-label={c.name}
-                        title={c.name}
-                        onClick={() =>
-                          setSettings({
-                            ...settings,
-                            player2: { ...settings.player2, paddleColor: c.hex },
-                          })
-                        }
-                        className={
-                          'h-8 w-8 cursor-pointer rounded-full border-2 transition ' +
-                          (selected
-                            ? 'scale-110 border-white'
-                            : 'border-white/30 hover:border-white/60')
-                        }
-                        style={{ backgroundColor: c.hex }}
-                      />
-                    );
-                  })}
-                </div>
+                <ColorPalette
+                  palette={DEFAULT_PONG_PALETTE}
+                  selected={settings.player2.paddleColor}
+                  onSelect={(c) =>
+                    setSettings({
+                      ...settings,
+                      player2: { ...settings.player2, paddleColor: c.hex },
+                    })
+                  }
+                />
                 <label className="block w-full pt-2 text-center text-sm font-semibold md:text-base">
                   Choose controls
                 </label>
@@ -514,7 +466,7 @@ const LocalGame: React.FC = () => {
                     </option>
                   ))}
                 </select>
-              </div>
+              </Card>
             </div>
 
             {/* AI Settings */}
@@ -761,69 +713,6 @@ const LocalGame: React.FC = () => {
               )}
             </div>
 
-            {/* Accessibility (Global) */}
-            <div className="rounded-md border border-white/10 p-4">
-              <button
-                type="button"
-                onClick={() => setAccessOpen((v) => !v)}
-                className="flex w-full cursor-pointer items-center justify-between"
-              >
-                <span className="text-2xl font-semibold text-green-400">Accessibility</span>
-                <span className="text-2xl leading-none text-green-400">
-                  {accessOpen ? '−' : '+'}
-                </span>
-              </button>
-              {accessOpen && (
-                <div className="mt-4 space-y-4">
-                  <div className="flex flex-col space-y-2">
-                    <label className="font-semibold">Color Blind Mode</label>
-                    <select
-                      value={settings.accessibility.colorBlindMode}
-                      onChange={(e) =>
-                        setSettings({
-                          ...settings,
-                          accessibility: {
-                            ...settings.accessibility,
-                            colorBlindMode: e.target
-                              .value as AccessibilitySettings['colorBlindMode'],
-                          },
-                        })
-                      }
-                      className="rounded bg-gray-800 p-2"
-                    >
-                      <option value="none">None</option>
-                      <option value="protanopia">Protanopia</option>
-                      <option value="deuteranopia">Deuteranopia</option>
-                      <option value="tritanopia">Tritanopia</option>
-                      <option value="highContrast">High Contrast</option>
-                    </select>
-                  </div>
-
-                  <div className="flex flex-col space-y-2">
-                    <label className="font-semibold">Photosensitive Mode</label>
-                    <select
-                      value={settings.accessibility.photoSensitiveMode}
-                      onChange={(e) =>
-                        setSettings({
-                          ...settings,
-                          accessibility: {
-                            ...settings.accessibility,
-                            photoSensitiveMode: e.target
-                              .value as AccessibilitySettings['photoSensitiveMode'],
-                          },
-                        })
-                      }
-                      className="rounded bg-gray-800 p-2"
-                    >
-                      <option value="none">None</option>
-                      <option value="reducedFX">Reduced FX</option>
-                      <option value="noFlash">No Flash</option>
-                    </select>
-                  </div>
-                </div>
-              )}
-            </div>
-
             {/* Buttons */}
             <div className="flex flex-wrap justify-center gap-4">
               <button
@@ -842,14 +731,9 @@ const LocalGame: React.FC = () => {
 
             {/* Play button */}
             <div className="flex justify-center">
-              <button
-                onClick={handlePlay}
-                className="cursor-pointer rounded-lg border-2 border-pink-500 px-12 py-4 text-2xl font-bold text-pink-500 shadow-lg transition hover:bg-pink-500 hover:text-black"
-              >
-                Play 🚀
-              </button>
+              <PlayButton onClick={handlePlay}>PLAY</PlayButton>
             </div>
-          </div>
+          </Card>
           {/* end card */}
         </div>
       </div>
@@ -873,43 +757,41 @@ const LocalGame: React.FC = () => {
         loop
         muted
         playsInline
-        className="absolute left-0 top-0 z-0 h-full w-full object-cover"
+        className="absolute left-0 top-20 z-0 h-full w-full object-cover"
       >
         <source src="/src/assets/gif.mp4" type="video/mp4" />
       </video>
 
       {/* Results Overlay */}
-      <div className="relative z-10 flex min-h-screen flex-col items-center justify-center space-y-6 bg-black/70 p-6 pt-24 text-white">
-        <h1 className="text-4xl font-bold">Match Results</h1>
+      <div className="flex min-h-screen items-center justify-center">
+        <Card
+          title={
+            <span className="block w-full text-2xl font-semibold text-center">
+              The winner of this match is <span className="font-bold text-emerald-400">{winnerName}</span>!
+            </span>
+          }
+        >
+          {/* Reused HUD scoreboard anchored to this container */}
+          <div ref={resultsHudRef} className="w-full" style={{ height: 150 }} />
 
-        {/* Reused HUD scoreboard anchored to this container */}
-        <div
-          ref={resultsHudRef}
-          className="w-full max-w-3xl rounded-xl border border-white/20 bg-transparent p-6"
-          style={{ height: 150 }}
-        />
+          {/* Buttons row centered */}
+          <div className="flex w-full items-center justify-center gap-4">
+            <PlayButton accent="cyan"
+              onClick={() => {
+                setPostMatch(null);
+                setIsPlaying(true);
+              }}
+            >
+              PLAY AGAIN
+            </PlayButton>
 
-        <div className="text-2xl">
-          Winner: <span className="font-bold text-emerald-400">{winnerName}</span>
-        </div>
-
-        <div className="mt-2 flex gap-4">
-          <button
-            onClick={() => {
-              setPostMatch(null);
-              setIsPlaying(true);
-            }}
-            className="rounded-lg border-2 border-pink-500 px-8 py-3 text-lg font-semibold text-pink-500 transition hover:bg-pink-500 hover:text-black"
-          >
-            Play again
-          </button>
-          <button
-            onClick={() => navigate('/ping-pong')}
-            className="rounded-lg border-2 border-blue-500 px-8 py-3 text-lg font-semibold text-blue-500 transition hover:bg-blue-500 hover:text-black"
-          >
-            Back to menu
-          </button>
-        </div>
+            <PlayButton accent="crimson"
+              onClick={() => navigate('/ping-pong')}
+            >
+              MENU
+            </PlayButton>
+          </div>
+        </Card>
       </div>
     </div>
   );

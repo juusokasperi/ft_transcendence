@@ -13,7 +13,7 @@ export function setupCamera(scene: Scene) {
   const target = Vector3.Zero();
   const name = 'cam';
   const alpha = Math.PI * 1.5; // horizontal angle in radians (~270°)
-  const beta = Math.PI / 3.0; // vertical angle in radians (~60°)
+  const beta = Math.PI / 4.5; // vertical angle in radians (~40°)
   const radius = 3; // distance from target in meters
 
   const camera = new ArcRotateCamera(name, alpha, beta, radius, target, scene);
