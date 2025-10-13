@@ -3,11 +3,14 @@ import { motion } from 'framer-motion';
 import { X } from 'lucide-react';
 import { useAppContext } from '../context/AppContext';
 import SplitButton from './ui/SplitButton';
-import axios, { AxiosInstance } from 'axios';
+import axios, { type AxiosInstance } from 'axios';
 
 const WS_URL = `${window.location.protocol === 'https:' ? 'wss' : 'ws'}://${window.location.hostname}:8080/chat`;
 
-async function fetchUserUuidByUsername(axios: AxiosInstance, targetUser: string): Promise<string | null> {
+async function fetchUserUuidByUsername(
+  axios: AxiosInstance,
+  targetUser: string,
+): Promise<string | null> {
   try {
     const res = await axios.get('/api/users');
     const users = Array.isArray(res.data) ? res.data : (res.data?.users ?? []);
