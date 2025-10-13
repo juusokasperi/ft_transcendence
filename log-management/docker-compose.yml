@@ -155,6 +155,12 @@ services:
       - xpack.monitoring.enabled=false
       - ELASTIC_HOSTS=https://elasticsearch:${ES_PORT:-9200}
     mem_limit: ${KB_MEM_LIMIT}
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fs http://localhost:9600/_node/stats || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 15
+      start_period: 10s
     ports:
       # Listens for GELF input here. The GELF driver can only send to host IPs,
       # not into containers => this port needs to be exposed
