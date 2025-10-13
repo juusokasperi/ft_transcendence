@@ -38,9 +38,9 @@ if (ENABLE_SQLITE_METRICS === 'true') initSqliteMetrics();
 
 const app = fastify({
   logger: {
-		level: 'info', //log this level and all higher levels
-		...ecsFormat(),
-	},
+    level: 'info', //log this level and all higher levels
+    ...ecsFormat(),
+  },
   // trustProxy: true,
   ajv: {
     customOptions: { allErrors: true, removeAdditional: true },
