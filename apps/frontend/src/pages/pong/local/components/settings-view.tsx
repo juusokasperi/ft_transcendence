@@ -1,7 +1,7 @@
 import React, { type SetStateAction } from 'react';
 import type { BotDifficulty } from '../../../../games/pong/ai/bot-controller';
-import Card from './Card';
-import PlayButton from './PlayButton/PlayButton';
+import Card from './card';
+import PlayButton from './play-button';
 import { AISettings } from './AI-settings';
 import { MatchRules } from './match-rules';
 import { PlayerCard } from './player-card';

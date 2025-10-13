@@ -1,6 +1,6 @@
 import React, { useCallback, useId, useState } from 'react';
 import type { Ruleset } from '@pong/shared';
-import PlayButton from './PlayButton/PlayButton';
+import PlayButton from './play-button';
 import { getBestOf } from '../utils/storage';
 
 type MatchRulesProps = {

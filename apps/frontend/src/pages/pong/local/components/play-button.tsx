@@ -17,7 +17,20 @@ const SIZE_CLS: Record<PlayButtonSize, string> = {
 };
 
 export const PlayButton = React.forwardRef<HTMLButtonElement, PlayButtonProps>(
-  ({ label = 'PLAY', children, className, color, size = 'md', fullWidth = false, style, disabled, ...props }, ref) => {
+  (
+    {
+      label = 'PLAY',
+      children,
+      className,
+      color,
+      size = 'md',
+      fullWidth = false,
+      style,
+      disabled,
+      ...props
+    },
+    ref,
+  ) => {
     const rootCls = [
       // layout & sizing
       'inline-flex items-center justify-center rounded-md cursor-pointer',

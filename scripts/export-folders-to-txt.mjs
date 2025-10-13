@@ -30,6 +30,7 @@ const DEFAULT_DIRS = [
   'packages/pong/shared',
   'apps/frontend/src/pages/pong/local',
   'packages/pong/render/src/client/engine',
+  'apps/frontend/src/games/pong/modes',
 ];
 
 const MAX_FILE_BYTES = 1024 * 1024; // 1MB guard

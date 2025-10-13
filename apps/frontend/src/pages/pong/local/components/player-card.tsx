@@ -1,8 +1,8 @@
 import React from 'react';
 import type { ControllerScheme } from '../../../../games/pong/modes/preferences';
 import type { PlayerSettings } from '../utils/storage';
-import Card from './Card';
-import ColorPalette, { type ColorOption } from './ColorPalette';
+import Card from './card';
+import ColorPalette, { type ColorOption } from './color-palette';
 import { DEFAULT_PONG_PALETTE } from './palettes';
 
 type ControllerOption = {
@@ -31,7 +31,6 @@ export const PlayerCard: React.FC<PlayerCardProps> = ({
 }) => {
   return (
     <Card title={title} className="flex flex-col items-center space-y-4 text-center">
-
       <input
         type="text"
         value={player.name}
@@ -41,7 +40,6 @@ export const PlayerCard: React.FC<PlayerCardProps> = ({
         aria-label="Player name"
         autoComplete="name"
       />
-
 
       <ColorPalette
         palette={palette}
@@ -63,6 +61,5 @@ export const PlayerCard: React.FC<PlayerCardProps> = ({
     </Card>
   );
 };
-
 
 export default PlayerCard;
