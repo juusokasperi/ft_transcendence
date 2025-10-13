@@ -21,7 +21,7 @@ const PingPong: React.FC = () => {
       {/* Main landmark pinned between navbar and bottom */}
       <main
         aria-labelledby="page-title"
-        className="absolute inset-x-0 bottom-0 top-[var(--navbar-h,80px)]"
+        className="absolute inset-x-0 bottom-0 top-[var(--navbar-h,80px)] overflow-y-auto"
       >
         {/* Decorative background video (letterboxed, centered). Hidden from ATs. */}
         <BackgroundVideo src={gifImg} fit="contain" position="center" />
@@ -32,13 +32,10 @@ const PingPong: React.FC = () => {
         </h1>
 
         {/* Section: game mode selection */}
-        <section
-          aria-labelledby="modes-heading"
-          className="z-10 flex h-full w-full items-center justify-center overflow-y-auto p-4"
-        >
+        <section aria-labelledby="modes-heading" className="z-10 grid place-items-center p-4">
           <Card
             title={
-              <span id="modes-heading" className="block w-full text-center text-2xl font-semibold">
+              <span id="modes-heading" className="block text-center text-2xl font-semibold">
                 PONG3D
               </span>
             }
