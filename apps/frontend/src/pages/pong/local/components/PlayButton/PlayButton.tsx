@@ -11,7 +11,6 @@ export interface PlayButtonProps extends React.ButtonHTMLAttributes<HTMLButtonEl
 }
 
 const SIZE_CLS: Record<PlayButtonSize, string> = {
-  // Use arbitrary Tailwind sizes to match your former em-based values
   sm: 'h-[3em] min-w-[8.5em] text-[14px] border-[2px]',
   md: 'h-[3.5em] min-w-[10em] text-[16px] border-[3px]',
   lg: 'h-[4em] min-w-[12em] text-[18px] border-[3px]',
@@ -25,7 +24,7 @@ export const PlayButton = React.forwardRef<HTMLButtonElement, PlayButtonProps>(
       SIZE_CLS[size],
       fullWidth ? 'w-full' : 'w-auto',
 
-      // visual system (currentColor drives border/hover/focus)
+      // visual system
       'bg-transparent text-current border-current font-bold select-none',
 
       // interaction & motion
@@ -46,7 +45,7 @@ export const PlayButton = React.forwardRef<HTMLButtonElement, PlayButtonProps>(
         ref={ref}
         type="button"
         className={rootCls}
-        style={{ color, ...(style || {}) }}  // color feeds currentColor
+        style={{ color, ...(style || {}) }}
         disabled={disabled}
         {...props}
       >
