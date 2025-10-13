@@ -14,7 +14,7 @@ const PingPong: React.FC = () => {
 
   return (
     // Fixed, full-viewport layer with hidden overflow => no scrollbars
-    <div className="fixed inset-0 overflow-hidden bg-black text-white">
+    <div className="fixed inset-0 overflow-hidden text-white">
       {/* Global site navigation (fixed). */}
       <Navbar />
 
@@ -34,7 +34,7 @@ const PingPong: React.FC = () => {
         {/* Section: game mode selection */}
         <section
           aria-labelledby="modes-heading"
-          className="relative z-10 flex h-full w-full flex-col items-center p-6"
+          className="relative z-10 h-full w-full overflow-y-auto"
         >
           <Card
             title={
