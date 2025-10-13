@@ -12,8 +12,8 @@ export const CONTROLLER_OPTIONS: ReadonlyArray<{
 ];
 
 export const defaultSettings: UserSettings = {
-  player1: { name: 'Player 1', paddleColor: '#00ff66', controller: 'wasd' },
-  player2: { name: 'Player 2', paddleColor: '#bf5fff', controller: 'arrows' },
+  player1: { name: 'Ping', paddleColor: '#00ff66', controller: 'wasd' },
+  player2: { name: 'Pong', paddleColor: '#bf5fff', controller: 'arrows' },
   accessibility: { colorBlindMode: 'none', photoSensitiveMode: 'none' },
   rules: {
     game: {

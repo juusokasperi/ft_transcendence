@@ -34,7 +34,7 @@ const PingPong: React.FC = () => {
         {/* Section: game mode selection */}
         <section
           aria-labelledby="modes-heading"
-          className="relative z-10 h-full w-full overflow-y-auto"
+          className="z-10 flex h-full w-full items-center justify-center overflow-y-auto p-4"
         >
           <Card
             title={

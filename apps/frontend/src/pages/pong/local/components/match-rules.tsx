@@ -9,6 +9,8 @@ type MatchRulesProps = {
   onReset: () => void;
 };
 
+const clamp = (v: number, min: number, max: number) => Math.min(Math.max(v, min), max);
+
 /** Small, dependency-free tooltip with hover & keyboard focus support. */
 const InfoTip: React.FC<{ text: string; side?: 'left' | 'right' }> = ({ text, side = 'left' }) => {
   const id = useId();
@@ -65,6 +67,14 @@ const CheckboxField: React.FC<
 const SelectField: React.FC<
   React.SelectHTMLAttributes<HTMLSelectElement> & { value: number | string }
 > = (props) => <select className={baseInputCls} {...props} />;
+
+/** Max caps per game field */
+const GAME_MAX: Partial<Record<keyof Ruleset['game'], number>> = {
+  targetScore: 21,
+  winBy: 6,
+  servesPerTurn: 6,
+  deuceServesPerTurn: 6,
+};
 
 /** Field configs (tiny & declarative) */
 const GAME_NUMBER_FIELDS: Array<{
@@ -149,35 +159,97 @@ export const MatchRules: React.FC<MatchRulesProps> = ({ rules, onUpdate, onReset
             </FieldRow>
 
             {/* Game: numeric fields from config (compute column by index parity) */}
-            {GAME_NUMBER_FIELDS.map(({ key, label, tip, min = 1 }, i) => (
-              <FieldRow
-                key={String(key)}
-                label={label}
-                tip={tip}
-                tipSide={i % 2 === 1 ? 'right' : 'left'} // index 1 & 3 are left column → show on right
-              >
-                <NumField
-                  min={min}
-                  value={rules.game[key] as number}
-                  onChange={(e) => updateGame(key as any, Math.max(min, Number(e.target.value)))}
-                />
-              </FieldRow>
-            ))}
+            {GAME_NUMBER_FIELDS.map(({ key, label, tip, min = 1 }, i) => {
+              const hardMax = GAME_MAX[key];
+              const value = rules.game[key] as number;
 
-            {/* Match: Deciding Game Mid-Swap At (right column → default left tooltip) */}
+              // Special handling for targetScore so we can auto-clamp mid-swap when it changes
+              if (key === 'targetScore') {
+                return (
+                  <FieldRow
+                    key={String(key)}
+                    label={label}
+                    tip={tip}
+                    tipSide={i % 2 === 1 ? 'right' : 'left'}
+                  >
+                    <NumField
+                      min={min}
+                      max={hardMax}
+                      value={value}
+                      onChange={(e) => {
+                        const raw = Number(e.target.value);
+                        const max = hardMax ?? Number.POSITIVE_INFINITY;
+                        const nextTarget = clamp(raw, min, max);
+
+                        onUpdate((prev) => {
+                          const next = {
+                            ...prev,
+                            game: { ...prev.game, targetScore: nextTarget },
+                          };
+
+                          // Dynamic cap for mid-swap = targetScore - 1 (at least 1 so min<=max)
+                          const dynMax = Math.max(1, nextTarget - 1);
+                          const currentMid = next.match.decidingGameMidSwapAtPoints;
+                          if (typeof currentMid === 'number' && currentMid > dynMax) {
+                            next.match = {
+                              ...next.match,
+                              decidingGameMidSwapAtPoints: dynMax,
+                            };
+                          }
+                          return next;
+                        });
+                      }}
+                    />
+                  </FieldRow>
+                );
+              }
+
+              return (
+                <FieldRow
+                  key={String(key)}
+                  label={label}
+                  tip={tip}
+                  tipSide={i % 2 === 1 ? 'right' : 'left'} // index 1 & 3 are left column → show on right
+                >
+                  <NumField
+                    min={min}
+                    max={hardMax}
+                    value={value}
+                    onChange={(e) => {
+                      const raw = Number(e.target.value);
+                      const max = hardMax ?? Number.POSITIVE_INFINITY;
+                      updateGame(key as any, clamp(raw, min, max) as any);
+                    }}
+                  />
+                </FieldRow>
+              );
+            })}
+
+            {/* Match: Deciding Game Mid-Swap At (right column → default left tooltip)
+                Dynamic max = targetScore - 1 (at least 1 to keep min <= max) */}
             <FieldRow
               label="Deciding Game Mid-Swap At"
-              tip="In the final game of a match, players change ends when the first player reaches this many points. Officially: 5."
+              tip="In the final game of a match, players change ends when the first player reaches this many points."
             >
-              <NumField
-                min={1}
-                value={rules.match.decidingGameMidSwapAtPoints ?? 5}
-                onChange={(e) => {
-                  const raw = Number(e.target.value);
-                  const value = Number.isNaN(raw) ? undefined : raw || undefined;
-                  updateMatch('decidingGameMidSwapAtPoints', value as any);
-                }}
-              />
+              {(() => {
+                const min = 1;
+                const dynMax = Math.max(1, (rules.game.targetScore as number) - 1);
+                const value = (rules.match.decidingGameMidSwapAtPoints ??
+                  Math.min(5, dynMax)) as number;
+
+                return (
+                  <NumField
+                    min={min}
+                    max={dynMax}
+                    value={clamp(value, min, dynMax)}
+                    onChange={(e) => {
+                      const raw = Number(e.target.value);
+                      const next = clamp(raw, min, dynMax);
+                      updateMatch('decidingGameMidSwapAtPoints', next as any);
+                    }}
+                  />
+                );
+              })()}
             </FieldRow>
 
             {/* Match: Switch Ends (left column → tooltip on the right) */}
