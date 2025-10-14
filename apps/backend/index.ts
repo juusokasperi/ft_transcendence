@@ -36,11 +36,32 @@ import { ecsFormat } from '@elastic/ecs-pino-format';
 
 if (ENABLE_SQLITE_METRICS === 'true') initSqliteMetrics();
 
-const app = fastify({
-  logger: {
-    level: 'info', //log this level and all higher levels
+const isDev = process.env.NODE_ENV === 'development';
+
+function createLoggerOptions(isDev: boolean) {
+  if (isDev) {
+    return {
+      level: 'debug',
+      transport: {
+        target: 'pino-pretty',
+        options: {
+          colorize: true,
+          translateTime: 'HH:MM:ss.l',
+          ignore: 'pid,hostname',
+        },
+      },
+    };
+  }
+
+  return {
+    level: 'info',
+    base: { service: 'scorer' },
     ...ecsFormat(),
-  },
+  };
+}
+
+const app = fastify({
+  logger: createLoggerOptions(isDev),
   // trustProxy: true,
   ajv: {
     customOptions: { allErrors: true, removeAdditional: true },

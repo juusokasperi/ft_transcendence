@@ -11,11 +11,33 @@ import {
 import { ecsFormat } from '@elastic/ecs-pino-format';
 
 const redis = new Redis(REDIS_URL);
-const app = fastify({
-  logger: {
-    level: 'info', //log this level and all higher levels
+
+const isDev = process.env.NODE_ENV === 'development';
+
+function createLoggerOptions(isDev: boolean) {
+  if (isDev) {
+    return {
+      level: 'debug',
+      transport: {
+        target: 'pino-pretty',
+        options: {
+          colorize: true,
+          translateTime: 'HH:MM:ss.l',
+          ignore: 'pid,hostname',
+        },
+      },
+    };
+  }
+
+  return {
+    level: 'info',
+    base: { service: 'scorer' },
     ...ecsFormat(),
-  },
+  };
+}
+
+const app = fastify({
+  logger: createLoggerOptions(isDev),
 });
 
 const nodes = Array.from({ length: GAME_NODES_AMOUNT }, (_, i) => {
@@ -55,10 +77,7 @@ async function updateScores() {
 const start = async () => {
   try {
     await app.listen({ port: 3000, host: '0.0.0.0' });
-	app.log.info(
-		{ nodes: nodes.map(n => n.id) },
-		'[Scorer] Running scorer with nodes'
-	);
+    app.log.info({ nodes: nodes.map((n) => n.id) }, '[Scorer] Running scorer with nodes');
     setInterval(updateScores, 5000);
     updateScores();
   } catch (err) {
