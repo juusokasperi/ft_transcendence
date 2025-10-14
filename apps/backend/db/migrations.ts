@@ -1,19 +1,25 @@
 import umzug from './umzug.ts';
+import { getLogger } from '../utils/logger.ts';
 
 export const runMigrations = async () => {
+  const logger = getLogger();
   const migrations = await umzug.up();
-  console.log('Migrations up to date', {
-    files: migrations.map((mig) => mig.name),
-  });
+  logger.info(
+    {
+      files: migrations.map((mig) => mig.name),
+    },
+    'Migrations up to date',
+  );
 };
 
 export const rollbackMigration = async () => {
+  const logger = getLogger();
   const migrations = await umzug.down();
   if (migrations.length == 0) {
-    console.log('No migrations to roll back to.');
+    logger.info('No migrations to roll back to.');
   } else {
     migrations.forEach((migration) => {
-      console.log('Rolled back migration', migration.name);
+      logger.info({ migration: migration.name }, 'Rolled back migration');
     });
   }
 };

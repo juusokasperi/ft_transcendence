@@ -459,7 +459,7 @@ export async function userRoutes(app: FastifyInstance) {
           try {
             await fsAsync.unlink(path.join(UPLOAD_DIR, user.avatar));
           } catch (err) {
-            console.log('Error deleting old avatar picture');
+            app.log.info('Error deleting old avatar picture');
           }
         }
         const updateResult = updateAvatar(uuid, fileName);
@@ -490,7 +490,7 @@ export async function userRoutes(app: FastifyInstance) {
         try {
           await fsAsync.unlink(user.avatar);
         } catch (err) {
-          console.log('Error deleting old avatar picture');
+          app.log.info('Error deleting old avatar picture');
         }
 
         const updateResult = updateAvatar(uuid);
@@ -565,7 +565,7 @@ export async function userRoutes(app: FastifyInstance) {
         const results = getMatchesWithPlayersForUser(uuid, count, offset);
         return res.status(200).send(results);
       } catch (error) {
-        console.error('GET /matches failed:', error);
+        app.log.error({ error }, 'GET /matches failed:');
         return res.status(500).send({ message: 'Failed to fetch match data for user' });
       }
     },

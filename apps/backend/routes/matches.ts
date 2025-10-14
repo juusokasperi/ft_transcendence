@@ -145,7 +145,7 @@ export async function matchRoutes(app: FastifyInstance) {
         const result = transaction();
         return res.status(200).send({ message: 'Match successfully added to database', ...result });
       } catch (error) {
-        console.error('Transaction failed:', error);
+        app.log.error({ error }, 'Transaction failed:');
         return res.status(500).send({
           message: 'Failed to add match results to database',
           error: error instanceof Error ? error.message : 'Unknown error',
@@ -170,7 +170,7 @@ export async function matchRoutes(app: FastifyInstance) {
         }
         return res.status(200).send(result);
       } catch (error) {
-        console.error('GET /matches/:matchId failed:', error);
+        app.log.error({ error }, 'GET /matches/:matchId failed:');
         return res.status(500).send({ message: 'Failed to get match data from DB' });
       }
     },
@@ -190,7 +190,7 @@ export async function matchRoutes(app: FastifyInstance) {
         results = getMatchesWithPlayersForUser(uuid, count, offset);
         return res.status(200).send(results);
       } catch (error) {
-        console.error('GET /matches failed:', error);
+        app.log.error({ error }, 'GET /matches failed:');
         return res.status(500).send({ message: 'Failed to fetch match data for user' });
       }
     },
@@ -251,7 +251,7 @@ export async function matchRoutes(app: FastifyInstance) {
         const updated = txn();
         return res.status(200).send({ message: 'Stats saved', updated });
       } catch (error) {
-        console.error('POST /matches/:matchId/stats failed:', error);
+        app.log.error({ error }, 'POST /matches/:matchId/stats failed:');
         const msg = error instanceof Error ? error.message : 'Failed to save stats for match';
         const code = /not part of match/i.test(msg) ? 400 : 500;
         return res.status(code).send({ message: msg });

@@ -33,6 +33,7 @@ import { runMigrations } from './db/migrations.ts';
 import { prettierErrorMessages } from './utils/errorHandler.ts';
 import './types/types.ts';
 import { ecsFormat } from '@elastic/ecs-pino-format';
+import { setLogger } from './utils/logger.ts';
 
 if (ENABLE_SQLITE_METRICS === 'true') initSqliteMetrics();
 
@@ -67,6 +68,8 @@ const app = fastify({
     customOptions: { allErrors: true, removeAdditional: true },
   },
 });
+
+setLogger(app.log);
 
 register.setDefaultLabels({
   service: 'api',

@@ -4,6 +4,7 @@ import {
   getTournamentMatchById,
   getTournamentMatchRoster,
 } from '../db/queries/tournamentMatches.ts';
+import { getLogger } from '../utils/logger.ts';
 
 const redis = new Redis(REDIS_URL);
 
@@ -29,6 +30,8 @@ function computeStage(round: number, position: number): 'semifinal' | 'final' | 
 }
 
 export async function notifyMatchesReady(tournamentId: number, matchIds: number[]) {
+  const logger = getLogger();
+
   if (!matchIds.length) return;
 
   const payload: MatchesReadyMessage = { tournamentId, matches: [] };
@@ -60,7 +63,7 @@ export async function notifyMatchesReady(tournamentId: number, matchIds: number[
   try {
     await redis.publish('tournament:matches_ready', JSON.stringify(payload));
   } catch (error) {
-    console.error('[Tournament] Failed to publish matches ready', { error });
+    logger.error({ error }, '[Tournament] Failed to publish matches ready');
   }
 }
 
@@ -69,10 +72,11 @@ type TournamentStateUpdatedMessage = {
 };
 
 export async function notifyTournamentStateUpdated(tournamentId: number) {
+  const logger = getLogger();
   const payload: TournamentStateUpdatedMessage = { tournamentId };
   try {
     await redis.publish('tournament:state_updated', JSON.stringify(payload));
   } catch (error) {
-    console.error('[Tournament] Failed to publish state update', { error });
+    logger.error({ error }, '[Tournament] Failed to publish state update');
   }
 }
