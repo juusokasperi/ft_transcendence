@@ -22,8 +22,10 @@
   "dependencies": {
     "axios": "^1.12.0",
     "dotenv": "^17.2.2",
+    "@elastic/ecs-pino-format": "^1.0.0",
     "fastify": "^5.6.0",
     "ioredis": "^5.8.0",
+    "pino": "^10.0.0",
     "uuid": "^13.0.0",
     "ws": "^8.18.3"
   }

@@ -8,9 +8,15 @@ import {
   GAME_SERVER_PORT,
   GAME_SERVER_SERVICE,
 } from './config';
+import { ecsFormat } from '@elastic/ecs-pino-format';
 
 const redis = new Redis(REDIS_URL);
-const app = fastify({ logger: true });
+const app = fastify({
+  logger: {
+    level: 'info', //log this level and all higher levels
+    ...ecsFormat(),
+  },
+});
 
 const nodes = Array.from({ length: GAME_NODES_AMOUNT }, (_, i) => {
   let host = GAME_SERVER_SERVICE;
@@ -49,10 +55,10 @@ async function updateScores() {
 const start = async () => {
   try {
     await app.listen({ port: 3000, host: '0.0.0.0' });
-    console.log(
-      `[Scorer] Running scorer with nodes:`,
-      nodes.map((n) => n.id),
-    );
+	app.log.info(
+		{ nodes: nodes.map(n => n.id) },
+		'[Scorer] Running scorer with nodes'
+	);
     setInterval(updateScores, 5000);
     updateScores();
   } catch (err) {
