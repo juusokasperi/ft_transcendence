@@ -17,6 +17,9 @@ x-logstash-logging: &logstash-logging
   options:
     gelf-address: udp://localhost:12201
 
+x-environment: &prod-env
+  NODE_ENV: production
+
 services:
 
   # Backend
@@ -34,6 +37,8 @@ services:
     restart: unless-stopped
     env_file:
       - ./.env
+    environment:
+      <<: *prod-env
     networks:
       - prod-public
       - prod-private
@@ -50,6 +55,8 @@ services:
       args:
         PNPM_VERSION: ${PNPM_VERSION:-9.12.3}
     image: ft-transcendence-frontend-builder:latest
+    environment:
+      <<: *prod-env
     volumes:
       - .:/work:cached
       - frontend_dist:/work/apps/frontend/dist
@@ -97,6 +104,8 @@ services:
     restart: unless-stopped
     env_file:
       - ./.env
+    environment:
+      <<: *prod-env
     networks:
       - prod-private
     depends_on:
@@ -117,6 +126,8 @@ services:
     restart: unless-stopped
     env_file:
       - ./.env
+    environment:
+      <<: *prod-env
     networks:
       - prod-private
     depends_on:
@@ -144,6 +155,7 @@ services:
       - ./.env
     environment:
       REDIS_URL: redis://redis:6379
+      <<: *prod-env
     networks:
       - prod-private
     depends_on:
@@ -181,6 +193,7 @@ services:
       - ./.env
     environment:
       REDIS_URL: redis://redis:6379
+      <<: *prod-env
     networks:
       - prod-private
     depends_on:
@@ -206,6 +219,8 @@ services:
     restart: unless-stopped
     env_file:
       - ./.env
+    environment:
+      <<: *prod-env
     networks:
       - prod-private
     ports:
