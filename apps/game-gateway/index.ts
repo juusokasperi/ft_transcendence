@@ -9,11 +9,32 @@ import { ecsFormat } from '@elastic/ecs-pino-format';
 
 const redis = new Redis(REDIS_URL);
 
-const app = fastify({
-  logger: {
-    level: 'info', //log this level and all higher levels
+const isDev = process.env.NODE_ENV === 'development';
+
+function createLoggerOptions(isDev: boolean) {
+  if (isDev) {
+    return {
+      level: 'debug',
+      transport: {
+        target: 'pino-pretty',
+        options: {
+          colorize: true,
+          translateTime: 'HH:MM:ss.l',
+          ignore: 'pid,hostname',
+        },
+      },
+    };
+  }
+
+  return {
+    level: 'info',
+    base: { service: 'scorer' },
     ...ecsFormat(),
-  },
+  };
+}
+
+const app = fastify({
+  logger: createLoggerOptions(isDev),
 });
 
 const proxy = new createProxyServer({ ws: true });
@@ -87,7 +108,7 @@ app.server.on('upgrade', async (req: IncomingMessage, socket: Duplex, head: Buff
       return;
     }
   } catch (err) {
-    console.error('[Gateway] Failed to persist join token consumption', err);
+    app.log.error({ err }, '[Gateway] Failed to persist join token consumption');
     socket.write('HTTP/1.1 4500 Internal Server Error\r\nConnection: close\r\n\r\n');
     socket.destroy();
     return;

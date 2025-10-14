@@ -18,6 +18,7 @@ import { createHttpServer } from './utils/httpServer.ts';
 import { verifyJoinToken } from '@pong/shared/auth/tokenSign';
 import type { OnlineMatchSummary, RoomState } from '@pong/shared/protocol/net';
 import type { WebSocket } from 'ws';
+import { ecsFormat } from '@elastic/ecs-pino-format';
 
 dotenv.config();
 
@@ -37,7 +38,35 @@ const RECONNECT_GRACE_PERIOD_MS = 10000; // 10 seconds grace period for tourname
 const CASUAL_RECONNECT_GRACE_PERIOD_MS = 15000; // 15 seconds for casual matches
 
 const redis = new Redis(REDIS_URL);
-const app = fastify({ logger: true });
+
+const isDev = process.env.NODE_ENV === 'development';
+
+function createLoggerOptions(isDev: boolean) {
+  if (isDev) {
+    return {
+      level: 'debug',
+      transport: {
+        target: 'pino-pretty',
+        options: {
+          colorize: true,
+          translateTime: 'HH:MM:ss.l',
+          ignore: 'pid,hostname',
+        },
+      },
+    };
+  }
+
+  return {
+    level: 'info',
+    base: { service: 'scorer' },
+    ...ecsFormat(),
+  };
+}
+
+const app = fastify({
+  logger: createLoggerOptions(isDev),
+});
+
 await app.register(websocket);
 
 interface Player {
@@ -263,7 +292,7 @@ function scheduleMatchStart(match: Match) {
     players,
   };
 
-  console.log(
+  app.log.info(
     `[GameServer] Scheduling start for room ${match.id} at ${new Date(target).toISOString()} (in ${Math.max(
       0,
       target - now,
@@ -284,7 +313,7 @@ function scheduleMatchStart(match: Match) {
 
   broadcastRoomState(match, 'READY');
 
-  console.log(`[GameServer] Publishing to redis 'room_ready' ${match.id}`);
+  app.log.info(`[GameServer] Publishing to redis 'room_ready' ${match.id}`);
   redis.publish(
     'room_ready',
     JSON.stringify({
@@ -307,14 +336,17 @@ function createBounds(): GameState['bounds'] {
 function startMatch(match: Match) {
   if (match.started) return;
   if (!match.players.P1 || !match.players.P2) {
-    console.warn('[GameServer] Cannot start match, missing players', {
-      roomIdentifier: match.id,
-    });
+    app.log.warn(
+      {
+        roomIdentifier: match.id,
+      },
+      '[GameServer] Cannot start match, missing players',
+    );
     return;
   }
   match.started = true;
   if (match.loop) return;
-  console.log(`[GameServer] Starting match ${match.id}`);
+  app.log.info(`[GameServer] Starting match ${match.id}`);
   const initialServer = match.initialServer;
   // Defer the opening serve to allow clients to run serve-selection FX.
   const gridMs = 1000 / TICK_RATE_HZ;
@@ -405,7 +437,7 @@ function startMatch(match: Match) {
 
 function broadcast(match: Match, payload: any) {
   const msg = JSON.stringify(payload);
-  //console.log(`[GameServer] Broadcasting to match ${match.id}:`, payload);
+  //app.log.info(`[GameServer] Broadcasting to match ${match.id}:`, payload);
   match.players.P1?.socket.send(msg);
   match.players.P2?.socket.send(msg);
 }
@@ -440,7 +472,7 @@ async function handleDisconnectGracePeriod(match: Match, disconnectedSeat: 'P1' 
   const remainingPlayer = match.players[remainingSeat];
 
   if (!remainingPlayer) {
-    console.log(`[GameServer] No grace period needed - no remaining player`);
+    app.log.info(`[GameServer] No grace period needed - no remaining player`);
     return;
   }
 
@@ -453,7 +485,7 @@ async function handleDisconnectGracePeriod(match: Match, disconnectedSeat: 'P1' 
   }
 
   const disconnectTime = Date.now();
-  console.log(
+  app.log.info(
     `[GameServer] Player ${disconnectedSeat} disconnected, starting ${gracePeriodMs}ms grace period (${isTournament ? 'tournament' : 'casual'})`,
   );
 
@@ -465,18 +497,18 @@ async function handleDisconnectGracePeriod(match: Match, disconnectedSeat: 'P1' 
     }),
   );
 
-  console.log(`[GameServer] Sent OPPONENT_DISCONNECTED to ${remainingSeat}`);
+  app.log.info(`[GameServer] Sent OPPONENT_DISCONNECTED to ${remainingSeat}`);
 
   // Set grace period timeout
   const graceTimeout = setTimeout(async () => {
     const currentMatch = matches.get(match.id);
     if (!currentMatch || currentMatch.players[disconnectedSeat]) {
       // Player reconnected or match was cleaned up
-      console.log(`[GameServer] Grace period ended, player reconnected or match cleaned up`);
+      app.log.info(`[GameServer] Grace period ended, player reconnected or match cleaned up`);
       return;
     }
 
-    console.log(`[GameServer] Grace period expired for ${disconnectedSeat}`);
+    app.log.info(`[GameServer] Grace period expired for ${disconnectedSeat}`);
 
     // Determine winner based on which seat remains
     // Need to check playerAtEnd to know which side the remaining player is on
@@ -486,19 +518,19 @@ async function handleDisconnectGracePeriod(match: Match, disconnectedSeat: 'P1' 
     if (playerAtEnd) {
       // Check which side the remaining player is on
       winnerSide = playerAtEnd.east === remainingSeat ? 'east' : 'west';
-      console.log(
+      app.log.info(
         `[GameServer] Player positions: east=${playerAtEnd.east}, west=${playerAtEnd.west}, remaining=${remainingSeat} -> winner side=${winnerSide}`,
       );
     } else {
       // Fallback: assume P1=east, P2=west
       winnerSide = remainingSeat === 'P1' ? 'east' : 'west';
-      console.log(
+      app.log.info(
         `[GameServer] No playerAtEnd info, using fallback: ${remainingSeat} -> ${winnerSide}`,
       );
     }
 
     // Award victory to remaining player for both tournament and casual matches
-    console.log(
+    app.log.info(
       `[GameServer] ${isTournament ? 'Tournament' : 'Casual'} match - awarding win to ${remainingSeat} (side: ${winnerSide}) due to opponent timeout`,
     );
     const summary = await handleMatchCompletion(currentMatch, { winner: winnerSide });
@@ -524,7 +556,7 @@ function cancelDisconnectGracePeriod(match: Match) {
   if (match.disconnectGracePeriod?.graceTimeout) {
     clearTimeout(match.disconnectGracePeriod.graceTimeout);
     match.disconnectGracePeriod = undefined;
-    console.log(`[GameServer] Cancelled disconnect grace period for match ${match.id}`);
+    app.log.info(`[GameServer] Cancelled disconnect grace period for match ${match.id}`);
   }
 }
 
@@ -540,13 +572,14 @@ async function handleMatchCompletion(
     const eastSeat = playerAtEnd.east; // 'P1' or 'P2'
     const westSeat = playerAtEnd.west; // 'P1' or 'P2'
 
-    console.log(`[GameServer] Player positions at match end: east=${eastSeat}, west=${westSeat}`);
+    app.log.info(`[GameServer] Player positions at match end: east=${eastSeat}, west=${westSeat}`);
 
     const eastPlayer = match.players[eastSeat];
     const westPlayer = match.players[westSeat];
 
     if (!eastPlayer && !westPlayer) {
       console.error(`[GameServer] No player data available for match ${match.id}`);
+      app.log.error(`[GameServer] No player data available for match ${match.id}`);
       match.resultSubmitting = false;
       return null;
     }
@@ -574,7 +607,7 @@ async function handleMatchCompletion(
     }
 
     if (!eastPlayerIdentifier || !westPlayerIdentifier) {
-      console.error(`[GameServer] Cannot determine player identifiers for match ${match.id}`);
+      app.log.error(`[GameServer] Cannot determine player identifiers for match ${match.id}`);
       match.resultSubmitting = false;
       return null;
     }
@@ -602,7 +635,7 @@ async function handleMatchCompletion(
         westScore = technicalScore;
       }
 
-      console.log(
+      app.log.info(
         `[GameServer] Technical victory awarded: ${winner} wins ${technicalScore}:0 (${match.reservation.tournament ? 'tournament' : 'casual'})`,
       );
 
@@ -613,9 +646,9 @@ async function handleMatchCompletion(
         winner,
       }));
 
-      console.log(
+      app.log.info(
+        { technicalGamesHistory },
         `[GameServer] Created synthetic games history for technical victory:`,
-        technicalGamesHistory,
       );
     }
 
@@ -635,7 +668,7 @@ async function handleMatchCompletion(
     );
 
     if (match.reservation.tournament) {
-      console.log(`[GameServer] Tournament match ${match.id} completed, reporting result`);
+      app.log.info(`[GameServer] Tournament match ${match.id} completed, reporting result`);
 
       const tournament = match.reservation.tournament;
       const actualWinner = eastScore > westScore ? 'east' : 'west';
@@ -652,12 +685,13 @@ async function handleMatchCompletion(
       }
 
       if (!winnerParticipantId || !loserParticipantId) {
+        app.log.error(`[GameServer] Missing participant IDs for tournament match ${match.id}`);
         console.error(`[GameServer] Missing participant IDs for tournament match ${match.id}`);
         match.resultSubmitting = false;
         return null;
       }
 
-      console.log(
+      app.log.info(
         `[GameServer] Tournament match winner: ${actualWinner} (score: ${eastScore}:${westScore}), winnerParticipantId: ${winnerParticipantId}, loserParticipantId: ${loserParticipantId}`,
       );
 
@@ -687,9 +721,9 @@ async function handleMatchCompletion(
         },
       );
 
-      console.log(`[GameServer] Tournament match result reported successfully:`, response.data);
+      app.log.info(`[GameServer] Tournament match result reported successfully:`, response.data);
     } else {
-      console.log(`[GameServer] Casual match ${match.id} completed, reporting result`);
+      app.log.info(`[GameServer] Casual match ${match.id} completed, reporting result`);
 
       const resultPayload = {
         team1Players: [eastPlayerIdentifier],
@@ -705,7 +739,7 @@ async function handleMatchCompletion(
         },
       });
 
-      console.log(`[GameServer] Casual match result reported successfully:`, response.data);
+      app.log.info(`[GameServer] Casual match result reported successfully:`, response.data);
 
       const rawTeam1Delta = Number(response.data?.eloChanges?.team1 ?? 0);
       const rawTeam2Delta = Number(response.data?.eloChanges?.team2 ?? 0);
@@ -753,7 +787,7 @@ async function handleMatchCompletion(
 
     return summary;
   } catch (error) {
-    console.error(`[GameServer] Failed to report match result:`, error);
+    app.log.error({ error }, `[GameServer] Failed to report match result:`);
     match.resultSubmitting = false;
     return null;
   }
@@ -763,13 +797,13 @@ app.register(async function (fastify) {
   fastify.get('/g/:roomId', { websocket: true }, async (connection, req) => {
     const { roomId: roomIdentifier } = req.params as { roomId: string };
     if (!roomIdentifier) {
-      console.warn('[GameServer] Connection without valid room path', req.url);
+      app.log.warn({ url: req.url }, '[GameServer] Connection without valid room path');
       connection.close(4404, 'room-not-found');
       return;
     }
     const protocolHeader = req.headers['sec-websocket-protocol'];
     if (typeof protocolHeader !== 'string') {
-      console.warn('[GameServer] Missing subprotocol header for room', roomIdentifier);
+      app.log.warn({ roomIdentifier }, '[GameServer] Missing subprotocol header for room');
       connection.close(4401, 'missing-token');
       return;
     }
@@ -780,7 +814,7 @@ app.register(async function (fastify) {
     const bearerIndex = requestedProtocols.findIndex((p) => p.toLowerCase() === 'bearer');
     const joinToken = bearerIndex !== -1 ? requestedProtocols[bearerIndex + 1] : undefined;
     if (!joinToken) {
-      console.warn('[GameServer] Missing join token protocol for room', roomIdentifier);
+      app.log.warn({ roomIdentifier }, '[GameServer] Missing join token protocol for room');
       connection.close(4401, 'missing-token');
       return;
     }
@@ -792,7 +826,7 @@ app.register(async function (fastify) {
       claims.aud !== 'game-node' ||
       claims.iss !== 'mm'
     ) {
-      console.warn('[GameServer] Invalid join token for room', roomIdentifier);
+      app.log.warn({ roomIdentifier }, '[GameServer] Invalid join token for room');
       connection.close(4401, 'invalid-token');
       return;
     }
@@ -801,69 +835,81 @@ app.register(async function (fastify) {
     try {
       const exists = await redis.exists(redisKey);
       if (!exists) {
-        console.warn('[GameServer] Join token not registered or already consumed', {
-          roomIdentifier,
-          jti: claims.jti,
-        });
+        app.log.warn(
+          {
+            roomIdentifier,
+            jti: claims.jti,
+          },
+          '[GameServer] Join token not registered or already consumed',
+        );
         connection.close(4403, 'token-reused');
         return;
       }
     } catch (err) {
-      console.error('[GameServer] Failed to check join token state', err);
+      app.log.error({ err }, '[GameServer] Failed to check join token state');
       connection.close(1011, 'server-error');
       return;
     }
     const reservation = rooms.get(roomIdentifier);
     if (!reservation) {
-      console.warn('[GameServer] No reservation found for room', roomIdentifier);
+      app.log.warn({ roomIdentifier }, '[GameServer] No reservation found for room');
       connection.close(4404, 'room-not-found');
       return;
     }
 
     if (Date.now() > reservation.joinDeadlineAtEpochMs) {
-      console.warn('[GameServer] Join deadline exceeded for room', roomIdentifier);
+      app.log.warn({ roomIdentifier }, '[GameServer] Join deadline exceeded for room');
       connection.close(4408, 'join-window-expired');
       return;
     }
 
     if (reservation.consumedJtis.has(claims.jti)) {
-      console.warn('[GameServer] Token replay detected for room', roomIdentifier);
+      app.log.warn({ roomIdentifier }, '[GameServer] Token replay detected for room');
       connection.close(4403, 'token-reused');
       return;
     }
 
     const expected = reservation.expectedPlayers.get(claims.sub);
     if (!expected) {
-      console.warn('[GameServer] Unexpected player attempted to join', {
-        roomIdentifier,
-        player: claims.sub,
-      });
+      app.log.warn(
+        {
+          roomIdentifier,
+          player: claims.sub,
+        },
+        '[GameServer] Unexpected player attempted to join',
+      );
       connection.close(4403, 'player-not-authorized');
       return;
     }
     if (expected.side !== claims.side) {
-      console.warn('[GameServer] Side mismatch for player', {
-        roomIdentifier,
-        player: claims.sub,
-        expectedSide: expected.side,
-        tokenSide: claims.side,
-      });
+      app.log.warn(
+        {
+          roomIdentifier,
+          player: claims.sub,
+          expectedSide: expected.side,
+          tokenSide: claims.side,
+        },
+        '[GameServer] Side mismatch for player',
+      );
       connection.close(4403, 'side-mismatch');
       return;
     }
     if (expected.joined) {
-      console.warn('[GameServer] Seat already occupied', {
-        roomIdentifier,
-        seat: expected.seat,
-        player: claims.sub,
-      });
+      app.log.warn(
+        {
+          roomIdentifier,
+          seat: expected.seat,
+          player: claims.sub,
+        },
+        '[GameServer] Seat already occupied',
+      );
       connection.close(4402, 'seat-occupied');
       return;
     }
 
     let match = matches.get(roomIdentifier);
     if (!match) {
-      console.log(`[GameServer] Creating new match for room ${roomIdentifier}`);
+      app.log.info(`[GameServer] Creating new match for room ${roomIdentifier}`);
       const bounds = createBounds();
       const rules = tableTennisRules();
       const initialServer = pickInitialServer(reservation.randomSeed);
@@ -885,11 +931,14 @@ app.register(async function (fastify) {
 
     const seat = expected.seat;
     if (match.players[seat]) {
-      console.warn('[GameServer] Match seat already taken at runtime', {
-        roomIdentifier,
-        seat,
-        player: claims.sub,
-      });
+      app.log.warn(
+        {
+          roomIdentifier,
+          seat,
+          player: claims.sub,
+        },
+        '[GameServer] Match seat already taken at runtime',
+      );
       connection.close(4402, 'seat-occupied');
       return;
     }
@@ -907,7 +956,7 @@ app.register(async function (fastify) {
     expected.joined = true;
     reservation.consumedJtis.add(claims.jti);
 
-    console.log(
+    app.log.info(
       `[GameServer] Player joined room=${roomIdentifier} seat=${seat} player=${claims.sub}`,
     );
 
@@ -922,11 +971,11 @@ app.register(async function (fastify) {
       match.players.P1?.socket.send(reconnectMsg);
       match.players.P2?.socket.send(reconnectMsg);
 
-      console.log(`[GameServer] Player ${seat} reconnected, grace period cancelled`);
+      app.log.info(`[GameServer] Player ${seat} reconnected, grace period cancelled`);
 
       // Resume the match if it was started
       if (match.started && !match.loop) {
-        console.log(`[GameServer] Resuming match ${roomIdentifier} after reconnection`);
+        app.log.info(`[GameServer] Resuming match ${roomIdentifier} after reconnection`);
         startMatch(match);
       }
     }
@@ -940,15 +989,18 @@ app.register(async function (fastify) {
           player.axis = Number(data.axis) || 0;
         }
       } catch {
-        console.warn('[GameServer] Malformed message', {
-          roomIdentifier,
-          seat,
-        });
+        app.log.warn(
+          {
+            roomIdentifier,
+            seat,
+          },
+          '[GameServer] Malformed message',
+        );
       }
     });
 
     connection.on('close', () => {
-      console.log(`[GameServer] Player disconnected room=${roomIdentifier} seat=${seat}`);
+      app.log.info(`[GameServer] Player disconnected room=${roomIdentifier} seat=${seat}`);
       const currentMatch = matches.get(roomIdentifier);
       const reservationForRoom = rooms.get(roomIdentifier);
       if (reservationForRoom) {
@@ -963,7 +1015,7 @@ app.register(async function (fastify) {
         const matchHasStarted = currentMatch.started;
         const hasRemainingPlayer = currentMatch.players.P1 || currentMatch.players.P2;
 
-        console.log(
+        app.log.info(
           `[GameServer] Disconnect details: tournament=${isTournamentMatch}, started=${matchHasStarted}, hasRemaining=${hasRemainingPlayer}`,
         );
 
@@ -975,7 +1027,7 @@ app.register(async function (fastify) {
 
           // If match has started with one player remaining, start grace period
           if (matchHasStarted && hasRemainingPlayer) {
-            console.log(
+            app.log.info(
               `[GameServer] Match in progress, starting grace period for ${seat} (tournament: ${isTournamentMatch})`,
             );
             if (currentMatch.loop) {
@@ -988,7 +1040,7 @@ app.register(async function (fastify) {
             if (currentMatch.loop) {
               clearInterval(currentMatch.loop);
               currentMatch.loop = undefined;
-              console.log(`[GameServer] Pausing match ${roomIdentifier} waiting for opponent`);
+              app.log.info(`[GameServer] Pausing match ${roomIdentifier} waiting for opponent`);
             }
             currentMatch.startAtEpochMs = undefined;
             currentMatch.started = false;
@@ -1001,7 +1053,7 @@ app.register(async function (fastify) {
         if (!currentMatch.players.P1 && !currentMatch.players.P2) {
           if (currentMatch.loop) {
             clearInterval(currentMatch.loop);
-            console.log(`[GameServer] Match ${roomIdentifier} ended and cleaned up`);
+            app.log.info(`[GameServer] Match ${roomIdentifier} ended and cleaned up`);
           }
           if (currentMatch.disconnectGracePeriod?.graceTimeout) {
             clearTimeout(currentMatch.disconnectGracePeriod.graceTimeout);
@@ -1015,7 +1067,7 @@ app.register(async function (fastify) {
     });
 
     if (match.players.P1 && match.players.P2) {
-      console.log(
+      app.log.info(
         `[GameServer] Both players connected for room ${roomIdentifier}, scheduling start`,
       );
       scheduleMatchStart(match);
@@ -1026,7 +1078,7 @@ app.register(async function (fastify) {
 const start = async () => {
   try {
     await app.listen({ port: PORT, host: '0.0.0.0' });
-    console.log(`[GameServer] Listening on port ${PORT}`);
+    app.log.info(`[GameServer] Listening on port ${PORT}`);
   } catch (err) {
     app.log.error(err);
     process.exit(1);

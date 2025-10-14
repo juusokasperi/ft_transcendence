@@ -48,7 +48,7 @@ export function createHttpServer({
     async (request: FastifyRequest, reply: FastifyReply) => {
       try {
         const result = await onCreateRoom(request.body);
-        console.log('[GameServer] /admin/rooms', result);
+        app.log.info({ result }, '[GameServer] /admin/rooms');
         reply.send(result ?? { status: 'ok' });
       } catch (err) {
         const message = err instanceof Error ? err.message : 'unknown error';
@@ -59,10 +59,10 @@ export function createHttpServer({
 
   app.listen({ port: HTTP_PORT, host: '0.0.0.0' }, (err: Error | null, address: string) => {
     if (err) {
-      console.error(err);
+      app.log.error(err);
       process.exit(1);
     }
-    console.log(`HTTP Endpoint listening on http://localhost:${HTTP_PORT}`);
+    app.log.info(`HTTP Endpoint listening on http://localhost:${HTTP_PORT}`);
   });
 
   return app;
