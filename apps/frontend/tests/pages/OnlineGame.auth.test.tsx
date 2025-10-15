@@ -6,7 +6,7 @@ let navigateMock = vi.fn();
 
 import React from 'react';
 import { render, waitFor, act } from '@testing-library/react';
-import OnlineGame from '../../src/pages/pong/online-game';
+import OnlineGame from '../../src/pages/pong/online/online-game';
 import { AppProvider } from '../../src/context/AppContext';
 import { SnackbarProvider } from '../../src/context/SnackbarContext';
 import { SidebarProvider } from '../../src/context/SidebarContext';

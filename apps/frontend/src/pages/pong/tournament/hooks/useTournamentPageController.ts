@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import type { RefObject } from 'react';
 import { useLocation } from 'react-router-dom';
-import { createMatchmakingClient } from '../../../services/matchmaking';
+import { createMatchmakingClient } from '../../../../services/matchmaking';
 import type {
   HandoffTimeoutMessage,
   MatchmakingMessage,
@@ -9,19 +9,14 @@ import type {
   TournamentMatchState,
   TournamentParticipantState,
 } from '@pong/shared/protocol/net';
-import { useSnackbar } from '../../../context/SnackbarContext';
-import { useAppContext } from '../../../context/AppContext';
-import type {
-  ActiveHandoff,
-  CountdownSnapshot,
-  ReadyMatch,
-  TournamentSummary,
-} from '../components/types';
+import { useSnackbar } from '../../../../context/SnackbarContext';
+import { useAppContext } from '../../../../context/AppContext';
+import type { ActiveHandoff, CountdownSnapshot, ReadyMatch, TournamentSummary } from '../types';
 import {
   MAX_VISIBLE_TOURNAMENTS,
   RECENT_TOURNAMENT_WINDOW_MS,
   TOURNAMENT_SIZE,
-} from '../../../config';
+} from '../../../../config';
 
 export type MatchPhase = 'idle' | 'awaiting_start' | 'starting' | 'playing';
 
@@ -923,7 +918,7 @@ export function useTournamentPageController(
 
     (async () => {
       try {
-        const { bootstrapOnlinePong } = await import('../../../games/pong/host/online-embed');
+        const { bootstrapOnlinePong } = await import('../../../../games/pong/host/online-embed');
         if (cancelled) return;
         const app = await bootstrapOnlinePong(canvasRef.current!, {
           serverUrl: handoff.gameServerWSUrl,

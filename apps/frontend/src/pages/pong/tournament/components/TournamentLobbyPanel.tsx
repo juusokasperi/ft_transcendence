@@ -1,6 +1,6 @@
 import React from 'react';
-import Button from '../../../components/Button';
-import type { TournamentSummary } from './types';
+import Button from '../../../../components/Button';
+import type { TournamentSummary } from '../types';
 
 export type TournamentLobbyPanelProps = {
   tournamentName: string;

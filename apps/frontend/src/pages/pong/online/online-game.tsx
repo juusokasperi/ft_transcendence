@@ -1,14 +1,14 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { createMatchmakingClient } from '../../services/matchmaking';
+import { createMatchmakingClient } from '../../../services/matchmaking';
 import type { MatchmakingMessage } from '@pong/shared/protocol/net';
 import type { PlayerSeat } from '@pong/render';
 import { useLayoutEffect } from 'react';
-import { useAppContext } from '../../context/AppContext';
-import type { Lobby } from '../../services/matchmaking';
-import Navbar from '../../components/Navbar';
-import { useSnackbar } from '../../context/SnackbarContext';
-import Button from '../../components/Button';
-import gifImg from '../../assets/gif.mp4';
+import { useAppContext } from '../../../context/AppContext';
+import type { Lobby } from '../../../services/matchmaking';
+import Navbar from '../../../components/Navbar';
+import { useSnackbar } from '../../../context/SnackbarContext';
+import Button from '../../../components/Button';
+import gifImg from '../../../assets/gif.mp4';
 
 interface LobbyListProps {
   lobbies: Lobby[];
@@ -257,7 +257,7 @@ const OnlineGame: React.FC = () => {
     let cancelled = false;
     (async () => {
       try {
-        const { bootstrapOnlinePong } = await import('../../games/pong/host/online-embed');
+        const { bootstrapOnlinePong } = await import('../../../games/pong/host/online-embed');
         if (cancelled) return;
         const app = await bootstrapOnlinePong(canvasRef.current!, {
           serverUrl,

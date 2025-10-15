@@ -1,6 +1,6 @@
 import React from 'react';
 import type { TournamentParticipantState } from '@pong/shared/protocol/net';
-import { participantStatusLabel } from './utils';
+import { participantStatusLabel } from '../utils';
 
 export type TournamentParticipantsPanelProps = {
   participants: TournamentParticipantState[];

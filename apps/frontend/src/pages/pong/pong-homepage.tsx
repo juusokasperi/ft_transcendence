@@ -1,7 +1,9 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import Navbar from '../../components/Navbar';
+import { BackgroundVideo } from './components/background-video';
 import gifImg from '../../assets/gif.mp4';
+import { Card, PlayButton } from './local/components';
 
 const PingPong: React.FC = () => {
   const navigate = useNavigate();
@@ -11,73 +13,67 @@ const PingPong: React.FC = () => {
   const handleTournaments = () => navigate('/ping-pong/tournaments');
 
   return (
-    <div className="relative min-h-screen bg-black">
+    // Fixed, full-viewport layer with hidden overflow => no scrollbars
+    <div className="fixed inset-0 overflow-hidden text-white">
+      {/* Global site navigation (fixed). */}
       <Navbar />
-      <div className="relative h-screen w-full overflow-hidden pt-24">
-        {/* Video Background */}
-        <video
-          autoPlay
-          loop
-          muted
-          playsInline
-          className="absolute left-0 top-0 h-full w-full bg-black object-contain object-[center_80%] md:object-cover"
-        >
-          <source src={gifImg} type="video/mp4" />
-        </video>
 
-        {/* Neon Menu */}
-        <div className="relative z-10 flex h-full flex-col items-center justify-start space-y-8 pt-24">
-          <button onClick={handleLocalPlay} className="neon-btn neon-pink">
-            Play Local
-          </button>
+      {/* Main landmark pinned between navbar and bottom */}
+      <main
+        aria-labelledby="page-title"
+        className="absolute inset-x-0 bottom-0 top-[var(--navbar-h,80px)] overflow-y-auto"
+      >
+        {/* Decorative background video (letterboxed, centered). Hidden from ATs. */}
+        <BackgroundVideo src={gifImg} fit="contain" position="center" />
 
-          <button onClick={handleOnlinePlay} className="neon-btn neon-blue">
-            Play Online
-          </button>
+        {/* Page title (accessible) */}
+        <h1 id="page-title" className="sr-only">
+          Pong 3D Game Modes
+        </h1>
 
-          <button onClick={handleTournaments} className="neon-btn neon-purple">
-            Tournaments
-          </button>
-        </div>
+        {/* Section: game mode selection */}
+        <section aria-labelledby="modes-heading" className="z-10 grid place-items-center p-4">
+          <Card
+            title={
+              <span id="modes-heading" className="block text-center text-2xl font-semibold">
+                PONG3D
+              </span>
+            }
+          >
+            <nav aria-label="Choose a game mode" className="mt-6 flex flex-col items-center gap-4">
+              <PlayButton
+                size="lg"
+                color="limegreen"
+                onClick={handleLocalPlay}
+                aria-label="Play local mode"
+                type="button"
+              >
+                PLAY LOCAL
+              </PlayButton>
 
-        {/* Neon button styling */}
-        <style>{`
-        .neon-btn {
-          position: relative;
-          display: inline-flex;
-          align-items: center;
-          justify-content: center;
-          width: min(80vw, 18rem);
-          padding: 1rem 3rem;
-          font-size: 1.5rem;
-          font-weight: bold;
-          text-transform: uppercase;
-          border: 2px solid currentColor;
-          border-radius: 0.75rem;
-          background: transparent;
-          cursor: pointer;
-          box-shadow:
-            0 0 5px currentColor,
-            0 0 10px currentColor,
-            0 0 20px currentColor;
-          transition: all 0.3s ease-in-out;
-          letter-spacing: 0.1em;
-        }
+              <PlayButton
+                size="lg"
+                color="cyan"
+                onClick={handleOnlinePlay}
+                aria-label="Play online mode"
+                type="button"
+              >
+                PLAY ONLINE
+              </PlayButton>
 
-        .neon-btn:hover {
-          box-shadow:
-            0 0 10px currentColor,
-            0 0 20px currentColor,
-            0 0 40px currentColor,
-            0 0 80px currentColor;
-          transform: scale(1.05);
-        }
-
-        .neon-pink { color: #ff4d9d; }
-        .neon-blue { color: #4dc9ff; }
-        .neon-purple { color: #b48bff; }
-      `}</style>
-      </div>
+              <PlayButton
+                size="lg"
+                color="magenta"
+                onClick={handleTournaments}
+                aria-label="Enter tournament mode"
+                type="button"
+              >
+                TOURNAMENT
+              </PlayButton>
+            </nav>
+          </Card>
+        </section>
+      </main>
     </div>
   );
 };
