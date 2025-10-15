@@ -99,8 +99,6 @@ services:
     volumes:
       - elk_certs:/usr/share/kibana/config/certs
       - kibana_data:/usr/share/kibana/data
-    ports:
-      - ${KIBANA_PORT}:5601 # web ui
     env_file:
       - ./.env
     environment:
@@ -112,6 +110,9 @@ services:
       - XPACK_SECURITY_ENCRYPTIONKEY=${ENCRYPTION_KEY}
       - XPACK_ENCRYPTEDSAVEDOBJECTS_ENCRYPTIONKEY=${ENCRYPTION_KEY}
       - XPACK_REPORTING_ENCRYPTIONKEY=${ENCRYPTION_KEY}
+      - SERVER_BASEPATH=/kibana
+      - SERVER_PUBLICBASEURL=https://localhost/kibana
+      - SERVER_REWRITEBASEPATH=false
     mem_limit: ${KB_MEM_LIMIT}
     healthcheck:
       test: ['CMD-SHELL', "curl -s -I http://localhost:${KIBANA_PORT} | grep -q 'HTTP/1.1 302 Found'"]
