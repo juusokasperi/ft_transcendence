@@ -20,6 +20,7 @@ export type BackgroundVideoProps = {
   poster?: string;
   ariaHidden?: boolean; // default: true (decorative)
   pauseOnReducedMotion?: boolean; // default: true
+  opacity?: number; // default: 1
 };
 
 const posToClass: Record<ObjectPosition, string> = {
@@ -44,6 +45,7 @@ export const BackgroundVideo: React.FC<BackgroundVideoProps> = ({
   poster,
   ariaHidden = true,
   pauseOnReducedMotion = true,
+  opacity,
 }) => {
   const ref = useRef<HTMLVideoElement>(null);
 
@@ -92,6 +94,7 @@ export const BackgroundVideo: React.FC<BackgroundVideoProps> = ({
       playsInline
       poster={poster}
       aria-hidden={ariaHidden}
+      style={opacity !== undefined ? { opacity } : undefined}
     >
       <source src={src} type={type} />
     </video>

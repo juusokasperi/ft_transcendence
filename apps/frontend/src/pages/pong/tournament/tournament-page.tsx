@@ -77,7 +77,7 @@ const TournamentPage: React.FC<TournamentPageProps> = ({ onBack, focusTournament
 
   return (
     <div className="relative min-h-screen overflow-hidden text-white">
-      <BackgroundVideo src={gifImg} fit="contain" position="center" />
+      <BackgroundVideo src={gifImg} fit="contain" position="center" opacity={0.7} />
       <Navbar />
       <div className="relative z-10 mx-auto mt-24 flex w-full max-w-6xl flex-col gap-6 px-4 pb-16">
         <SurfaceCard className="p-6 shadow-2xl">
