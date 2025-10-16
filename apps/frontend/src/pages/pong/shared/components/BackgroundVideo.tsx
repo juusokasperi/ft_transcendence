@@ -52,6 +52,8 @@ export const BackgroundVideo: React.FC<BackgroundVideoProps> = ({
   // Respect prefers-reduced-motion
   useEffect(() => {
     if (!pauseOnReducedMotion || !ref.current) return;
+    // In test/SSR environments, window.matchMedia may be undefined
+    if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') return;
     const mq = window.matchMedia('(prefers-reduced-motion: reduce)');
     const v = ref.current;
 
