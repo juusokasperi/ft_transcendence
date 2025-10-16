@@ -1,10 +1,6 @@
 import type { GameState } from '@pong/game-logic';
 import type { FrameEvents, MatchSnapshot } from '@pong/shared';
-import type {
-  OnlineMatchSummary,
-  RoomStateMessage,
-  StartMessage,
-} from '@pong/shared/protocol/net';
+import type { OnlineMatchSummary, RoomStateMessage, StartMessage } from '@pong/shared/protocol/net';
 import type { PlayerSeat } from '@pong/render';
 import { wsUrl } from '../../../../utils/url';
 
@@ -32,7 +28,9 @@ export type OnlineClient = {
   awaitStart(): Promise<StartSignal>;
   onOpponentDisconnected(cb: (gracePeriodMs: number) => void): void;
   onOpponentReconnected(cb: () => void): void;
-  onMatchEnd(cb: (reason: string, winner?: 'east' | 'west', summary?: OnlineMatchSummary | null) => void): void;
+  onMatchEnd(
+    cb: (reason: string, winner?: 'east' | 'west', summary?: OnlineMatchSummary | null) => void,
+  ): void;
 };
 
 export type ConnectConfig = {

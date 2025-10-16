@@ -1,10 +1,4 @@
-import type {
-  MatchEndPayload,
-  MatchHandoff,
-  OnlineState,
-  OpponentInfo,
-  Status,
-} from './types';
+import type { MatchEndPayload, MatchHandoff, OnlineState, OpponentInfo, Status } from './types';
 
 const EMPTY_OPPONENT: OpponentInfo = { username: null, mmr: 0 };
 

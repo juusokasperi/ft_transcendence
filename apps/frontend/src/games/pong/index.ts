@@ -15,7 +15,11 @@ export type CreateAppOptions = {
     seat: PlayerSeat;
     joinToken: string;
     randomSeed: number;
-    onMatchEnd?: (reason: string, winner?: 'east' | 'west', summary?: OnlineMatchSummary | null) => void;
+    onMatchEnd?: (
+      reason: string,
+      winner?: 'east' | 'west',
+      summary?: OnlineMatchSummary | null,
+    ) => void;
   };
   preferences?: Preferences;
 };

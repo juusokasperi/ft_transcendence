@@ -950,7 +950,6 @@ export function useTournamentPageController(
         void refreshTournamentState();
         teardownInProgressRef.current = false;
       }, refreshDelayMs);
-
     },
     [debugLog, refreshTournamentState],
   );
@@ -993,7 +992,15 @@ export function useTournamentPageController(
     return () => {
       cancelled = true;
     };
-  }, [debugLog, enqueueSnackbar, handoff, refreshTournamentState, seat, matchPhase, performMatchTeardown]);
+  }, [
+    debugLog,
+    enqueueSnackbar,
+    handoff,
+    refreshTournamentState,
+    seat,
+    matchPhase,
+    performMatchTeardown,
+  ]);
 
   useEffect(
     () => () => {

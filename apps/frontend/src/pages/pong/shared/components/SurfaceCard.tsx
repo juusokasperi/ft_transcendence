@@ -8,9 +8,7 @@ type SurfaceCardProps<T extends React.ElementType = 'div'> = {
 
 const baseClasses = 'rounded-2xl border border-white/10 bg-white/5 backdrop-blur';
 
-const SurfaceCard = <T extends React.ElementType = 'div'>(
-  props: SurfaceCardProps<T>,
-) => {
+const SurfaceCard = <T extends React.ElementType = 'div'>(props: SurfaceCardProps<T>) => {
   const { as, className, children, ...rest } = props;
   const Component = (as ?? 'div') as React.ElementType;
   const composedClassName = className ? `${baseClasses} ${className}` : baseClasses;

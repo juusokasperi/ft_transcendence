@@ -46,9 +46,7 @@ export function useGameBootstrap({
 
     (async () => {
       try {
-        const { bootstrapOnlinePong } = await import(
-          '../../../../games/pong/host/online-embed'
-        );
+        const { bootstrapOnlinePong } = await import('../../../../games/pong/host/online-embed');
         if (cancelled) return;
 
         const instance = await bootstrapOnlinePong(canvas, {

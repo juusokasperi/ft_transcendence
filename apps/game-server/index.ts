@@ -160,17 +160,17 @@ createHttpServer({
     }
 
     const participantLookup = new Map(tournament?.participants?.map((p) => [p.userUuid, p]) ?? []);
-  const expected = new Map<
-    string,
-    {
-      side: 'west' | 'east';
-      seat: 'P1' | 'P2';
-      joined: boolean;
-      participantId?: number;
-      alias?: string;
-      mmr: number;
-    }
-  >();
+    const expected = new Map<
+      string,
+      {
+        side: 'west' | 'east';
+        seat: 'P1' | 'P2';
+        joined: boolean;
+        participantId?: number;
+        alias?: string;
+        mmr: number;
+      }
+    >();
     for (const p of expectedPlayers) {
       if (!p?.playerIdentifier || (p.side !== 'west' && p.side !== 'east')) {
         throw new Error('Invalid expected player payload');

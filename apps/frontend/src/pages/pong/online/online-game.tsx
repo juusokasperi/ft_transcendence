@@ -219,37 +219,37 @@ const OnlineGame: React.FC = () => {
           Online Pong Matchmaking
         </h1>
         <div className="relative z-10 mx-auto flex max-w-5xl justify-center px-4 py-20">
-        <SurfaceCard className="w-full max-w-xl space-y-6 p-6 shadow-2xl">
-          <header className="flex items-center justify-between">
-            <div>
-              <h1 className="text-2xl font-semibold tracking-wide">Online Game</h1>
-              <p className="text-sm text-white/60">Queue up and play in real time.</p>
-            </div>
-            <StatusBadge status={state.status} />
-          </header>
+          <SurfaceCard className="w-full max-w-xl space-y-6 p-6 shadow-2xl">
+            <header className="flex items-center justify-between">
+              <div>
+                <h1 className="text-2xl font-semibold tracking-wide">Online Game</h1>
+                <p className="text-sm text-white/60">Queue up and play in real time.</p>
+              </div>
+              <StatusBadge status={state.status} />
+            </header>
 
-          {state.status === 'connecting' && (
-            <p className="text-white/60">Connecting to matchmaking…</p>
-          )}
+            {state.status === 'connecting' && (
+              <p className="text-white/60">Connecting to matchmaking…</p>
+            )}
 
-          {(state.status === 'idle' || state.status === 'in_queue') && (
-            <QueueControls
-              status={state.status}
-              queueElapsed={queueElapsed}
-              onJoin={handleJoinQueue}
-              onLeave={handleLeaveQueue}
-            />
-          )}
+            {(state.status === 'idle' || state.status === 'in_queue') && (
+              <QueueControls
+                status={state.status}
+                queueElapsed={queueElapsed}
+                onJoin={handleJoinQueue}
+                onLeave={handleLeaveQueue}
+              />
+            )}
 
-          {state.status === 'match_found' || state.status === 'match_accepted' ? (
-            <MatchFoundPanel
-              opponent={state.opponent}
-              status={state.status}
-              onAccept={handleAcceptMatch}
-              onDecline={handleDeclineMatch}
-            />
-          ) : null}
-        </SurfaceCard>
+            {state.status === 'match_found' || state.status === 'match_accepted' ? (
+              <MatchFoundPanel
+                opponent={state.opponent}
+                status={state.status}
+                onAccept={handleAcceptMatch}
+                onDecline={handleDeclineMatch}
+              />
+            ) : null}
+          </SurfaceCard>
         </div>
       </main>
     </div>

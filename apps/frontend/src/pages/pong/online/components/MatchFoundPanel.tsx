@@ -25,13 +25,7 @@ const MatchFoundPanel: React.FC<MatchFoundPanelProps> = ({
           <span className="ml-2 text-sm text-white/50">MMR: {opponent.mmr}</span>
         </p>
       </div>
-      <Button
-        type="button"
-        variant="success"
-        fullWidth
-        disabled={accepting}
-        onClick={onAccept}
-      >
+      <Button type="button" variant="success" fullWidth disabled={accepting} onClick={onAccept}>
         {accepting ? 'Accepted… waiting' : 'Accept'}
       </Button>
       <Button type="button" variant="danger" fullWidth disabled={accepting} onClick={onDecline}>

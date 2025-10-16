@@ -15,7 +15,11 @@ export async function bootstrapOnlinePong(
     seat: PlayerSeat;
     joinToken: string;
     randomSeed: number;
-    onMatchEnd?: (reason: string, winner?: 'east' | 'west', summary?: OnlineMatchSummary | null) => void;
+    onMatchEnd?: (
+      reason: string,
+      winner?: 'east' | 'west',
+      summary?: OnlineMatchSummary | null,
+    ) => void;
   },
 ) {
   console.info('[Pong] Initialising online host', {

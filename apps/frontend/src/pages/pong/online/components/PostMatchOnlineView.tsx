@@ -29,11 +29,11 @@ const PostMatchOnlineView: React.FC<Props> = ({ summary, onBackToMenu }) => {
           </span>
         </div>
         <div className="mt-1 text-white/70">
-          {before}{' '}
-          <span className="mx-1 text-white">→</span>
+          {before} <span className="mx-1 text-white">→</span>
           <span className="font-semibold text-white">{after}</span>
           <span className="ml-2 font-mono text-white/60">
-            (Δ {delta >= 0 ? '+' : ''}{delta})
+            (Δ {delta >= 0 ? '+' : ''}
+            {delta})
           </span>
         </div>
       </div>

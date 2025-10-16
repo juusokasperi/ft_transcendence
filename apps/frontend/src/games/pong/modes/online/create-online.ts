@@ -398,9 +398,13 @@ export function createOnlineApp(
     });
 
     net.onMatchEnd(
-      (reason: string, winner?: 'east' | 'west', summaryFromNet: OnlineMatchSummary | null = null) => {
+      (
+        reason: string,
+        winner?: 'east' | 'west',
+        summaryFromNet: OnlineMatchSummary | null = null,
+      ) => {
         console.log('[OnlineGame] Match ended:', reason, 'winner:', winner);
-      hideDisconnectOverlay();
+        hideDisconnectOverlay();
         const eastAlias = names.east;
         const westAlias = names.west;
         const history = (latestMatch?.gamesHistory ?? []).map((game) => ({ ...game }));
@@ -421,11 +425,10 @@ export function createOnlineApp(
                 west: summaryFromNet.names?.west ?? westAlias,
               },
               seats: summaryFromNet.seats ?? seatMap ?? undefined,
-              mmr:
-                summaryFromNet.mmr ?? {
-                  east: { before: 0, after: 0 },
-                  west: { before: 0, after: 0 },
-                },
+              mmr: summaryFromNet.mmr ?? {
+                east: { before: 0, after: 0 },
+                west: { before: 0, after: 0 },
+              },
             }
           : {
               winner: defaultWinner,
