@@ -1,5 +1,6 @@
 import React from 'react';
 import type { TournamentMatchState } from '@pong/shared/protocol/net';
+import SurfaceCard from '../../shared/components/SurfaceCard';
 import { participantStatusLabel, stageLabel } from '../utils/utils';
 
 export type TournamentBracketPanelProps = {
@@ -16,7 +17,7 @@ const TournamentBracketPanel: React.FC<TournamentBracketPanelProps> = ({
   currentParticipantId,
 }) => {
   return (
-    <section className="rounded-2xl border border-white/10 bg-white/5 p-5 shadow-xl backdrop-blur">
+    <SurfaceCard as="section" className="p-5 shadow-xl">
       <div className="mb-4 flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
         <h2 className="text-lg font-semibold">Bracket</h2>
         <span className="text-xs uppercase tracking-[0.4em] text-white/40">
@@ -62,7 +63,7 @@ const TournamentBracketPanel: React.FC<TournamentBracketPanelProps> = ({
           ))}
         </div>
       )}
-    </section>
+    </SurfaceCard>
   );
 };
 

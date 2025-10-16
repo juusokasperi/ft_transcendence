@@ -1,5 +1,6 @@
 import React from 'react';
 import Button from '../../../../components/Button';
+import SurfaceCard from '../../shared/components/SurfaceCard';
 
 export type TournamentInfoCardProps = {
   tournamentId: number | null;
@@ -27,7 +28,7 @@ const TournamentInfoCard: React.FC<TournamentInfoCardProps> = ({
   onLeave,
 }) => {
   return (
-    <div className="rounded-2xl border border-white/10 bg-white/5 p-5 shadow-xl backdrop-blur">
+    <SurfaceCard className="p-5 shadow-xl">
       <h2 className="mb-2 text-lg font-semibold">
         {tournamentId !== null ? `Tournament #${tournamentId}` : 'Tournament lobby'}
       </h2>
@@ -63,7 +64,7 @@ const TournamentInfoCard: React.FC<TournamentInfoCardProps> = ({
           start.
         </p>
       )}
-    </div>
+    </SurfaceCard>
   );
 };
 

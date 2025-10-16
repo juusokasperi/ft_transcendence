@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { Observation } from '../../../../games/pong/ai/bot-controller';
 import type { Preferences } from '../../../../games/pong/modes/preferences';
 import type { UserSettings } from '../utils/storage';
@@ -93,14 +93,6 @@ export function usePongRuntime({
       rules: settings.rules,
     });
   }, [playing, settings.player1, settings.player2, settings.rules]);
-
-  useLayoutEffect(() => {
-    if (!playing) return;
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const handle = requestAnimationFrame(() => canvas.focus({ preventScroll: true }));
-    return () => cancelAnimationFrame(handle);
-  }, [playing, canvasRef]);
 
   return {
     runtimeRef,

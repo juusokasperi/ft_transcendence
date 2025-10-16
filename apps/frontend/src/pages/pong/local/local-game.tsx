@@ -15,9 +15,9 @@ import { PlayingView, PostMatchView, SettingsView } from './components';
 import { useLocalSettings } from './hooks/useLocalSettings';
 import { usePongRuntime } from './hooks/usePongRuntime';
 import { useAIBot } from './hooks/useAIBot';
-import { useMatchOverEvent } from './hooks/useMatchOverEvent';
 import { useKeyboardQuit } from './hooks/useKeyboardQuit';
-import { useBodyClass } from './hooks/useBodyClass';
+import { useBodyClass } from '../shared/hooks/useBodyClass';
+import { useMatchOverEvent } from '../shared/hooks/useMatchOverEvent';
 
 type MatchSummary = {
   winner: 'east' | 'west';
@@ -68,13 +68,16 @@ const LocalGame: React.FC = () => {
     botSeat,
   });
 
-  useMatchOverEvent({
+  useMatchOverEvent<MatchSummary>({
     canvasRef,
-    playing: isPlaying,
-    onMatchOver: (detail) => setPostMatch(detail),
+    active: isPlaying,
+    onMatchOver: (detail) => {
+      if (detail) setPostMatch(detail);
+    },
     // Make teardown immediate so we’re not stuck in the PlayingView branch.
     onAutoExit: () => setIsPlaying(false),
     autoExitDelayMs: 0,
+    extractDetail: (event) => (event as CustomEvent<MatchSummary>).detail ?? null,
   });
 
   const handleQuit = useCallback(() => {

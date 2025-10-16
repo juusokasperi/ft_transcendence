@@ -1,5 +1,6 @@
 import React from 'react';
 import Button from '../../../../components/Button';
+import SurfaceCard from '../../shared/components/SurfaceCard';
 import type { TournamentSummary } from '../state/types';
 
 export type TournamentLobbyPanelProps = {
@@ -27,7 +28,7 @@ const TournamentLobbyPanel: React.FC<TournamentLobbyPanelProps> = ({
 }) => {
   return (
     <div className="flex flex-col gap-6">
-      <div className="rounded-2xl border border-white/10 bg-white/5 p-5 shadow-xl backdrop-blur">
+      <SurfaceCard className="p-5 shadow-xl">
         <h2 className="mb-4 text-lg font-semibold">Create a new tournament</h2>
         <div className="flex flex-col gap-3">
           <input
@@ -48,9 +49,9 @@ const TournamentLobbyPanel: React.FC<TournamentLobbyPanelProps> = ({
             </Button>
           </div>
         </div>
-      </div>
+      </SurfaceCard>
 
-      <div className="rounded-2xl border border-white/10 bg-white/5 p-5 shadow-xl backdrop-blur">
+      <SurfaceCard className="p-5 shadow-xl">
         <h2 className="mb-4 text-lg font-semibold">Open tournaments</h2>
         {availableTournaments.length === 0 ? (
           <p className="text-sm text-white/60">No tournaments available yet. Create one above!</p>
@@ -110,7 +111,7 @@ const TournamentLobbyPanel: React.FC<TournamentLobbyPanelProps> = ({
             })}
           </ul>
         )}
-      </div>
+      </SurfaceCard>
     </div>
   );
 };
