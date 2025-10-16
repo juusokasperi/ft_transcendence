@@ -1036,9 +1036,9 @@ export function useTournamentPageController(
     active: matchPhase === 'playing',
     onMatchOver: () => {
       debugLog('match-over-event');
-      performMatchTeardown({ refreshDelayMs: 2500 });
+      performMatchTeardown({ refreshDelayMs: 5000 });
     },
-    autoExitDelayMs: 2500,
+    autoExitDelayMs: 5000,
   });
 
   return {
