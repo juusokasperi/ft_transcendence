@@ -133,7 +133,7 @@ createHttpServer({
         playerIdentifier: string;
         side: 'west' | 'east';
         alias?: string;
-        mmr?: number;
+        mmr: number;
       }>;
       randomSeed?: number;
       simulationStartTick?: number;

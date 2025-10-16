@@ -1,7 +1,7 @@
 import React from 'react';
 import SurfaceCard from '../../shared/components/SurfaceCard';
 import Button from '../../../../components/Button';
-import type { OnlineMatchSummary } from '../../../../games/pong/modes/online/types';
+import type { OnlineMatchSummary } from '../state/types';
 
 type Props = {
   summary: OnlineMatchSummary;
