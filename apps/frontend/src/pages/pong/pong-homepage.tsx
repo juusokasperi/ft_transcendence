@@ -40,13 +40,17 @@ const PingPong: React.FC = () => {
               </span>
             }
           >
-            <nav aria-label="Choose a game mode" className="mt-6 flex flex-col items-center gap-4">
+            <nav
+              aria-label="Choose a game mode"
+              className="mt-6 flex flex-col items-center gap-4 landscape:flex-row landscape:justify-center landscape:gap-6"
+            >
               <PlayButton
                 size="lg"
                 color="limegreen"
                 onClick={handleLocalPlay}
                 aria-label="Play local mode"
                 type="button"
+                className="max-[800px]:!h-[3.5em] max-[800px]:!min-w-[10em] max-[800px]:!text-[16px]"
               >
                 PLAY LOCAL
               </PlayButton>
@@ -57,6 +61,7 @@ const PingPong: React.FC = () => {
                 onClick={handleOnlinePlay}
                 aria-label="Play online mode"
                 type="button"
+                className="max-[800px]:!h-[3.5em] max-[800px]:!min-w-[10em] max-[800px]:!text-[16px]"
               >
                 PLAY ONLINE
               </PlayButton>
@@ -67,6 +72,7 @@ const PingPong: React.FC = () => {
                 onClick={handleTournaments}
                 aria-label="Enter tournament mode"
                 type="button"
+                className="max-[800px]:!h-[3.5em] max-[800px]:!min-w-[10em] max-[800px]:!text-[16px]"
               >
                 TOURNAMENT
               </PlayButton>
