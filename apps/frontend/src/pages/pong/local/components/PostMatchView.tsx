@@ -1,8 +1,8 @@
 import React, { useEffect, useRef } from 'react';
 import type { GameHistoryEntry } from '@pong/shared';
 import { createScoreboard } from '@pong/render';
-import PlayButton from './play-button';
-import Card from './card';
+import PlayButton from './PlayButton';
+import Card from './Card';
 
 type MatchSummary = {
   winner: 'east' | 'west';

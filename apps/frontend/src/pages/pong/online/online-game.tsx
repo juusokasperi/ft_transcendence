@@ -2,21 +2,21 @@ import React, { useCallback, useMemo, useReducer, useRef, useState } from 'react
 import Navbar from '../../../components/Navbar';
 import { useAppContext } from '../../../context/AppContext';
 import { useSnackbar } from '../../../context/SnackbarContext';
-import PlayingView from '../components/playing-view';
+import PlayingView from '../shared/components/PlayingView';
 import gifImg from '../../../assets/gif.mp4';
 
-import Panel from './components/panel';
-import StatusBadge from './components/status-badge';
-import QueueControls from './components/queue-controls';
-import MatchFoundPanel from './components/match-found-panel';
-import { BackgroundVideo } from '../components/background-video';
+import Panel from './components/Panel';
+import StatusBadge from './components/StatusBadge';
+import QueueControls from './components/QueueControls';
+import MatchFoundPanel from './components/MatchFoundPanel';
+import { BackgroundVideo } from '../shared/components/BackgroundVideo';
 
-import { useQueueTimer } from './hooks/use-queue-timer';
-import { useGameBootstrap } from './hooks/use-game-bootstrap';
-import { useNavbarPlayingClass } from './hooks/use-navbar-playing-class';
-import { useAutoFocusCanvas } from './hooks/use-auto-focus-canvas';
-import { useMatchOverListener } from './hooks/use-match-over-listener';
-import { useMatchmakingClient } from './hooks/use-matchmaking-client';
+import { useQueueTimer } from './hooks/useQueueTimer';
+import { useGameBootstrap } from './hooks/useGameBootstrap';
+import { useNavbarPlayingClass } from './hooks/useNavbarPlayingClass';
+import { useAutoFocusCanvas } from './hooks/useAutoFocusCanvas';
+import { useMatchOverListener } from './hooks/useMatchOverListener';
+import { useMatchmakingClient } from './hooks/useMatchmakingClient';
 
 import { initialState, reducer } from './state/machine';
 import type { MatchEndPayload } from './state/types';
@@ -67,13 +67,7 @@ const OnlineGame: React.FC = () => {
     [axios, enqueueSnackbar, navigate],
   );
 
-  const {
-    joinQueue,
-    leaveQueue,
-    acceptMatch,
-    declineMatch,
-    reconnect,
-  } = useMatchmakingClient({
+  const { joinQueue, leaveQueue, acceptMatch, declineMatch, reconnect } = useMatchmakingClient({
     dispatch,
     connectKey,
     requestReconnect: () => setConnectKey((key) => key + 1),
@@ -101,7 +95,14 @@ const OnlineGame: React.FC = () => {
       randomSeed: state.randomSeed,
       seat: state.seat,
     };
-  }, [state.serverUrl, state.matchId, state.roomIdentifier, state.joinToken, state.randomSeed, state.seat]);
+  }, [
+    state.serverUrl,
+    state.matchId,
+    state.roomIdentifier,
+    state.joinToken,
+    state.randomSeed,
+    state.seat,
+  ]);
 
   const handleMatchEnd = useCallback(
     (payload: MatchEndPayload) => {
@@ -208,7 +209,6 @@ const OnlineGame: React.FC = () => {
               onDecline={handleDeclineMatch}
             />
           ) : null}
-
         </Panel>
       </div>
     </div>

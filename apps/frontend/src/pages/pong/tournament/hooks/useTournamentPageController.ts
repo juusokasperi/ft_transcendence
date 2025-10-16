@@ -11,7 +11,12 @@ import type {
 } from '@pong/shared/protocol/net';
 import { useSnackbar } from '../../../../context/SnackbarContext';
 import { useAppContext } from '../../../../context/AppContext';
-import type { ActiveHandoff, CountdownSnapshot, ReadyMatch, TournamentSummary } from '../types';
+import type {
+  ActiveHandoff,
+  CountdownSnapshot,
+  ReadyMatch,
+  TournamentSummary,
+} from '../state/types';
 import {
   MAX_VISIBLE_TOURNAMENTS,
   RECENT_TOURNAMENT_WINDOW_MS,

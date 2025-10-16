@@ -1,12 +1,12 @@
 import React from 'react';
 import Navbar from '../../../components/Navbar';
 import Button from '../../../components/Button';
-import TournamentParticipantsPanel from './components/TournamentParticipantsPanel';
-import TournamentBracketPanel from './components/TournamentBracketPanel';
-import TournamentDirectedMatchesPanel from './components/TournamentDirectedMatchesPanel';
-import TournamentLobbyPanel from './components/TournamentLobbyPanel';
-import TournamentMatchOverlay from './components/TournamentMatchOverlay';
-import TournamentPageHeader from './components/TournamentPageHeader';
+import TournamentParticipantsPanel from './components/ParticipantsPanel';
+import TournamentBracketPanel from './components/BracketPanel';
+import TournamentDirectedMatchesPanel from './components/DirectedMatchesPanel';
+import TournamentLobbyPanel from './components/LobbyPanel';
+import TournamentMatchOverlay from './components/MatchOverlay';
+import TournamentPageHeader from './components/PageHeader';
 import { useTournamentPageController } from './hooks/useTournamentPageController';
 
 type TournamentPageProps = {

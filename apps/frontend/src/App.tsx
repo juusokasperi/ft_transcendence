@@ -12,7 +12,7 @@ import LocalGame from './pages/pong/local/local-game';
 import DeleteUser from './pages/DeleteUser';
 import ConfirmEmail from './pages/ConfirmEmail';
 import OnlineGame from './pages/pong/online/online-game';
-import Tournament from './pages/pong/tournament/tournament';
+import Tournament from './pages/pong/tournament/tournament-page';
 import TournamentDetail from './pages/pong/tournament/tournament-detail';
 import ForgotPassword from './pages/ForgotPassword';
 import ResetPassword from './pages/ResetPassword';

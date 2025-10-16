@@ -10,14 +10,14 @@ import '@pong/render/register';
 import Navbar from '../../../components/Navbar';
 import { useSnackbar } from '../../../context/SnackbarContext';
 import gifImg from '../../../assets/gif.mp4';
-import { BackgroundVideo } from '../components/background-video';
+import { BackgroundVideo } from '../shared/components/BackgroundVideo';
 import { PlayingView, PostMatchView, SettingsView } from './components';
-import { useLocalSettings } from './hooks/use-local-settings';
-import { usePongRuntime } from './hooks/use-pong-runtime';
-import { useAIBot } from './hooks/use-AI-bot';
-import { useMatchOverEvent } from './hooks/use-match-over-event';
-import { useKeyboardQuit } from './hooks/use-keyboard-quit';
-import { useBodyClass } from './hooks/use-body-class';
+import { useLocalSettings } from './hooks/useLocalSettings';
+import { usePongRuntime } from './hooks/usePongRuntime';
+import { useAIBot } from './hooks/useAIBot';
+import { useMatchOverEvent } from './hooks/useMatchOverEvent';
+import { useKeyboardQuit } from './hooks/useKeyboardQuit';
+import { useBodyClass } from './hooks/useBodyClass';
 
 type MatchSummary = {
   winner: 'east' | 'west';
