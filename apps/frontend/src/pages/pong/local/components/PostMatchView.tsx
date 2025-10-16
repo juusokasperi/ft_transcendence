@@ -22,15 +22,20 @@ export const PostMatchView: React.FC<PostMatchViewProps> = ({
   onPlayAgain,
   onReturnToMenu,
 }) => {
-  const hudContainerRef = useRef<HTMLDivElement | null>(null);
+  const hudRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
-    if (!hudContainerRef.current) return;
+    if (!hudRef.current) return;
     const hud = createScoreboard();
-    hud.attachToElement(hudContainerRef.current);
-    hud.setPlayerNames(summary.names.east, summary.names.west);
-    hud.setGames(summary.gamesHistory, summary.bestOf);
-    return () => hud.dispose();
+    hud.attachToElement(hudRef.current);
+    const rafId = requestAnimationFrame(() => {
+      hud.setPlayerNames(summary.names.east, summary.names.west);
+      hud.setGames(summary.gamesHistory, summary.bestOf);
+    });
+    return () => {
+      cancelAnimationFrame(rafId);
+      hud.dispose();
+    };
   }, [summary]);
 
   const westName = summary.names.west || 'Player 2';
@@ -49,7 +54,7 @@ export const PostMatchView: React.FC<PostMatchViewProps> = ({
           </span>
         }
       >
-        <div ref={hudContainerRef} className="z-10 w-full" style={{ height: 150 }} />
+        <div ref={hudRef} className="relative z-10 w-full" style={{ height: 160 }} />
         <div className="flex w-full items-center justify-center gap-4">
           <PlayButton color="cyan" onClick={onPlayAgain}>
             PLAY AGAIN

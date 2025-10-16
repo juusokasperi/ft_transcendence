@@ -13,6 +13,7 @@ const statusToClass: Record<Status, string> = {
   match_accepted: 'bg-purple-500/20 text-purple-300',
   starting: 'bg-orange-500/20 text-orange-300',
   playing: 'bg-emerald-500/20 text-emerald-300',
+  postmatch: 'bg-emerald-500/20 text-emerald-300',
 };
 
 const StatusBadge: React.FC<StatusBadgeProps> = ({ status }) => {

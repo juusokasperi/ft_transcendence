@@ -1,6 +1,10 @@
 import type { GameState } from '@pong/game-logic';
 import type { FrameEvents, MatchSnapshot } from '@pong/shared';
-import type { RoomStateMessage, StartMessage } from '@pong/shared/protocol/net';
+import type {
+  OnlineMatchSummary,
+  RoomStateMessage,
+  StartMessage,
+} from '@pong/shared/protocol/net';
 import type { PlayerSeat } from '@pong/render';
 import { wsUrl } from '../../../../utils/url';
 
@@ -28,7 +32,7 @@ export type OnlineClient = {
   awaitStart(): Promise<StartSignal>;
   onOpponentDisconnected(cb: (gracePeriodMs: number) => void): void;
   onOpponentReconnected(cb: () => void): void;
-  onMatchEnd(cb: (reason: string, winner?: 'east' | 'west') => void): void;
+  onMatchEnd(cb: (reason: string, winner?: 'east' | 'west', summary?: OnlineMatchSummary | null) => void): void;
 };
 
 export type ConnectConfig = {
@@ -88,7 +92,9 @@ export async function connectOnline(cfg: ConnectConfig): Promise<OnlineClient> {
       const startListeners = new Set<(payload: StartSignal) => void>();
       const opponentDisconnectedListeners = new Set<(gracePeriodMs: number) => void>();
       const opponentReconnectedListeners = new Set<() => void>();
-      const matchEndListeners = new Set<(reason: string, winner?: 'east' | 'west') => void>();
+      const matchEndListeners = new Set<
+        (reason: string, winner?: 'east' | 'west', summary?: OnlineMatchSummary | null) => void
+      >();
       const startResolvers: Array<(payload: StartSignal) => void> = [];
       let startPayload: StartSignal | null = null;
 
@@ -145,7 +151,7 @@ export async function connectOnline(cfg: ConnectConfig): Promise<OnlineClient> {
             break;
           case 'MATCH_END':
             console.log('[OnlineGame] Match ended:', data.reason, data.winner);
-            matchEndListeners.forEach((cb) => cb(data.reason, data.winner));
+            matchEndListeners.forEach((cb) => cb(data.reason, data.winner, data.summary ?? null));
             break;
           default:
             console.warn('[OnlineGame] Unknown message type:', data.type);

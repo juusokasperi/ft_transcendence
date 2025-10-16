@@ -33,6 +33,7 @@ import {
 } from '../shared/utils';
 import { createLocalAudioKit, createLocalSfxDetectors } from '../shared/audio-utils';
 import { connectOnline, type OnlineClient } from './connect-online';
+import type { OnlineMatchSummary } from './types';
 
 // Render/update cadence we expect from the authoritative node.
 const CLIENT_TICK_RATE_HZ = 60;
@@ -51,7 +52,11 @@ export function createOnlineApp(
     seat: PlayerSeat;
     joinToken: string;
     randomSeed: number;
-    onMatchEnd?: (reason: string, winner?: 'east' | 'west') => void;
+    onMatchEnd?: (
+      reason: string,
+      winner?: 'east' | 'west',
+      summary?: OnlineMatchSummary | null,
+    ) => void;
   },
 ): PongInstance {
   const { engine, engineDisposable } = createEngine(canvas);
@@ -229,10 +234,12 @@ export function createOnlineApp(
   let didBootFX = false;
   let didFireMatchOverEvent = false;
   let latestMatch: MatchSnapshot | undefined;
+  let lastKnownBestOf = 3;
   let spinningUntilMs = 0;
   let didBetweenGamesSpin = false;
   let didSetPlayerNames = false;
   let playerAliases: { P1: string; P2: string } | null = null;
+  let seatMap: { east: 'P1' | 'P2'; west: 'P1' | 'P2' } | null = null;
 
   let rowsMirrored = false;
   let startCountdownTimer: number | null = null;
@@ -282,6 +289,12 @@ export function createOnlineApp(
 
       const snap = latest ?? prevSnap;
       if (snap) {
+        if (snap.playerAtEnd) {
+          seatMap = {
+            east: snap.playerAtEnd.east,
+            west: snap.playerAtEnd.west,
+          };
+        }
         // Set player names once we have playerAtEnd info
         if (!didSetPlayerNames && playerAliases !== null && snap.playerAtEnd) {
           const aliases = playerAliases; // TypeScript hint
@@ -291,6 +304,10 @@ export function createOnlineApp(
           names = { east: eastAlias, west: westAlias };
           hud.setPlayerNames(eastAlias, westAlias);
           didSetPlayerNames = true;
+          seatMap = {
+            east: snap.playerAtEnd.east,
+            west: snap.playerAtEnd.west,
+          };
 
           console.log(
             `[OnlineGame] Set player names based on actual positions: east=${eastAlias} (${snap.playerAtEnd.east}), west=${westAlias} (${snap.playerAtEnd.west})`,
@@ -380,23 +397,62 @@ export function createOnlineApp(
       hideDisconnectOverlay();
     });
 
-    net.onMatchEnd((reason: string, winner?: 'east' | 'west') => {
-      console.log('[OnlineGame] Match ended:', reason, 'winner:', winner);
+    net.onMatchEnd(
+      (reason: string, winner?: 'east' | 'west', summaryFromNet: OnlineMatchSummary | null = null) => {
+        console.log('[OnlineGame] Match ended:', reason, 'winner:', winner);
       hideDisconnectOverlay();
-      showMatchEndOverlay(reason, winner);
+        const eastAlias = names.east;
+        const westAlias = names.west;
+        const history = (latestMatch?.gamesHistory ?? []).map((game) => ({ ...game }));
+        const defaultWinner =
+          (reason === 'completed' && winner ? winner : history.at(-1)?.winner) ?? 'east';
+        const defaultBestOf = latestMatch?.bestOf ?? lastKnownBestOf;
+        const mergedSummary: OnlineMatchSummary = summaryFromNet
+          ? {
+              ...summaryFromNet,
+              winner: summaryFromNet.winner ?? defaultWinner,
+              bestOf: summaryFromNet.bestOf ?? defaultBestOf,
+              gamesHistory:
+                summaryFromNet.gamesHistory && summaryFromNet.gamesHistory.length
+                  ? summaryFromNet.gamesHistory
+                  : history,
+              names: {
+                east: summaryFromNet.names?.east ?? eastAlias,
+                west: summaryFromNet.names?.west ?? westAlias,
+              },
+              seats: summaryFromNet.seats ?? seatMap ?? undefined,
+              mmr:
+                summaryFromNet.mmr ?? {
+                  east: { before: 0, after: 0 },
+                  west: { before: 0, after: 0 },
+                },
+            }
+          : {
+              winner: defaultWinner,
+              bestOf: defaultBestOf,
+              gamesHistory: history,
+              names: { east: eastAlias, west: westAlias },
+              seats: seatMap ?? undefined,
+              mmr: {
+                east: { before: 0, after: 0 },
+                west: { before: 0, after: 0 },
+              },
+            };
 
-      // Call external callback if provided
-      if (cfg.onMatchEnd) {
-        // Delay callback to allow user to see the overlay
-        setTimeout(() => {
-          cfg.onMatchEnd?.(reason, winner);
-        }, 4000);
-      }
-    });
+        const resolvedWinner = mergedSummary.winner;
+        showMatchEndOverlay(reason, resolvedWinner);
+
+        cfg.onMatchEnd?.(reason, resolvedWinner, mergedSummary);
+      },
+    );
 
     const startPromise = net.awaitStart();
 
     net.onSnapshot((s, ev, matchSnap) => {
+      const stateBestOf = (s as any)?.params?.bestOf;
+      if (typeof stateBestOf === 'number') {
+        lastKnownBestOf = stateBestOf;
+      }
       if (!didBootFX) {
         didBootFX = true;
         void runServeSelectionIntro(fx, ball.mesh, s.server, (dir) => Bounces.scheduleServe(dir));
@@ -419,7 +475,11 @@ export function createOnlineApp(
             'gameOver',
             () =>
               matchSnap ??
-              latestMatch ?? { bestOf: s.params.bestOf, currentGameIndex: 0, gamesHistory: [] },
+              latestMatch ?? {
+                bestOf: lastKnownBestOf,
+                currentGameIndex: 0,
+                gamesHistory: [],
+              },
             names,
             blockInputFor,
             ms,
@@ -454,7 +514,11 @@ export function createOnlineApp(
             prevPhase as GameState['phase'],
             () =>
               matchSnap ??
-              latestMatch ?? { bestOf: s.params.bestOf, currentGameIndex: 0, gamesHistory: [] },
+              latestMatch ?? {
+                bestOf: lastKnownBestOf,
+                currentGameIndex: 0,
+                gamesHistory: [],
+              },
             names,
             blockInputFor,
           );
@@ -481,7 +545,12 @@ export function createOnlineApp(
           hud,
           names,
           anyEv.matchOver.winner as 'east' | 'west',
-          () => latestMatch ?? { bestOf: s.params.bestOf, currentGameIndex: 0, gamesHistory: [] },
+          () =>
+            latestMatch ?? {
+              bestOf: lastKnownBestOf,
+              currentGameIndex: 0,
+              gamesHistory: [],
+            },
           canvas,
         );
         audioKit.stop();

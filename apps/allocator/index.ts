@@ -30,6 +30,7 @@ app.post(
             side: 'west' | 'east';
             tournamentParticipantId?: number;
             alias?: string;
+            mmr: number;
           }>;
           simulationStartTick: number;
           randomSeed: number;

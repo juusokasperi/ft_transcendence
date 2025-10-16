@@ -16,7 +16,7 @@ import type { FrameEvents, MatchSnapshot, TableEnd } from '@pong/shared';
 import { pickInitialServer, SERVE_SELECT_TOTAL_MS } from '@pong/shared';
 import { createHttpServer } from './utils/httpServer.ts';
 import { verifyJoinToken } from '@pong/shared/auth/tokenSign';
-import type { RoomState } from '@pong/shared/protocol/net';
+import type { OnlineMatchSummary, RoomState } from '@pong/shared/protocol/net';
 import type { WebSocket } from 'ws';
 
 dotenv.config();
@@ -48,6 +48,7 @@ interface Player {
   tokenJti: string;
   participantId?: number;
   alias?: string;
+  mmr: number;
 }
 
 type RoomReservation = {
@@ -65,6 +66,7 @@ type RoomReservation = {
       joined: boolean;
       participantId?: number;
       alias?: string;
+      mmr: number;
     }
   >;
   consumedJtis: Set<string>;
@@ -131,6 +133,7 @@ createHttpServer({
         playerIdentifier: string;
         side: 'west' | 'east';
         alias?: string;
+        mmr?: number;
       }>;
       randomSeed?: number;
       simulationStartTick?: number;
@@ -157,16 +160,17 @@ createHttpServer({
     }
 
     const participantLookup = new Map(tournament?.participants?.map((p) => [p.userUuid, p]) ?? []);
-    const expected = new Map<
-      string,
-      {
-        side: 'west' | 'east';
-        seat: 'P1' | 'P2';
-        joined: boolean;
-        participantId?: number;
-        alias?: string;
-      }
-    >();
+  const expected = new Map<
+    string,
+    {
+      side: 'west' | 'east';
+      seat: 'P1' | 'P2';
+      joined: boolean;
+      participantId?: number;
+      alias?: string;
+      mmr: number;
+    }
+  >();
     for (const p of expectedPlayers) {
       if (!p?.playerIdentifier || (p.side !== 'west' && p.side !== 'east')) {
         throw new Error('Invalid expected player payload');
@@ -178,6 +182,7 @@ createHttpServer({
         joined: false,
         participantId: participant?.participantId,
         alias: participant?.alias || p.alias,
+        mmr: typeof p.mmr === 'number' ? p.mmr : 1000,
       });
     }
 
@@ -361,7 +366,23 @@ function startMatch(match: Match) {
 
     // Handle match completion for tournaments
     if (mc.events.matchOver && !match.resultSubmitted && !match.resultSubmitting) {
-      handleMatchCompletion(match, mc.events.matchOver);
+      void handleMatchCompletion(match, mc.events.matchOver)
+        .then((summary) => {
+          const winner =
+            summary?.winner ??
+            ((mc.events.matchOver?.winner === 'east' || mc.events.matchOver?.winner === 'west'
+              ? (mc.events.matchOver.winner as 'east' | 'west')
+              : undefined) as 'east' | 'west' | undefined);
+          notifyMatchEnd(match, 'completed', winner, summary);
+        })
+        .catch((err) => {
+          console.error('[GameServer] Failed to finalize match', err);
+          const winner =
+            mc.events.matchOver?.winner === 'east' || mc.events.matchOver?.winner === 'west'
+              ? (mc.events.matchOver.winner as 'east' | 'west')
+              : undefined;
+          notifyMatchEnd(match, 'completed', winner, null);
+        });
     }
 
     broadcast(match, {
@@ -387,6 +408,31 @@ function broadcast(match: Match, payload: any) {
   //console.log(`[GameServer] Broadcasting to match ${match.id}:`, payload);
   match.players.P1?.socket.send(msg);
   match.players.P2?.socket.send(msg);
+}
+
+function notifyMatchEnd(
+  match: Match,
+  reason: 'opponent_timeout' | 'completed' | 'error',
+  winner?: 'east' | 'west',
+  summary?: OnlineMatchSummary | null,
+) {
+  const payload = JSON.stringify({
+    type: 'MATCH_END' as const,
+    reason,
+    winner,
+    summary: summary ?? null,
+  });
+
+  try {
+    match.players.P1?.socket.send(payload);
+  } catch (err) {
+    console.warn('[GameServer] Failed to notify P1 about match end', err);
+  }
+  try {
+    match.players.P2?.socket.send(payload);
+  } catch (err) {
+    console.warn('[GameServer] Failed to notify P2 about match end', err);
+  }
 }
 
 async function handleDisconnectGracePeriod(match: Match, disconnectedSeat: 'P1' | 'P2') {
@@ -455,18 +501,8 @@ async function handleDisconnectGracePeriod(match: Match, disconnectedSeat: 'P1' 
     console.log(
       `[GameServer] ${isTournament ? 'Tournament' : 'Casual'} match - awarding win to ${remainingSeat} (side: ${winnerSide}) due to opponent timeout`,
     );
-    await handleMatchCompletion(currentMatch, { winner: winnerSide });
-
-    // Notify remaining player of match end
-    if (currentMatch.players[remainingSeat]) {
-      currentMatch.players[remainingSeat]!.socket.send(
-        JSON.stringify({
-          type: 'MATCH_END',
-          reason: 'opponent_timeout',
-          winner: winnerSide,
-        }),
-      );
-    }
+    const summary = await handleMatchCompletion(currentMatch, { winner: winnerSide });
+    notifyMatchEnd(currentMatch, 'opponent_timeout', winnerSide, summary);
 
     // Clean up match
     if (currentMatch.loop) {
@@ -492,7 +528,10 @@ function cancelDisconnectGracePeriod(match: Match) {
   }
 }
 
-async function handleMatchCompletion(match: Match, matchOverEvent: { winner: string }) {
+async function handleMatchCompletion(
+  match: Match,
+  matchOverEvent: { winner: string },
+): Promise<OnlineMatchSummary | null> {
   match.resultSubmitting = true;
 
   try {
@@ -503,17 +542,15 @@ async function handleMatchCompletion(match: Match, matchOverEvent: { winner: str
 
     console.log(`[GameServer] Player positions at match end: east=${eastSeat}, west=${westSeat}`);
 
-    // Get player info based on actual positions
     const eastPlayer = match.players[eastSeat];
     const westPlayer = match.players[westSeat];
 
-    // For disconnection timeout, we need at least one player
     if (!eastPlayer && !westPlayer) {
       console.error(`[GameServer] No player data available for match ${match.id}`);
-      return;
+      match.resultSubmitting = false;
+      return null;
     }
 
-    // Get player identifiers - try from active players first, then from expectedPlayers
     let eastPlayerIdentifier = eastPlayer?.playerIdentifier;
     let westPlayerIdentifier = westPlayer?.playerIdentifier;
     let eastParticipantId = eastPlayer?.participantId;
@@ -522,29 +559,31 @@ async function handleMatchCompletion(match: Match, matchOverEvent: { winner: str
     let westAlias = westPlayer?.alias;
 
     if (!eastPlayerIdentifier || !westPlayerIdentifier) {
-      // Try to get from expectedPlayers in reservation (Map key is playerIdentifier)
       for (const [playerIdentifier, playerInfo] of match.reservation.expectedPlayers.entries()) {
         if (playerInfo.seat === eastSeat && !eastPlayerIdentifier) {
           eastPlayerIdentifier = playerIdentifier;
           eastParticipantId = playerInfo.participantId;
-          eastAlias = playerInfo.alias;
+          eastAlias = playerInfo.alias ?? eastAlias;
         }
         if (playerInfo.seat === westSeat && !westPlayerIdentifier) {
           westPlayerIdentifier = playerIdentifier;
           westParticipantId = playerInfo.participantId;
-          westAlias = playerInfo.alias;
+          westAlias = playerInfo.alias ?? westAlias;
         }
       }
     }
 
     if (!eastPlayerIdentifier || !westPlayerIdentifier) {
       console.error(`[GameServer] Cannot determine player identifiers for match ${match.id}`);
-      return;
+      match.resultSubmitting = false;
+      return null;
     }
+
+    const eastExpected = match.reservation.expectedPlayers.get(eastPlayerIdentifier);
+    const westExpected = match.reservation.expectedPlayers.get(westPlayerIdentifier);
 
     const gamesHistory = match.lastMatch?.gamesHistory || [];
 
-    // Calculate scores from games history
     let eastScore = 0;
     let westScore = 0;
     for (const game of gamesHistory) {
@@ -552,10 +591,8 @@ async function handleMatchCompletion(match: Match, matchOverEvent: { winner: str
       else if (game.winner === 'west') westScore++;
     }
 
-    // If no games were played but we have a winner (disconnect timeout), award technical victory
     let technicalGamesHistory = gamesHistory;
     if (eastScore === 0 && westScore === 0 && matchOverEvent.winner) {
-      // Tournament matches get 3:0 technical score, casual matches get 2:0
       const technicalScore = match.reservation.tournament ? 3 : 2;
       const winner = matchOverEvent.winner as 'east' | 'west';
 
@@ -569,12 +606,11 @@ async function handleMatchCompletion(match: Match, matchOverEvent: { winner: str
         `[GameServer] Technical victory awarded: ${winner} wins ${technicalScore}:0 (${match.reservation.tournament ? 'tournament' : 'casual'})`,
       );
 
-      // Create synthetic games history for technical victory
       technicalGamesHistory = Array.from({ length: technicalScore }, (_, i) => ({
         gameIndex: i + 1,
         east: winner === 'east' ? 11 : 0,
         west: winner === 'west' ? 11 : 0,
-        winner: winner,
+        winner,
       }));
 
       console.log(
@@ -583,7 +619,11 @@ async function handleMatchCompletion(match: Match, matchOverEvent: { winner: str
       );
     }
 
-    // Create proper JWT token for match service authentication
+    const eastMmrBefore = eastPlayer?.mmr ?? eastExpected?.mmr ?? 1000;
+    const westMmrBefore = westPlayer?.mmr ?? westExpected?.mmr ?? 1000;
+    let eastMmrAfter = eastMmrBefore;
+    let westMmrAfter = westMmrBefore;
+
     const now = Math.floor(Date.now() / 1000);
     const token = jwt.sign(
       {
@@ -595,12 +635,9 @@ async function handleMatchCompletion(match: Match, matchOverEvent: { winner: str
     );
 
     if (match.reservation.tournament) {
-      // Tournament match
       console.log(`[GameServer] Tournament match ${match.id} completed, reporting result`);
 
       const tournament = match.reservation.tournament;
-
-      // Determine winner based on final scores (eastScore and westScore already calculated above)
       const actualWinner = eastScore > westScore ? 'east' : 'west';
 
       let winnerParticipantId: number;
@@ -616,7 +653,8 @@ async function handleMatchCompletion(match: Match, matchOverEvent: { winner: str
 
       if (!winnerParticipantId || !loserParticipantId) {
         console.error(`[GameServer] Missing participant IDs for tournament match ${match.id}`);
-        return;
+        match.resultSubmitting = false;
+        return null;
       }
 
       console.log(
@@ -651,7 +689,6 @@ async function handleMatchCompletion(match: Match, matchOverEvent: { winner: str
 
       console.log(`[GameServer] Tournament match result reported successfully:`, response.data);
     } else {
-      // Casual match
       console.log(`[GameServer] Casual match ${match.id} completed, reporting result`);
 
       const resultPayload = {
@@ -669,12 +706,56 @@ async function handleMatchCompletion(match: Match, matchOverEvent: { winner: str
       });
 
       console.log(`[GameServer] Casual match result reported successfully:`, response.data);
+
+      const rawTeam1Delta = Number(response.data?.eloChanges?.team1 ?? 0);
+      const rawTeam2Delta = Number(response.data?.eloChanges?.team2 ?? 0);
+      const eastDelta = Number.isFinite(rawTeam1Delta) ? rawTeam1Delta : 0;
+      const westDelta = Number.isFinite(rawTeam2Delta) ? rawTeam2Delta : 0;
+      eastMmrAfter = eastMmrBefore + eastDelta;
+      westMmrAfter = westMmrBefore + westDelta;
     }
 
     match.resultSubmitted = true;
+    match.resultSubmitting = false;
+
+    const winnerFromEvent =
+      matchOverEvent.winner === 'east' || matchOverEvent.winner === 'west'
+        ? (matchOverEvent.winner as 'east' | 'west')
+        : eastScore >= westScore
+          ? 'east'
+          : 'west';
+
+    const bestOf =
+      match.lastMatch?.bestOf ??
+      ((match.state as any)?.params?.bestOf as number | undefined) ??
+      Math.max(technicalGamesHistory.length * 2 - 1, 1);
+
+    const summary: OnlineMatchSummary = {
+      winner: winnerFromEvent,
+      bestOf,
+      gamesHistory: technicalGamesHistory,
+      names: {
+        east: eastAlias ?? eastExpected?.alias ?? (eastSeat === 'P1' ? 'Player 1' : 'Player 2'),
+        west: westAlias ?? westExpected?.alias ?? (westSeat === 'P1' ? 'Player 1' : 'Player 2'),
+      },
+      seats: {
+        east: eastSeat,
+        west: westSeat,
+      },
+      mmr: {
+        east: { before: Math.round(eastMmrBefore), after: Math.round(eastMmrAfter) },
+        west: { before: Math.round(westMmrBefore), after: Math.round(westMmrAfter) },
+      },
+    };
+
+    if (eastExpected) eastExpected.mmr = summary.mmr.east.after;
+    if (westExpected) westExpected.mmr = summary.mmr.west.after;
+
+    return summary;
   } catch (error) {
     console.error(`[GameServer] Failed to report match result:`, error);
     match.resultSubmitting = false;
+    return null;
   }
 }
 
@@ -820,6 +901,7 @@ app.register(async function (fastify) {
       tokenJti: claims.jti,
       participantId: expected.participantId,
       alias: expected.alias,
+      mmr: expected.mmr,
     };
     match.players[seat] = player;
     expected.joined = true;

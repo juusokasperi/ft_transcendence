@@ -1,4 +1,5 @@
 import React, { useCallback, useMemo, useReducer, useRef, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import Navbar from '../../../components/Navbar';
 import { useAppContext } from '../../../context/AppContext';
 import { useSnackbar } from '../../../context/SnackbarContext';
@@ -9,6 +10,7 @@ import SurfaceCard from '../shared/components/SurfaceCard';
 import StatusBadge from './components/StatusBadge';
 import QueueControls from './components/QueueControls';
 import MatchFoundPanel from './components/MatchFoundPanel';
+import PostMatchOnlineView from './components/PostMatchOnlineView';
 import { BackgroundVideo } from '../shared/components/BackgroundVideo';
 import { useBodyClass } from '../shared/hooks/useBodyClass';
 
@@ -123,7 +125,11 @@ const OnlineGame: React.FC = () => {
           variant: youWon ? 'success' : 'info',
         });
       }
-      dispatch({ type: 'endMatch', payload });
+      if (payload.reason === 'completed' && payload.summary) {
+        dispatch({ type: 'showPostMatch', summary: payload.summary });
+      } else {
+        dispatch({ type: 'endMatch', payload });
+      }
     },
     [enqueueSnackbar, state.seat],
   );
@@ -180,6 +186,27 @@ const OnlineGame: React.FC = () => {
     return <PlayingView canvasRef={canvasRef} onQuit={handleQuit} />;
   }
 
+  if (state.status === 'postmatch' && state.postMatchSummary) {
+    return (
+      <div className="fixed inset-0 overflow-hidden text-white">
+        <Navbar />
+        <main
+          aria-labelledby="postmatch-title"
+          className="absolute inset-x-0 bottom-0 top-[var(--navbar-h,80px)] overflow-y-auto"
+        >
+          <BackgroundVideo src={gifImg} fit="contain" position="center" />
+          <h1 id="postmatch-title" className="sr-only">
+            Match summary
+          </h1>
+          <PostMatchOnlineView
+            summary={state.postMatchSummary}
+            onBackToMenu={() => navigate('/ping-pong')}
+          />
+        </main>
+      </div>
+    );
+  }
+
   return (
     <div className="fixed inset-0 overflow-hidden text-white">
       <Navbar />
@@ -191,7 +218,7 @@ const OnlineGame: React.FC = () => {
         <h1 id="online-title" className="sr-only">
           Online Pong Matchmaking
         </h1>
-        <div className="relative z-10 mx-auto flex min-h-full max-w-5xl items-center justify-center px-4 py-20">
+        <div className="relative z-10 mx-auto flex max-w-5xl justify-center px-4 py-20">
         <SurfaceCard className="w-full max-w-xl space-y-6 p-6 shadow-2xl">
           <header className="flex items-center justify-between">
             <div>

@@ -1,3 +1,5 @@
+import type { OnlineMatchSummary as SharedOnlineMatchSummary } from '@pong/shared/protocol/net';
+
 export type Status =
   | 'connecting'
   | 'idle'
@@ -5,7 +7,8 @@ export type Status =
   | 'match_found'
   | 'match_accepted'
   | 'starting'
-  | 'playing';
+  | 'playing'
+  | 'postmatch';
 
 export type OpponentInfo = {
   username: string | null;
@@ -13,6 +16,8 @@ export type OpponentInfo = {
 };
 
 export type MatchSide = 'east' | 'west';
+
+export type OnlineMatchSummary = SharedOnlineMatchSummary;
 
 export type MatchHandoff = {
   serverUrl: string;
@@ -26,6 +31,7 @@ export type MatchHandoff = {
 export type MatchEndPayload = {
   reason: string;
   winner?: MatchSide;
+  summary?: OnlineMatchSummary | null;
 };
 
 export type OnlineState = {
@@ -38,4 +44,5 @@ export type OnlineState = {
   seat: 'P1' | 'P2';
   joinToken: string | null;
   randomSeed: number | null;
+  postMatchSummary: OnlineMatchSummary | null;
 };

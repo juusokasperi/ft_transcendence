@@ -18,6 +18,7 @@ export const initialState: OnlineState = {
   seat: 'P1',
   joinToken: null,
   randomSeed: null,
+  postMatchSummary: null,
 };
 
 type Action =
@@ -33,6 +34,7 @@ type Action =
   | { type: 'authError' }
   | { type: 'startPlaying' }
   | { type: 'endMatch'; payload?: MatchEndPayload }
+  | { type: 'showPostMatch'; summary: import('./types').OnlineMatchSummary }
   | { type: 'reset' };
 
 const resetState = (state: OnlineState, status: Status): OnlineState => ({
@@ -94,6 +96,7 @@ export function reducer(state: OnlineState, action: Action): OnlineState {
         seat,
         joinToken: payload.joinToken,
         randomSeed: payload.randomSeed,
+        postMatchSummary: null,
       };
     }
 
@@ -111,8 +114,21 @@ export function reducer(state: OnlineState, action: Action): OnlineState {
         ? {
             ...state,
             status: 'playing',
+            postMatchSummary: null,
           }
         : state;
+
+    case 'showPostMatch':
+      return {
+        ...state,
+        status: 'postmatch',
+        postMatchSummary: action.summary,
+        serverUrl: '',
+        matchId: '',
+        roomIdentifier: '',
+        joinToken: null,
+        randomSeed: null,
+      };
 
     case 'endMatch':
       return resetState(state, 'idle');

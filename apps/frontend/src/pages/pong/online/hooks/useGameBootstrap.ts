@@ -58,8 +58,8 @@ export function useGameBootstrap({
           seat: config.seat,
           joinToken: config.joinToken,
           randomSeed: config.randomSeed,
-          onMatchEnd: (reason: string, winner?: 'east' | 'west') => {
-            onEnded({ reason, winner });
+          onMatchEnd: (reason: string, winner?: 'east' | 'west', summary = null) => {
+            onEnded({ reason, winner: winner as MatchEndPayload['winner'], summary });
           },
         });
 
@@ -72,7 +72,7 @@ export function useGameBootstrap({
         onStarted();
       } catch (error) {
         console.error('[useGameBootstrap] Failed to bootstrap online pong', error);
-        onEnded({ reason: 'bootstrap_failed' });
+        onEnded({ reason: 'bootstrap_failed', summary: null });
       } finally {
         if (!cancelled) bootingRef.current = false;
       }
