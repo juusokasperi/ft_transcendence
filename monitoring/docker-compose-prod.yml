@@ -20,7 +20,7 @@ services:
     profiles:
       - monitoring
     command:
-      - '-nginx.scrape-uri=http://nginx:80/stub_status'
+      - '--nginx.scrape-uri=http://nginx:${NGINX_STUB_STATUS_PORT:-8081}/stub_status'
     networks:
       - prod-private
     ports:
@@ -33,6 +33,11 @@ services:
     environment:
       - GF_SECURITY_ADMIN_USER=${GRAFANA_ADMIN_USER}
       - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASS}
+      - GF_SERVER_ROOT_URL=https://localhost:${NGINX_HTTPS_PORT}/grafana/
+      - GF_SERVER_SERVE_FROM_SUB_PATH=true
+      - GF_SECURITY_ALLOW_EMBEDDING=true
+      - GF_SERVER_ENABLE_GZIP=true
+      - GF_SERVER_ROUTER_LOGGING=true
     volumes:
       - grafana-storage:/var/lib/grafana
       - ./grafana/datasources.yaml:/etc/grafana/provisioning/datasources/prometheus.yaml
@@ -42,11 +47,8 @@ services:
       - ./grafana/dashboards/cadvisor:/etc/grafana/dashboards/cadvisor
       - ./grafana/dashboards-node-sqlite.yaml:/etc/grafana/provisioning/dashboards/node-sqlite.yaml
       - ./grafana/dashboards/node-sqlite/:/etc/grafana/dashboards/node-sqlite
-
     networks:
       - prod-private
-    ports:
-      - '3002:3000'
 
   grafana-setup:
     image: alpine:3
@@ -65,6 +67,7 @@ services:
       - NEW_PASS=${GRAFANA_USER_PASS}
     networks:
       - prod-private
+      - prod-public #TODO: use dockerfile to install curl, so this not needed?
     entrypoint: ['sh', '/setup.sh']
 
   # How much cAdvisor can do really depends how much privileges you have

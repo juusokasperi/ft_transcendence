@@ -101,7 +101,7 @@ prod-full:
 	$(ensure_builder)
 	$(ensure_certs)
 	@echo ">> Starting prod stack (attached)"
-	docker compose -p $(NAME_PROD) $(PROD_COMPOSE) $(ENV_ROOT) --profile elk up --build
+	docker compose -p $(NAME_PROD) $(PROD_COMPOSE) $(ENV_ROOT) --profile elk --profile monitoring up --build
 
 detached-prod:
 	$(ensure_dirs)

@@ -82,6 +82,8 @@ services:
       - NGINX_HTTPS_PORT=${NGINX_HTTPS_PORT:-443}
       - BACKEND_PORT=${BACKEND_PORT:-3001}
       - KIBANA_PORT=${KIBANA_PORT:-5601}
+      - GRAFANA_PORT=${GRAFANA_PORT:-3000}
+      - NGINX_STUB_STATUS_PORT=${NGINX_STUB_STATUS_PORT:-8081}
     volumes:
       - ./nginx/prod.conf.template:/etc/nginx/templates/default.conf.template:ro
       - frontend_dist:/usr/share/nginx/html:ro
