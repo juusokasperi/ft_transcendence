@@ -5,10 +5,10 @@ import TournamentParticipantsPanel from './components/ParticipantsPanel';
 import TournamentBracketPanel from './components/BracketPanel';
 import TournamentDirectedMatchesPanel from './components/DirectedMatchesPanel';
 import TournamentLobbyPanel from './components/LobbyPanel';
-import TournamentMatchOverlay from './components/MatchOverlay';
 import TournamentPageHeader from './components/PageHeader';
 import SurfaceCard from '../shared/components/SurfaceCard';
 import { BackgroundVideo } from '../shared/components/BackgroundVideo';
+import PlayingView from '../shared/components/PlayingView';
 import { useTournamentPageController } from './hooks/useTournamentPageController';
 import gifImg from '../../../assets/gif.mp4';
 
@@ -72,7 +72,7 @@ const TournamentPage: React.FC<TournamentPageProps> = ({ onBack, focusTournament
   }
 
   if (shouldShowOverlay) {
-    return <TournamentMatchOverlay canvasRef={canvasRef} onQuit={handleQuitMatch} />;
+    return <PlayingView canvasRef={canvasRef} onQuit={handleQuitMatch} />;
   }
 
   return (
