@@ -17,6 +17,9 @@ services:
 
   nginx-exporter:
     image: nginx/nginx-prometheus-exporter:latest
+    depends_on:
+      nginx:
+        condition: service_started
     profiles:
       - monitoring
     command:

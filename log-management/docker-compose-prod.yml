@@ -82,6 +82,24 @@ services:
     networks:
       - prod-private
 
+  # configures policies using the API
+  elasticsearch-post:
+    profiles:
+      - elk
+    build:
+      context: ./elasticsearch-post/
+    volumes:
+      - elk_certs:/usr/share/elk/config/certs
+    env_file:
+      - ./.env
+    environment:
+      - ES_URL=http://elasticsearch:${ES_PORT:-9300}
+    networks:
+      - prod-private
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+
   kibana:
     profiles:
       - elk

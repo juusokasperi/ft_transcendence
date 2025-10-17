@@ -30,6 +30,12 @@ if [ ! -f config/certs/certs.zip ]; then
   "      - localhost\n"\
   "    ip:\n"\
   "      - 127.0.0.1\n"\
+  "  - name: elasticsearch-post\n"\
+  "    dns:\n"\
+  "      - elasticseaerch-post\n"\
+  "      - localhost\n"\
+  "    ip:\n"\
+  "      - 127.0.0.1\n"\
   > config/certs/instances.yml;
 
   bin/elasticsearch-certutil cert --silent --pem \
