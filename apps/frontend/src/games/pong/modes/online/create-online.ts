@@ -237,6 +237,10 @@ export function createOnlineApp(
   let lastKnownBestOf = 3;
   let spinningUntilMs = 0;
   let didBetweenGamesSpin = false;
+  // Track half-rotation timing and whether a server swap event arrived
+  let betweenHalfFired = false;
+  let pendingBetweenSwap = false;
+  let betweenSwapApplied = false;
   let didSetPlayerNames = false;
   let playerAliases: { P1: string; P2: string } | null = null;
   let seatMap: { east: 'P1' | 'P2'; west: 'P1' | 'P2' } | null = null;
@@ -489,12 +493,23 @@ export function createOnlineApp(
           );
           spinningUntilMs = until;
           didBetweenGamesSpin = true;
+          betweenHalfFired = false;
+          pendingBetweenSwap = false;
+          betweenSwapApplied = false;
           const now = performance.now();
           const spinMs = Math.max(0, until - now);
           if (spinMs > 0) {
             orbitCameraFor(world.camera, spinMs, {
               onHalf: () => {
-                // no paddle centering here between games
+                // Halfway through the rotation: perform the visual swap now.
+                betweenHalfFired = true;
+                if (!betweenSwapApplied) {
+                  rowsMirrored = !rowsMirrored;
+                  swapPaddleMaterials(left.mesh, right.mesh);
+                  betweenSwapApplied = true;
+                }
+                // If the server event came earlier and we deferred, it's now fulfilled.
+                pendingBetweenSwap = false;
               },
             });
           }
@@ -507,10 +522,18 @@ export function createOnlineApp(
       if (anyEv && anyEv.swapSidesNow) {
         const now = performance.now();
         if (spinningUntilMs > now || didBetweenGamesSpin || s.phase === 'pauseBetweenGames') {
-          rowsMirrored = !rowsMirrored;
-          swapPaddleMaterials(left.mesh, right.mesh);
-          spinningUntilMs = 0;
-          didBetweenGamesSpin = false;
+          // Between-games swap is bound to the rotation's midpoint.
+          if (betweenSwapApplied) {
+            // Already applied at half — ignore duplicate event.
+          } else if (betweenHalfFired) {
+            // Half happened but swap not yet applied (race) — apply now.
+            rowsMirrored = !rowsMirrored;
+            swapPaddleMaterials(left.mesh, right.mesh);
+            betweenSwapApplied = true;
+          } else {
+            // Defer until onHalf; ensures alignment.
+            pendingBetweenSwap = true;
+          }
         } else {
           const until = handleSwapSidesNow(
             hud,
