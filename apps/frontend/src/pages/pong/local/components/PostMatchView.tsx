@@ -1,15 +1,11 @@
 import React from 'react';
 import type { GameHistoryEntry } from '@pong/shared';
+import type { MatchSummary } from '../types';
 import PlayButton from './PlayButton';
 import Card from './Card';
 import Scoreboard from '../../shared/components/Scoreboard';
 
-type MatchSummary = {
-  winner: 'east' | 'west';
-  bestOf: number;
-  gamesHistory: GameHistoryEntry[];
-  names: { east: string; west: string };
-};
+// MatchSummary moved to ../types
 
 type PostMatchViewProps = {
   summary: MatchSummary;

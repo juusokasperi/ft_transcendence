@@ -1,7 +1,6 @@
 // apps/frontend/src/pages/pong/local/local-game.tsx
 import React, { useCallback, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import type { GameHistoryEntry } from '@pong/shared';
 import type { BotDifficulty } from '../../../games/pong/ai/bot-controller';
 
 import '@pong/render/ui/tailwind.css';
@@ -17,14 +16,8 @@ import { usePongRuntime } from './hooks/usePongRuntime';
 import { useAIBot } from './hooks/useAIBot';
 import { useKeyboardQuit } from './hooks/useKeyboardQuit';
 import { useBodyClass } from '../shared/hooks/useBodyClass';
-import { useMatchOverEvent } from '../shared/hooks/useMatchOverEvent';
-
-type MatchSummary = {
-  winner: 'east' | 'west';
-  bestOf: number;
-  gamesHistory: GameHistoryEntry[];
-  names: { east: string; west: string };
-};
+import { useLocalMatchEnd } from './hooks/useLocalMatchEnd';
+import type { MatchSummary } from './types';
 
 const LocalGame: React.FC = () => {
   const navigate = useNavigate();
@@ -68,16 +61,11 @@ const LocalGame: React.FC = () => {
     botSeat,
   });
 
-  useMatchOverEvent<MatchSummary>({
+  useLocalMatchEnd({
     canvasRef,
-    active: isPlaying,
-    onMatchOver: (detail) => {
-      if (detail) setPostMatch(detail);
-    },
-    // Make teardown immediate so we’re not stuck in the PlayingView branch.
+    playing: isPlaying,
+    onSummary: (summary) => setPostMatch(summary),
     onAutoExit: () => setIsPlaying(false),
-    autoExitDelayMs: 0,
-    extractDetail: (event) => (event as CustomEvent<MatchSummary>).detail ?? null,
   });
 
   const handleQuit = useCallback(() => {
