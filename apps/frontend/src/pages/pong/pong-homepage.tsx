@@ -8,9 +8,9 @@ import { Card, PlayButton } from './local/components';
 const PingPong: React.FC = () => {
   const navigate = useNavigate();
 
-  const handleLocalPlay = () => navigate('/ping-pong/local');
-  const handleOnlinePlay = () => navigate('/ping-pong/online');
-  const handleTournaments = () => navigate('/ping-pong/tournaments');
+  const handleLocalPlay = () => navigate('/pong3d/local');
+  const handleOnlinePlay = () => navigate('/pong3d/online');
+  const handleTournaments = () => navigate('/pong3d/tournaments');
 
   return (
     // Fixed, full-viewport layer with hidden overflow => no scrollbars

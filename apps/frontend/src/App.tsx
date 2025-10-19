@@ -31,11 +31,11 @@ function App() {
             <Route path={'/login'} element={<Login />} />
             <Route path={'/forgot-password'} element={<ForgotPassword />} />
             <Route path={'/reset-password/:token'} element={<ResetPassword />} />
-            <Route path={'/ping-pong'} element={<PingPong />} />
-            <Route path={'/ping-pong/local'} element={<LocalGame />} />
-            <Route path={'/ping-pong/online'} element={<OnlineGame />} />
-            <Route path={'/ping-pong/tournaments'} element={<Tournament />} />
-            <Route path={'/ping-pong/tournaments/:tournamentId'} element={<TournamentDetail />} />
+            <Route path={'/pong3d'} element={<PingPong />} />
+              <Route path={'/pong3d/local'} element={<LocalGame />} />
+              <Route path={'/pong3d/online'} element={<OnlineGame />} />
+              <Route path={'/pong3d/tournaments'} element={<Tournament />} />
+              <Route path={'/pong3d/tournaments/:tournamentId'} element={<TournamentDetail />} />
             <Route path={'/confirm/:confirmationToken'} element={<Confirmation />} />
             <Route path={'/delete-user/:confirmationToken'} element={<DeleteUser />} />
             <Route path={'/confirm-email/:token'} element={<ConfirmEmail />} />

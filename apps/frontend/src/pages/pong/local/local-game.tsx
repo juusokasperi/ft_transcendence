@@ -71,7 +71,7 @@ const LocalGame: React.FC = () => {
   const handleQuit = useCallback(() => {
     setIsPlaying(false);
     restore();
-    navigate('/ping-pong');
+    navigate('/pong3d');
   }, [navigate, restore]);
 
   useKeyboardQuit(isPlaying, handleQuit);
@@ -107,7 +107,7 @@ const LocalGame: React.FC = () => {
   }, []);
 
   const handleReturnToMenu = useCallback(() => {
-    navigate('/ping-pong');
+    navigate('/pong3d');
   }, [navigate]);
 
   if (postMatch) {

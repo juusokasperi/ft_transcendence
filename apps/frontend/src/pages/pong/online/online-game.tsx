@@ -155,7 +155,7 @@ const OnlineGame: React.FC = () => {
           </h1>
           <PostMatchOnlineView
             summary={state.postMatchSummary}
-            onBackToMenu={() => navigate('/ping-pong')}
+            onBackToMenu={() => navigate('/pong3d')}
           />
         </main>
       </div>
