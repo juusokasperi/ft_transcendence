@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useReducer, useRef, useState } from 'react';
+import React, { useCallback, useMemo, useReducer, useRef, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Navbar from '../../../components/Navbar';
 import { useAppContext } from '../../../context/AppContext';
@@ -106,6 +106,8 @@ const OnlineGame: React.FC = () => {
     state.seat,
   ]);
 
+  const postMatchTimerRef = useRef<number | null>(null);
+
   const handleMatchEnd = useCallback(
     (payload: MatchEndPayload) => {
       if (payload.reason === 'bootstrap_failed') {
@@ -126,13 +128,29 @@ const OnlineGame: React.FC = () => {
         });
       }
       if (payload.reason === 'completed' && payload.summary) {
-        dispatch({ type: 'showPostMatch', summary: payload.summary });
+        if (postMatchTimerRef.current !== null) {
+          window.clearTimeout(postMatchTimerRef.current);
+        }
+        postMatchTimerRef.current = window.setTimeout(() => {
+          dispatch({ type: 'showPostMatch', summary: payload.summary! });
+          postMatchTimerRef.current = null;
+        }, 2500);
       } else {
         dispatch({ type: 'endMatch', payload });
       }
     },
     [enqueueSnackbar, state.seat],
   );
+
+  // Clear any pending post-match transition timer on unmount
+  useEffect(() => {
+    return () => {
+      if (postMatchTimerRef.current !== null) {
+        window.clearTimeout(postMatchTimerRef.current);
+        postMatchTimerRef.current = null;
+      }
+    };
+  }, []);
 
   const matchActive = state.status === 'starting' || state.status === 'playing';
 
