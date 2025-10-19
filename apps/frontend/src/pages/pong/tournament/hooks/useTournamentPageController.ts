@@ -21,7 +21,7 @@ import {
   MAX_VISIBLE_TOURNAMENTS,
   RECENT_TOURNAMENT_WINDOW_MS,
   TOURNAMENT_SIZE,
-} from '../../../../config';
+} from '../config';
 import { useMatchOverEvent } from '../../shared/hooks/useMatchOverEvent';
 
 export type MatchPhase = 'idle' | 'awaiting_start' | 'starting' | 'playing';
