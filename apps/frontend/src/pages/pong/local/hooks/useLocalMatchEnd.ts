@@ -25,4 +25,3 @@ export function useLocalMatchEnd({ canvasRef, playing, onSummary, onAutoExit }: 
   // No return value; hook only wires events.
   useEffect(() => {}, []);
 }
-

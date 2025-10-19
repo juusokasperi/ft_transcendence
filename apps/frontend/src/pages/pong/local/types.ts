@@ -6,4 +6,3 @@ export type MatchSummary = {
   gamesHistory: GameHistoryEntry[];
   names: { east: string; west: string };
 };
-
