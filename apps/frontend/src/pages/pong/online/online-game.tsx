@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useReducer, useRef, useState, useEffect } from 'react';
+import React, { useCallback, useReducer, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Navbar from '../../../components/Navbar';
 import { useAppContext } from '../../../context/AppContext';
@@ -16,6 +16,8 @@ import { useBodyClass } from '../shared/hooks/useBodyClass';
 
 import { useQueueTimer } from './hooks/useQueueTimer';
 import { useGameBootstrap } from './hooks/useGameBootstrap';
+import { useOnlineMatchEnd } from './hooks/useOnlineMatchEnd';
+import { useBootstrapConfig } from './hooks/useBootstrapConfig';
 import { useMatchmakingClient } from './hooks/useMatchmakingClient';
 import { useMatchOverEvent } from '../shared/hooks/useMatchOverEvent';
 import { useCanvasAutofocus } from '../shared/hooks/useCanvasAutofocus';
@@ -79,78 +81,13 @@ const OnlineGame: React.FC = () => {
     onMatchDeclined: handleMatchDeclined,
   });
 
-  const bootstrapConfig = useMemo(() => {
-    if (
-      !state.serverUrl ||
-      !state.matchId ||
-      !state.roomIdentifier ||
-      !state.joinToken ||
-      state.randomSeed === null
-    ) {
-      return null;
-    }
-    return {
-      serverUrl: state.serverUrl,
-      matchId: state.matchId,
-      roomIdentifier: state.roomIdentifier,
-      joinToken: state.joinToken,
-      randomSeed: state.randomSeed,
-      seat: state.seat,
-    };
-  }, [
-    state.serverUrl,
-    state.matchId,
-    state.roomIdentifier,
-    state.joinToken,
-    state.randomSeed,
-    state.seat,
-  ]);
-
-  const postMatchTimerRef = useRef<number | null>(null);
-
-  const handleMatchEnd = useCallback(
-    (payload: MatchEndPayload) => {
-      if (payload.reason === 'bootstrap_failed') {
-        enqueueSnackbar({
-          message: 'Unable to start the match. Please try again.',
-          variant: 'error',
-        });
-      }
-      if (payload.reason === 'opponent_timeout' && payload.winner) {
-        const youWon =
-          (state.seat === 'P1' && payload.winner === 'east') ||
-          (state.seat === 'P2' && payload.winner === 'west');
-        enqueueSnackbar({
-          message: youWon
-            ? 'You won! Opponent disconnected.'
-            : 'Match ended. Opponent disconnected.',
-          variant: youWon ? 'success' : 'info',
-        });
-      }
-      if (payload.reason === 'completed' && payload.summary) {
-        if (postMatchTimerRef.current !== null) {
-          window.clearTimeout(postMatchTimerRef.current);
-        }
-        postMatchTimerRef.current = window.setTimeout(() => {
-          dispatch({ type: 'showPostMatch', summary: payload.summary! });
-          postMatchTimerRef.current = null;
-        }, 2500);
-      } else {
-        dispatch({ type: 'endMatch', payload });
-      }
-    },
-    [enqueueSnackbar, state.seat],
-  );
-
-  // Clear any pending post-match transition timer on unmount
-  useEffect(() => {
-    return () => {
-      if (postMatchTimerRef.current !== null) {
-        window.clearTimeout(postMatchTimerRef.current);
-        postMatchTimerRef.current = null;
-      }
-    };
-  }, []);
+  const bootstrapConfig = useBootstrapConfig(state);
+  const { handleMatchEnd } = useOnlineMatchEnd({
+    seat: state.seat,
+    dispatch,
+    enqueueSnackbar,
+    delayMs: 2500,
+  });
 
   const matchActive = state.status === 'starting' || state.status === 'playing';
 
