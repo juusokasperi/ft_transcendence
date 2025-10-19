@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import type { Observation } from '../../../../games/pong/ai/bot-controller';
-import type { Preferences } from '../../../../games/pong/modes/preferences';
+import type { Preferences } from '../../../../games/pong/modes/shared/preferences';
 import type { UserSettings } from '../utils/storage';
 
 export type PongRuntimeHandle = {
