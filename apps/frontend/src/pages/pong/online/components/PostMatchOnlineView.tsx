@@ -1,6 +1,7 @@
 import React from 'react';
 import SurfaceCard from '../../shared/components/SurfaceCard';
 import Button from '../../../../components/Button';
+import Scoreboard from '../../shared/components/Scoreboard';
 import type { OnlineMatchSummary } from '../state/types';
 
 type Props = {
@@ -49,11 +50,18 @@ const PostMatchOnlineView: React.FC<Props> = ({ summary, onBackToMenu }) => {
           </h2>
         </header>
 
-        {/* Scoreboard removed — only MMR panels remain */}
-        <section className="grid gap-4 sm:grid-cols-2">
+        <div>
+          <Scoreboard
+            eastName={summary.names.east}
+            westName={summary.names.west}
+            gamesHistory={summary.gamesHistory}
+            bestOf={summary.bestOf}
+          />
+        </div>
+        <div className="grid gap-4 sm:grid-cols-2">
           <SidePanel side="west" />
           <SidePanel side="east" />
-        </section>
+        </div>
 
         <div className="flex justify-center">
           <Button variant="primary" onClick={onBackToMenu}>
