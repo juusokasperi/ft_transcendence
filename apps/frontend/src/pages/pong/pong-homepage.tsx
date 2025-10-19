@@ -5,7 +5,7 @@ import { BackgroundVideo } from './shared/components/BackgroundVideo';
 import gifImg from '../../assets/gif.mp4';
 import { Card, PlayButton } from './local/components';
 
-const PingPong: React.FC = () => {
+const Pong3d: React.FC = () => {
   const navigate = useNavigate();
 
   const handleLocalPlay = () => navigate('/pong3d/local');
@@ -84,4 +84,4 @@ const PingPong: React.FC = () => {
   );
 };
 
-export default PingPong;
+export default Pong3d;
