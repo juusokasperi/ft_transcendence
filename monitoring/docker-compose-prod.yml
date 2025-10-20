@@ -2,10 +2,10 @@ volumes:
   grafana-storage:
     driver: local
 
-# TODO: labels?
 services:
   prometheus:
     image: prom/prometheus
+    restart: unless_stopped
     profiles:
       - monitoring
     volumes:
@@ -31,6 +31,7 @@ services:
 
   grafana:
     image: grafana/grafana
+    restart: unless_stopped
     profiles:
       - monitoring
     environment:
@@ -78,6 +79,7 @@ services:
   # eat the CPU.
   cadvisor:
     image: gcr.io/cadvisor/cadvisor:v0.52.0
+    restart: unless_stopped
     profiles:
       - monitoring
     command:
