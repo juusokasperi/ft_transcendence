@@ -51,19 +51,23 @@ services:
       - ./grafana/dashboards/cadvisor:/etc/grafana/dashboards/cadvisor
       - ./grafana/dashboards-node-sqlite.yaml:/etc/grafana/provisioning/dashboards/node-sqlite.yaml
       - ./grafana/dashboards/node-sqlite/:/etc/grafana/dashboards/node-sqlite
+    healthcheck:
+      - CMD_SHELL
+      - |
+      curl -s "localhost:3000/api/health"
     networks:
       - prod-private
 
   grafana-setup:
-    image: alpine:3
+    build:
+      context: ./grafana-setup/
     profiles:
       - monitoring
     depends_on:
-      - grafana
-    volumes:
-      - ./grafana-setup/setup.sh:/setup.sh:ro
+      grafana:
+        condition: service_healthy
     environment:
-      - GRAFANA_URL=http://grafana:3000
+      - GRAFANA_URL=http://grafana:${GRAFANA_PORT}
       - ADMIN_USER=${GRAFANA_ADMIN_USER}
       - ADMIN_PASS=${GRAFANA_ADMIN_PASS}
       - NEW_NAME=${GRAFANA_USER_NAME}
@@ -71,8 +75,6 @@ services:
       - NEW_PASS=${GRAFANA_USER_PASS}
     networks:
       - prod-private
-      - prod-public #TODO: use dockerfile to install curl, so this not needed?
-    entrypoint: ['sh', '/setup.sh']
 
   # How much cAdvisor can do really depends how much privileges you have
   # on the host. Enabling too many things will fill the logs with spam and
