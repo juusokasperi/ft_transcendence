@@ -58,7 +58,7 @@ function createLoggerOptions(isDev: boolean) {
 
   return {
     level: 'info',
-    base: { service: 'scorer' },
+    base: { service: 'game-node' },
     ...ecsFormat(),
   };
 }
@@ -408,7 +408,7 @@ function startMatch(match: Match) {
           notifyMatchEnd(match, 'completed', winner, summary);
         })
         .catch((err) => {
-          console.error('[GameServer] Failed to finalize match', err);
+          app.log.error('[GameServer] Failed to finalize match', err);
           const winner =
             mc.events.matchOver?.winner === 'east' || mc.events.matchOver?.winner === 'west'
               ? (mc.events.matchOver.winner as 'east' | 'west')
@@ -458,12 +458,12 @@ function notifyMatchEnd(
   try {
     match.players.P1?.socket.send(payload);
   } catch (err) {
-    console.warn('[GameServer] Failed to notify P1 about match end', err);
+    app.log.warn('[GameServer] Failed to notify P1 about match end', err);
   }
   try {
     match.players.P2?.socket.send(payload);
   } catch (err) {
-    console.warn('[GameServer] Failed to notify P2 about match end', err);
+    app.log.warn('[GameServer] Failed to notify P2 about match end', err);
   }
 }
 
@@ -578,7 +578,6 @@ async function handleMatchCompletion(
     const westPlayer = match.players[westSeat];
 
     if (!eastPlayer && !westPlayer) {
-      console.error(`[GameServer] No player data available for match ${match.id}`);
       app.log.error(`[GameServer] No player data available for match ${match.id}`);
       match.resultSubmitting = false;
       return null;
@@ -686,7 +685,6 @@ async function handleMatchCompletion(
 
       if (!winnerParticipantId || !loserParticipantId) {
         app.log.error(`[GameServer] Missing participant IDs for tournament match ${match.id}`);
-        console.error(`[GameServer] Missing participant IDs for tournament match ${match.id}`);
         match.resultSubmitting = false;
         return null;
       }

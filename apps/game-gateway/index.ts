@@ -28,7 +28,7 @@ function createLoggerOptions(isDev: boolean) {
 
   return {
     level: 'info',
-    base: { service: 'scorer' },
+    base: { service: 'game-gateway' },
     ...ecsFormat(),
   };
 }

@@ -17,7 +17,7 @@ const logger = isDev
     })
   : pino({
       level: 'info',
-      base: { service: 'scorer' },
+      base: { service: 'allocator' },
       ...ecsFormat(),
     });
 

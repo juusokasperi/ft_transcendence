@@ -1,4 +1,5 @@
 import dotenv from 'dotenv';
+import { log } from './log.ts';
 
 dotenv.config();
 
@@ -13,7 +14,11 @@ function numberFromEnv(name: string, defaultValue: number) {
   if (raw === undefined) return defaultValue;
   const parsed = Number.parseInt(raw, 10);
   if (Number.isNaN(parsed)) {
-    console.warn(`Invalid number for ${name}: ${raw}. Falling back to ${defaultValue}.`);
+    log(
+      `Invalid number for ${name}: ${raw}. Falling back to ${defaultValue}.`,
+      { name, raw, defaultValue },
+      'warn',
+    );
     return defaultValue;
   }
   return parsed;

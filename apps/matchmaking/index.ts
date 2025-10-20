@@ -43,7 +43,7 @@ redisSub.on('connect', () => {
   log('Redis pub/sub connected');
 });
 redisSub.on('message', (channel: string, message: string) => {
-  console.log(`[MM] Redis: ${channel}: ${message}`);
+  log(`[MM] Redis: ${channel}: ${message}`);
   if (channel === 'room_ready') {
     try {
       const { roomIdentifier } = JSON.parse(message);
@@ -207,10 +207,8 @@ app.addHook('onClose', async () => {
 
 try {
   await app.listen({ host: '0.0.0.0', port: PORT });
-  app.log.info(`Matchmaking Fastify server listening on ${PORT}`);
-  console.log(`Matchmaking Fastify server listening on ${PORT}`);
   log('Server started', { port: PORT });
 } catch (err) {
-  app.log.error(err);
+  log('error', { err }, 'error');
   process.exit(1);
 }
