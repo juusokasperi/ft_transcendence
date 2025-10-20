@@ -123,7 +123,9 @@ app.register(logoutRoutes, { prefix: '/api/logout' });
 app.register(signupRoutes, { prefix: '/api/signup' });
 app.register(refreshRoutes, { prefix: '/api/auth' });
 app.register(resetPasswordRoutes, { prefix: '/api/reset-password' });
-app.register(debugRoutes, { prefix: '/debug' });
+if (isDev) {
+  app.register(debugRoutes, { prefix: '/debug' });
+}
 
 app.addHook('onClose', async () => {
   teardownPurgeSchedulers();
