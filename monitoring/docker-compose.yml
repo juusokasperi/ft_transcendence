@@ -35,25 +35,30 @@ services:
       - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASS}
     volumes:
       - grafana-storage:/var/lib/grafana
-      - ./grafana/datasources.yaml:/etc/grafana/provisioning/datasources/prometheus.yaml
-      - ./grafana/dashboards-nginx.yaml:/etc/grafana/provisioning/dashboards/dashboards-nginx.yaml
-      - ./grafana/dashboards/nginx:/etc/grafana/dashboards/nginx
-      - ./grafana/dashboards-cadvisor.yaml:/etc/grafana/provisioning/dashboards/dashboards-cadvisor.yaml
-      - ./grafana/dashboards/cadvisor:/etc/grafana/dashboards/cadvisor
-      - ./grafana/dashboards-node-sqlite.yaml:/etc/grafana/provisioning/dashboards/node-sqlite.yaml
-      - ./grafana/dashboards/node-sqlite/:/etc/grafana/dashboards/node-sqlite
-
+      - ./grafana/provisioning:/etc/grafana/provisioning
+      - ./grafana/dashboards/:/etc/grafana/dashboards
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - |
+          curl -sf http://localhost:3000/api/health \
+          | grep -q '"database": "ok"'
+      interval: 5s
+      timeout: 5s
+      retries: 10
     networks:
       - devnet
     ports:
       - '3002:3000'
 
   grafana-setup:
-    image: alpine:3
+    build:
+      context: ./grafana-setup/
     profiles:
       - monitoring
     depends_on:
-      - grafana
+      grafana:
+        condition: service_healthy
     volumes:
       - ./grafana-setup/setup.sh:/setup.sh:ro
     environment:
@@ -65,7 +70,6 @@ services:
       - NEW_PASS=${GRAFANA_USER_PASS}
     networks:
       - devnet
-    entrypoint: ['sh', '/setup.sh']
 
   # How much cAdvisor can do really depends how much privileges you have
   # on the host. Enabling too many things will fill the logs with spam and

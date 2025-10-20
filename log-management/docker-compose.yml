@@ -81,8 +81,29 @@ services:
       interval: 5s
       timeout: 10s
       retries: 120
+    depends_on:
+      elastic_cert_setup:
+        condition: service_completed_successfully
     networks:
       - devnet
+
+  # configures policies using the API
+  elasticsearch-post:
+    profiles:
+      - elk
+    build:
+      context: ./elasticsearch-post/
+    volumes:
+      - elk_certs:/usr/share/elk/config/certs
+    env_file:
+      - ./.env
+    environment:
+      - ES_URL=https://elasticsearch:${ES_PORT:-9300}
+    networks:
+      - devnet
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
 
   kibana:
     profiles:
@@ -135,7 +156,8 @@ services:
     networks:
       - devnet
     depends_on:
-      - kibana
+      kibana:
+        condition: service_healthy
 
   logstash:
     profiles:
