@@ -79,6 +79,9 @@ services:
       interval: 5s
       timeout: 10s
       retries: 120
+    depends_on:
+      elastic_cert_setup:
+        condition: service_completed_successfully
     networks:
       - prod-private
 
@@ -93,7 +96,7 @@ services:
     env_file:
       - ./.env
     environment:
-      - ES_URL=http://elasticsearch:${ES_PORT:-9300}
+      - ES_URL=https://elasticsearch:${ES_PORT:-9300}
     networks:
       - prod-private
     depends_on:
@@ -110,8 +113,6 @@ services:
     depends_on:
       elasticsearch:
         condition: service_healthy
-      elastic_cert_setup:
-        condition: service_completed_successfully
     labels:
       co.elastic.logs/module: kibana
     volumes:
