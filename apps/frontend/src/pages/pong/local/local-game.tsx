@@ -1,7 +1,6 @@
 // apps/frontend/src/pages/pong/local/local-game.tsx
 import React, { useCallback, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import type { GameHistoryEntry } from '@pong/shared';
 import type { BotDifficulty } from '../../../games/pong/ai/bot-controller';
 
 import '@pong/render/ui/tailwind.css';
@@ -10,21 +9,15 @@ import '@pong/render/register';
 import Navbar from '../../../components/Navbar';
 import { useSnackbar } from '../../../context/SnackbarContext';
 import gifImg from '../../../assets/gif.mp4';
-import { BackgroundVideo } from '../components/background-video';
+import { BackgroundVideo } from '../shared/components/BackgroundVideo';
 import { PlayingView, PostMatchView, SettingsView } from './components';
-import { useLocalSettings } from './hooks/use-local-settings';
-import { usePongRuntime } from './hooks/use-pong-runtime';
-import { useAIBot } from './hooks/use-AI-bot';
-import { useMatchOverEvent } from './hooks/use-match-over-event';
-import { useKeyboardQuit } from './hooks/use-keyboard-quit';
-import { useBodyClass } from './hooks/use-body-class';
-
-type MatchSummary = {
-  winner: 'east' | 'west';
-  bestOf: number;
-  gamesHistory: GameHistoryEntry[];
-  names: { east: string; west: string };
-};
+import { useLocalSettings } from './hooks/useLocalSettings';
+import { usePongRuntime } from './hooks/usePongRuntime';
+import { useAIBot } from './hooks/useAIBot';
+import { useKeyboardQuit } from './hooks/useKeyboardQuit';
+import { useBodyClass } from '../shared/hooks/useBodyClass';
+import { useLocalMatchEnd } from './hooks/useLocalMatchEnd';
+import type { MatchSummary } from './types';
 
 const LocalGame: React.FC = () => {
   const navigate = useNavigate();
@@ -68,13 +61,11 @@ const LocalGame: React.FC = () => {
     botSeat,
   });
 
-  useMatchOverEvent({
+  useLocalMatchEnd({
     canvasRef,
     playing: isPlaying,
-    onMatchOver: (detail) => setPostMatch(detail),
-    // Make teardown immediate so we’re not stuck in the PlayingView branch.
+    onSummary: (summary) => setPostMatch(summary),
     onAutoExit: () => setIsPlaying(false),
-    autoExitDelayMs: 0,
   });
 
   const handleQuit = useCallback(() => {

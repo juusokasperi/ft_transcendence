@@ -1,4 +1,4 @@
-import type { ColorOption } from './color-palette';
+import type { ColorOption } from './ColorPalette';
 
 export const DEFAULT_PONG_PALETTE: ReadonlyArray<ColorOption> = [
   { name: 'Red', hex: '#ff3b3b' },

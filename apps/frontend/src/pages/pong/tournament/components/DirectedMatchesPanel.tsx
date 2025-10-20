@@ -1,6 +1,7 @@
 import React, { useMemo } from 'react';
-import type { ReadyMatch, CountdownSnapshot } from '../types';
-import { readyStageLabel } from '../utils';
+import type { ReadyMatch, CountdownSnapshot } from '../state/types';
+import SurfaceCard from '../../shared/components/SurfaceCard';
+import { readyStageLabel } from '../utils/utils';
 
 export type TournamentDirectedMatchesPanelProps = {
   matches: ReadyMatch[];
@@ -37,7 +38,7 @@ const TournamentDirectedMatchesPanel: React.FC<TournamentDirectedMatchesPanelPro
   }, [pendingCountdownStatus, pendingCountdownSeconds, pendingMatch]);
 
   return (
-    <section className="rounded-2xl border border-white/10 bg-white/5 p-5 shadow-xl backdrop-blur">
+    <SurfaceCard as="section" className="p-5 shadow-xl">
       <div className="mb-3 flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
         <h2 className="text-lg font-semibold">Directed matches</h2>
         {headerSubtitle && (
@@ -115,7 +116,7 @@ const TournamentDirectedMatchesPanel: React.FC<TournamentDirectedMatchesPanelPro
           })}
         </ul>
       )}
-    </section>
+    </SurfaceCard>
   );
 };
 

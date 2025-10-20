@@ -20,6 +20,7 @@ export type BackgroundVideoProps = {
   poster?: string;
   ariaHidden?: boolean; // default: true (decorative)
   pauseOnReducedMotion?: boolean; // default: true
+  opacity?: number; // default: 1
 };
 
 const posToClass: Record<ObjectPosition, string> = {
@@ -44,12 +45,15 @@ export const BackgroundVideo: React.FC<BackgroundVideoProps> = ({
   poster,
   ariaHidden = true,
   pauseOnReducedMotion = true,
+  opacity,
 }) => {
   const ref = useRef<HTMLVideoElement>(null);
 
   // Respect prefers-reduced-motion
   useEffect(() => {
     if (!pauseOnReducedMotion || !ref.current) return;
+    // In test/SSR environments, window.matchMedia may be undefined
+    if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') return;
     const mq = window.matchMedia('(prefers-reduced-motion: reduce)');
     const v = ref.current;
 
@@ -92,6 +96,7 @@ export const BackgroundVideo: React.FC<BackgroundVideoProps> = ({
       playsInline
       poster={poster}
       aria-hidden={ariaHidden}
+      style={opacity !== undefined ? { opacity } : undefined}
     >
       <source src={src} type={type} />
     </video>

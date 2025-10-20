@@ -11,12 +11,13 @@ export const AllocateSchema = {
         minItems: 1,
         items: {
           type: 'object',
-          required: ['playerIdentifier', 'side'],
+          required: ['playerIdentifier', 'side', 'mmr'],
           properties: {
             playerIdentifier: { type: 'string', format: 'uuid' },
             side: { type: 'string', enum: ['west', 'east'] },
             tournamentParticipantId: { type: 'integer', minimum: 1 },
             alias: { type: 'string' },
+            mmr: { type: 'number' },
           },
         },
       },

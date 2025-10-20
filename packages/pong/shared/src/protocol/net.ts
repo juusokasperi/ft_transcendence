@@ -1,3 +1,5 @@
+import type { GameHistoryEntry } from './state';
+
 export type TournamentParticipantMapping = {
   participantId: number;
   userUuid: string;
@@ -127,6 +129,18 @@ export type TournamentMatchCountdownMessage = {
   secondsRemaining: number;
   targetStartEpochMs: number;
   status: TournamentMatchCountdownStatus;
+};
+
+export type OnlineMatchSummary = {
+  winner: 'east' | 'west';
+  bestOf: number;
+  gamesHistory: GameHistoryEntry[];
+  names: { east: string; west: string };
+  seats?: { east: 'P1' | 'P2'; west: 'P1' | 'P2' };
+  mmr: {
+    east: { before: number; after: number };
+    west: { before: number; after: number };
+  };
 };
 
 export type MatchmakingMessage =
@@ -261,6 +275,7 @@ export type MatchEndMessage = {
   type: 'MATCH_END';
   reason: 'opponent_timeout' | 'completed' | 'error';
   winner?: 'east' | 'west';
+  summary?: OnlineMatchSummary | null;
 };
 
 export type GameServerControlMessage =

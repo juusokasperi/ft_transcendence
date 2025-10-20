@@ -1,8 +1,8 @@
 import React from 'react';
 import type { ControllerScheme } from '../../../../games/pong/modes/preferences';
 import type { PlayerSettings } from '../utils/storage';
-import Card from './card';
-import ColorPalette, { type ColorOption } from './color-palette';
+import Card from './Card';
+import ColorPalette, { type ColorOption } from './ColorPalette';
 import { DEFAULT_PONG_PALETTE } from './palettes';
 
 type ControllerOption = {

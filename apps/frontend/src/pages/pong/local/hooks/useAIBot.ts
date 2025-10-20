@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
 import type { BotDifficulty } from '../../../../games/pong/ai/bot-controller';
-import type { PongRuntimeHandle } from './use-pong-runtime';
+import type { PongRuntimeHandle } from './usePongRuntime';
 
 type UseAIBotOptions = {
   enabled: boolean;

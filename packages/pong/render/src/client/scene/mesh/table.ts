@@ -5,6 +5,7 @@ import type { AbstractMesh } from '@babylonjs/core/Meshes/abstractMesh';
 import { Colors } from '../color';
 import { makeNeonGlass, makeNeonLine } from '../materials/neon-glass';
 import { makeGlass } from '../materials/glass';
+import { TABLE_DEPTH_Y, TABLE_LENGTH_X, TABLE_WIDTH_Z } from '../../../constants/table';
 
 export type TableHandle = {
   root: TransformNode;
@@ -15,9 +16,9 @@ export type TableHandle = {
 
 export function addTable(scene: Scene): TableHandle {
   // Dimensions (meters)
-  const length = 2.74; // X
-  const width = 1.525; // Z
-  const depth = 0.05; // Y
+  const length = TABLE_LENGTH_X; // X
+  const width = TABLE_WIDTH_Z; // Z
+  const depth = TABLE_DEPTH_Y; // Y
 
   // Line widths (meters)
   const borderW = 0.04;

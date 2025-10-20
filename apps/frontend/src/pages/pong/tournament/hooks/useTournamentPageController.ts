@@ -11,12 +11,18 @@ import type {
 } from '@pong/shared/protocol/net';
 import { useSnackbar } from '../../../../context/SnackbarContext';
 import { useAppContext } from '../../../../context/AppContext';
-import type { ActiveHandoff, CountdownSnapshot, ReadyMatch, TournamentSummary } from '../types';
+import type {
+  ActiveHandoff,
+  CountdownSnapshot,
+  ReadyMatch,
+  TournamentSummary,
+} from '../state/types';
 import {
   MAX_VISIBLE_TOURNAMENTS,
   RECENT_TOURNAMENT_WINDOW_MS,
   TOURNAMENT_SIZE,
 } from '../../../../config';
+import { useMatchOverEvent } from '../../shared/hooks/useMatchOverEvent';
 
 export type MatchPhase = 'idle' | 'awaiting_start' | 'starting' | 'playing';
 
@@ -141,7 +147,7 @@ export function useTournamentPageController(
   const [tournamentName, setTournamentName] = useState('');
   const rejoinTimerRef = useRef<number | null>(null);
   const refreshTimerRef = useRef<number | null>(null);
-  const matchEndedNaturallyRef = useRef(false);
+  const teardownInProgressRef = useRef(false);
 
   useEffect(() => {
     setAliasInput(user?.username ?? '');
@@ -423,9 +429,10 @@ export function useTournamentPageController(
           setParticipants(msg.participants);
 
           const userUuid = user?.uuid;
-          const member = userUuid
+          const rawMember = userUuid
             ? msg.participants.some((participant) => participant.userUuid === userUuid)
             : false;
+          const member = rawMember && msg.status !== 'completed';
 
           if (member) {
             setActiveTournamentId(msg.tournamentId);
@@ -911,6 +918,42 @@ export function useTournamentPageController(
     requestAnimationFrame(() => canvasRef.current?.focus({ preventScroll: true }));
   }, [matchPhase]);
 
+  const performMatchTeardown = useCallback(
+    (options?: { refreshDelayMs?: number }) => {
+      if (teardownInProgressRef.current) {
+        debugLog('action:quit-match', { phase: 'teardown-skip', reason: 'in-progress' });
+        return;
+      }
+      const refreshDelayMs = options?.refreshDelayMs ?? 1000;
+      debugLog('action:quit-match', { phase: 'teardown-start', refreshDelayMs });
+      teardownInProgressRef.current = true;
+
+      if (appRef.current) {
+        appRef.current.destroy();
+        appRef.current = null;
+      }
+      setMatchPhase('idle');
+      setHandoff(null);
+
+      if (rejoinTimerRef.current) {
+        window.clearTimeout(rejoinTimerRef.current);
+        rejoinTimerRef.current = null;
+      }
+
+      if (refreshTimerRef.current) {
+        window.clearTimeout(refreshTimerRef.current);
+        refreshTimerRef.current = null;
+      }
+
+      refreshTimerRef.current = window.setTimeout(() => {
+        debugLog('action:quit-match', { phase: 'refreshing' });
+        void refreshTournamentState();
+        teardownInProgressRef.current = false;
+      }, refreshDelayMs);
+    },
+    [debugLog, refreshTournamentState],
+  );
+
   useEffect(() => {
     if (matchPhase !== 'starting' || !handoff || !canvasRef.current) return;
 
@@ -930,19 +973,8 @@ export function useTournamentPageController(
           onMatchEnd: (reason: string, winner?: 'east' | 'west') => {
             // Automatically quit and return to tournament after match ends
             debugLog('match-end-auto-quit', { reason, winner });
-            matchEndedNaturallyRef.current = true;
-            setTimeout(() => {
-              // Clean up game
-              appRef.current?.destroy();
-              appRef.current = null;
-              setMatchPhase('idle');
-              setHandoff(null);
-
-              // Refresh tournament state after a short delay
-              setTimeout(() => {
-                void refreshTournamentState();
-              }, 1000);
-            }, 5000); // 5 seconds to see the result overlay
+            const delay = reason === 'completed' ? 2500 : 1500;
+            performMatchTeardown({ refreshDelayMs: delay });
           },
         });
         if (cancelled) {
@@ -960,7 +992,15 @@ export function useTournamentPageController(
     return () => {
       cancelled = true;
     };
-  }, [debugLog, enqueueSnackbar, handoff, refreshTournamentState, seat, matchPhase]);
+  }, [
+    debugLog,
+    enqueueSnackbar,
+    handoff,
+    refreshTournamentState,
+    seat,
+    matchPhase,
+    performMatchTeardown,
+  ]);
 
   useEffect(
     () => () => {
@@ -994,37 +1034,19 @@ export function useTournamentPageController(
   }, [matchPhase]);
 
   const handleQuitMatch = useCallback(() => {
-    debugLog('action:quit-match', { phase: 'start' });
+    debugLog('action:quit-match', { trigger: 'manual' });
+    performMatchTeardown({ refreshDelayMs: 1000 });
+  }, [debugLog, performMatchTeardown]);
 
-    // Clean up game (unless already cleaned up by onMatchEnd)
-    if (appRef.current) {
-      appRef.current.destroy();
-      appRef.current = null;
-    }
-    setMatchPhase('idle');
-    setHandoff(null);
-
-    if (rejoinTimerRef.current) {
-      window.clearTimeout(rejoinTimerRef.current);
-      rejoinTimerRef.current = null;
-    }
-
-    if (refreshTimerRef.current) {
-      window.clearTimeout(refreshTimerRef.current);
-      refreshTimerRef.current = null;
-    }
-
-    // Tournament participants don't need to rejoin - they're already in the tournament
-    // Just refresh the state to get updates about next matches
-    debugLog('action:quit-match', { phase: 'scheduling-refresh' });
-    refreshTimerRef.current = window.setTimeout(() => {
-      debugLog('action:quit-match', { phase: 'refreshing' });
-      void refreshTournamentState();
-    }, 1000);
-
-    // Reset the natural end flag for next match
-    matchEndedNaturallyRef.current = false;
-  }, [debugLog, refreshTournamentState]);
+  useMatchOverEvent({
+    canvasRef,
+    active: matchPhase === 'playing',
+    onMatchOver: () => {
+      debugLog('match-over-event');
+      performMatchTeardown({ refreshDelayMs: 5000 });
+    },
+    autoExitDelayMs: 5000,
+  });
 
   return {
     user,

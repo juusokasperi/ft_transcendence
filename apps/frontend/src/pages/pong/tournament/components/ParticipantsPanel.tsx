@@ -1,6 +1,7 @@
 import React from 'react';
 import type { TournamentParticipantState } from '@pong/shared/protocol/net';
-import { participantStatusLabel } from '../utils';
+import SurfaceCard from '../../shared/components/SurfaceCard';
+import { participantStatusLabel } from '../utils/utils';
 
 export type TournamentParticipantsPanelProps = {
   participants: TournamentParticipantState[];
@@ -14,7 +15,7 @@ const TournamentParticipantsPanel: React.FC<TournamentParticipantsPanelProps> = 
   currentUserUuid,
 }) => {
   return (
-    <aside className="rounded-2xl border border-white/10 bg-white/5 p-5 shadow-xl backdrop-blur">
+    <SurfaceCard as="aside" className="p-5 shadow-xl">
       <h2 className="mb-3 text-lg font-semibold">Participants</h2>
       {!hasActiveTournament ? (
         <p className="text-sm text-white/60">Join a tournament to see participants.</p>
@@ -39,7 +40,7 @@ const TournamentParticipantsPanel: React.FC<TournamentParticipantsPanelProps> = 
           ))}
         </ul>
       )}
-    </aside>
+    </SurfaceCard>
   );
 };
 

@@ -1,5 +1,5 @@
 import type { TournamentMatchState } from '@pong/shared/protocol/net';
-import type { ReadyMatch } from './types';
+import type { ReadyMatch } from '../state/types';
 
 const PARTICIPANT_STATUS_LABELS: Record<string, string> = {
   pending: 'Joined',

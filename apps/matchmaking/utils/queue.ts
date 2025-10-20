@@ -156,11 +156,13 @@ export async function createMatch(
           playerIdentifier: a.uuid,
           side: 'west',
           alias: a.alias || a.tournamentAlias || a.username,
+          mmr: a.mmr,
         },
         {
           playerIdentifier: b.uuid,
           side: 'east',
           alias: b.alias || b.tournamentAlias || b.username,
+          mmr: b.mmr,
         },
       ],
       randomSeed,

@@ -1,4 +1,5 @@
 import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { TABLE_LENGTH_X, TABLE_WIDTH_Z } from '@pong/render';
 
 type PlayingViewProps = {
   /** Ref used by your Babylon engine setup */
@@ -7,8 +8,6 @@ type PlayingViewProps = {
   aspect?: number;
 };
 
-const TABLE_LENGTH_X = 2.74;
-const TABLE_WIDTH_Z = 1.525;
 const PAD_X = 0.2;
 const PAD_Z = 0.2;
 
