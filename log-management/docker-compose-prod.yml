@@ -134,7 +134,11 @@ services:
       - SERVER_REWRITEBASEPATH=false
     mem_limit: ${KB_MEM_LIMIT}
     healthcheck:
-      test: ['CMD-SHELL', "curl -s -I http://localhost:${KIBANA_PORT} | grep -q 'HTTP/1.1 302 Found'"]
+      test:
+       - CMD-SHELL
+       - |
+         curl -s http://localhost:${KIBANA_PORT}/api/status | \
+         grep -q '\"level\":\"available\"'
       interval: 10s
       timeout: 10s
       retries: 120
@@ -154,7 +158,8 @@ services:
     networks:
       - prod-private
     depends_on:
-      - kibana
+      kibana:
+        condition: service_healthy
 
   logstash:
     profiles:
