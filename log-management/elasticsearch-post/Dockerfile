@@ -1,4 +1,4 @@
-FROM curlimages/curl:8.7.1
+FROM curlimages/curl:8.16.0
 
 COPY configure.sh /init/configure.sh
 
