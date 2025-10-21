@@ -32,44 +32,19 @@ import { setupPurgeSchedulers } from './maintenance/purgeSchedulers.ts';
 import { runMigrations } from './db/migrations.ts';
 import { prettierErrorMessages } from './utils/errorHandler.ts';
 import './types/types.ts';
-import { ecsFormat } from '@elastic/ecs-pino-format';
-import { setLogger } from './utils/logger.ts';
+import { logger } from './utils/logger.ts';
 
 if (ENABLE_SQLITE_METRICS === 'true') initSqliteMetrics();
 
 const isDev = process.env.NODE_ENV === 'development';
 
-function createLoggerOptions(isDev: boolean) {
-  if (isDev) {
-    return {
-      level: 'debug',
-      transport: {
-        target: 'pino-pretty',
-        options: {
-          colorize: true,
-          translateTime: 'HH:MM:ss.l',
-          ignore: 'pid,hostname',
-        },
-      },
-    };
-  }
-
-  return {
-    level: 'info',
-    base: { service: 'api' },
-    ...ecsFormat(),
-  };
-}
-
 const app = fastify({
-  logger: createLoggerOptions(isDev),
+  logger,
   // trustProxy: true,
   ajv: {
     customOptions: { allErrors: true, removeAdditional: true },
   },
 });
-
-setLogger(app.log);
 
 register.setDefaultLabels({
   service: 'api',

@@ -6,7 +6,7 @@ import {
   emailChangeHtml,
 } from './emailHtml.ts';
 import { FRONTEND_URL, MAIL_TRANSPORT_CONFIG, MAIL_FROM } from '../config.ts';
-import { getLogger } from '../logger.ts';
+import { logger } from '../logger.ts';
 
 /*
 	Falls back to nodemailer's Ethereal test account when no SMTP
@@ -43,7 +43,6 @@ async function getTransporter() {
 }
 
 async function dispatchEmail({ to, subject, html }: { to: string; subject: string; html: string }) {
-  const logger = getLogger();
   const transporter = await getTransporter();
   const info = await transporter.sendMail({
     from: MAIL_FROM,
@@ -59,7 +58,6 @@ async function dispatchEmail({ to, subject, html }: { to: string; subject: strin
 }
 
 export async function sendConfirmationEmail(recipientEmail: string, token: string) {
-  const logger = getLogger();
   try {
     const url = `${FRONTEND_URL}/confirm/${token}`;
     const html = confirmationEmailHtml(url, FRONTEND_URL);
@@ -75,7 +73,6 @@ export async function sendConfirmationEmail(recipientEmail: string, token: strin
 }
 
 export async function sendResetPasswordEmail(recipientEmail: string, token: string) {
-  const logger = getLogger();
   try {
     const url = `${FRONTEND_URL}/reset-password/${token}`;
     const html = resetPasswordHtml(url, FRONTEND_URL);
@@ -91,7 +88,6 @@ export async function sendResetPasswordEmail(recipientEmail: string, token: stri
 }
 
 export async function sendDeleteEmail(recipientEmail: string, token: string) {
-  const logger = getLogger();
   try {
     const url = `${FRONTEND_URL}/delete-user/${token}`;
     const html = deleteUserHtml(url, FRONTEND_URL);
@@ -107,7 +103,6 @@ export async function sendDeleteEmail(recipientEmail: string, token: string) {
 }
 
 export async function sendEmailChangeEmail(recipientEmail: string, token: string) {
-  const logger = getLogger();
   try {
     const url = `${FRONTEND_URL}/confirm-email/${token}`;
     const html = emailChangeHtml(url, FRONTEND_URL);

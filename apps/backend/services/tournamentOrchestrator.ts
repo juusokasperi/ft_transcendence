@@ -17,7 +17,7 @@ import { markTournamentCompleted, updateTournamentStatus } from '../db/queries/t
 import type { TournamentParticipant } from '../types/types.ts';
 import { getMatchById } from '../db/queries/matches.ts';
 import { TOURNAMENT_REQUIRED_PARTICIPANTS } from '../utils/config.ts';
-import { getLogger } from '../utils/logger.ts';
+import { logger } from '../utils/logger.ts';
 
 const REQUIRED_PARTICIPANTS = TOURNAMENT_REQUIRED_PARTICIPANTS;
 
@@ -275,7 +275,6 @@ export function processSemifinalResult(
  * Returns the winner participant ID if auto-completion occurred, undefined otherwise.
  */
 export function checkAndAutoCompleteTournament(tournamentId: number): number | undefined {
-  const logger = getLogger();
   const participants = listTournamentParticipants(tournamentId);
 
   // Filter for active participants (not eliminated, forfeited, etc.)

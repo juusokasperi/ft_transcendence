@@ -1,7 +1,7 @@
 import db from '../client.ts';
 import type { MatchWithPlayers, MatchPlayerPublic } from '../../types/types.ts';
 import type { MatchDb, MatchPlayer, MatchWithPlayersForUserDb } from '../../types/dbtypes.ts';
-import { getLogger } from '../../utils/logger.ts';
+import { logger } from '../../utils/logger.ts';
 
 function addMatchHelper(
   team1Score: number,
@@ -210,7 +210,6 @@ export function getMatchesWithPlayersForUser(
   count?: number,
   offset?: number,
 ): MatchWithPlayers[] {
-  const logger = getLogger();
 
   try {
     if (count && count <= 0) return [];

@@ -1,8 +1,7 @@
 import umzug from './umzug.ts';
-import { getLogger } from '../utils/logger.ts';
+import { logger } from '../utils/logger.ts';
 
 export const runMigrations = async () => {
-  const logger = getLogger();
   const migrations = await umzug.up();
   logger.info(
     {
@@ -13,7 +12,6 @@ export const runMigrations = async () => {
 };
 
 export const rollbackMigration = async () => {
-  const logger = getLogger();
   const migrations = await umzug.down();
   if (migrations.length == 0) {
     logger.info('No migrations to roll back to.');

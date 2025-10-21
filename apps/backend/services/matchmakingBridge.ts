@@ -4,7 +4,7 @@ import {
   getTournamentMatchById,
   getTournamentMatchRoster,
 } from '../db/queries/tournamentMatches.ts';
-import { getLogger } from '../utils/logger.ts';
+import { logger } from '../utils/logger.ts';
 
 const redis = new Redis(REDIS_URL);
 
@@ -30,8 +30,6 @@ function computeStage(round: number, position: number): 'semifinal' | 'final' | 
 }
 
 export async function notifyMatchesReady(tournamentId: number, matchIds: number[]) {
-  const logger = getLogger();
-
   if (!matchIds.length) return;
 
   const payload: MatchesReadyMessage = { tournamentId, matches: [] };
@@ -72,7 +70,6 @@ type TournamentStateUpdatedMessage = {
 };
 
 export async function notifyTournamentStateUpdated(tournamentId: number) {
-  const logger = getLogger();
   const payload: TournamentStateUpdatedMessage = { tournamentId };
   try {
     await redis.publish('tournament:state_updated', JSON.stringify(payload));
