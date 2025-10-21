@@ -2,6 +2,7 @@ import { register } from 'prom-client';
 import { initSqliteMetrics } from './metrics/sqlite-patch.ts';
 import { registerMetrics } from './metrics/fastify-metrics.ts';
 import fastify from 'fastify';
+import type { FastifyBaseLogger } from 'fastify';
 import cors from '@fastify/cors';
 import fastifyMultipart from '@fastify/multipart';
 import fastifyStatic from '@fastify/static';
@@ -39,12 +40,16 @@ if (ENABLE_SQLITE_METRICS === 'true') initSqliteMetrics();
 const isDev = process.env.NODE_ENV === 'development';
 
 const app = fastify({
-  logger,
+  logger: {
+    level: 'trace', // filters in logger.ts
+  },
   // trustProxy: true,
   ajv: {
     customOptions: { allErrors: true, removeAdditional: true },
   },
 });
+
+app.log = logger as FastifyBaseLogger;
 
 register.setDefaultLabels({
   service: 'api',

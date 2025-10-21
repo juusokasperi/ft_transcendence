@@ -1,4 +1,5 @@
 import Fastify from 'fastify';
+import type { FastifyBaseLogger } from 'fastify';
 import websocket from '@fastify/websocket';
 import type { FastifyRequest } from 'fastify';
 import type { WebSocket, RawData } from 'ws';
@@ -33,8 +34,12 @@ import { handleAdmitConfirmed } from './utils/pendingHandoffs.ts';
 
 const redisSub = new Redis(REDIS_URL);
 const app = Fastify({
-  logger,
+  logger: {
+    level: 'trace', // filters in logger.ts
+  },
 });
+
+app.log = logger as FastifyBaseLogger;
 
 redisSub.subscribe('room_ready');
 redisSub.subscribe('tournament:matches_ready');

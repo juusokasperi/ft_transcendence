@@ -458,12 +458,12 @@ function notifyMatchEnd(
   try {
     match.players.P1?.socket.send(payload);
   } catch (err) {
-    app.log.warn('[GameServer] Failed to notify P1 about match end', err);
+    app.log.warn({ err }, '[GameServer] Failed to notify P1 about match end');
   }
   try {
     match.players.P2?.socket.send(payload);
   } catch (err) {
-    app.log.warn('[GameServer] Failed to notify P2 about match end', err);
+    app.log.warn({ err }, '[GameServer] Failed to notify P2 about match end');
   }
 }
 
