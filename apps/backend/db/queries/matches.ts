@@ -210,7 +210,6 @@ export function getMatchesWithPlayersForUser(
   count?: number,
   offset?: number,
 ): MatchWithPlayers[] {
-
   try {
     if (count && count <= 0) return [];
     const params: any[] = [uuid];
