@@ -97,7 +97,7 @@ services:
     env_file:
       - ./.env
     environment:
-      - ES_URL=https://elasticsearch:${ES_PORT:-9300}
+      - ES_URL=https://elasticsearch:${ES_PORT:-9200}
     networks:
       - prod-private
     depends_on:
