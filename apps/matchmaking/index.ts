@@ -6,7 +6,7 @@ import { v4 as uuid } from 'uuid';
 import { PORT, REDIS_URL } from './utils/config.ts';
 import type { ClientInfo, PendingMatch } from './types/types.ts';
 import type { MatchmakingClientMessage } from '@pong/shared/protocol/net';
-import { log } from './utils/log.ts';
+import { logger, log } from './utils/log.ts';
 import { extractToken, handleAuth } from './auth/auth.ts';
 import {
   handleAcceptMatch,
@@ -33,7 +33,7 @@ import { handleAdmitConfirmed } from './utils/pendingHandoffs.ts';
 
 const redisSub = new Redis(REDIS_URL);
 const app = Fastify({
-  logger: true,
+  logger,
 });
 
 redisSub.subscribe('room_ready');
