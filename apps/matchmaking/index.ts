@@ -214,6 +214,6 @@ try {
   await app.listen({ host: '0.0.0.0', port: PORT });
   log('Server started', { port: PORT });
 } catch (err) {
-  log('error', { err }, 'error');
+  log('Server failed to start', { err }, 'error');
   process.exit(1);
 }
