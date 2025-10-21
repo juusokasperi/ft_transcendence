@@ -32,7 +32,7 @@ if [ ! -f config/certs/certs.zip ]; then
   "      - 127.0.0.1\n"\
   "  - name: elasticsearch-post\n"\
   "    dns:\n"\
-  "      - elasticseaerch-post\n"\
+  "      - elasticsearch-post\n"\
   "      - localhost\n"\
   "    ip:\n"\
   "      - 127.0.0.1\n"\
