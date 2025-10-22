@@ -1,4 +1,4 @@
-import React, { useCallback, useReducer, useRef, useState } from 'react';
+import React, { useCallback, useMemo, useReducer, useRef, useState } from 'react';
 import { useAppContext } from '../../../context/AppContext';
 import { useSnackbar } from '../../../context/SnackbarContext';
 import PlayingView from '../shared/components/PlayingView';
@@ -16,9 +16,10 @@ import { useOnlineMatchEnd } from './hooks/useOnlineMatchEnd';
 import { useBootstrapConfig } from './hooks/useBootstrapConfig';
 import { useMatchmakingClient } from './hooks/useMatchmakingClient';
 import { useMatchOverEvent } from '../shared/hooks/useMatchOverEvent';
-import { useCanvasAutofocus } from '../shared/hooks/useCanvasAutofocus';
 
 import { initialState, reducer } from './state/machine';
+import PageContainer from '../shared/components/PageContainer';
+import PageSection from '../shared/components/PageSection';
 
 const OnlineGame: React.FC = () => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -28,6 +29,31 @@ const OnlineGame: React.FC = () => {
 
   const [connectKey, setConnectKey] = useState(0);
   const queueElapsed = useQueueTimer(state.status);
+
+  const liveMessage = useMemo(() => {
+    switch (state.status) {
+      case 'connecting':
+        return 'Connecting to matchmaking.';
+      case 'idle':
+        return 'Idle. Not in queue.';
+      case 'in_queue':
+        return 'In queue. Looking for an opponent.';
+      case 'match_found': {
+        const name = state.opponent.username ?? 'opponent';
+        return `Match found. Opponent ${name}. Accept or decline.`;
+      }
+      case 'match_accepted':
+        return 'Match accepted. Waiting to start.';
+      case 'starting':
+        return 'Starting match.';
+      case 'playing':
+        return 'Match in progress.';
+      case 'postmatch':
+        return 'Match completed.';
+      default:
+        return '';
+    }
+  }, [state.status, state.opponent.username]);
 
   const handleMatchDeclined = useCallback(() => {
     enqueueSnackbar({ message: 'Match declined or unavailable.', variant: 'error' });
@@ -101,7 +127,6 @@ const OnlineGame: React.FC = () => {
   }, [destroyGame, reconnect]);
 
   useBodyClass('pong-playing', matchActive);
-  useCanvasAutofocus(matchActive, canvasRef);
   useMatchOverEvent({
     canvasRef,
     active: matchActive,
@@ -138,34 +163,26 @@ const OnlineGame: React.FC = () => {
 
   if (state.status === 'postmatch' && state.postMatchSummary) {
     return (
-        <main
-          aria-labelledby="postmatch-title"
-          className="absolute inset-x-0 bottom-0 top-[var(--navbar-h,80px)] overflow-y-auto"
-        >
-          <h1 id="postmatch-title" className="sr-only">
-            Match summary
-          </h1>
+      <PageContainer>
+        <PageSection>
           <PostMatchOnlineView
             summary={state.postMatchSummary}
             onBackToMenu={() => navigate('/pong3d')}
           />
-        </main>
+        </PageSection>
+      </PageContainer>
     );
   }
 
   return (
-      <main
-        aria-labelledby="online-title"
-        className="absolute inset-x-0 bottom-0 top-[var(--navbar-h,80px)] overflow-y-auto"
-      >
-        <h1 id="online-title" className="sr-only">
-          Online Pong Matchmaking
-        </h1>
-        <div className="relative z-10 mx-auto flex max-w-5xl justify-center px-4 py-20">
-          <SurfaceCard className="w-full max-w-xl space-y-6 p-6 shadow-2xl">
+    <PageContainer>
+      <PageSection>
+        <div className="flex justify-center">
+          <SurfaceCard className="w-full max-w-xl space-y-4 p-4 shadow-2xl">
+            <div className="sr-only" role="status" aria-live="polite">{liveMessage}</div>
             <header className="flex items-center justify-between">
               <div>
-                <h1 className="text-2xl font-semibold tracking-wide">Online Game</h1>
+                <h2 className="text-xl font-semibold tracking-wide">Matchmaking</h2>
                 <p className="text-sm text-white/60">Queue up and play in real time.</p>
               </div>
               <StatusBadge status={state.status} />
@@ -194,7 +211,8 @@ const OnlineGame: React.FC = () => {
             ) : null}
           </SurfaceCard>
         </div>
-      </main>
+      </PageSection>
+    </PageContainer>
   );
 };
 

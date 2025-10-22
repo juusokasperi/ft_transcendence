@@ -8,6 +8,8 @@ import TournamentPageHeader from './components/PageHeader';
 import SurfaceCard from '../shared/components/SurfaceCard';
 import PlayingView from '../shared/components/PlayingView';
 import { useTournamentPageController } from './hooks/useTournamentPageController';
+import PageContainer from '../shared/components/PageContainer';
+import PageSection from '../shared/components/PageSection';
 
 type TournamentPageProps = {
   onBack?: () => void;
@@ -56,14 +58,19 @@ const TournamentPage: React.FC<TournamentPageProps> = ({ onBack, focusTournament
 
   if (userReady && !user) {
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center text-white">
-        <div className="mt-24 text-center">
-          <p className="mb-4 text-xl">Log in to join tournaments.</p>
-          <Button variant="primary" onClick={() => navigate('/login')}>
-            Go to login
-          </Button>
-        </div>
-      </div>
+      <PageContainer>
+        <PageSection>
+          <h1 id="page-title" className="sr-only">
+            Ping Pong Tournaments
+          </h1>
+          <div className="text-center text-white">
+            <p className="mb-4 text-xl">Log in to join tournaments.</p>
+            <Button variant="primary" onClick={() => navigate('/login')}>
+              Go to login
+            </Button>
+          </div>
+        </PageSection>
+      </PageContainer>
     );
   }
 
@@ -72,58 +79,60 @@ const TournamentPage: React.FC<TournamentPageProps> = ({ onBack, focusTournament
   }
 
   return (
-    <div className="relative z-10 mx-auto mt-24 flex w-full max-w-6xl flex-col gap-6 px-4 pb-16">
-      <SurfaceCard className="p-6 shadow-2xl">
-        <TournamentPageHeader
-          isDetailView={isDetailView}
-          displayTournamentId={activeTournamentId}
-          displayTournamentName={activeTournamentName}
-          connectionReady={connectionReady}
-          loading={loadingTournaments}
-          onRefresh={headerRefreshHandler}
-          onLeaveTournament={isDetailView ? handleLeaveTournamentClick : undefined}
-        />
-      </SurfaceCard>
-
-      <section className={overviewSectionClass}>
-        {!isDetailView && (
-          <TournamentLobbyPanel
-            tournamentName={tournamentName}
-            onTournamentNameChange={setTournamentName}
-            onCreateTournament={handleCreateTournamentClick}
+    <PageContainer>
+      <PageSection>
+        <SurfaceCard className="p-6 shadow-2xl">
+          <TournamentPageHeader
+            isDetailView={isDetailView}
+            displayTournamentId={activeTournamentId}
+            displayTournamentName={activeTournamentName}
             connectionReady={connectionReady}
-            availableTournaments={availableTournaments}
-            activeTournamentId={activeTournamentId}
-            aliasInput={aliasInput}
-            onAliasInputChange={setAliasInput}
-            onJoinTournament={handleJoinTournamentClick}
+            loading={loadingTournaments}
+            onRefresh={headerRefreshHandler}
+            onLeaveTournament={isDetailView ? handleLeaveTournamentClick : undefined}
+          />
+        </SurfaceCard>
+
+        <section className={overviewSectionClass}>
+          {!isDetailView && (
+            <TournamentLobbyPanel
+              tournamentName={tournamentName}
+              onTournamentNameChange={setTournamentName}
+              onCreateTournament={handleCreateTournamentClick}
+              connectionReady={connectionReady}
+              availableTournaments={availableTournaments}
+              activeTournamentId={activeTournamentId}
+              aliasInput={aliasInput}
+              onAliasInputChange={setAliasInput}
+              onJoinTournament={handleJoinTournamentClick}
+            />
+          )}
+          <TournamentParticipantsPanel
+            participants={sortedParticipants}
+            hasActiveTournament={hasActiveTournament}
+            currentUserUuid={currentUserUuid}
+          />
+        </section>
+
+        <TournamentBracketPanel
+          matches={matchesByStage}
+          hasActiveTournament={hasActiveTournament}
+          tournamentStatus={tournamentStatus}
+          currentParticipantId={currentParticipantId}
+        />
+
+        {hasActiveTournament && tournamentStatus !== 'completed' && (
+          <TournamentDirectedMatchesPanel
+            matches={latestReadyMatches}
+            countdowns={matchCountdowns}
+            pendingMatch={pendingMatch}
+            pendingCountdownStatus={countdownStatus}
+            pendingCountdownSeconds={countdownSecondsDisplay}
+            currentUserUuid={currentUserUuid}
           />
         )}
-        <TournamentParticipantsPanel
-          participants={sortedParticipants}
-          hasActiveTournament={hasActiveTournament}
-          currentUserUuid={currentUserUuid}
-        />
-      </section>
-
-      <TournamentBracketPanel
-        matches={matchesByStage}
-        hasActiveTournament={hasActiveTournament}
-        tournamentStatus={tournamentStatus}
-        currentParticipantId={currentParticipantId}
-      />
-
-      {hasActiveTournament && tournamentStatus !== 'completed' && (
-        <TournamentDirectedMatchesPanel
-          matches={latestReadyMatches}
-          countdowns={matchCountdowns}
-          pendingMatch={pendingMatch}
-          pendingCountdownStatus={countdownStatus}
-          pendingCountdownSeconds={countdownSecondsDisplay}
-          currentUserUuid={currentUserUuid}
-        />
-      )}
-    </div>
+      </PageSection>
+    </PageContainer>
   );
 };
 

@@ -5,7 +5,6 @@ type Props = {
   eastName: string;
   westName: string;
   gamesHistory: GameHistoryEntry[];
-  bestOf: number;
   className?: string;
   style?: React.CSSProperties;
 };
@@ -18,7 +17,6 @@ function byGameIndexMax(history: GameHistoryEntry[]): number {
 function CombinedScoreBoxes({ history }: { history: GameHistoryEntry[] }) {
   const maxIndex = byGameIndexMax(history);
 
-  // index → entry map for O(1) lookup
   const map = new Map<number, GameHistoryEntry>();
   for (const h of history) map.set(h.gameIndex, h);
 
@@ -50,11 +48,10 @@ function CombinedScoreBoxes({ history }: { history: GameHistoryEntry[] }) {
     westRow.push(mkBox(i, 'west'));
   }
 
-  // row-span-2 so it aligns with the two-name column at the left
   return (
     <div className="row-span-2 flex flex-col justify-start gap-1">
-      <div className="flex h-10 items-center justify-start gap-1">{eastRow}</div>
-      <div className="flex h-10 items-center justify-start gap-1">{westRow}</div>
+      <div className="flex h-9 items-center justify-start gap-1">{eastRow}</div>
+      <div className="flex h-9 items-center justify-start gap-1">{westRow}</div>
     </div>
   );
 }
@@ -63,7 +60,6 @@ const Scoreboard: React.FC<Props> = ({
   eastName,
   westName,
   gamesHistory,
-  bestOf,
   className,
   style,
 }) => {
@@ -75,21 +71,19 @@ const Scoreboard: React.FC<Props> = ({
       className={['flex w-fit items-center gap-x-2', className].filter(Boolean).join(' ')}
       style={style}
     >
-      <div className="border-white/12 row-span-2 rounded-xl border bg-slate-900/60 px-2 py-1 shadow-[0_8px_24px_rgba(0,0,0,0.38)] backdrop-blur-md">
-        <div className="grid h-10 items-center gap-x-2">
-          <div className="select-none whitespace-nowrap px-[6px] text-[24px] font-semibold leading-[1.05] text-slate-100 md:text-[26px]">
+      <div className="border-white/12 row-span-2 rounded-xl border bg-slate-900/60 px-2 py-1 shadow-[0_8px_20px_rgba(0,0,0,0.38)] backdrop-blur-md">
+        <div className="grid h-7 items-center gap-x-2">
+          <div className="select-none whitespace-nowrap px-[6px] text-[22px] font-semibold leading-[1.05] text-slate-100 md:text-[22px]">
             {east}
           </div>
         </div>
         <div className="my-1 h-[3px] rounded-full bg-gradient-to-r from-cyan-300/80 via-sky-400/80 to-cyan-300/80 shadow-[0_0_12px_rgba(56,189,248,.35)]" />
-        <div className="grid h-10 items-center gap-x-2">
-          <div className="select-none whitespace-nowrap px-[6px] text-[24px] font-semibold leading-[1.05] text-slate-100 md:text-[26px]">
+        <div className="grid h-7 items-center gap-x-2">
+          <div className="select-none whitespace-nowrap px-[6px] text-[22px] font-semibold leading-[1.05] text-slate-100 md:text-[22px]">
             {west}
           </div>
         </div>
       </div>
-
-      {/* Single stacked block for both rows */}
       <CombinedScoreBoxes history={gamesHistory} />
     </div>
   );
