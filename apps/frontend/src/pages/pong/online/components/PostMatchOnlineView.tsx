@@ -3,6 +3,7 @@ import SurfaceCard from '../../shared/components/SurfaceCard';
 import Button from '../../../../components/Button';
 import Scoreboard from '../../shared/components/Scoreboard';
 import type { OnlineMatchSummary } from '../state/types';
+import { resolveWinnerSide } from '../utils/winner';
 
 type Props = {
   summary: OnlineMatchSummary;
@@ -10,7 +11,8 @@ type Props = {
 };
 
 const PostMatchOnlineView: React.FC<Props> = ({ summary, onBackToMenu }) => {
-  const winnerName = summary.winner === 'east' ? summary.names.east : summary.names.west;
+  const winnerSide = resolveWinnerSide(summary);
+  const winnerName = winnerSide === 'east' ? summary.names.east : summary.names.west;
 
   const SidePanel: React.FC<{ side: 'east' | 'west' }> = ({ side }) => {
     const name = summary.names[side] || (side === 'east' ? 'Player 1' : 'Player 2');
@@ -43,7 +45,9 @@ const PostMatchOnlineView: React.FC<Props> = ({ summary, onBackToMenu }) => {
 
   return (
     <SurfaceCard className="space-y-2 p-2 shadow-2xl">
-      <div><span className="font-semibold text-white">Winner:</span> {winnerName}</div>
+      <div className="text-center text-lg font-semibold">
+        Winner: <span className="text-emerald-400">{winnerName}</span>
+      </div>
       <div>
         <Scoreboard
           eastName={summary.names.east}
