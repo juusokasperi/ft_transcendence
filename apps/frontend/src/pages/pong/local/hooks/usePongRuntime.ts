@@ -99,3 +99,8 @@ export function usePongRuntime({
     ready,
   };
 }
+
+// Preload the local (DOM) pong bootstrap bundle ahead of time to reduce latency
+export function preloadLocalPong() {
+  return import('../../../../games/pong/host/dom-embed').then(() => void 0).catch(() => void 0);
+}
