@@ -5,8 +5,6 @@ import PlayButton from './PlayButton';
 import Card from './Card';
 import Scoreboard from '../../shared/components/Scoreboard';
 
-// MatchSummary moved to ../types
-
 type PostMatchViewProps = {
   summary: MatchSummary;
   onPlayAgain: () => void;
@@ -39,7 +37,6 @@ export const PostMatchView: React.FC<PostMatchViewProps> = ({
             eastName={summary.names.east}
             westName={summary.names.west}
             gamesHistory={summary.gamesHistory}
-            bestOf={summary.bestOf}
           />
         </div>
         <div className="flex shrink-0 items-center justify-center gap-4">
