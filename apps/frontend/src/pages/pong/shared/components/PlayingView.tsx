@@ -1,8 +1,7 @@
-import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useLayoutEffect, useMemo, useState } from 'react';
 import { TABLE_LENGTH_X, TABLE_WIDTH_Z } from '@pong/render';
 
 type PlayingViewProps = {
-  /** Ref used by your Babylon engine setup */
   canvasRef: React.RefObject<HTMLCanvasElement | null>;
   onQuit: () => void;
   aspect?: number;
@@ -33,7 +32,6 @@ export const PlayingView: React.FC<PlayingViewProps> = ({
   onQuit,
   aspect = defaultWorldAspect(),
 }) => {
-  const containerRef = useRef<HTMLDivElement | null>(null);
   const [size, setSize] = useState<{ w: number; h: number }>({ w: 0, h: 0 });
 
   useEffect(() => {
@@ -63,14 +61,22 @@ export const PlayingView: React.FC<PlayingViewProps> = ({
   );
 
   return (
-    <div ref={containerRef} className="fixed inset-0 z-[1000] bg-black">
+    <div
+      className="fixed inset-0 z-[1000] bg-black"
+      role="application"
+      aria-label="Pong game"
+      aria-describedby="pong-kb-instructions"
+    >
+      <p id="pong-kb-instructions" className="sr-only">
+        Game view captures keyboard focus. Use the Quit button or press Escape to exit when
+        supported.
+      </p>
       <div className="absolute inset-0 flex items-center justify-center">
         <canvas
           ref={canvasRef}
           className="block outline-none"
           style={canvasStyle}
           tabIndex={0}
-          autoFocus
         />
       </div>
 
@@ -79,6 +85,7 @@ export const PlayingView: React.FC<PlayingViewProps> = ({
         onClick={onQuit}
         className="game-quit-button absolute right-5 top-5 cursor-pointer"
         aria-label="Quit game"
+        title="Press Esc to quit"
       >
         Quit
         <span aria-hidden className="game-quit-hover-text">
