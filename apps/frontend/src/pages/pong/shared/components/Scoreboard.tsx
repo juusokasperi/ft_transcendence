@@ -56,13 +56,7 @@ function CombinedScoreBoxes({ history }: { history: GameHistoryEntry[] }) {
   );
 }
 
-const Scoreboard: React.FC<Props> = ({
-  eastName,
-  westName,
-  gamesHistory,
-  className,
-  style,
-}) => {
+const Scoreboard: React.FC<Props> = ({ eastName, westName, gamesHistory, className, style }) => {
   const east = eastName || 'Player 1';
   const west = westName || 'Player 2';
 

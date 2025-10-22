@@ -113,11 +113,11 @@ const LocalGame: React.FC = () => {
     return (
       <PageContainer>
         <PageSection>
-            <PostMatchView
-              summary={postMatch}
-              onPlayAgain={handlePlayAgain}
-              onReturnToMenu={handleReturnToMenu}
-            />
+          <PostMatchView
+            summary={postMatch}
+            onPlayAgain={handlePlayAgain}
+            onReturnToMenu={handleReturnToMenu}
+          />
         </PageSection>
       </PageContainer>
     );

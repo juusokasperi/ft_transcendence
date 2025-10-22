@@ -179,7 +179,9 @@ const OnlineGame: React.FC = () => {
       <PageSection>
         <div className="flex justify-center">
           <SurfaceCard className="w-full max-w-xl space-y-4 p-4 shadow-2xl">
-            <div className="sr-only" role="status" aria-live="polite">{liveMessage}</div>
+            <div className="sr-only" role="status" aria-live="polite">
+              {liveMessage}
+            </div>
             <header className="flex items-center justify-between">
               <div>
                 <h2 className="text-xl font-semibold tracking-wide">Matchmaking</h2>

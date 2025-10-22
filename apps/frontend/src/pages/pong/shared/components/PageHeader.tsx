@@ -28,12 +28,10 @@ const PageHeader: React.FC<PageHeaderProps> = ({
     computedAlign === 'between'
       ? 'flex items-start justify-between gap-4'
       : computedAlign === 'center'
-      ? 'flex flex-col items-center text-center gap-1'
-      : 'flex flex-col gap-1';
+        ? 'flex flex-col items-center text-center gap-1'
+        : 'flex flex-col gap-1';
 
-  const titleCls = srOnlyTitle
-    ? 'sr-only'
-    : 'text-2xl font-semibold tracking-wide';
+  const titleCls = srOnlyTitle ? 'sr-only' : 'text-2xl font-semibold tracking-wide';
   const subtitleCls = 'text-sm text-slate-300';
 
   return (

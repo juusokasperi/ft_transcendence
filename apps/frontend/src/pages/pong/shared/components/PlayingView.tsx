@@ -72,12 +72,7 @@ export const PlayingView: React.FC<PlayingViewProps> = ({
         supported.
       </p>
       <div className="absolute inset-0 flex items-center justify-center">
-        <canvas
-          ref={canvasRef}
-          className="block outline-none"
-          style={canvasStyle}
-          tabIndex={0}
-        />
+        <canvas ref={canvasRef} className="block outline-none" style={canvasStyle} tabIndex={0} />
       </div>
 
       <button

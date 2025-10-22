@@ -14,8 +14,12 @@ const ModePicker: React.FC = () => {
       preloadOnlinePong();
     };
     // Defer to idle time to avoid competing with initial render
-    const w = window as unknown as { requestIdleCallback?: (cb: () => void, opts?: { timeout?: number }) => number };
-    const id = w.requestIdleCallback ? w.requestIdleCallback(run, { timeout: 1500 }) : window.setTimeout(run, 600);
+    const w = window as unknown as {
+      requestIdleCallback?: (cb: () => void, opts?: { timeout?: number }) => number;
+    };
+    const id = w.requestIdleCallback
+      ? w.requestIdleCallback(run, { timeout: 1500 })
+      : window.setTimeout(run, 600);
     return () => {
       if (!w.requestIdleCallback) {
         window.clearTimeout(id as unknown as number);

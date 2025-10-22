@@ -4,4 +4,3 @@ export type ClassValue = string | undefined | null | false;
 export default function clsx(...parts: ClassValue[]): string {
   return parts.filter(Boolean).join(' ');
 }
-

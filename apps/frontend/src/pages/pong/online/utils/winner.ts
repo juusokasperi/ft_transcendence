@@ -29,4 +29,3 @@ export function resolveWinnerSide(summary: OnlineMatchSummary): 'east' | 'west' 
   // Default to east if all else equals
   return 'east';
 }
-

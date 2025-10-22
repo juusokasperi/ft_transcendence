@@ -23,12 +23,9 @@ export const Card: React.FC<CardProps> = ({
   className,
   children,
 }) => {
-  const rootCls = [
-    'relative rounded-2xl border border-white/10',
-    tone,
-    'p-4',
-    className,
-  ].filter(Boolean).join(' ');
+  const rootCls = ['relative rounded-2xl border border-white/10', tone, 'p-4', className]
+    .filter(Boolean)
+    .join(' ');
 
   const header = title || subtitle || actions;
 
@@ -36,8 +33,8 @@ export const Card: React.FC<CardProps> = ({
     align === 'between'
       ? 'mb-3 flex items-start justify-between gap-3'
       : align === 'center'
-      ? 'mb-3 flex flex-col items-center gap-1 text-center'
-      : 'mb-3 flex flex-col gap-1';
+        ? 'mb-3 flex flex-col items-center gap-1 text-center'
+        : 'mb-3 flex flex-col gap-1';
 
   const titleCls = 'text-xl font-semibold text-white';
   const subtitleCls = 'mt-1 text-sm text-slate-300';
@@ -47,8 +44,16 @@ export const Card: React.FC<CardProps> = ({
       {header && (
         <div className={headerCls}>
           <div className={align === 'between' ? '' : 'w-full'}>
-            {title && <h3 className={`${titleCls} ${align === 'center' ? 'text-center w-full' : ''}`}>{title}</h3>}
-            {subtitle && <p className={`${subtitleCls} ${align === 'center' ? 'text-center' : ''}`}>{subtitle}</p>}
+            {title && (
+              <h3 className={`${titleCls} ${align === 'center' ? 'w-full text-center' : ''}`}>
+                {title}
+              </h3>
+            )}
+            {subtitle && (
+              <p className={`${subtitleCls} ${align === 'center' ? 'text-center' : ''}`}>
+                {subtitle}
+              </p>
+            )}
           </div>
           {actions && <div className="shrink-0">{actions}</div>}
         </div>

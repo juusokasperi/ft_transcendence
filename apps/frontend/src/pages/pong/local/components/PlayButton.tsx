@@ -68,10 +68,7 @@ export const PlayButton = React.forwardRef<HTMLButtonElement, PlayButtonProps>(
 
     // Render as Link when `to` is provided for proper navigation semantics
     if (to !== undefined) {
-      const linkCls = [
-        rootCls,
-        disabled ? 'opacity-60 cursor-not-allowed pointer-events-none' : '',
-      ]
+      const linkCls = [rootCls, disabled ? 'opacity-60 cursor-not-allowed pointer-events-none' : '']
         .filter(Boolean)
         .join(' ');
       return (
