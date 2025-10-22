@@ -1,4 +1,4 @@
-// apps/frontend/src/pages/pong/local/local-game.tsx
+// apps/frontend/src/pages/pong/local/LocalGame.tsx
 import React, { useCallback, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { BotDifficulty } from '../../../games/pong/ai/bot-controller';
@@ -15,6 +15,8 @@ import { useKeyboardQuit } from './hooks/useKeyboardQuit';
 import { useBodyClass } from '../shared/hooks/useBodyClass';
 import { useLocalMatchEnd } from './hooks/useLocalMatchEnd';
 import type { MatchSummary } from './types';
+import PageContainer from '../shared/components/PageContainer';
+import PageSection from '../shared/components/PageSection';
 
 const LocalGame: React.FC = () => {
   const navigate = useNavigate();
@@ -109,34 +111,15 @@ const LocalGame: React.FC = () => {
 
   if (postMatch) {
     return (
-        <main
-          aria-labelledby="postmatch-title"
-          className="absolute inset-x-0 bottom-0 top-[var(--navbar-h,80px)]"
-        >
-
-          <h1 id="postmatch-title" className="sr-only">
-            Match Summary
-          </h1>
-
-          <section
-            aria-labelledby="summary-heading"
-            className="relative z-10 h-full w-full overflow-y-auto"
-          >
-            <div className="mx-auto w-full max-w-5xl p-6">
-              <h2 id="summary-heading" className="sr-only">
-                Match result
-              </h2>
-
-              <div className="mt-6 md:mt-10">
-                <PostMatchView
-                  summary={postMatch}
-                  onPlayAgain={handlePlayAgain}
-                  onReturnToMenu={handleReturnToMenu}
-                />
-              </div>
-            </div>
-          </section>
-        </main>
+      <PageContainer>
+        <PageSection>
+            <PostMatchView
+              summary={postMatch}
+              onPlayAgain={handlePlayAgain}
+              onReturnToMenu={handleReturnToMenu}
+            />
+        </PageSection>
+      </PageContainer>
     );
   }
 
@@ -145,23 +128,23 @@ const LocalGame: React.FC = () => {
   }
 
   return (
-    <section aria-labelledby="local-settings-title">
-      <h2 id="local-settings-title" className="sr-only">Local Match Settings</h2>
-
-      <SettingsView
-        settings={settings}
-        onUpdateSettings={update}
-        onSave={handleSave}
-        onReset={handleReset}
-        onResetRules={resetRules}
-        onPlay={handlePlay}
-        aiEnabled={aiEnabled}
-        botDifficulty={botDifficulty}
-        onToggleAI={setAiEnabled}
-        onDifficultyChange={setBotDifficulty}
-        arrowSeatLabel={arrowSeatLabel}
-      />
-    </section>
+    <PageContainer>
+      <PageSection>
+        <SettingsView
+          settings={settings}
+          onUpdateSettings={update}
+          onSave={handleSave}
+          onReset={handleReset}
+          onResetRules={resetRules}
+          onPlay={handlePlay}
+          aiEnabled={aiEnabled}
+          botDifficulty={botDifficulty}
+          onToggleAI={setAiEnabled}
+          onDifficultyChange={setBotDifficulty}
+          arrowSeatLabel={arrowSeatLabel}
+        />
+      </PageSection>
+    </PageContainer>
   );
 };
 
