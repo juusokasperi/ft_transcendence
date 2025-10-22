@@ -26,10 +26,12 @@ CLEAN_HELPER_IMG ?= alpine:3.19
 SERVICES         = deps frontend backend nginx elastic_cert_setup elasticsearch kibana kibana-post logstash game-server matchmaking
 
 # Ensure required bind-mount directories exist
+# 1000:1000 == UID:GID of node user inside of container
 define ensure_dirs
 	@echo ">> Ensuring required bind-mount directories exist"
 	@if [ ! -d "./apps/backend/data/sqlite/uploads" ]; then \
 		mkdir -p ./apps/backend/data/sqlite/uploads; \
+		chown -R 1000:1000 ./apps/backend/data; \
 	fi
 endef
 
