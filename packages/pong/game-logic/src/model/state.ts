@@ -138,7 +138,7 @@ export function createInitialState(
     bounds,
     params: {
       paddleSpeed: 2.2,
-      ballSpeed: 10.8, // Avoid setting ballSpeed from 1.41 to 1.59 due to known physics instability in this range, which can cause predictable ball trajectories and gameplay bugs.
+      ballSpeed: 2, // Avoid setting ballSpeed from 1.41 to 1.59 due to known physics instability in this range, which can cause predictable ball trajectories and gameplay bugs.
       zEnglish: 0.75,
       restitutionWall: 1.0,
       serveAngleDeg: 0,
