@@ -69,7 +69,7 @@ endef
 # ========================
 #  Orchestration
 # ========================
-.PHONY: all up detached prod detached-prod elk elk-detached down clean nuke check-leftovers fclean re stop restart restart-elk restart-% builder-init builder-use builder-prune builder-rm check-leftovers-global overview-docker
+.PHONY: all up detached prod prod-detached elk elk-detached down clean nuke check-leftovers fclean re stop restart restart-elk restart-% builder-init builder-use builder-prune builder-rm check-leftovers-global overview-docker
 all: up
 
 up:
@@ -93,15 +93,15 @@ prod:
 	$(ensure_builder)
 	$(ensure_certs)
 	@echo ">> Starting prod stack (attached)"
-	docker compose -p $(NAME_PROD) $(PROD_COMPOSE) $(ENV_ROOT) up --build
+	docker compose -p $(NAME_PROD) $(PROD_COMPOSE) $(ENV_ROOT) --profile elk --profile monitoring up --build
 
-detached-prod:
+prod-detached:
 	$(ensure_dirs)
 	$(ensure_env)
 	$(ensure_builder)
 	$(ensure_certs)
-	@echo ">> Starting prod stack (attached)"
-	docker compose -p $(NAME_PROD) $(PROD_COMPOSE) $(ENV_ROOT) up --build -d
+	@echo ">> Starting prod stack (detached)"
+	docker compose -p $(NAME_PROD) $(PROD_COMPOSE) $(ENV_ROOT) --profile elk --profile monitoring up --build -d
 
 elk:
 	$(ensure_dirs)

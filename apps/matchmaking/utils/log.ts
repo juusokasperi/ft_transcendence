@@ -1,21 +1,31 @@
+import pino from 'pino';
+import ecsFormat from '@elastic/ecs-pino-format';
+
+const isDev = process.env.NODE_ENV === 'development';
+
+export const logger = isDev
+  ? pino({
+      level: 'debug',
+      transport: {
+        target: 'pino-pretty',
+        options: {
+          colorize: true,
+          translateTime: 'HH:MM:ss.l',
+          ignore: 'pid,hostname',
+        },
+      },
+    })
+  : pino({
+      level: 'info',
+      base: { service: 'matchmaking' },
+      ...ecsFormat(),
+    });
+
 export function log(
   message: string,
   context?: Record<string, unknown>,
   level: 'log' | 'warn' | 'error' = 'log',
-) {
-  const time = new Date().toISOString();
-  const prefix = `[${time}] [MM]`;
-  const output = context
-    ? `${prefix} ${message} ${JSON.stringify(context)}`
-    : `${prefix} ${message}`;
-  switch (level) {
-    case 'warn':
-      console.warn(output);
-      break;
-    case 'error':
-      console.error(output);
-      break;
-    default:
-      console.log(output);
-  }
+): void {
+  const pinoLevel: 'info' | 'warn' | 'error' = level === 'log' ? 'info' : level;
+  logger[pinoLevel]({ context }, message);
 }

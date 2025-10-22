@@ -34,7 +34,7 @@ server {
 
   #  ---------- API -> backend ----------
   location /api/ {
-	proxy_pass http://backend:${BACKEND_PORT};
+    proxy_pass http://backend:${BACKEND_PORT};
     proxy_http_version 1.1;
 
     proxy_set_header Host               $http_host;
@@ -57,12 +57,6 @@ server {
     proxy_set_header Host $http_host;
   }
 
-  # ---------- Site served from volume populated by the frontend container ----
-   location / {
-    root /usr/share/nginx/html;
-    index index.html;
-    try_files $uri /index.html;
-  }
 
   location /matchmaking {
     proxy_pass http://matchmaking-service:4242;
@@ -98,10 +92,71 @@ server {
     proxy_send_timeout 300s;
 }
 
-  # For nginx-prometheus-exporter (monitoring)
+  # Redirect plain /kibana (no slash) to /kibana/
+  location = /kibana {
+    return 301 /kibana/;
+  }
+
+  location /kibana/ {
+    proxy_pass http://kibana:${KIBANA_PORT}/;
+    proxy_http_version 1.1;
+
+    proxy_set_header Host               $http_host;
+    proxy_set_header X-Forwarded-Proto  $scheme;
+    proxy_set_header X-Forwarded-Host   $http_host;
+    proxy_set_header X-Forwarded-Port   $server_port;
+    proxy_set_header X-Forwarded-For    $proxy_add_x_forwarded_for;
+
+    proxy_set_header Upgrade            $http_upgrade;
+    proxy_set_header Connection         $connection_upgrade;
+
+    proxy_read_timeout 300s;
+    proxy_send_timeout 300s;
+}
+
+# # Redirect plain /grafana (no slash) to /grafana/
+  location = /grafana {
+    return 301 /grafana/;
+  }
+
+  location /grafana/ {
+    proxy_pass http://grafana:${GRAFANA_PORT}; # must NOT have trailing slash
+    proxy_http_version 1.1;
+
+    proxy_set_header Host               $host;
+    proxy_set_header X-Real-IP          $remote_addr;
+    proxy_set_header X-Forwarded-Proto  $scheme;
+    proxy_set_header X-Forwarded-Host   $http_host;
+    proxy_set_header X-Forwarded-Port   $server_port;
+    proxy_set_header X-Forwarded-For    $proxy_add_x_forwarded_for;
+
+    proxy_set_header Upgrade            $http_upgrade;
+    proxy_set_header Connection         $connection_upgrade;
+
+    proxy_read_timeout 300s;
+    proxy_send_timeout 300s;
+
+    proxy_redirect off;
+  }
+
+  # ---------- Site served from volume populated by the frontend container ----
+   location / {
+    root /usr/share/nginx/html;
+    index index.html;
+    try_files $uri /index.html;
+  }
+
+}
+
+# for metrics, only on docker network, used by nginx-prometheus-exporter
+server {
+  listen ${NGINX_STUB_STATUS_PORT};
+  server_name _;
+
+  access_log off;
   location /stub_status {
     stub_status;
-    allow 172.16.0.0/12;
+    allow 172.16.0.0/12;  # internal Docker subnet
     deny all;
   }
 }

@@ -1,4 +1,5 @@
 import Fastify from 'fastify';
+import type { FastifyBaseLogger } from 'fastify';
 import websocket from '@fastify/websocket';
 import type { FastifyRequest } from 'fastify';
 import type { WebSocket, RawData } from 'ws';
@@ -6,7 +7,7 @@ import { v4 as uuid } from 'uuid';
 import { PORT, REDIS_URL } from './utils/config.ts';
 import type { ClientInfo, PendingMatch } from './types/types.ts';
 import type { MatchmakingClientMessage } from '@pong/shared/protocol/net';
-import { log } from './utils/log.ts';
+import { logger, log } from './utils/log.ts';
 import { extractToken, handleAuth } from './auth/auth.ts';
 import {
   handleAcceptMatch,
@@ -33,8 +34,12 @@ import { handleAdmitConfirmed } from './utils/pendingHandoffs.ts';
 
 const redisSub = new Redis(REDIS_URL);
 const app = Fastify({
-  logger: true,
+  logger: {
+    level: 'trace', // filters in logger.ts
+  },
 });
+
+app.log = logger as FastifyBaseLogger;
 
 redisSub.subscribe('room_ready');
 redisSub.subscribe('tournament:matches_ready');
@@ -43,7 +48,7 @@ redisSub.on('connect', () => {
   log('Redis pub/sub connected');
 });
 redisSub.on('message', (channel: string, message: string) => {
-  console.log(`[MM] Redis: ${channel}: ${message}`);
+  log(`[MM] Redis: ${channel}: ${message}`);
   if (channel === 'room_ready') {
     try {
       const { roomIdentifier } = JSON.parse(message);
@@ -207,10 +212,8 @@ app.addHook('onClose', async () => {
 
 try {
   await app.listen({ host: '0.0.0.0', port: PORT });
-  app.log.info(`Matchmaking Fastify server listening on ${PORT}`);
-  console.log(`Matchmaking Fastify server listening on ${PORT}`);
   log('Server started', { port: PORT });
 } catch (err) {
-  app.log.error(err);
+  log('Server failed to start', { err }, 'error');
   process.exit(1);
 }

@@ -3,8 +3,16 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 const getRoutes = new Map<string, any>();
 const postRoutes = new Map<string, { options: any; handler: any }>();
 
+const appLogMock = {
+  info: vi.fn(),
+  error: vi.fn(),
+  debug: vi.fn(),
+  warn: vi.fn(),
+};
+
 function createFakeApp() {
   const app: any = {};
+  app.log = appLogMock;
   app.get = vi.fn((path: string, handler: any) => {
     getRoutes.set(path, handler);
     return app;

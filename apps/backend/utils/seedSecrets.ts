@@ -1,6 +1,7 @@
 import crypto from 'crypto';
 import fs from 'fs';
 import path from 'path';
+import { logger } from './logger.ts';
 
 /*
 	Seeds a secret to backend .env and (TODO) to match server .env
@@ -20,7 +21,7 @@ const updateEnvFile = (filePath: string, key: string, value: string) => {
   if (regex.test(envContent)) envContent = envContent.replace(regex, `${key}=${value}`);
   else envContent += `${key}=${value}\n`;
   fs.writeFileSync(filePath, envContent);
-  console.log(`Updated ${key} in ${filePath}`);
+  logger.info(`Updated ${key} in ${filePath}`);
 };
 
 updateEnvFile(backendEnvPath, 'SECRET', jwtSecret);
