@@ -30,6 +30,7 @@ define ensure_dirs
 	@echo ">> Ensuring required bind-mount directories exist"
 	@if [ ! -d "./apps/backend/data/sqlite/uploads" ]; then \
 		mkdir -p ./apps/backend/data/sqlite/uploads; \
+		chmod 777 -R ./apps/backend/data; \
 	fi
 endef
 
