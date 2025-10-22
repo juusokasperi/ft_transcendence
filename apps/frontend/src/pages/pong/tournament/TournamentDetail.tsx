@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import TournamentPage from './tournament-page';
+import TournamentPage from './TournamentPage';
 
 const TournamentDetail: React.FC = () => {
   const navigate = useNavigate();

@@ -6,10 +6,7 @@ import type { BotDifficulty } from '../../../games/pong/ai/bot-controller';
 import '@pong/render/ui/tailwind.css';
 import '@pong/render/register';
 
-import Navbar from '../../../components/Navbar';
 import { useSnackbar } from '../../../context/SnackbarContext';
-import gifImg from '../../../assets/gif.mp4';
-import { BackgroundVideo } from '../shared/components/BackgroundVideo';
 import { PlayingView, PostMatchView, SettingsView } from './components';
 import { useLocalSettings } from './hooks/useLocalSettings';
 import { usePongRuntime } from './hooks/usePongRuntime';
@@ -112,14 +109,10 @@ const LocalGame: React.FC = () => {
 
   if (postMatch) {
     return (
-      <div className="fixed inset-0 overflow-hidden text-white">
-        <Navbar />
-
         <main
           aria-labelledby="postmatch-title"
           className="absolute inset-x-0 bottom-0 top-[var(--navbar-h,80px)]"
         >
-          <BackgroundVideo src={gifImg} fit="contain" position="center" />
 
           <h1 id="postmatch-title" className="sr-only">
             Match Summary
@@ -144,7 +137,6 @@ const LocalGame: React.FC = () => {
             </div>
           </section>
         </main>
-      </div>
     );
   }
 
@@ -153,40 +145,23 @@ const LocalGame: React.FC = () => {
   }
 
   return (
-    <div className="fixed inset-0 overflow-hidden text-white">
-      <Navbar />
+    <section aria-labelledby="local-settings-title">
+      <h2 id="local-settings-title" className="sr-only">Local Match Settings</h2>
 
-      <main
-        aria-labelledby="settings-title"
-        className="absolute inset-x-0 bottom-0 top-[var(--navbar-h,80px)]"
-      >
-        <BackgroundVideo src={gifImg} fit="contain" position="center" />
-
-        <h1 id="settings-title" className="sr-only">
-          Local Match Settings
-        </h1>
-
-        <section className="relative z-10 h-full w-full overflow-y-auto">
-          <div className="mx-auto w-full max-w-4xl p-6">
-            <div className="mt-6 rounded-2xl md:mt-10">
-              <SettingsView
-                settings={settings}
-                onUpdateSettings={update}
-                onSave={handleSave}
-                onReset={handleReset}
-                onResetRules={resetRules}
-                onPlay={handlePlay}
-                aiEnabled={aiEnabled}
-                botDifficulty={botDifficulty}
-                onToggleAI={(enabled) => setAiEnabled(enabled)}
-                onDifficultyChange={(difficulty) => setBotDifficulty(difficulty)}
-                arrowSeatLabel={arrowSeatLabel}
-              />
-            </div>
-          </div>
-        </section>
-      </main>
-    </div>
+      <SettingsView
+        settings={settings}
+        onUpdateSettings={update}
+        onSave={handleSave}
+        onReset={handleReset}
+        onResetRules={resetRules}
+        onPlay={handlePlay}
+        aiEnabled={aiEnabled}
+        botDifficulty={botDifficulty}
+        onToggleAI={setAiEnabled}
+        onDifficultyChange={setBotDifficulty}
+        arrowSeatLabel={arrowSeatLabel}
+      />
+    </section>
   );
 };
 

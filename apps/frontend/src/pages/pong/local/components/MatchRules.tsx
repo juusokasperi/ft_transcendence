@@ -133,8 +133,8 @@ export const MatchRules: React.FC<MatchRulesProps> = ({ rules, onUpdate, onReset
         onClick={() => setOpen((v) => !v)}
         className="flex w-full cursor-pointer items-center justify-between"
       >
-        <span className="text-2xl font-semibold text-yellow-400">Match Rules</span>
-        <span className="text-2xl leading-none text-yellow-400">{open ? '−' : '+'}</span>
+        <span className="text-xl font-semibold text-yellow-400">Match Rules</span>
+        <span className="text-xl leading-none text-yellow-400">{open ? '−' : '+'}</span>
       </button>
 
       {open && (

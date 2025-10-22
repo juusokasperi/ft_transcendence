@@ -1,5 +1,4 @@
 import React from 'react';
-import Navbar from '../../../components/Navbar';
 import Button from '../../../components/Button';
 import TournamentParticipantsPanel from './components/ParticipantsPanel';
 import TournamentBracketPanel from './components/BracketPanel';
@@ -7,10 +6,8 @@ import TournamentDirectedMatchesPanel from './components/DirectedMatchesPanel';
 import TournamentLobbyPanel from './components/LobbyPanel';
 import TournamentPageHeader from './components/PageHeader';
 import SurfaceCard from '../shared/components/SurfaceCard';
-import { BackgroundVideo } from '../shared/components/BackgroundVideo';
 import PlayingView from '../shared/components/PlayingView';
 import { useTournamentPageController } from './hooks/useTournamentPageController';
-import gifImg from '../../../assets/gif.mp4';
 
 type TournamentPageProps = {
   onBack?: () => void;
@@ -60,7 +57,6 @@ const TournamentPage: React.FC<TournamentPageProps> = ({ onBack, focusTournament
   if (userReady && !user) {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center text-white">
-        <Navbar />
         <div className="mt-24 text-center">
           <p className="mb-4 text-xl">Log in to join tournaments.</p>
           <Button variant="primary" onClick={() => navigate('/login')}>
@@ -76,61 +72,57 @@ const TournamentPage: React.FC<TournamentPageProps> = ({ onBack, focusTournament
   }
 
   return (
-    <div className="relative min-h-screen overflow-hidden text-white">
-      <BackgroundVideo src={gifImg} fit="contain" position="center" opacity={0.7} />
-      <Navbar />
-      <div className="relative z-10 mx-auto mt-24 flex w-full max-w-6xl flex-col gap-6 px-4 pb-16">
-        <SurfaceCard className="p-6 shadow-2xl">
-          <TournamentPageHeader
-            isDetailView={isDetailView}
-            displayTournamentId={activeTournamentId}
-            displayTournamentName={activeTournamentName}
-            connectionReady={connectionReady}
-            loading={loadingTournaments}
-            onRefresh={headerRefreshHandler}
-            onLeaveTournament={isDetailView ? handleLeaveTournamentClick : undefined}
-          />
-        </SurfaceCard>
-
-        <section className={overviewSectionClass}>
-          {!isDetailView && (
-            <TournamentLobbyPanel
-              tournamentName={tournamentName}
-              onTournamentNameChange={setTournamentName}
-              onCreateTournament={handleCreateTournamentClick}
-              connectionReady={connectionReady}
-              availableTournaments={availableTournaments}
-              activeTournamentId={activeTournamentId}
-              aliasInput={aliasInput}
-              onAliasInputChange={setAliasInput}
-              onJoinTournament={handleJoinTournamentClick}
-            />
-          )}
-          <TournamentParticipantsPanel
-            participants={sortedParticipants}
-            hasActiveTournament={hasActiveTournament}
-            currentUserUuid={currentUserUuid}
-          />
-        </section>
-
-        <TournamentBracketPanel
-          matches={matchesByStage}
-          hasActiveTournament={hasActiveTournament}
-          tournamentStatus={tournamentStatus}
-          currentParticipantId={currentParticipantId}
+    <div className="relative z-10 mx-auto mt-24 flex w-full max-w-6xl flex-col gap-6 px-4 pb-16">
+      <SurfaceCard className="p-6 shadow-2xl">
+        <TournamentPageHeader
+          isDetailView={isDetailView}
+          displayTournamentId={activeTournamentId}
+          displayTournamentName={activeTournamentName}
+          connectionReady={connectionReady}
+          loading={loadingTournaments}
+          onRefresh={headerRefreshHandler}
+          onLeaveTournament={isDetailView ? handleLeaveTournamentClick : undefined}
         />
+      </SurfaceCard>
 
-        {hasActiveTournament && tournamentStatus !== 'completed' && (
-          <TournamentDirectedMatchesPanel
-            matches={latestReadyMatches}
-            countdowns={matchCountdowns}
-            pendingMatch={pendingMatch}
-            pendingCountdownStatus={countdownStatus}
-            pendingCountdownSeconds={countdownSecondsDisplay}
-            currentUserUuid={currentUserUuid}
+      <section className={overviewSectionClass}>
+        {!isDetailView && (
+          <TournamentLobbyPanel
+            tournamentName={tournamentName}
+            onTournamentNameChange={setTournamentName}
+            onCreateTournament={handleCreateTournamentClick}
+            connectionReady={connectionReady}
+            availableTournaments={availableTournaments}
+            activeTournamentId={activeTournamentId}
+            aliasInput={aliasInput}
+            onAliasInputChange={setAliasInput}
+            onJoinTournament={handleJoinTournamentClick}
           />
         )}
-      </div>
+        <TournamentParticipantsPanel
+          participants={sortedParticipants}
+          hasActiveTournament={hasActiveTournament}
+          currentUserUuid={currentUserUuid}
+        />
+      </section>
+
+      <TournamentBracketPanel
+        matches={matchesByStage}
+        hasActiveTournament={hasActiveTournament}
+        tournamentStatus={tournamentStatus}
+        currentParticipantId={currentParticipantId}
+      />
+
+      {hasActiveTournament && tournamentStatus !== 'completed' && (
+        <TournamentDirectedMatchesPanel
+          matches={latestReadyMatches}
+          countdowns={matchCountdowns}
+          pendingMatch={pendingMatch}
+          pendingCountdownStatus={countdownStatus}
+          pendingCountdownSeconds={countdownSecondsDisplay}
+          currentUserUuid={currentUserUuid}
+        />
+      )}
     </div>
   );
 };

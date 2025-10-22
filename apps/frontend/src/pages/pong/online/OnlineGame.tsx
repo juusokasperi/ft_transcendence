@@ -1,17 +1,13 @@
 import React, { useCallback, useReducer, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import Navbar from '../../../components/Navbar';
 import { useAppContext } from '../../../context/AppContext';
 import { useSnackbar } from '../../../context/SnackbarContext';
 import PlayingView from '../shared/components/PlayingView';
-import gifImg from '../../../assets/gif.mp4';
 
 import SurfaceCard from '../shared/components/SurfaceCard';
 import StatusBadge from './components/StatusBadge';
 import QueueControls from './components/QueueControls';
 import MatchFoundPanel from './components/MatchFoundPanel';
 import PostMatchOnlineView from './components/PostMatchOnlineView';
-import { BackgroundVideo } from '../shared/components/BackgroundVideo';
 import { useBodyClass } from '../shared/hooks/useBodyClass';
 
 import { useQueueTimer } from './hooks/useQueueTimer';
@@ -23,7 +19,6 @@ import { useMatchOverEvent } from '../shared/hooks/useMatchOverEvent';
 import { useCanvasAutofocus } from '../shared/hooks/useCanvasAutofocus';
 
 import { initialState, reducer } from './state/machine';
-import type { MatchEndPayload } from './state/types';
 
 const OnlineGame: React.FC = () => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -143,13 +138,10 @@ const OnlineGame: React.FC = () => {
 
   if (state.status === 'postmatch' && state.postMatchSummary) {
     return (
-      <div className="fixed inset-0 overflow-hidden text-white">
-        <Navbar />
         <main
           aria-labelledby="postmatch-title"
           className="absolute inset-x-0 bottom-0 top-[var(--navbar-h,80px)] overflow-y-auto"
         >
-          <BackgroundVideo src={gifImg} fit="contain" position="center" />
           <h1 id="postmatch-title" className="sr-only">
             Match summary
           </h1>
@@ -158,18 +150,14 @@ const OnlineGame: React.FC = () => {
             onBackToMenu={() => navigate('/pong3d')}
           />
         </main>
-      </div>
     );
   }
 
   return (
-    <div className="fixed inset-0 overflow-hidden text-white">
-      <Navbar />
       <main
         aria-labelledby="online-title"
         className="absolute inset-x-0 bottom-0 top-[var(--navbar-h,80px)] overflow-y-auto"
       >
-        <BackgroundVideo src={gifImg} fit="contain" position="center" />
         <h1 id="online-title" className="sr-only">
           Online Pong Matchmaking
         </h1>
@@ -207,7 +195,6 @@ const OnlineGame: React.FC = () => {
           </SurfaceCard>
         </div>
       </main>
-    </div>
   );
 };
 

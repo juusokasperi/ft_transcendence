@@ -7,18 +7,19 @@ import Profile from './pages/Profile';
 import Friends from './pages/Friends';
 import Stats from './pages/Stats';
 import Confirmation from './pages/Confirmation';
-import Pong3d from './pages/pong/pong-homepage';
-import LocalGame from './pages/pong/local/local-game';
+import ModePicker from './pages/pong/ModePicker';
+import LocalGame from './pages/pong/local/LocalGame';
 import DeleteUser from './pages/DeleteUser';
 import ConfirmEmail from './pages/ConfirmEmail';
-import OnlineGame from './pages/pong/online/online-game';
-import Tournament from './pages/pong/tournament/tournament-page';
-import TournamentDetail from './pages/pong/tournament/tournament-detail';
+import OnlineGame from './pages/pong/online/OnlineGame';
+import Tournament from './pages/pong/tournament/TournamentPage';
+import TournamentDetail from './pages/pong/tournament/TournamentDetail';
 import ForgotPassword from './pages/ForgotPassword';
 import ResetPassword from './pages/ResetPassword';
 import PublicUser from './pages/PublicUser';
 import { SidebarProvider } from './context/SidebarContext';
 import { SnackbarProvider } from './context/SnackbarContext';
+import PongLayout from './pages/pong/PongLayout';
 
 function App() {
   return (
@@ -31,11 +32,13 @@ function App() {
             <Route path={'/login'} element={<Login />} />
             <Route path={'/forgot-password'} element={<ForgotPassword />} />
             <Route path={'/reset-password/:token'} element={<ResetPassword />} />
-            <Route path={'/pong3d'} element={<Pong3d />} />
-            <Route path={'/pong3d/local'} element={<LocalGame />} />
-            <Route path={'/pong3d/online'} element={<OnlineGame />} />
-            <Route path={'/pong3d/tournaments'} element={<Tournament />} />
-            <Route path={'/pong3d/tournaments/:tournamentId'} element={<TournamentDetail />} />
+            <Route path="/pong3d" element={<PongLayout />}>
+              <Route index element={<ModePicker />} />
+              <Route path="local" element={<LocalGame />} />
+              <Route path="online" element={<OnlineGame />} />
+              <Route path="tournaments" element={<Tournament />} />
+              <Route path="tournaments/:tournamentId" element={<TournamentDetail />} />
+            </Route>
             <Route path={'/confirm/:confirmationToken'} element={<Confirmation />} />
             <Route path={'/delete-user/:confirmationToken'} element={<DeleteUser />} />
             <Route path={'/confirm-email/:token'} element={<ConfirmEmail />} />
