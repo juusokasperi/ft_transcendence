@@ -1,4 +1,5 @@
 import { Route, Routes } from 'react-router-dom';
+import { lazy } from 'react';
 import Registration from './pages/Registration';
 import Login from './pages/Login';
 import Home from './pages/Home';
@@ -7,19 +8,19 @@ import Profile from './pages/Profile';
 import Friends from './pages/Friends';
 import Stats from './pages/Stats';
 import Confirmation from './pages/Confirmation';
-import ModePicker from './pages/pong/ModePicker';
-import LocalGame from './pages/pong/local/LocalGame';
 import DeleteUser from './pages/DeleteUser';
 import ConfirmEmail from './pages/ConfirmEmail';
-import OnlineGame from './pages/pong/online/OnlineGame';
-import Tournament from './pages/pong/tournament/TournamentPage';
-import TournamentDetail from './pages/pong/tournament/TournamentDetail';
 import ForgotPassword from './pages/ForgotPassword';
 import ResetPassword from './pages/ResetPassword';
 import PublicUser from './pages/PublicUser';
 import { SidebarProvider } from './context/SidebarContext';
 import { SnackbarProvider } from './context/SnackbarContext';
 import PongLayout from './pages/pong/PongLayout';
+const ModePicker = lazy(() => import('./pages/pong/ModePicker'));
+const LocalGame = lazy(() => import('./pages/pong/local/LocalGame'));
+const OnlineGame = lazy(() => import('./pages/pong/online/OnlineGame'));
+const Tournament = lazy(() => import('./pages/pong/tournament/TournamentPage'));
+const TournamentDetail = lazy(() => import('./pages/pong/tournament/TournamentDetail'));
 
 function App() {
   return (
