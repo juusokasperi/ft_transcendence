@@ -143,7 +143,6 @@ export function createOnlineApp(
   let latestMatch: MatchSnapshot | undefined;
   let lastKnownBestOf = 3;
   let spinningUntilMs = 0;
-  let didBetweenGamesSpin = false;
   // Track half-rotation timing and whether a server swap event arrived
   let betweenHalfFired = false;
   let pendingBetweenSwap = false;
@@ -412,7 +411,6 @@ export function createOnlineApp(
             ms,
           );
           spinningUntilMs = until;
-          didBetweenGamesSpin = true;
           betweenHalfFired = false;
           pendingBetweenSwap = false;
           betweenSwapApplied = false;
@@ -440,7 +438,7 @@ export function createOnlineApp(
       const anyEv = ev as any;
       if (anyEv && anyEv.swapSidesNow) {
         const now = performance.now();
-        if (spinningUntilMs > now || didBetweenGamesSpin || s.phase === 'pauseBetweenGames') {
+        if (spinningUntilMs > now || s.phase === 'pauseBetweenGames') {
           // Between-games swap is bound to the rotation's midpoint.
           if (betweenSwapApplied) {
             // Already applied at half — ignore duplicate event.
@@ -466,6 +464,11 @@ export function createOnlineApp(
             names,
             blockInputFor,
           );
+          // Track active spin window to align any subsequent events like between-games flow
+          spinningUntilMs = until;
+          betweenHalfFired = false;
+          pendingBetweenSwap = false;
+          betweenSwapApplied = false;
           const spinMs = Math.max(0, until - now);
           if (spinMs > 0) {
             orbitCameraFor(world.camera, spinMs, {
