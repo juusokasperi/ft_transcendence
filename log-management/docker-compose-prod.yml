@@ -98,6 +98,7 @@ services:
       - ./.env
     environment:
       - ES_URL=https://elasticsearch:${ES_PORT:-9200}
+      - ELASTIC_USER=${ELASTIC_USER:-elastic}
     networks:
       - prod-private
     depends_on:
@@ -127,7 +128,7 @@ services:
       - ELASTICSEARCH_HOSTS=https://elasticsearch:9200
       - ELASTICSEARCH_USERNAME=kibana_system
       - ELASTICSEARCH_PASSWORD=${KIBANA_PASSWORD}
-      - ELASTICSEARCH_SSL_CERTIFICATEAUTHORITIES=config/certs/ca/ca.crt
+      - ELASTICSEARCH_SSL_CERTIFICATEAUTHORITIES=/usr/share/kibana/config/certs/ca/ca.crt
       - XPACK_SECURITY_ENCRYPTIONKEY=${ENCRYPTION_KEY}
       - XPACK_ENCRYPTEDSAVEDOBJECTS_ENCRYPTIONKEY=${ENCRYPTION_KEY}
       - XPACK_REPORTING_ENCRYPTIONKEY=${ENCRYPTION_KEY}
@@ -157,6 +158,7 @@ services:
       - ./.env
     environment:
       - KIBANA_URL=http://kibana:${KIBANA_PORT:-5601}
+      - ELASTIC_USER=${ELASTIC_USER:-elastic}
     networks:
       - prod-private
     depends_on:
@@ -181,6 +183,7 @@ services:
     environment:
       - xpack.monitoring.enabled=false
       - ELASTIC_HOSTS=https://elasticsearch:${ES_PORT:-9200}
+      - ELASTIC_USER=${ELASTIC_USER:-elastic}
     mem_limit: ${KB_MEM_LIMIT}
     healthcheck:
       test: ["CMD-SHELL", "curl -fs http://localhost:9600/_node/stats || exit 1"]
