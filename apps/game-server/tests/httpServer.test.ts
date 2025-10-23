@@ -98,15 +98,13 @@ describe('createHttpServer', () => {
       adminSecret: 'super-secret',
       port: 8888,
       registry: {
-        metrics: vi
-          .fn()
-          .mockReturnValue({
-            matches: 0,
-            players: 0,
-            roomsWaiting: 0,
-            roomsReady: 0,
-            roomsPlaying: 0,
-          }),
+        metrics: vi.fn().mockReturnValue({
+          matches: 0,
+          players: 0,
+          roomsWaiting: 0,
+          roomsReady: 0,
+          roomsPlaying: 0,
+        }),
       } as any,
       onCreateRoom,
     });
@@ -146,15 +144,13 @@ describe('createHttpServer', () => {
       adminSecret: 'admin',
       port: 9999,
       registry: {
-        metrics: vi
-          .fn()
-          .mockReturnValue({
-            matches: 0,
-            players: 0,
-            roomsWaiting: 0,
-            roomsReady: 0,
-            roomsPlaying: 0,
-          }),
+        metrics: vi.fn().mockReturnValue({
+          matches: 0,
+          players: 0,
+          roomsWaiting: 0,
+          roomsReady: 0,
+          roomsPlaying: 0,
+        }),
       } as any,
       onCreateRoom,
     });
