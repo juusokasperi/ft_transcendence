@@ -29,15 +29,20 @@ const appListenMock = vi.fn(async () => {
 
 const appGetMock = vi.fn();
 
+const appLogMock = {
+  info: vi.fn(),
+  error: vi.fn(),
+  debug: vi.fn(),
+  warn: vi.fn(),
+};
+
 const fastifyMock = vi.fn(() => ({
   server: {
     on: serverOnMock,
   },
   get: appGetMock,
   listen: appListenMock,
-  log: {
-    error: vi.fn(),
-  },
+  log: appLogMock,
 }));
 
 vi.mock('fastify', () => ({
@@ -125,6 +130,10 @@ describe('game gateway upgrade flow', () => {
     appGetMock.mockReset();
     appListenMock.mockReset();
     appListenMock.mockResolvedValue(undefined);
+    appLogMock.info.mockReset();
+    appLogMock.error.mockReset();
+    appLogMock.debug.mockReset();
+    appLogMock.warn.mockReset();
     fastifyMock.mockReset();
     fastifyMock.mockImplementation(() => ({
       server: {
@@ -132,9 +141,7 @@ describe('game gateway upgrade flow', () => {
       },
       get: appGetMock,
       listen: appListenMock,
-      log: {
-        error: vi.fn(),
-      },
+      log: appLogMock,
     }));
     vi.resetModules();
   });

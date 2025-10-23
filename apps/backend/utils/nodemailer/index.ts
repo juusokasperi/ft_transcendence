@@ -6,6 +6,7 @@ import {
   emailChangeHtml,
 } from './emailHtml.ts';
 import { FRONTEND_URL, MAIL_TRANSPORT_CONFIG, MAIL_FROM } from '../config.ts';
+import { logger } from '../logger.ts';
 
 /*
 	Falls back to nodemailer's Ethereal test account when no SMTP
@@ -51,7 +52,7 @@ async function dispatchEmail({ to, subject, html }: { to: string; subject: strin
   });
   const previewUrl = nodemailer.getTestMessageUrl(info);
   if (previewUrl) {
-    console.log('\x1b[0;32mPreview URL\x1b[0m: %s', previewUrl);
+    logger.info({ previewUrl }, 'Preview URL ready');
   }
   return info.accepted.length > 0;
 }
@@ -66,7 +67,7 @@ export async function sendConfirmationEmail(recipientEmail: string, token: strin
       html,
     });
   } catch (error) {
-    console.error('\x1b[0;31mError sending confirmation email\x1b[0m:', error);
+    logger.error({ error }, 'Error sending confirmation email');
     return false;
   }
 }
@@ -81,7 +82,7 @@ export async function sendResetPasswordEmail(recipientEmail: string, token: stri
       html,
     });
   } catch (error) {
-    console.error('\x1b[0;31mError sending reset password email\x1b[0m:', error);
+    logger.error({ error }, 'Error sending reset password email');
     return false;
   }
 }
@@ -96,7 +97,7 @@ export async function sendDeleteEmail(recipientEmail: string, token: string) {
       html,
     });
   } catch (error) {
-    console.error('\x1b[0;31mError sending delete account email\x1b[0m:', error);
+    logger.error({ error }, 'Error sending delete account email');
     return false;
   }
 }
@@ -111,7 +112,7 @@ export async function sendEmailChangeEmail(recipientEmail: string, token: string
       html,
     });
   } catch (error) {
-    console.error('\x1b[0;31mError sending email change confirmation email\x1b[0m:', error);
+    logger.error({ error }, 'Error sending email change confirmation email');
     return false;
   }
 }

@@ -22,16 +22,19 @@
     "test:watch": "vitest watch --config vitest.config.ts"
   },
   "dependencies": {
+    "@elastic/ecs-pino-format": "^1.0.0",
+    "@pong/shared": "workspace:*",
     "dotenv": "^17.2.2",
     "fastify": "^5.6.0",
     "http-proxy": "^1.18.1",
     "ioredis": "^5.8.0",
+    "pino": "^10.0.0",
     "uuid": "^13.0.0",
-    "ws": "^8.18.3",
-    "@pong/shared": "workspace:*"
+    "ws": "^8.18.3"
   },
   "devDependencies": {
     "@types/http-proxy": "^1.17.16",
-    "@types/node": "^24.4.0"
+    "@types/node": "^24.4.0",
+    "pino-pretty": "^13.1.2"
   }
 }

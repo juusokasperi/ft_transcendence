@@ -5,16 +5,45 @@ import createProxyServer from 'http-proxy';
 import Redis from 'ioredis';
 import { REDIS_URL, PORT } from './config';
 import { verifyJoinToken } from '@pong/shared/auth/tokenSign';
+import { ecsFormat } from '@elastic/ecs-pino-format';
 
 const redis = new Redis(REDIS_URL);
-const app = fastify({ logger: true });
+
+const isDev = process.env.NODE_ENV === 'development';
+
+function createLoggerOptions(isDev: boolean) {
+  if (isDev) {
+    return {
+      level: 'debug',
+      transport: {
+        target: 'pino-pretty',
+        options: {
+          colorize: true,
+          translateTime: 'HH:MM:ss.l',
+          ignore: 'pid,hostname',
+        },
+      },
+    };
+  }
+
+  return {
+    level: 'info',
+    base: { service: 'game-gateway' },
+    ...ecsFormat(),
+  };
+}
+
+const app = fastify({
+  logger: createLoggerOptions(isDev),
+});
+
 const proxy = new createProxyServer({ ws: true });
 
 app.server.on('upgrade', async (req: IncomingMessage, socket: Duplex, head: Buffer) => {
-  console.log('[Gateway] Upgrade connection started');
+  app.log.info('[Gateway] Upgrade connection started');
   const match = req.url?.match(/^\/g\/([a-zA-Z0-9_-]+)/);
   if (!match) {
-    console.log('[Gateway] Invalid url:', req.url);
+    app.log.info({ url: req.url }, '[Gateway] Invalid url:');
     socket.destroy();
     return;
   }
@@ -23,7 +52,7 @@ app.server.on('upgrade', async (req: IncomingMessage, socket: Duplex, head: Buff
   const protocolHeader = req.headers['sec-websocket-protocol'];
 
   if (typeof protocolHeader !== 'string') {
-    console.log('[Gateway] Missing Sec-WebSocket-Protocol header for room:', roomId);
+    app.log.info({ roomId: roomId }, '[Gateway] Missing Sec-WebSocket-Protocol header for room:');
     socket.write('HTTP/1.1 4401 Unauthorized\r\nConnection: close\r\n\r\n');
     socket.destroy();
     return;
@@ -37,7 +66,7 @@ app.server.on('upgrade', async (req: IncomingMessage, socket: Duplex, head: Buff
   const joinToken = bearerIndex !== -1 ? requestedProtocols[bearerIndex + 1] : undefined;
 
   if (!joinToken) {
-    console.log('[Gateway] No join token provided for room:', roomId);
+    app.log.info({ roomId: roomId }, '[Gateway] No join token provided for room:');
     socket.write('HTTP/1.1 4401 Unauthorized\r\nConnection: close\r\n\r\n');
     socket.destroy();
     return;
@@ -45,7 +74,7 @@ app.server.on('upgrade', async (req: IncomingMessage, socket: Duplex, head: Buff
 
   const claims = verifyJoinToken(joinToken);
   if (!claims || claims.roomIdentifier !== roomId) {
-    console.log('[Gateway] Invalid join token for room:', roomId);
+    app.log.info({ roomId: roomId }, '[Gateway] Invalid join token for room:');
     socket.write('HTTP/1.1 4401 Unauthorized\r\nConnection: close\r\n\r\n');
     socket.destroy();
     return;
@@ -55,13 +84,13 @@ app.server.on('upgrade', async (req: IncomingMessage, socket: Duplex, head: Buff
   try {
     gameNode = await redis.get(`room-to-node:${roomId}`);
   } catch (err) {
-    console.log('[Gateway] No game node found for room:', roomId);
+    app.log.info({ roomId: roomId }, '[Gateway] No game node found for room:');
     socket.destroy();
     return;
   }
 
   if (!gameNode) {
-    console.log('[Gateway] Game node is null');
+    app.log.info('[Gateway] Game node is null');
     socket.destroy();
     return;
   }
@@ -73,13 +102,13 @@ app.server.on('upgrade', async (req: IncomingMessage, socket: Duplex, head: Buff
   try {
     const setResult = await redis.set(jtiKey, roomId, 'EX', ttlSeconds, 'NX');
     if (setResult !== 'OK') {
-      console.log('[Gateway] Join token already consumed', { roomId, jti: claims.jti });
+      app.log.info({ roomId: roomId, jti: claims.jti }, '[Gateway] Join token already consumed');
       socket.write('HTTP/1.1 4403 Forbidden\r\nConnection: close\r\n\r\n');
       socket.destroy();
       return;
     }
   } catch (err) {
-    console.error('[Gateway] Failed to persist join token consumption', err);
+    app.log.error({ err }, '[Gateway] Failed to persist join token consumption');
     socket.write('HTTP/1.1 4500 Internal Server Error\r\nConnection: close\r\n\r\n');
     socket.destroy();
     return;
@@ -92,7 +121,7 @@ app.server.on('upgrade', async (req: IncomingMessage, socket: Duplex, head: Buff
     },
   });
 
-  console.log(`[Gateway] Routed room ${roomId} to ${gameNode}`);
+  app.log.info(`[Gateway] Routed room ${roomId} to ${gameNode}`);
 });
 
 app.get('/health', async () => {
@@ -102,7 +131,7 @@ app.get('/health', async () => {
 const start = async () => {
   try {
     await app.listen({ port: PORT, host: '0.0.0.0' });
-    console.log(`[Gateway] Game gateway listening on port ${PORT}`);
+    app.log.info(`[Gateway] Game gateway listening on port ${PORT}`);
   } catch (err) {
     app.log.error(err);
     process.exit(1);

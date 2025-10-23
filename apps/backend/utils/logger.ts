@@ -3,7 +3,7 @@ import ecsFormat from '@elastic/ecs-pino-format';
 
 const isDev = process.env.NODE_ENV === 'development';
 
-const logger = isDev
+export const logger = isDev
   ? pino({
       level: 'debug',
       transport: {
@@ -17,8 +17,8 @@ const logger = isDev
     })
   : pino({
       level: 'info',
-      base: { service: 'allocator' },
-      ...ecsFormat(),
+      base: { service: 'api' },
+      ...ecsFormat.default(),
     });
 
 export function log(

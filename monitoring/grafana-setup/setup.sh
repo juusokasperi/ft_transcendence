@@ -1,22 +1,8 @@
 #!/bin/sh
 
-apk add --no-cache curl jq
-
 set -eu
 
-start=$(date +%s)
-timeout=90
-echo "Waiting for Grafana to start..."
-until curl -s "${GRAFANA_URL}/api/health" > /dev/null; do
-  sleep 2
-  now=$(date +%s)
-  if [ $(( now - start )) -ge $timeout ]; then
-    echo "Timed out after waiting for Grafana"
-    exit 1
-  fi
-done
-
-echo "Grafana is up, creating user..."
+echo "Creating Grafana user..."
 
 # Check if the user already exists
 USER_ID=$(curl -s -u "${ADMIN_USER}:${ADMIN_PASS}" \
