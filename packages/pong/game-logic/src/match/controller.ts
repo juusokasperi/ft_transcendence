@@ -1,7 +1,7 @@
 import type { GameState } from '../model/state';
 import { createInitialState } from '../model/state';
 import { serveFrom } from '../systems/flow/service';
-import { PAUSE_BETWEEN_GAMES_MS, PAUSE_MATCH_OVER_MS } from '../constants';
+import { PAUSE_BETWEEN_GAMES_MS, PAUSE_MATCH_OVER_MS, MIDSWAP_PAUSE_MS } from '../constants';
 import type { TableEnd } from '@pong/shared';
 import type { Ruleset, MatchSnapshot } from '@pong/shared';
 import { sideOpposite } from '@pong/shared';
@@ -34,7 +34,7 @@ export function createMatchController(
   }> = [];
 
   function addRulesToState(s: GameState, r: Ruleset): GameState {
-    const deuceAt = r.game.deuceAt ?? r.game.targetScore - 1;
+    const deuceAt = r.game.deuceAt ?? (r.game.targetScore - 1);
     const targetGames = Math.ceil(r.match.bestOf / 2);
     const params: GameState['params'] = {
       ...s.params,
@@ -72,7 +72,7 @@ export function createMatchController(
   }
 
   const endToPlayer = (end: TableEnd): 'P1' | 'P2' =>
-    end === 'east' ? (p1AtEastNow ? 'P1' : 'P2') : p1AtEastNow ? 'P2' : 'P1';
+    end === 'east' ? (p1AtEastNow ? 'P1' : 'P2') : (p1AtEastNow ? 'P2' : 'P1');
 
   /** Call AFTER physics/flow step each frame. */
   function afterPhysicsStep(next: GameState) {
@@ -93,6 +93,7 @@ export function createMatchController(
         game.points.west >= rules.match.decidingGameMidSwapAtPoints)
     ) {
       midSwapDoneThisGame = true;
+
       // Swap player occupancy in game state and mirror controller flag
       const swapped = {
         east: game.playerAtEnd.west,
@@ -101,6 +102,23 @@ export function createMatchController(
       game = { ...game, playerAtEnd: swapped };
       p1AtEastNow = !p1AtEastNow; // keep controller mapping consistent
       events.swapSidesNow = true;
+
+      // --- NEW: ensure the next serve happens ONLY AFTER rotation + a longer pause ---
+      // If we are already between points, extend that pause to MIDSWAP_PAUSE_MS.
+      if (game.phase === 'pauseBtwPoints') {
+        const current = game.tPauseBtwPointsMs ?? 0;
+        game = { ...game, tPauseBtwPointsMs: Math.max(current, MIDSWAP_PAUSE_MS) };
+      } else if (game.phase === 'rally') {
+        // Safety: if mid-swap triggers while rally is (somehow) ongoing,
+        // force a clean pause window and resume serving afterwards.
+        game = {
+          ...game,
+          phase: 'pauseBtwPoints',
+          tPauseBtwPointsMs: MIDSWAP_PAUSE_MS,
+          // keep the same server; typical rules don't change server on mid-swap
+          nextServe: game.server,
+        };
+      }
     }
 
     // Ensure a timer exists during between-games pause
@@ -169,7 +187,7 @@ export function createMatchController(
       if (p1Won || p2Won) {
         // Express match winner as the TABLE END they occupy *right now* (for completeness)
         matchWinner = (
-          p1Won ? (p1AtEastNow ? 'east' : 'west') : p1AtEastNow ? 'west' : 'east'
+          p1Won ? (p1AtEastNow ? 'east' : 'west') : (p1AtEastNow ? 'west' : 'east')
         ) as TableEnd;
 
         events.matchOver = { winner: matchWinner };
