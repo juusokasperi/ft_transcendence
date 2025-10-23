@@ -31,7 +31,13 @@ define ensure_dirs
 	@echo ">> Ensuring required bind-mount directories exist"
 	@if [ ! -d "./apps/backend/data/sqlite/uploads" ]; then \
 		mkdir -p ./apps/backend/data/sqlite/uploads; \
-		chown -R 1000:1000 ./apps/backend/data; \
+		if [ "$$(id -u)" = "0" ]; then \
+			echo ">> Chowning."; \
+  			chown -R 1000:1000 ./apps/backend/data; \
+		else \
+			echo ">> Skipping chown; using chmod instead."; \
+			chmod -R 766 ./apps/backend/data; \
+		fi; \
 	fi
 endef
 
