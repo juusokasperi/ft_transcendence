@@ -68,7 +68,8 @@ export const PlayingView: React.FC<PlayingViewProps> = ({
       aria-describedby="pong-kb-instructions"
     >
       <p id="pong-kb-instructions" className="sr-only">
-        Game view captures keyboard focus. Use the Quit button or press Escape (when supported) to exit the game.
+        Game view captures keyboard focus. Use the Quit button or press Escape (when supported) to
+        exit the game.
       </p>
       <div className="absolute inset-0 flex items-center justify-center">
         <canvas ref={canvasRef} className="block outline-none" style={canvasStyle} tabIndex={0} />
