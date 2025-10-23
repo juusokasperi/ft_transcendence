@@ -1,9 +1,10 @@
 import { verifyJoinToken } from '@pong/shared/auth/tokenSign';
 
-export type JoinTokenClaims = ReturnType<typeof verifyJoinToken>;
+// Claims returned by verifyJoinToken, guaranteed non-null after validation
+export type VerifiedJoinTokenClaims = NonNullable<ReturnType<typeof verifyJoinToken>>;
 
 export class AuthService {
-  verifyJoinToken(token: string, roomIdentifier: string): JoinTokenClaims {
+  verifyJoinToken(token: string, roomIdentifier: string): VerifiedJoinTokenClaims {
     const claims = verifyJoinToken(token);
     if (!claims) {
       throw new Error('invalid-token');

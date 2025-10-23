@@ -10,7 +10,8 @@ import type { ReconnectManager } from '../../app/ReconnectManager.ts';
 import { AuthService } from '../../app/AuthService.ts';
 import type { Logger } from '../../app/Logger.ts';
 
-type JoinClaims = ReturnType<AuthService['verifyJoinToken']>;
+// AuthService.verifyJoinToken throws on invalid tokens, so claims are non-null here
+type JoinClaims = NonNullable<ReturnType<AuthService['verifyJoinToken']>>;
 
 const CLOSE_CODES = {
   ROOM_NOT_FOUND: 4404,
