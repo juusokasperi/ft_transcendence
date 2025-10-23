@@ -10,8 +10,11 @@ import type { ReconnectManager } from '../../app/ReconnectManager.ts';
 import { AuthService } from '../../app/AuthService.ts';
 import type { Logger } from '../../app/Logger.ts';
 
-// AuthService.verifyJoinToken throws on invalid tokens, so claims are non-null here
+// TODO: Replace with import from AuthService when VerifiedJoinTokenClaims is exported there.
+// import type { VerifiedJoinTokenClaims } from '../../app/AuthService.ts';
+// type JoinClaims = VerifiedJoinTokenClaims;
 type JoinClaims = NonNullable<ReturnType<AuthService['verifyJoinToken']>>;
+// TODO: Export a dedicated type from AuthService for better safety.
 
 const CLOSE_CODES = {
   ROOM_NOT_FOUND: 4404,

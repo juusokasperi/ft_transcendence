@@ -256,6 +256,9 @@ export class ResultReporter {
     const westDelta = data.eloChanges?.team2 ?? 0;
 
     // 2) Post per-player stats for this match (best-effort)
+    // TODO: consider moving this logic server-side to reduce client trust
+    // Multiple separate reduce operations iterate over the same gamesHistory array.
+    // Consider combining these calculations into a single reduce pass to improve performance.
     try {
       const totalEastPoints = args.gamesHistory.reduce((acc, g) => acc + (g.east ?? 0), 0);
       const totalWestPoints = args.gamesHistory.reduce((acc, g) => acc + (g.west ?? 0), 0);
