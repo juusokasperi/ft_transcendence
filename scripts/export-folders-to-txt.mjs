@@ -18,6 +18,7 @@ const DEFAULT_DIRS = [
   'apps/chat',
   'apps/backend',
   'apps/frontend/src',
+  'apps/frontend/src/games/pong',
   'apps/frontend/tests',
   'apps/game-gateway',
   'apps/game-server',
