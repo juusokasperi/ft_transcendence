@@ -14,7 +14,11 @@ export class ReconnectManager {
   private readonly broadcaster: Broadcaster;
   private readonly reporter: ResultReporter;
   private readonly runner: MatchRunner;
-  private readonly onForfeit: (session: MatchSession, winner: 'east' | 'west', summary: Awaited<ReturnType<ResultReporter['report']>> | null) => void;
+  private readonly onForfeit: (
+    session: MatchSession,
+    winner: 'east' | 'west',
+    summary: Awaited<ReturnType<ResultReporter['report']>> | null,
+  ) => void;
 
   constructor(args: {
     scheduler: Scheduler;
@@ -23,7 +27,11 @@ export class ReconnectManager {
     broadcaster: Broadcaster;
     reporter: ResultReporter;
     runner: MatchRunner;
-    onForfeit: (session: MatchSession, winner: 'east' | 'west', summary: Awaited<ReturnType<ResultReporter['report']>> | null) => void;
+    onForfeit: (
+      session: MatchSession,
+      winner: 'east' | 'west',
+      summary: Awaited<ReturnType<ResultReporter['report']>> | null,
+    ) => void;
   }) {
     this.scheduler = args.scheduler;
     this.logger = args.logger;
@@ -41,14 +49,20 @@ export class ReconnectManager {
     session.model.cancelDisconnectGrace();
 
     if (!remainingPlayer) {
-      this.logger.info({ room: session.reservation.roomIdentifier }, '[ReconnectManager] Both players absent, cleaning session state');
+      this.logger.info(
+        { room: session.reservation.roomIdentifier },
+        '[ReconnectManager] Both players absent, cleaning session state',
+      );
       this.runner.stop(session);
       session.model.markStopped();
       return;
     }
 
     if (!session.model.started) {
-      this.logger.info({ room: session.reservation.roomIdentifier }, '[ReconnectManager] Match not started, waiting for reconnect');
+      this.logger.info(
+        { room: session.reservation.roomIdentifier },
+        '[ReconnectManager] Match not started, waiting for reconnect',
+      );
       session.model.clearStartTimeout();
       session.model.markStopped();
       this.broadcaster.broadcastRoomState(session, 'WAITING_FOR_OPPONENT');
@@ -67,7 +81,10 @@ export class ReconnectManager {
     const cancel = this.scheduler.setTimeout(async () => {
       const latest = session.players.get(seat);
       if (latest) {
-        this.logger.info({ room: session.reservation.roomIdentifier }, '[ReconnectManager] Player reconnected before grace expired');
+        this.logger.info(
+          { room: session.reservation.roomIdentifier },
+          '[ReconnectManager] Player reconnected before grace expired',
+        );
         return;
       }
       const winnerSide = seatToSide(session.model.state.playerAtEnd, remainingSeat);

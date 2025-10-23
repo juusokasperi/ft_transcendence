@@ -1,6 +1,12 @@
 import { randomUUID } from 'node:crypto';
 import type { RoomState } from '@pong/shared/protocol/net';
-import type { TournamentReservation, ExpectedPlayer, RoomReservation, Seat, TableSide } from './MatchTypes.ts';
+import type {
+  TournamentReservation,
+  ExpectedPlayer,
+  RoomReservation,
+  Seat,
+  TableSide,
+} from './MatchTypes.ts';
 
 export type CreateRoomRequest = {
   idempotencyKey: string;

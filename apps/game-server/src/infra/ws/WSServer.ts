@@ -83,7 +83,11 @@ export class WSServer {
     });
   }
 
-  private async handleConnection(connection: WebSocket, params: { roomId: string }, headers: Record<string, unknown>): Promise<void> {
+  private async handleConnection(
+    connection: WebSocket,
+    params: { roomId: string },
+    headers: Record<string, unknown>,
+  ): Promise<void> {
     const roomIdentifier = params.roomId;
     if (!roomIdentifier) {
       connection.close(CLOSE_CODES.ROOM_NOT_FOUND, 'room-not-found');

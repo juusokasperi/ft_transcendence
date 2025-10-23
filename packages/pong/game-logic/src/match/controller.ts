@@ -34,7 +34,7 @@ export function createMatchController(
   }> = [];
 
   function addRulesToState(s: GameState, r: Ruleset): GameState {
-    const deuceAt = r.game.deuceAt ?? (r.game.targetScore - 1);
+    const deuceAt = r.game.deuceAt ?? r.game.targetScore - 1;
     const targetGames = Math.ceil(r.match.bestOf / 2);
     const params: GameState['params'] = {
       ...s.params,
@@ -72,7 +72,7 @@ export function createMatchController(
   }
 
   const endToPlayer = (end: TableEnd): 'P1' | 'P2' =>
-    end === 'east' ? (p1AtEastNow ? 'P1' : 'P2') : (p1AtEastNow ? 'P2' : 'P1');
+    end === 'east' ? (p1AtEastNow ? 'P1' : 'P2') : p1AtEastNow ? 'P2' : 'P1';
 
   /** Call AFTER physics/flow step each frame. */
   function afterPhysicsStep(next: GameState) {
@@ -187,7 +187,7 @@ export function createMatchController(
       if (p1Won || p2Won) {
         // Express match winner as the TABLE END they occupy *right now* (for completeness)
         matchWinner = (
-          p1Won ? (p1AtEastNow ? 'east' : 'west') : (p1AtEastNow ? 'west' : 'east')
+          p1Won ? (p1AtEastNow ? 'east' : 'west') : p1AtEastNow ? 'west' : 'east'
         ) as TableEnd;
 
         events.matchOver = { winner: matchWinner };

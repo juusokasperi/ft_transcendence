@@ -109,7 +109,11 @@ export class Broadcaster {
     });
   }
 
-  notifyOpponentDisconnected(session: MatchSession, seat: 'P1' | 'P2', gracePeriodMs: number): void {
+  notifyOpponentDisconnected(
+    session: MatchSession,
+    seat: 'P1' | 'P2',
+    gracePeriodMs: number,
+  ): void {
     const opponentSeat = seat === 'P1' ? 'P2' : 'P1';
     const opponent = session.players.get(opponentSeat);
     safeSend(

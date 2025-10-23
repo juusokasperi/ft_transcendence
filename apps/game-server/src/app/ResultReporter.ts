@@ -28,7 +28,10 @@ export class ResultReporter {
     this.logger = args.logger;
   }
 
-  async report(session: MatchSession, matchOver: MatchOverEvent): Promise<OnlineMatchSummary | null> {
+  async report(
+    session: MatchSession,
+    matchOver: MatchOverEvent,
+  ): Promise<OnlineMatchSummary | null> {
     const model = session.model;
     if (model.resultSubmitting || model.resultSubmitted) return null;
     model.resultSubmitting = true;
@@ -40,7 +43,10 @@ export class ResultReporter {
       const east = this.resolvePlayer(session, 'P1'); // "east" row == Player 1
       const west = this.resolvePlayer(session, 'P2'); // "west" row == Player 2
       if (!east || !west) {
-        this.logger.error({ room: reservation.roomIdentifier }, '[ResultReporter] Missing player mapping');
+        this.logger.error(
+          { room: reservation.roomIdentifier },
+          '[ResultReporter] Missing player mapping',
+        );
         model.resultSubmitting = false;
         return null;
       }
@@ -55,9 +61,10 @@ export class ResultReporter {
       // Handle technical win (disconnect/forfeit) when no game history exists.
       if (eastScore === 0 && westScore === 0 && matchOver.winner) {
         // matchOver.winner is a TABLE SIDE ('east' | 'west')
-        const sideWinner = matchOver.winner === 'east' || matchOver.winner === 'west'
-          ? (matchOver.winner as 'east' | 'west')
-          : 'east';
+        const sideWinner =
+          matchOver.winner === 'east' || matchOver.winner === 'west'
+            ? (matchOver.winner as 'east' | 'west')
+            : 'east';
 
         // Map side winner -> seat winner using the final playerAtEnd,
         // then map seat winner -> player-space row ('east' for P1, 'west' for P2).
@@ -163,10 +170,7 @@ export class ResultReporter {
 
   private signToken(): string {
     const now = Math.floor(Date.now() / 1000);
-    return jwt.sign(
-      { service: 'game-node', iat: now, exp: now + 3600 },
-      this.matchSecret,
-    );
+    return jwt.sign({ service: 'game-node', iat: now, exp: now + 3600 }, this.matchSecret);
   }
 
   private async reportTournament(
@@ -175,7 +179,11 @@ export class ResultReporter {
     reservation: MatchSession['reservation'],
     east: ResolvedPlayer,
     west: ResolvedPlayer,
-    args: { eastScore: number; westScore: number; gamesHistory: Array<{ gameIndex: number; east: number; west: number; winner: string }> },
+    args: {
+      eastScore: number;
+      westScore: number;
+      gamesHistory: Array<{ gameIndex: number; east: number; west: number; winner: string }>;
+    },
   ): Promise<void> {
     const tournament = reservation.tournament;
     if (!tournament) return;
@@ -235,13 +243,9 @@ export class ResultReporter {
       team2Score: args.westScore,
     };
 
-    const matchRes = await axios.post(
-      `${this.apiUrl}/api/matches`,
-      matchPayload,
-      {
-        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-      },
-    );
+    const matchRes = await axios.post(`${this.apiUrl}/api/matches`, matchPayload, {
+      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    });
 
     const data = matchRes.data as {
       matchId: number;
@@ -257,8 +261,14 @@ export class ResultReporter {
       const totalWestPoints = args.gamesHistory.reduce((acc, g) => acc + (g.west ?? 0), 0);
       const eastWins = args.gamesHistory.filter((g) => g.winner === 'east').length;
       const westWins = args.gamesHistory.filter((g) => g.winner === 'west').length;
-      const eastMaxLead = args.gamesHistory.reduce((acc, g) => Math.max(acc, (g.east ?? 0) - (g.west ?? 0)), 0);
-      const westMaxLead = args.gamesHistory.reduce((acc, g) => Math.max(acc, (g.west ?? 0) - (g.east ?? 0)), 0);
+      const eastMaxLead = args.gamesHistory.reduce(
+        (acc, g) => Math.max(acc, (g.east ?? 0) - (g.west ?? 0)),
+        0,
+      );
+      const westMaxLead = args.gamesHistory.reduce(
+        (acc, g) => Math.max(acc, (g.west ?? 0) - (g.east ?? 0)),
+        0,
+      );
 
       const statsPayload = {
         players: [
@@ -282,11 +292,9 @@ export class ResultReporter {
       };
 
       if (typeof data.matchId === 'number' && data.matchId > 0) {
-        await axios.post(
-          `${this.apiUrl}/api/matches/${data.matchId}/stats`,
-          statsPayload,
-          { headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' } },
-        );
+        await axios.post(`${this.apiUrl}/api/matches/${data.matchId}/stats`, statsPayload, {
+          headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        });
       }
     } catch (err) {
       // Do not fail the reporting if stats posting fails; just log.

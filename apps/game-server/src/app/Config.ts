@@ -37,9 +37,21 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
   const httpPort = parseNumber(env.HTTP_PORT, 55554, 'HTTP_PORT');
   const wsPort = parseNumber(env.GAME_SERVER_PORT, 55553, 'GAME_SERVER_PORT');
   const tickHz = parseNumber(env.GAME_SERVER_TICK_HZ, 60, 'GAME_SERVER_TICK_HZ');
-  const minStartDelayMs = parseNumber(env.GAME_SERVER_MIN_START_DELAY_MS, 1500, 'GAME_SERVER_MIN_START_DELAY_MS');
-  const tournamentGrace = parseNumber(env.GAME_SERVER_TOURNAMENT_GRACE_MS, 10000, 'GAME_SERVER_TOURNAMENT_GRACE_MS');
-  const casualGrace = parseNumber(env.GAME_SERVER_CASUAL_GRACE_MS, 15000, 'GAME_SERVER_CASUAL_GRACE_MS');
+  const minStartDelayMs = parseNumber(
+    env.GAME_SERVER_MIN_START_DELAY_MS,
+    1500,
+    'GAME_SERVER_MIN_START_DELAY_MS',
+  );
+  const tournamentGrace = parseNumber(
+    env.GAME_SERVER_TOURNAMENT_GRACE_MS,
+    10000,
+    'GAME_SERVER_TOURNAMENT_GRACE_MS',
+  );
+  const casualGrace = parseNumber(
+    env.GAME_SERVER_CASUAL_GRACE_MS,
+    15000,
+    'GAME_SERVER_CASUAL_GRACE_MS',
+  );
 
   return {
     httpPort,

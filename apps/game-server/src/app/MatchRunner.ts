@@ -17,7 +17,11 @@ export class MatchRunner {
   private readonly reporter: ResultReporter;
   private readonly config: AppConfig;
   private readonly logger: Logger;
-  private readonly onCompleted: (session: MatchSession, summary: Awaited<ReturnType<ResultReporter['report']>>, winner?: 'east' | 'west') => void;
+  private readonly onCompleted: (
+    session: MatchSession,
+    summary: Awaited<ReturnType<ResultReporter['report']>>,
+    winner?: 'east' | 'west',
+  ) => void;
 
   constructor(args: {
     scheduler: Scheduler;
@@ -26,7 +30,11 @@ export class MatchRunner {
     reporter: ResultReporter;
     config: AppConfig;
     logger: Logger;
-    onCompleted: (session: MatchSession, summary: Awaited<ReturnType<ResultReporter['report']>>, winner?: 'east' | 'west') => void;
+    onCompleted: (
+      session: MatchSession,
+      summary: Awaited<ReturnType<ResultReporter['report']>>,
+      winner?: 'east' | 'west',
+    ) => void;
   }) {
     this.scheduler = args.scheduler;
     this.clock = args.clock;
@@ -39,7 +47,10 @@ export class MatchRunner {
 
   scheduleStart(session: MatchSession): void {
     const now = this.clock.now();
-    const target = Math.max(session.reservation.simulationStartTick, now + this.config.minStartDelayMs);
+    const target = Math.max(
+      session.reservation.simulationStartTick,
+      now + this.config.minStartDelayMs,
+    );
     session.reservation.simulationStartTick = target;
     session.model.startAtEpochMs = target;
 
@@ -47,17 +58,23 @@ export class MatchRunner {
     this.broadcaster.broadcastStart(session, target);
 
     session.model.setStartTimeout(
-      this.scheduler.setTimeout(() => {
-        session.model.setStartTimeout(undefined);
-        this.startMatch(session);
-      }, Math.max(0, target - now)),
+      this.scheduler.setTimeout(
+        () => {
+          session.model.setStartTimeout(undefined);
+          this.startMatch(session);
+        },
+        Math.max(0, target - now),
+      ),
     );
   }
 
   startMatch(session: MatchSession): void {
     if (session.model.started) return;
     if (!session.players.get('P1') || !session.players.get('P2')) {
-      this.logger.warn({ room: session.reservation.roomIdentifier }, '[MatchRunner] Cannot start match, missing players');
+      this.logger.warn(
+        { room: session.reservation.roomIdentifier },
+        '[MatchRunner] Cannot start match, missing players',
+      );
       return;
     }
 
@@ -78,18 +95,17 @@ export class MatchRunner {
     this.broadcaster.broadcastRoomState(session, 'PLAYING');
 
     const intervalMs = 1000 / this.config.tickHz;
-    session.model.setLoopCancel(
-      this.scheduler.setInterval(() => this.tick(session), intervalMs),
-    );
+    session.model.setLoopCancel(this.scheduler.setInterval(() => this.tick(session), intervalMs));
   }
 
   resume(session: MatchSession): void {
     if (!session.model.started || session.model.loopActive) return;
     const intervalMs = 1000 / this.config.tickHz;
-    session.model.setLoopCancel(
-      this.scheduler.setInterval(() => this.tick(session), intervalMs),
+    session.model.setLoopCancel(this.scheduler.setInterval(() => this.tick(session), intervalMs));
+    this.logger.info(
+      { room: session.reservation.roomIdentifier },
+      '[MatchRunner] Resumed match loop',
     );
-    this.logger.info({ room: session.reservation.roomIdentifier }, '[MatchRunner] Resumed match loop');
   }
 
   stop(session: MatchSession, options: { pauseOnly?: boolean } = {}): void {

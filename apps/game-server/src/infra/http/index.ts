@@ -41,19 +41,15 @@ export function createHttpServer({
     reply.send({ status: 'ok' });
   });
 
-  app.post(
-    '/admin/rooms',
-    { preHandler: [authPreHandler] },
-    async (request, reply) => {
-      try {
-        const result = await onCreateRoom(request.body);
-        reply.send(result ?? { status: 'ok' });
-      } catch (err) {
-        const message = err instanceof Error ? err.message : 'unknown error';
-        reply.status(400).send({ error: message });
-      }
-    },
-  );
+  app.post('/admin/rooms', { preHandler: [authPreHandler] }, async (request, reply) => {
+    try {
+      const result = await onCreateRoom(request.body);
+      reply.send(result ?? { status: 'ok' });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'unknown error';
+      reply.status(400).send({ error: message });
+    }
+  });
 
   app.listen({ port, host: '0.0.0.0' }, (err: Error | null) => {
     if (err) {

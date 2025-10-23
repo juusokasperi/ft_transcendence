@@ -1,6 +1,10 @@
 import type { WebSocket } from 'ws';
 import type { Logger } from './Logger.ts';
-import { createRoomReservation, seatForSide, type CreateRoomRequest } from '../domain/RoomReservation.ts';
+import {
+  createRoomReservation,
+  seatForSide,
+  type CreateRoomRequest,
+} from '../domain/RoomReservation.ts';
 import { MatchModel } from '../domain/MatchModel.ts';
 import type { RoomReservation, Seat } from '../domain/MatchTypes.ts';
 
@@ -34,7 +38,10 @@ export class RoomRegistry {
     return this.reservations.get(roomIdentifier);
   }
 
-  registerRoom(request: CreateRoomRequest): { status: 'exists' | 'registered'; reservation: RoomReservation } {
+  registerRoom(request: CreateRoomRequest): {
+    status: 'exists' | 'registered';
+    reservation: RoomReservation;
+  } {
     const existing = this.reservations.get(request.roomIdentifier);
     if (existing) {
       return { status: 'exists', reservation: existing };
@@ -63,14 +70,18 @@ export class RoomRegistry {
     return session;
   }
 
-  attachPlayer(roomIdentifier: string, playerIdentifier: string, options: {
-    tokenJti: string;
-    participantId?: number;
-    alias?: string;
-    mmr: number;
-    side: 'east' | 'west';
-    socket: WebSocket;
-  }): PlayerConnectionState {
+  attachPlayer(
+    roomIdentifier: string,
+    playerIdentifier: string,
+    options: {
+      tokenJti: string;
+      participantId?: number;
+      alias?: string;
+      mmr: number;
+      side: 'east' | 'west';
+      socket: WebSocket;
+    },
+  ): PlayerConnectionState {
     const reservation = this.reservations.get(roomIdentifier);
     if (!reservation) throw new Error('room-not-found');
 
