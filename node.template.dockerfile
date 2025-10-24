@@ -38,7 +38,6 @@ WORKDIR /app
 ARG SERVICE_DIR
 COPY --from=builder /prod/${SERVICE_DIR} ./
 ENV NODE_ENV=production
-EXPOSE 3000
 
 # Currently used by backend
 # creates unnecessary empty directories in some services
