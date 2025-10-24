@@ -127,7 +127,9 @@ const ResetPassword: React.FC = () => {
                       autoComplete="new-password"
                       className={`w-full rounded-xl border ${borderColor} bg-white/95 px-3 py-2 text-slate-900 shadow-sm focus:outline-none focus:ring-2 focus:ring-purple-500/40`}
                       value={password}
-                      onChange={(event) => setPassword(event.target.value.slice(0, PASSWORD_MAX_LENGTH))}
+                      onChange={(event) =>
+                        setPassword(event.target.value.slice(0, PASSWORD_MAX_LENGTH))
+                      }
                       placeholder="Enter a strong password"
                       disabled={loading}
                       maxLength={PASSWORD_MAX_LENGTH}

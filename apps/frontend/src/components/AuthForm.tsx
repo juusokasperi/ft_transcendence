@@ -35,7 +35,11 @@ const AuthForm: React.FC<AuthFormProps> = ({ type, onSubmit }) => {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const trimmedEmail = email.trim();
-  const emailValidationState = trimmedEmail ? (validateEmail(trimmedEmail) ? 'valid' : 'invalid') : '';
+  const emailValidationState = trimmedEmail
+    ? validateEmail(trimmedEmail)
+      ? 'valid'
+      : 'invalid'
+    : '';
   const confirmPasswordState =
     type === 'register' && confirmPassword
       ? password.startsWith(confirmPassword)
@@ -178,18 +182,18 @@ const AuthForm: React.FC<AuthFormProps> = ({ type, onSubmit }) => {
           <label htmlFor="username" className="mb-1 block font-medium">
             Username
           </label>
-            <input
-              id="username"
-              type="text"
-              placeholder="Username"
-              value={username}
-              onChange={(e) => applyUsernameInput(e.target.value)}
-              onBeforeInput={handleUsernameBeforeInput}
-              onKeyDown={handleUsernameKeyDown}
-              className={`w-full rounded border px-3 py-2 ${getBorderClass(
-                usernameValidation.state,
-              )}`}
-            />
+          <input
+            id="username"
+            type="text"
+            placeholder="Username"
+            value={username}
+            onChange={(e) => applyUsernameInput(e.target.value)}
+            onBeforeInput={handleUsernameBeforeInput}
+            onKeyDown={handleUsernameKeyDown}
+            className={`w-full rounded border px-3 py-2 ${getBorderClass(
+              usernameValidation.state,
+            )}`}
+          />
           {usernameValidation.msg && (
             <p className="mt-1 text-sm text-red-500">{usernameValidation.msg}</p>
           )}

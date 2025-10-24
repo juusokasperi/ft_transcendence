@@ -223,14 +223,14 @@ const PasswordSettings: React.FC<PasswordSettingsProps> = ({ axios, active }) =>
                 <input
                   id="current-password"
                   type={showCurrent ? 'text' : 'password'}
-                value={currentPassword}
-                onChange={(e) => setCurrentPassword(e.target.value.slice(0, PASSWORD_MAX_LENGTH))}
-                onFocus={() => setFocusedField('current')}
-                onBlur={() => setFocusedField(null)}
-                className="flex-1 border-none bg-transparent text-sm outline-none"
-                autoComplete="current-password"
-                ref={currentInputRef}
-                maxLength={PASSWORD_MAX_LENGTH}
+                  value={currentPassword}
+                  onChange={(e) => setCurrentPassword(e.target.value.slice(0, PASSWORD_MAX_LENGTH))}
+                  onFocus={() => setFocusedField('current')}
+                  onBlur={() => setFocusedField(null)}
+                  className="flex-1 border-none bg-transparent text-sm outline-none"
+                  autoComplete="current-password"
+                  ref={currentInputRef}
+                  maxLength={PASSWORD_MAX_LENGTH}
                 />
                 <ToggleButton
                   onClick={() => setShowCurrent((prev) => !prev)}
