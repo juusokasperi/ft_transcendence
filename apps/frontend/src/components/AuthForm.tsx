@@ -23,6 +23,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ type, onSubmit }) => {
   const [success, setSuccess] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -155,16 +156,25 @@ const AuthForm: React.FC<AuthFormProps> = ({ type, onSubmit }) => {
           <label htmlFor="confirmPassword" className="mb-1 block font-medium">
             Confirm Password
           </label>
-          <input
-            id="confirmPassword"
-            type="password"
-            placeholder="Confirm Password"
-            value={confirmPassword}
-            onChange={(e) => setConfirmPassword(e.target.value)}
-            className={`w-full rounded border px-3 py-2 ${
-              confirmPassword && confirmPassword !== password ? 'border-red-500' : 'border-gray-300'
-            }`}
-          />
+          <div className="relative">
+            <input
+              id="confirmPassword"
+              type={showConfirmPassword ? 'text' : 'password'}
+              placeholder="Confirm Password"
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              className={`w-full rounded border px-3 py-2 ${
+                confirmPassword && confirmPassword !== password ? 'border-red-500' : 'border-gray-300'
+              }`}
+            />
+            <button
+              type="button"
+              onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+              className="absolute right-3 top-2 text-sm text-blue-600"
+            >
+              {showConfirmPassword ? 'Hide' : 'Show'}
+            </button>
+          </div>
           {confirmPassword && confirmPassword !== password && (
             <p className="mt-1 text-sm text-red-500">Passwords do not match.</p>
           )}
