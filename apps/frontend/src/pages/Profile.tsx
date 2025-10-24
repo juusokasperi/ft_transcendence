@@ -12,6 +12,7 @@ import { useSnackbar } from '../context/SnackbarContext';
 
 const MAX_USERNAME_LENGTH = 24;
 const MAX_EMAIL_LENGTH = 254;
+const MAX_AVATAR_SIZE = 1024 * 1024; // 1MB, mirrors backend limit
 
 const Profile: React.FC = () => {
   const { axios, user, setUser } = useAppContext();
@@ -74,6 +75,16 @@ const Profile: React.FC = () => {
   const handleImageChange = async (e: ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files) return;
     const file = e.target.files[0] ?? null;
+    if (file && file.size > MAX_AVATAR_SIZE) {
+      enqueueSnackbar({
+        message: 'Avatar size must be 1MB or less.',
+        variant: 'error',
+      });
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+      return;
+    }
     setImage(file);
     if (file) {
       setImagePreview(URL.createObjectURL(file));
