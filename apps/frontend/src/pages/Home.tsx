@@ -51,7 +51,7 @@ const games = [
     desc: 'Real-time duels with players across the globe and live leaderboards.',
     available: true,
     accent: 'from-indigo-500 to-purple-500',
-    link: '/ping-pong',
+    link: '/pong3d',
   },
   {
     title: 'Tetris',
@@ -103,7 +103,7 @@ const Hero: React.FC = () => {
                 {user ? 'Go to your profile' : 'Create your arcade account'}
               </Link>
               <Link
-                to="/ping-pong"
+                to="/pong3d"
                 className="flex items-center justify-center rounded-full border border-indigo-400/60 px-6 py-3 text-sm font-semibold text-indigo-200 transition hover:border-indigo-300 hover:text-white"
               >
                 Jump into Pong

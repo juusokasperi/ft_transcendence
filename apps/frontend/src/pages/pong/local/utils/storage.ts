@@ -1,5 +1,5 @@
 import type { Ruleset } from '@pong/shared';
-import type { ControllerScheme } from '../../../../games/pong/modes/preferences';
+import type { ControllerScheme } from '../../../../games/pong/modes/shared/preferences';
 
 export type AccessibilitySettings = {
   colorBlindMode: 'none' | 'protanopia' | 'deuteranopia' | 'tritanopia' | 'highContrast';

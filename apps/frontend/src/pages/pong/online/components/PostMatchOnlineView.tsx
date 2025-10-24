@@ -3,6 +3,7 @@ import SurfaceCard from '../../shared/components/SurfaceCard';
 import Button from '../../../../components/Button';
 import Scoreboard from '../../shared/components/Scoreboard';
 import type { OnlineMatchSummary } from '../state/types';
+import { resolveWinnerSide } from '../utils/winner';
 
 type Props = {
   summary: OnlineMatchSummary;
@@ -10,7 +11,8 @@ type Props = {
 };
 
 const PostMatchOnlineView: React.FC<Props> = ({ summary, onBackToMenu }) => {
-  const winnerName = summary.winner === 'east' ? summary.names.east : summary.names.west;
+  const winnerSide = resolveWinnerSide(summary);
+  const winnerName = winnerSide === 'east' ? summary.names.east : summary.names.west;
 
   const SidePanel: React.FC<{ side: 'east' | 'west' }> = ({ side }) => {
     const name = summary.names[side] || (side === 'east' ? 'Player 1' : 'Player 2');
@@ -22,7 +24,7 @@ const PostMatchOnlineView: React.FC<Props> = ({ summary, onBackToMenu }) => {
       delta === 0 ? 'text-white/50' : delta > 0 ? 'text-emerald-400' : 'text-red-400';
 
     return (
-      <div className="rounded-xl border border-white/10 bg-black/35 p-4 text-sm text-white/80">
+      <div className="rounded-xl border border-white/10 bg-black/35 p-1 text-sm text-white/80">
         <div className="flex items-baseline justify-between">
           <span className="truncate text-lg font-semibold text-white">{name}</span>
           <span className={`text-xl ${arrowTone}`} aria-hidden>
@@ -42,34 +44,28 @@ const PostMatchOnlineView: React.FC<Props> = ({ summary, onBackToMenu }) => {
   };
 
   return (
-    <div className="relative z-10 mx-auto w-full max-w-5xl px-4 py-16 sm:px-6 lg:px-8">
-      <SurfaceCard className="space-y-8 p-6 shadow-2xl">
-        <header className="text-center">
-          <h2 className="text-3xl font-semibold">
-            Winner: <span className="text-emerald-400">{winnerName || 'Unknown'}</span>
-          </h2>
-        </header>
+    <SurfaceCard className="space-y-2 p-2 shadow-2xl">
+      <div className="text-center text-lg font-semibold">
+        Winner: <span className="text-emerald-400">{winnerName}</span>
+      </div>
+      <div>
+        <Scoreboard
+          eastName={summary.names.east}
+          westName={summary.names.west}
+          gamesHistory={summary.gamesHistory}
+        />
+      </div>
+      <div className="grid gap-2 sm:grid-cols-2">
+        <SidePanel side="west" />
+        <SidePanel side="east" />
+      </div>
 
-        <div>
-          <Scoreboard
-            eastName={summary.names.east}
-            westName={summary.names.west}
-            gamesHistory={summary.gamesHistory}
-            bestOf={summary.bestOf}
-          />
-        </div>
-        <div className="grid gap-4 sm:grid-cols-2">
-          <SidePanel side="west" />
-          <SidePanel side="east" />
-        </div>
-
-        <div className="flex justify-center">
-          <Button variant="primary" onClick={onBackToMenu}>
-            Continue
-          </Button>
-        </div>
-      </SurfaceCard>
-    </div>
+      <div className="flex justify-center">
+        <Button variant="primary" onClick={onBackToMenu}>
+          Continue
+        </Button>
+      </div>
+    </SurfaceCard>
   );
 };
 

@@ -11,5 +11,8 @@ export const PAUSE_BETWEEN_POINTS_MS = 600;
  */
 export const PAUSE_BETWEEN_GAMES_MS = 3200;
 
+/** Pause during mid-swap animations. */
+export const MIDSWAP_PAUSE_MS = 3200;
+
 /** Optional “victory” pause at match end. */
 export const PAUSE_MATCH_OVER_MS = 2500;

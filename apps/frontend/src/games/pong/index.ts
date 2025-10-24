@@ -2,8 +2,8 @@
 export type AppMode = 'local' | 'online' | 'tournament';
 import type { PlayerSeat } from '@pong/render';
 import type { OnlineMatchSummary } from './modes/online/types';
-import type { Preferences } from './modes/preferences';
-export type { Preferences } from './modes/preferences';
+import type { Preferences } from './modes/shared/preferences';
+export type { Preferences } from './modes/shared/preferences';
 
 export type CreateAppOptions = {
   mode: AppMode;

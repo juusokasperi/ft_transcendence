@@ -15,14 +15,13 @@ import {
   attachLocalInput,
   readIntent,
   setControlsMirrored,
-  toggleControlsMirrored,
+  // toggleControlsMirrored removed; handled via applySideSwap helper
   blockInputFor,
   setBindingProfile,
 } from '@pong/render';
 import { createBounces } from '@pong/render';
 import { FXManager } from '@pong/render';
 import { createScoreboard } from '@pong/render';
-import { updateHUD } from '@pong/render';
 import { createPaddleAnimator } from '@pong/render';
 
 import { computeBounds } from '@pong/render';
@@ -42,14 +41,16 @@ import {
 
 import { pickInitialServer, SERVE_SELECT_TOTAL_MS, randomSeed32, sideOpposite } from '@pong/shared';
 import { disposeWorld } from '@pong/render';
-import type { ControllerScheme, Preferences } from '../preferences';
-import { applyPreferences, applyControllerBindingsFromPrefs } from '../preferences';
+import type { ControllerScheme, Preferences } from '../shared/preferences';
+import { applyPreferences, applyControllerBindingsFromPrefs } from '../shared/preferences';
 import { setHudAndPaletteColorsFromPrefs, pickSafeServeAngleDeg } from './utils';
 import { runServeSelectionIntro } from '../shared/utils';
 import { swapPaddleMaterials, handleMatchOver, handleSwapSidesNow } from '../shared/utils';
 import { orbitCameraFor } from '@pong/render';
 import { applyFrameEventsToAudio } from '@pong/render';
 import { createLocalAudioKit, createLocalSfxDetectors } from '../shared/audio-utils';
+import { applySideSwap } from './swap-helpers';
+import { createHudCache, updateLocalHUDIfChanged } from './hud-cache';
 
 // Controller bindings application moved to preferences.ts
 
@@ -171,9 +172,7 @@ export function createLocalApp(canvas: HTMLCanvasElement, preferences?: Preferen
   let pauseUntil = 0;
 
   // HUD diff cache (avoid redundant DOM updates for match boxes)
-  let lastBestOf = 0;
-  let lastCurrentGameIndex = 0;
-  let lastHistoryRef: ReturnType<typeof mapHistoryForPlayers> | null = null;
+  const hudCache = createHudCache();
 
   // Fixed‑step lifecycle (simulation cadence is set here)
   const loop = createLifecycle(engine, scene, {
@@ -219,20 +218,14 @@ export function createLocalApp(canvas: HTMLCanvasElement, preferences?: Preferen
         if (spinMs > 0) {
           orbitCameraFor(world.camera, spinMs, {
             onHalf: () => {
-              // Controls follow player identity
-              toggleControlsMirrored();
-              // Colors/skins follow players across sides
-              swapPaddleMaterials(left.mesh, right.mesh);
-              // Update HUD row mapping parity
-              rowsMirrored = !rowsMirrored;
-              // Re‑apply preferences so player colors continue to follow players
-              applyPreferences(preferences, {
-                setNames: (n) => (names = n),
-                leftMaterial: left.mesh.material,
-                rightMaterial: right.mesh.material,
+              rowsMirrored = applySideSwap({
+                left: left.mesh,
+                right: right.mesh,
+                hud,
+                preferences,
                 rowsMirrored,
+                setNames: (n) => (names = n),
               });
-              if (preferences) setHudAndPaletteColorsFromPrefs(hud, preferences, rowsMirrored);
               // Small crossover cue right after the swap
               paddleAnim.cue(180);
             },
@@ -278,29 +271,7 @@ export function createLocalApp(canvas: HTMLCanvasElement, preferences?: Preferen
       const snap = match.getSnapshot();
       const stateForHUD = mapStateForPlayerRows(state, rowsMirrored);
       const historyForHUD = mapHistoryForPlayers(snap.gamesHistory);
-      const changed =
-        snap.bestOf !== lastBestOf ||
-        snap.currentGameIndex !== lastCurrentGameIndex ||
-        historyForHUD !== lastHistoryRef;
-
-      updateHUD(
-        hud,
-        stateForHUD,
-        names,
-        changed
-          ? {
-              bestOf: snap.bestOf,
-              currentGameIndex: snap.currentGameIndex,
-              gamesHistory: historyForHUD,
-            }
-          : undefined,
-      );
-
-      if (changed) {
-        lastBestOf = snap.bestOf;
-        lastCurrentGameIndex = snap.currentGameIndex;
-        lastHistoryRef = historyForHUD;
-      }
+      updateLocalHUDIfChanged(hud, stateForHUD, names, snap, historyForHUD, hudCache);
 
       // 6) Visual bounce Y + project meshes
       const ballY = Bounces.update(state.ball.x, state.ball.vx);

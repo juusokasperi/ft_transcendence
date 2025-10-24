@@ -1,4 +1,4 @@
-// apps/frontend/src/components/media/BackgroundVideo.tsx
+// apps/frontend/src/pages/pong/shared/components/BackgroundVideo.tsx
 import React, { useEffect, useRef } from 'react';
 
 type ObjectFit = 'cover' | 'contain';

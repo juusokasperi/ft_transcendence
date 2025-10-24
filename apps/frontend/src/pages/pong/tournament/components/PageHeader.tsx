@@ -20,7 +20,6 @@ const TournamentPageHeader: React.FC<TournamentPageHeaderProps> = ({
   onRefresh,
   onLeaveTournament,
 }) => {
-  // Generate display title for detail view
   const detailTitle = (() => {
     if (!isDetailView) return '';
     if (displayTournamentName) {
@@ -35,7 +34,7 @@ const TournamentPageHeader: React.FC<TournamentPageHeaderProps> = ({
   return (
     <header className="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
       <div>
-        <h1 className="text-3xl font-semibold">
+        <h1 id="page-title" className="text-3xl font-semibold">
           {isDetailView ? detailTitle : 'Ping Pong Tournaments'}
         </h1>
         <p className="text-white/60">

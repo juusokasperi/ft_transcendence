@@ -7,7 +7,7 @@ import logoImg from '../assets/logo.png';
 
 const baseLinks = [
   { label: 'Home', to: '/' },
-  { label: 'Pong', to: '/ping-pong' },
+  { label: 'Pong', to: '/pong3d' },
 ];
 
 const profileLinks = [

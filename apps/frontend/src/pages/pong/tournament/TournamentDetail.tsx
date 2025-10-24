@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import TournamentPage from './tournament-page';
+import TournamentPage from './TournamentPage';
 
 const TournamentDetail: React.FC = () => {
   const navigate = useNavigate();
@@ -15,12 +15,12 @@ const TournamentDetail: React.FC = () => {
   useEffect(() => {
     if (tournamentId === undefined) return;
     if (numericTournamentId === null) {
-      navigate('/ping-pong/tournaments', { replace: true });
+      navigate('/pong3d/tournaments', { replace: true });
     }
   }, [navigate, numericTournamentId, tournamentId]);
 
   const handleBack = () => {
-    navigate('/ping-pong/tournaments');
+    navigate('/pong3d/tournaments');
   };
 
   return <TournamentPage onBack={handleBack} focusTournamentId={numericTournamentId} />;

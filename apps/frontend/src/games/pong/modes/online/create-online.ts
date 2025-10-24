@@ -4,7 +4,6 @@ import {
   createWorld,
   FXManager,
   createScoreboard,
-  updateHUD,
   applyFrameEventsToFx,
   applyFrameEventsToAudio,
   computeBounds,
@@ -24,7 +23,8 @@ import type { PlayerSeat } from '@pong/render';
 import type { GameState } from '@pong/game-logic';
 import type { FrameEvents, MatchSnapshot } from '@pong/shared';
 import { SERVE_SELECT_TOTAL_MS, clamp01 } from '@pong/shared';
-import { rgb01ToCss } from '../preferences';
+import type { RoomStateMessage } from '@pong/shared/protocol/net';
+import { rgb01ToCss } from '../shared/preferences';
 import {
   swapPaddleMaterials,
   handleSwapSidesNow,
@@ -32,11 +32,17 @@ import {
   runServeSelectionIntro,
 } from '../shared/utils';
 import { createLocalAudioKit, createLocalSfxDetectors } from '../shared/audio-utils';
+import { createHudCache, updateOnlineHUDIfChanged } from './hud-cache';
+import { applyOnlineSideSwap } from './swap-helpers';
+import { createDisconnectOverlayManager, showMatchEndOverlay } from './ui-overlays';
 import { connectOnline, type OnlineClient } from './connect-online';
 import type { OnlineMatchSummary } from './types';
 
 // Render/update cadence we expect from the authoritative node.
 const CLIENT_TICK_RATE_HZ = 60;
+const WAITING_MIN_TIMEOUT_MS = 3000;
+const WAITING_MAX_TIMEOUT_MS = 15000;
+const WAITING_EXTRA_GRACE_MS = 5000;
 
 interface PongInstance {
   start(): void;
@@ -71,105 +77,20 @@ export function createOnlineApp(
   const hud = createScoreboard();
   hud.attachToCanvas(canvas);
 
-  // Disconnect overlay
-  let disconnectOverlay: HTMLDivElement | null = null;
-  let reconnectCountdownInterval: number | null = null;
+  const { showDisconnectOverlay, hideDisconnectOverlay } = createDisconnectOverlayManager(canvas);
+  const seatToSide = (seat: PlayerSeat): 'east' | 'west' => (seat === 'P1' ? 'east' : 'west');
+  let matchEnded = false;
+  let waitingTimeout: number | null = null;
 
-  const showDisconnectOverlay = (gracePeriodMs: number) => {
-    if (!disconnectOverlay) {
-      disconnectOverlay = document.createElement('div');
-      disconnectOverlay.style.cssText = `
-        position: absolute;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        background: rgba(0, 0, 0, 0.9);
-        color: #fbbf24;
-        padding: 2rem;
-        border-radius: 0.5rem;
-        border: 2px solid #fbbf24;
-        font-size: 1.25rem;
-        font-weight: bold;
-        text-align: center;
-        z-index: 1000;
-        pointer-events: none;
-      `;
-      canvas.parentElement?.appendChild(disconnectOverlay);
-    }
-
-    const endTime = Date.now() + gracePeriodMs;
-    const isTournament = gracePeriodMs <= 10000; // 10 seconds = tournament, 15 seconds = casual
-
-    const updateCountdown = () => {
-      const remaining = Math.max(0, Math.ceil((endTime - Date.now()) / 1000));
-      if (disconnectOverlay) {
-        // Both tournament and casual matches now award victory after timeout
-        disconnectOverlay.textContent = `Opponent disconnected. Waiting ${remaining}s before auto-win...`;
-      }
-      if (remaining <= 0 && reconnectCountdownInterval) {
-        clearInterval(reconnectCountdownInterval);
-        reconnectCountdownInterval = null;
-      }
-    };
-
-    updateCountdown();
-    if (reconnectCountdownInterval) clearInterval(reconnectCountdownInterval);
-    reconnectCountdownInterval = window.setInterval(updateCountdown, 1000);
-  };
-
-  const hideDisconnectOverlay = () => {
-    if (reconnectCountdownInterval) {
-      clearInterval(reconnectCountdownInterval);
-      reconnectCountdownInterval = null;
-    }
-    if (disconnectOverlay) {
-      disconnectOverlay.remove();
-      disconnectOverlay = null;
+  const clearWaitingForOpponentTimeout = () => {
+    if (waitingTimeout !== null) {
+      window.clearTimeout(waitingTimeout);
+      waitingTimeout = null;
     }
   };
 
-  const showMatchEndOverlay = (reason: string, winner?: 'east' | 'west') => {
-    const overlay = document.createElement('div');
-    overlay.style.cssText = `
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      background: rgba(0, 0, 0, 0.95);
-      color: #fff;
-      padding: 2rem;
-      border-radius: 0.5rem;
-      border: 2px solid #10b981;
-      font-size: 1.5rem;
-      font-weight: bold;
-      text-align: center;
-      z-index: 1000;
-      pointer-events: none;
-    `;
-
-    let message = 'Match ended';
-    if (reason === 'opponent_timeout') {
-      if (winner) {
-        // Both tournament and casual matches now have a winner
-        const youWon =
-          (cfg.seat === 'P1' && winner === 'east') || (cfg.seat === 'P2' && winner === 'west');
-        message = youWon ? 'You won! (Opponent disconnected)' : 'You lost (Disconnected)';
-        overlay.style.borderColor = youWon ? '#10b981' : '#ef4444';
-        overlay.style.color = youWon ? '#10b981' : '#ef4444';
-      } else {
-        // Fallback (should not happen anymore)
-        message = 'Opponent disconnected - Match ended';
-        overlay.style.borderColor = '#f59e0b';
-        overlay.style.color = '#f59e0b';
-      }
-    }
-
-    overlay.textContent = message;
-    canvas.parentElement?.appendChild(overlay);
-
-    setTimeout(() => {
-      overlay.remove();
-    }, 5000);
+  const showEnd = (reason: string, winner?: 'east' | 'west') => {
+    return showMatchEndOverlay(canvas, reason, winner, cfg.seat);
   };
 
   setBindingProfile('online');
@@ -236,14 +157,90 @@ export function createOnlineApp(
   let latestMatch: MatchSnapshot | undefined;
   let lastKnownBestOf = 3;
   let spinningUntilMs = 0;
-  let didBetweenGamesSpin = false;
   // Track half-rotation timing and whether a server swap event arrived
   let betweenHalfFired = false;
   let pendingBetweenSwap = false;
   let betweenSwapApplied = false;
+  const hudCache = createHudCache();
   let didSetPlayerNames = false;
   let playerAliases: { P1: string; P2: string } | null = null;
   let seatMap: { east: 'P1' | 'P2'; west: 'P1' | 'P2' } | null = null;
+
+  const finalizeMatch = (
+    reason: string,
+    winner?: 'east' | 'west',
+    summaryFromNet: OnlineMatchSummary | null = null,
+  ) => {
+    if (matchEnded) return;
+    matchEnded = true;
+    clearWaitingForOpponentTimeout();
+    hideDisconnectOverlay();
+
+    const eastAlias = names.east;
+    const westAlias = names.west;
+    const history = (latestMatch?.gamesHistory ?? []).map((game) => ({ ...game }));
+    const defaultWinner =
+      (reason === 'completed' && winner ? winner : history.at(-1)?.winner) ?? 'east';
+    const defaultBestOf = latestMatch?.bestOf ?? lastKnownBestOf;
+    const mergedSummary: OnlineMatchSummary = summaryFromNet
+      ? {
+          ...summaryFromNet,
+          winner: summaryFromNet.winner ?? defaultWinner,
+          bestOf: summaryFromNet.bestOf ?? defaultBestOf,
+          gamesHistory:
+            summaryFromNet.gamesHistory && summaryFromNet.gamesHistory.length
+              ? summaryFromNet.gamesHistory
+              : history,
+          names: {
+            east: summaryFromNet.names?.east ?? eastAlias,
+            west: summaryFromNet.names?.west ?? westAlias,
+          },
+          seats: summaryFromNet.seats ?? seatMap ?? undefined,
+          mmr: summaryFromNet.mmr ?? {
+            east: { before: 0, after: 0 },
+            west: { before: 0, after: 0 },
+          },
+        }
+      : {
+          winner: defaultWinner,
+          bestOf: defaultBestOf,
+          gamesHistory: history,
+          names: { east: eastAlias, west: westAlias },
+          seats: seatMap ?? undefined,
+          mmr: {
+            east: { before: 0, after: 0 },
+            west: { before: 0, after: 0 },
+          },
+        };
+
+    const resolvedWinner = mergedSummary.winner;
+    showEnd(reason, resolvedWinner);
+    cfg.onMatchEnd?.(reason, resolvedWinner, mergedSummary);
+  };
+
+  const ensureWaitingForOpponentTimeout = (state: RoomStateMessage) => {
+    if (matchEnded || waitingTimeout !== null) return;
+
+    const baseDelay =
+      typeof state.startAtEpochMs === 'number' ? state.startAtEpochMs - Date.now() : 0;
+    const delay = Math.max(
+      WAITING_MIN_TIMEOUT_MS,
+      Math.min(WAITING_MAX_TIMEOUT_MS, baseDelay + WAITING_EXTRA_GRACE_MS),
+    );
+
+    const winnerSide = seatToSide(cfg.seat);
+
+    waitingTimeout = window.setTimeout(() => {
+      waitingTimeout = null;
+      console.warn('[OnlineGame] Opponent missing before start; finishing match early');
+      finalizeMatch('opponent_timeout', winnerSide, null);
+      try {
+        net?.disconnect();
+      } catch {
+        /* ignore */
+      }
+    }, delay);
+  };
 
   let rowsMirrored = false;
   let startCountdownTimer: number | null = null;
@@ -355,7 +352,19 @@ export function createOnlineApp(
         } else {
           hud.setPlayerNameColors(eastEndCss, westEndCss);
         }
-        updateHUD(hud, stateForHUD, names, latestMatch);
+        {
+          const snapForHud =
+            latestMatch ??
+            ({ bestOf: lastKnownBestOf, currentGameIndex: 0, gamesHistory: [] } as MatchSnapshot);
+          updateOnlineHUDIfChanged(
+            hud,
+            stateForHUD,
+            names,
+            snapForHud,
+            snapForHud.gamesHistory,
+            hudCache,
+          );
+        }
       }
 
       if (eventQueue.length) {
@@ -373,6 +382,8 @@ export function createOnlineApp(
 
   async function start() {
     console.log('[OnlineGame] Starting online game with config:', cfg);
+    matchEnded = false;
+    clearWaitingForOpponentTimeout();
     blockInputFor(SERVE_SELECT_TOTAL_MS + 200);
 
     net = await connectOnline(cfg);
@@ -384,9 +395,14 @@ export function createOnlineApp(
     net.onRoomState((state) => {
       console.log('[OnlineGame] Room state update:', state);
       if (state.state === 'READY' && typeof state.startAtEpochMs === 'number') {
+        clearWaitingForOpponentTimeout();
         startStartCountdown(state.startAtEpochMs);
       } else if (state.state === 'PLAYING') {
+        clearWaitingForOpponentTimeout();
         stopStartCountdown();
+      } else if (state.state === 'WAITING_FOR_OPPONENT') {
+        stopStartCountdown();
+        ensureWaitingForOpponentTimeout(state);
       }
     });
 
@@ -401,57 +417,10 @@ export function createOnlineApp(
       hideDisconnectOverlay();
     });
 
-    net.onMatchEnd(
-      (
-        reason: string,
-        winner?: 'east' | 'west',
-        summaryFromNet: OnlineMatchSummary | null = null,
-      ) => {
-        console.log('[OnlineGame] Match ended:', reason, 'winner:', winner);
-        hideDisconnectOverlay();
-        const eastAlias = names.east;
-        const westAlias = names.west;
-        const history = (latestMatch?.gamesHistory ?? []).map((game) => ({ ...game }));
-        const defaultWinner =
-          (reason === 'completed' && winner ? winner : history.at(-1)?.winner) ?? 'east';
-        const defaultBestOf = latestMatch?.bestOf ?? lastKnownBestOf;
-        const mergedSummary: OnlineMatchSummary = summaryFromNet
-          ? {
-              ...summaryFromNet,
-              winner: summaryFromNet.winner ?? defaultWinner,
-              bestOf: summaryFromNet.bestOf ?? defaultBestOf,
-              gamesHistory:
-                summaryFromNet.gamesHistory && summaryFromNet.gamesHistory.length
-                  ? summaryFromNet.gamesHistory
-                  : history,
-              names: {
-                east: summaryFromNet.names?.east ?? eastAlias,
-                west: summaryFromNet.names?.west ?? westAlias,
-              },
-              seats: summaryFromNet.seats ?? seatMap ?? undefined,
-              mmr: summaryFromNet.mmr ?? {
-                east: { before: 0, after: 0 },
-                west: { before: 0, after: 0 },
-              },
-            }
-          : {
-              winner: defaultWinner,
-              bestOf: defaultBestOf,
-              gamesHistory: history,
-              names: { east: eastAlias, west: westAlias },
-              seats: seatMap ?? undefined,
-              mmr: {
-                east: { before: 0, after: 0 },
-                west: { before: 0, after: 0 },
-              },
-            };
-
-        const resolvedWinner = mergedSummary.winner;
-        showMatchEndOverlay(reason, resolvedWinner);
-
-        cfg.onMatchEnd?.(reason, resolvedWinner, mergedSummary);
-      },
-    );
+    net.onMatchEnd((reason, winner, summaryFromNet = null) => {
+      console.log('[OnlineGame] Match ended:', reason, 'winner:', winner);
+      finalizeMatch(reason, winner, summaryFromNet);
+    });
 
     const startPromise = net.awaitStart();
 
@@ -492,7 +461,6 @@ export function createOnlineApp(
             ms,
           );
           spinningUntilMs = until;
-          didBetweenGamesSpin = true;
           betweenHalfFired = false;
           pendingBetweenSwap = false;
           betweenSwapApplied = false;
@@ -504,8 +472,7 @@ export function createOnlineApp(
                 // Halfway through the rotation: perform the visual swap now.
                 betweenHalfFired = true;
                 if (!betweenSwapApplied) {
-                  rowsMirrored = !rowsMirrored;
-                  swapPaddleMaterials(left.mesh, right.mesh);
+                  rowsMirrored = applyOnlineSideSwap(left.mesh, right.mesh, rowsMirrored);
                   betweenSwapApplied = true;
                 }
                 // If the server event came earlier and we deferred, it's now fulfilled.
@@ -521,14 +488,13 @@ export function createOnlineApp(
       const anyEv = ev as any;
       if (anyEv && anyEv.swapSidesNow) {
         const now = performance.now();
-        if (spinningUntilMs > now || didBetweenGamesSpin || s.phase === 'pauseBetweenGames') {
+        if (spinningUntilMs > now || s.phase === 'pauseBetweenGames') {
           // Between-games swap is bound to the rotation's midpoint.
           if (betweenSwapApplied) {
             // Already applied at half — ignore duplicate event.
           } else if (betweenHalfFired) {
             // Half happened but swap not yet applied (race) — apply now.
-            rowsMirrored = !rowsMirrored;
-            swapPaddleMaterials(left.mesh, right.mesh);
+            rowsMirrored = applyOnlineSideSwap(left.mesh, right.mesh, rowsMirrored);
             betweenSwapApplied = true;
           } else {
             // Defer until onHalf; ensures alignment.
@@ -548,18 +514,21 @@ export function createOnlineApp(
             names,
             blockInputFor,
           );
+          // Track active spin window to align any subsequent events like between-games flow
+          spinningUntilMs = until;
+          betweenHalfFired = false;
+          pendingBetweenSwap = false;
+          betweenSwapApplied = false;
           const spinMs = Math.max(0, until - now);
           if (spinMs > 0) {
             orbitCameraFor(world.camera, spinMs, {
               onHalf: () => {
-                rowsMirrored = !rowsMirrored;
-                swapPaddleMaterials(left.mesh, right.mesh);
+                rowsMirrored = applyOnlineSideSwap(left.mesh, right.mesh, rowsMirrored);
                 paddleAnim.cue(180);
               },
             });
           } else {
-            rowsMirrored = !rowsMirrored;
-            swapPaddleMaterials(left.mesh, right.mesh);
+            rowsMirrored = applyOnlineSideSwap(left.mesh, right.mesh, rowsMirrored);
             paddleAnim.cue(180);
           }
         }
@@ -633,6 +602,9 @@ export function createOnlineApp(
 
   const destroy = () => {
     console.log('[OnlineGame] Destroying online game');
+
+    clearWaitingForOpponentTimeout();
+    matchEnded = true;
 
     // Clean up disconnect overlay
     hideDisconnectOverlay();
