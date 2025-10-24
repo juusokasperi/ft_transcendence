@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 import Button from '../components/Button';
-import { validateEmail } from '../utils/validation';
+import { validateEmail, emailInputAllowedRegex } from '../utils/validation';
 import { useAppContext } from '../context/AppContext';
 import { useSnackbar } from '../context/SnackbarContext';
 
@@ -26,6 +26,32 @@ const ForgotPassword: React.FC = () => {
     : emailIsValid
       ? 'border-emerald-400 bg-white focus:border-emerald-400'
       : 'border-rose-400 bg-white focus:border-rose-400';
+
+  const applyEmailInput = (raw: string) => {
+    const normalized = raw
+      .toLowerCase()
+      .replace(/\s+/g, '')
+      .replace(/[^a-z0-9.@_%+-]/g, '')
+      .slice(0, 254);
+    setEmail(normalized);
+  };
+
+  const handleEmailBeforeInput = (event: React.FormEvent<HTMLInputElement>) => {
+    const nativeEvent = event.nativeEvent as InputEvent;
+    if (
+      nativeEvent.inputType === 'insertText' &&
+      nativeEvent.data &&
+      !emailInputAllowedRegex.test(nativeEvent.data)
+    ) {
+      event.preventDefault();
+    }
+  };
+
+  const handleEmailKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
+    if (event.key === ' ') {
+      event.preventDefault();
+    }
+  };
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -104,7 +130,9 @@ const ForgotPassword: React.FC = () => {
                     autoComplete="email"
                     className={`w-full rounded-xl border px-3 py-2 text-slate-900 shadow-sm focus:outline-none focus:ring-2 focus:ring-sky-500/40 ${emailBorderClass}`}
                     value={email}
-                    onChange={(event) => setEmail(event.target.value)}
+                    onChange={(event) => applyEmailInput(event.target.value)}
+                    onBeforeInput={handleEmailBeforeInput}
+                    onKeyDown={handleEmailKeyDown}
                     placeholder="you@example.com"
                     disabled={loading}
                   />

@@ -6,13 +6,17 @@ import { PLACEHOLDER, resolveAvatarUrl } from '../utils/avatarUrl';
 import TwoFactorSettings from '../components/TwoFactorSettings';
 import PasswordSettings from '../components/PasswordSettings';
 import Button from '../components/Button';
-import { validateUsername, validateEmail } from '../utils/validation';
+import {
+  validateUsername,
+  validateEmail,
+  emailInputAllowedRegex,
+  usernameInputAllowedRegex,
+} from '../utils/validation';
 import ConfirmDialog from '../components/ConfirmDialog';
 import { useSnackbar } from '../context/SnackbarContext';
 
 const MAX_USERNAME_LENGTH = 24;
 const MAX_EMAIL_LENGTH = 254;
-const EMAIL_ALLOWED_REGEX = /^[a-zA-Z0-9@._%+-]+$/;
 const MAX_AVATAR_SIZE = 1024 * 1024; // 1MB, mirrors backend limit
 
 const Profile: React.FC = () => {
@@ -127,12 +131,33 @@ const Profile: React.FC = () => {
 
   const handleEmailBeforeInput = (event: React.FormEvent<HTMLInputElement>) => {
     const nativeEvent = event.nativeEvent as InputEvent;
-    if (nativeEvent.inputType === 'insertText' && nativeEvent.data && !EMAIL_ALLOWED_REGEX.test(nativeEvent.data)) {
+    if (
+      nativeEvent.inputType === 'insertText' &&
+      nativeEvent.data &&
+      !emailInputAllowedRegex.test(nativeEvent.data)
+    ) {
       event.preventDefault();
     }
   };
 
   const handleEmailKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
+    if (event.key === ' ') {
+      event.preventDefault();
+    }
+  };
+
+  const handleUsernameBeforeInput = (event: React.FormEvent<HTMLInputElement>) => {
+    const nativeEvent = event.nativeEvent as InputEvent;
+    if (
+      nativeEvent.inputType === 'insertText' &&
+      nativeEvent.data &&
+      !usernameInputAllowedRegex.test(nativeEvent.data)
+    ) {
+      event.preventDefault();
+    }
+  };
+
+  const handleUsernameKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
     if (event.key === ' ') {
       event.preventDefault();
     }
@@ -470,6 +495,8 @@ const Profile: React.FC = () => {
                   value={isEditing ? username : (user?.username ?? '')}
                   placeholder={user?.username}
                   onChange={(e) => applyUsernameInput(e.target.value)}
+                  onBeforeInput={handleUsernameBeforeInput}
+                  onKeyDown={handleUsernameKeyDown}
                   disabled={!isEditing}
                   className={`w-full rounded-2xl border border-white/15 bg-white/5 px-4 py-3 text-sm text-white transition placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-400/60 disabled:cursor-not-allowed disabled:opacity-60 ${
                     isEditing && usernameError

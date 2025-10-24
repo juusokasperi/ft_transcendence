@@ -35,6 +35,12 @@ export const passwordRegex =
 
 export const validateEmail = (value: string): boolean => emailRegex.test(value);
 
+// Allowed character set for email input fields (before validation).
+export const emailInputAllowedRegex = /^[a-zA-Z0-9@._%+-]+$/;
+
+// Allowed character set for username input fields.
+export const usernameInputAllowedRegex = /^[a-zA-Z0-9-]+$/;
+
 const USERNAME_MIN_LENGTH = 3;
 const USERNAME_MAX_LENGTH = 16;
 

@@ -1,5 +1,11 @@
 import React, { useState } from 'react';
-import { validateEmail, validatePassword, validateUsername } from '../utils/validation';
+import {
+  validateEmail,
+  validatePassword,
+  validateUsername,
+  emailInputAllowedRegex,
+  usernameInputAllowedRegex,
+} from '../utils/validation';
 import Button from './Button';
 import GoogleIcon from './icons/GoogleIcon';
 
@@ -14,6 +20,7 @@ interface AuthFormProps {
 }
 
 const USERNAME_MAX_LENGTH = 16;
+const MAX_EMAIL_LENGTH = 254;
 
 const AuthForm: React.FC<AuthFormProps> = ({ type, onSubmit }) => {
   const [username, setUsername] = useState('');
@@ -35,6 +42,54 @@ const AuthForm: React.FC<AuthFormProps> = ({ type, onSubmit }) => {
           : 'weak'
         : 'invalid'
       : '';
+
+  const applyUsernameInput = (raw: string) => {
+    const sanitized = raw.replace(/[^a-zA-Z0-9-]/g, '').slice(0, USERNAME_MAX_LENGTH);
+    setUsername(sanitized);
+  };
+
+  const handleUsernameBeforeInput = (event: React.FormEvent<HTMLInputElement>) => {
+    const nativeEvent = event.nativeEvent as InputEvent;
+    if (
+      nativeEvent.inputType === 'insertText' &&
+      nativeEvent.data &&
+      !usernameInputAllowedRegex.test(nativeEvent.data)
+    ) {
+      event.preventDefault();
+    }
+  };
+
+  const handleUsernameKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
+    if (event.key === ' ') {
+      event.preventDefault();
+    }
+  };
+
+  const applyEmailInput = (raw: string) => {
+    const normalized = raw
+      .toLowerCase()
+      .replace(/\s+/g, '')
+      .replace(/[^a-z0-9.@_%+-]/g, '')
+      .slice(0, MAX_EMAIL_LENGTH);
+    setEmail(normalized);
+  };
+
+  const handleEmailBeforeInput = (event: React.FormEvent<HTMLInputElement>) => {
+    const nativeEvent = event.nativeEvent as InputEvent;
+    if (
+      nativeEvent.inputType === 'insertText' &&
+      nativeEvent.data &&
+      !emailInputAllowedRegex.test(nativeEvent.data)
+    ) {
+      event.preventDefault();
+    }
+  };
+
+  const handleEmailKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
+    if (event.key === ' ') {
+      event.preventDefault();
+    }
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -104,7 +159,9 @@ const AuthForm: React.FC<AuthFormProps> = ({ type, onSubmit }) => {
           type="text"
           placeholder="Email"
           value={email}
-          onChange={(e) => setEmail(e.target.value)}
+          onChange={(e) => applyEmailInput(e.target.value)}
+          onBeforeInput={handleEmailBeforeInput}
+          onKeyDown={handleEmailKeyDown}
           className={`w-full rounded border px-3 py-2 ${getBorderClass(emailValidationState)}`}
         />
         {trimmedEmail && emailValidationState === 'invalid' && (
@@ -118,16 +175,18 @@ const AuthForm: React.FC<AuthFormProps> = ({ type, onSubmit }) => {
           <label htmlFor="username" className="mb-1 block font-medium">
             Username
           </label>
-          <input
-            id="username"
-            type="text"
-            placeholder="Username"
-            value={username}
-            onChange={(e) => setUsername(e.target.value.slice(0, USERNAME_MAX_LENGTH))}
-            className={`w-full rounded border px-3 py-2 ${getBorderClass(
-              usernameValidation.state,
-            )}`}
-          />
+            <input
+              id="username"
+              type="text"
+              placeholder="Username"
+              value={username}
+              onChange={(e) => applyUsernameInput(e.target.value)}
+              onBeforeInput={handleUsernameBeforeInput}
+              onKeyDown={handleUsernameKeyDown}
+              className={`w-full rounded border px-3 py-2 ${getBorderClass(
+                usernameValidation.state,
+              )}`}
+            />
           {usernameValidation.msg && (
             <p className="mt-1 text-sm text-red-500">{usernameValidation.msg}</p>
           )}
