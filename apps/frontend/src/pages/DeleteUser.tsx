@@ -19,6 +19,10 @@ const DeleteUser = () => {
 
         setStatus('success');
         setUser(null);
+        enqueueSnackbar({
+          message: 'Account deleted. We hope to see you again!',
+          variant: 'success',
+        });
         setTimeout(() => navigate('/'), 1500);
       } catch (err) {
         setStatus('error');
