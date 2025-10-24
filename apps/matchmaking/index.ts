@@ -31,11 +31,20 @@ import {
 import { handleJoinQueue } from './utils/queue.ts';
 import Redis from 'ioredis';
 import { handleAdmitConfirmed } from './utils/pendingHandoffs.ts';
+import { registerMetrics } from '@utils/metrics';
 
 const redisSub = new Redis(REDIS_URL);
 const app = Fastify({
   logger: {
     level: 'trace', // filters in logger.ts
+  },
+});
+
+await registerMetrics(app, {
+  labels: {
+    service: 'matchmaking',
+    env: process.env.NODE_ENV ?? 'dev',
+    version: process.env.GIT_SHA ?? 'dev',
   },
 });
 

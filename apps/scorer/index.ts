@@ -11,6 +11,7 @@ import {
   SCORER_PORT,
 } from './config';
 import { ecsFormat } from '@elastic/ecs-pino-format';
+import { registerMetrics } from '@utils/metrics';
 
 const redis = new Redis(REDIS_URL);
 const isDev = process.env.NODE_ENV === 'development';
@@ -40,6 +41,14 @@ function createLoggerOptions(isDev: boolean) {
 
 const app = fastify({
   logger: createLoggerOptions(isDev),
+});
+
+await registerMetrics(app, {
+  labels: {
+    service: 'scorer',
+    env: process.env.NODE_ENV ?? 'dev',
+    version: process.env.GIT_SHA ?? 'dev',
+  },
 });
 
 const nodes = Array.from({ length: GAME_NODES_AMOUNT }, (_, i) => {

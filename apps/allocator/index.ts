@@ -8,10 +8,19 @@ import type { JoinTokenClaims, TournamentContext } from '@pong/shared/protocol/n
 import axios from 'axios';
 import Redis from 'ioredis';
 import { AllocateSchema } from './utils/schema.ts';
+import { registerMetrics } from '@utils/metrics';
 
 const redis = new Redis(REDIS_URL);
 
 const app = fastify();
+
+await registerMetrics(app, {
+  labels: {
+    service: 'allocator',
+    env: process.env.NODE_ENV ?? 'dev',
+    version: process.env.GIT_SHA ?? 'dev',
+  },
+});
 
 app.post(
   '/allocate',

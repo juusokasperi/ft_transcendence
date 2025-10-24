@@ -4,7 +4,8 @@ global:
 scrape_configs:
   - job_name: 'node-backend'
     static_configs:
-      - targets: ['backend:3001']
+      - targets: ['allocator:4000', 'backend:3001', 'game-gateway:55550',
+          'matchmaking-service:4242', 'scorer:3000']
     metrics_path: '/metrics'
 
   - job_name: 'nginx'

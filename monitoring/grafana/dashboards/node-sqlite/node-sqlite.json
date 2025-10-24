@@ -22,6 +22,10 @@
   "links": [],
   "panels": [
     {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "PBFA97CFB590B2093"
+      },
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -51,6 +55,7 @@
               "type": "linear"
             },
             "showPoints": "auto",
+            "showValues": false,
             "spanNulls": false,
             "stacking": {
               "group": "A",
@@ -89,7 +94,7 @@
           "calcs": [],
           "displayMode": "list",
           "placement": "bottom",
-          "showLegend": true
+          "showLegend": false
         },
         "tooltip": {
           "hideZeros": false,
@@ -97,17 +102,24 @@
           "sort": "none"
         }
       },
-      "pluginVersion": "12.1.1",
+      "pluginVersion": "12.2.0",
       "targets": [
         {
+          "editorMode": "code",
           "expr": "histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket[5m])) by (le))",
+          "legendFormat": "seconds",
+          "range": true,
           "refId": "A"
         }
       ],
-      "title": "HTTP Request Latency (p95)",
+      "title": "HTTP Request Latency (p95) (seconds)",
       "type": "timeseries"
     },
     {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "PBFA97CFB590B2093"
+      },
       "fieldConfig": {
         "defaults": {
           "mappings": [],
@@ -128,8 +140,8 @@
         "overrides": []
       },
       "gridPos": {
-        "h": 4,
-        "w": 8,
+        "h": 6,
+        "w": 17,
         "x": 0,
         "y": 8
       },
@@ -149,10 +161,13 @@
         "textMode": "auto",
         "wideLayout": true
       },
-      "pluginVersion": "12.1.1",
+      "pluginVersion": "12.2.0",
       "targets": [
         {
+          "editorMode": "code",
           "expr": "process_resident_memory_bytes{job=\"node-backend\"} / 1024 / 1024",
+          "legendFormat": "{{service}}",
+          "range": true,
           "refId": "A"
         }
       ],
@@ -160,6 +175,10 @@
       "type": "stat"
     },
     {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "PBFA97CFB590B2093"
+      },
       "fieldConfig": {
         "defaults": {
           "mappings": [],
@@ -180,10 +199,10 @@
         "overrides": []
       },
       "gridPos": {
-        "h": 4,
-        "w": 9,
-        "x": 8,
-        "y": 8
+        "h": 6,
+        "w": 17,
+        "x": 0,
+        "y": 14
       },
       "id": 3,
       "options": {
@@ -201,14 +220,17 @@
         "textMode": "auto",
         "wideLayout": true
       },
-      "pluginVersion": "12.1.1",
+      "pluginVersion": "12.2.0",
       "targets": [
         {
+          "editorMode": "code",
           "expr": "nodejs_eventloop_lag_seconds",
+          "legendFormat": "{{service}}",
+          "range": true,
           "refId": "A"
         }
       ],
-      "title": "Event Loop Lag",
+      "title": "Event Loop Lag (seconds)",
       "type": "stat"
     },
     {
@@ -245,6 +267,7 @@
               "type": "linear"
             },
             "showPoints": "auto",
+            "showValues": false,
             "spanNulls": false,
             "stacking": {
               "group": "A",
@@ -275,7 +298,7 @@
         "h": 7,
         "w": 8,
         "x": 0,
-        "y": 12
+        "y": 20
       },
       "id": 8,
       "options": {
@@ -291,7 +314,7 @@
           "sort": "none"
         }
       },
-      "pluginVersion": "12.1.1",
+      "pluginVersion": "12.2.0",
       "targets": [
         {
           "disableTextWrap": false,
@@ -342,6 +365,7 @@
               "type": "linear"
             },
             "showPoints": "auto",
+            "showValues": false,
             "spanNulls": false,
             "stacking": {
               "group": "A",
@@ -374,7 +398,7 @@
         "h": 7,
         "w": 9,
         "x": 8,
-        "y": 12
+        "y": 20
       },
       "id": 5,
       "options": {
@@ -390,7 +414,7 @@
           "sort": "none"
         }
       },
-      "pluginVersion": "12.1.1",
+      "pluginVersion": "12.2.0",
       "targets": [
         {
           "editorMode": "code",
@@ -437,6 +461,7 @@
               "type": "linear"
             },
             "showPoints": "auto",
+            "showValues": false,
             "spanNulls": false,
             "stacking": {
               "group": "A",
@@ -467,7 +492,7 @@
         "h": 7,
         "w": 8,
         "x": 0,
-        "y": 19
+        "y": 27
       },
       "id": 1,
       "options": {
@@ -483,7 +508,7 @@
           "sort": "none"
         }
       },
-      "pluginVersion": "12.1.1",
+      "pluginVersion": "12.2.0",
       "targets": [
         {
           "datasource": {
@@ -510,7 +535,7 @@
   ],
   "preload": false,
   "refresh": "10s",
-  "schemaVersion": 41,
+  "schemaVersion": 42,
   "tags": ["sqlite", "prometheus", "nodejs"],
   "templating": {
     "list": []
