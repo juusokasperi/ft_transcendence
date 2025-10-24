@@ -28,7 +28,7 @@ const PingPong: React.FC = () => {
 
         {/* Page title (accessible) */}
         <h1 id="page-title" className="sr-only">
-          Pong 3D Game Modes
+          Pong Game Modes
         </h1>
 
         {/* Section: game mode selection */}
@@ -36,7 +36,7 @@ const PingPong: React.FC = () => {
           <Card
             title={
               <span id="modes-heading" className="block text-center text-2xl font-semibold">
-                PONG3D
+                PONG
               </span>
             }
           >
