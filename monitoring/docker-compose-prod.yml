@@ -1,15 +1,29 @@
 volumes:
   grafana-storage:
     driver: local
+  prometheus-targets:
+    driver: local
 
 services:
+
+  prometheus-pre:
+    build:
+      context: ./prometheus-pre/
+    profiles:
+      - monitoring
+    env_file: ../.env
+    volumes:
+      - prometheus-targets:/etc/prometheus/targets
+    restart: no
+
   prometheus:
     image: prom/prometheus
     restart: unless-stopped
     profiles:
       - monitoring
     volumes:
-      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-targets:/etc/prometheus/targets:ro
     networks:
       - prod-private
 
