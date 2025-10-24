@@ -92,7 +92,7 @@ const ForgotPassword: React.FC = () => {
                   </label>
                   <input
                     id="resetEmail"
-                    type="email"
+                    type="text"
                     autoComplete="email"
                     className="w-full rounded-xl border border-white/15 bg-white/95 px-3 py-2 text-slate-900 shadow-sm focus:border-sky-400 focus:outline-none focus:ring-2 focus:ring-sky-500/40"
                     value={email}
