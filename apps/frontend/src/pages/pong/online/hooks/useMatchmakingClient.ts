@@ -73,89 +73,92 @@ export function useMatchmakingClient({
     if (!enabled) {
       return;
     }
-    const client = createMatchmakingClient((msg: MatchmakingMessage) => {
-      const handlers = handlersRef.current;
-      switch (msg.type) {
-        case 'CONNECTED':
-          handlers.dispatch({ type: 'connected', clientId: msg.clientId });
-          break;
-        case 'QUEUE_JOINED':
-          pendingJoinRef.current = null;
-          handlers.dispatch({ type: 'queueJoined' });
-          break;
-        case 'QUEUE_LEFT':
-          pendingJoinRef.current = null;
-          handlers.dispatch({ type: 'queueLeft' });
-          break;
-        case 'MATCH_FOUND':
-          pendingJoinRef.current = null;
-          handlers.dispatch({
-            type: 'matchFound',
-            matchId: msg.matchId,
-            opponent: { username: msg.opponent.username, mmr: msg.opponent.mmr },
-          });
-          break;
-        case 'MATCH_DECLINED':
-          handlers.dispatch({ type: 'matchDeclined' });
-          handlers.onMatchDeclined?.();
-          break;
-        case 'MATCH_TIMEOUT':
-          handlers.dispatch({ type: 'matchTimeout' });
-          handlers.onMatchTimeout?.();
-          break;
-        case 'HANDOFF':
-          handlers.dispatch({
-            type: 'handoff',
-            payload: {
-              serverUrl: msg.gameServerWSUrl,
+    const client = createMatchmakingClient(
+      (msg: MatchmakingMessage) => {
+        const handlers = handlersRef.current;
+        switch (msg.type) {
+          case 'CONNECTED':
+            handlers.dispatch({ type: 'connected', clientId: msg.clientId });
+            break;
+          case 'QUEUE_JOINED':
+            pendingJoinRef.current = null;
+            handlers.dispatch({ type: 'queueJoined' });
+            break;
+          case 'QUEUE_LEFT':
+            pendingJoinRef.current = null;
+            handlers.dispatch({ type: 'queueLeft' });
+            break;
+          case 'MATCH_FOUND':
+            pendingJoinRef.current = null;
+            handlers.dispatch({
+              type: 'matchFound',
               matchId: msg.matchId,
-              roomIdentifier: msg.roomIdentifier,
-              side: msg.side,
-              randomSeed: msg.randomSeed,
-              joinToken: msg.joinToken,
-            },
-          });
-          break;
-        case 'ERROR':
-          pendingJoinRef.current = null;
-          if (msg.code === 'AUTH') {
-            handlers.dispatch({ type: 'authError' });
-            handlers.onAuthError(msg.message);
-          } else if (msg.code === 'ALLOCATOR') {
-            handlers.dispatch({ type: 'allocatorError' });
-            handlers.onAllocatorError(msg.message);
-          }
-          break;
-        case 'INFO':
-          if (msg.message === 'New connection detected, closing this one') {
-            intentionalSocketsRef.current.add(client.socket);
-          }
-          break;
-        case 'TOURNAMENT_LOBBY_UPDATED':
-        case 'TOURNAMENT_BRACKET_SNAPSHOT':
-          // Ignored in online game view for now.
-          break;
-        default:
-          // noop for messages we do not handle
-          break;
-      }
-    }, {
-      onClose: (_event) => {
-        if (clientRef.current === client) {
-          clientRef.current = null;
+              opponent: { username: msg.opponent.username, mmr: msg.opponent.mmr },
+            });
+            break;
+          case 'MATCH_DECLINED':
+            handlers.dispatch({ type: 'matchDeclined' });
+            handlers.onMatchDeclined?.();
+            break;
+          case 'MATCH_TIMEOUT':
+            handlers.dispatch({ type: 'matchTimeout' });
+            handlers.onMatchTimeout?.();
+            break;
+          case 'HANDOFF':
+            handlers.dispatch({
+              type: 'handoff',
+              payload: {
+                serverUrl: msg.gameServerWSUrl,
+                matchId: msg.matchId,
+                roomIdentifier: msg.roomIdentifier,
+                side: msg.side,
+                randomSeed: msg.randomSeed,
+                joinToken: msg.joinToken,
+              },
+            });
+            break;
+          case 'ERROR':
+            pendingJoinRef.current = null;
+            if (msg.code === 'AUTH') {
+              handlers.dispatch({ type: 'authError' });
+              handlers.onAuthError(msg.message);
+            } else if (msg.code === 'ALLOCATOR') {
+              handlers.dispatch({ type: 'allocatorError' });
+              handlers.onAllocatorError(msg.message);
+            }
+            break;
+          case 'INFO':
+            if (msg.message === 'New connection detected, closing this one') {
+              intentionalSocketsRef.current.add(client.socket);
+            }
+            break;
+          case 'TOURNAMENT_LOBBY_UPDATED':
+          case 'TOURNAMENT_BRACKET_SNAPSHOT':
+            // Ignored in online game view for now.
+            break;
+          default:
+            // noop for messages we do not handle
+            break;
         }
-        if (intentionalSocketsRef.current.delete(client.socket)) {
-          return;
-        }
-        if (clientRef.current !== null) {
-          return;
-        }
-        if (!enabledRef.current) {
-          return;
-        }
-        requestReconnectRef.current();
       },
-    });
+      {
+        onClose: (_event) => {
+          if (clientRef.current === client) {
+            clientRef.current = null;
+          }
+          if (intentionalSocketsRef.current.delete(client.socket)) {
+            return;
+          }
+          if (clientRef.current !== null) {
+            return;
+          }
+          if (!enabledRef.current) {
+            return;
+          }
+          requestReconnectRef.current();
+        },
+      },
+    );
 
     clientRef.current = client;
     if (pendingJoinRef.current) {
