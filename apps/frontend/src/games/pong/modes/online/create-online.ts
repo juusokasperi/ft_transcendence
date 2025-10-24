@@ -23,6 +23,7 @@ import type { PlayerSeat } from '@pong/render';
 import type { GameState } from '@pong/game-logic';
 import type { FrameEvents, MatchSnapshot } from '@pong/shared';
 import { SERVE_SELECT_TOTAL_MS, clamp01 } from '@pong/shared';
+import type { RoomStateMessage } from '@pong/shared/protocol/net';
 import { rgb01ToCss } from '../shared/preferences';
 import {
   swapPaddleMaterials,
@@ -39,6 +40,9 @@ import type { OnlineMatchSummary } from './types';
 
 // Render/update cadence we expect from the authoritative node.
 const CLIENT_TICK_RATE_HZ = 60;
+const WAITING_MIN_TIMEOUT_MS = 3000;
+const WAITING_MAX_TIMEOUT_MS = 15000;
+const WAITING_EXTRA_GRACE_MS = 5000;
 
 interface PongInstance {
   start(): void;
@@ -74,6 +78,16 @@ export function createOnlineApp(
   hud.attachToCanvas(canvas);
 
   const { showDisconnectOverlay, hideDisconnectOverlay } = createDisconnectOverlayManager(canvas);
+  const seatToSide = (seat: PlayerSeat): 'east' | 'west' => (seat === 'P1' ? 'east' : 'west');
+  let matchEnded = false;
+  let waitingTimeout: number | null = null;
+
+  const clearWaitingForOpponentTimeout = () => {
+    if (waitingTimeout !== null) {
+      window.clearTimeout(waitingTimeout);
+      waitingTimeout = null;
+    }
+  };
 
   const showEnd = (reason: string, winner?: 'east' | 'west') => {
     return showMatchEndOverlay(canvas, reason, winner, cfg.seat);
@@ -151,6 +165,82 @@ export function createOnlineApp(
   let didSetPlayerNames = false;
   let playerAliases: { P1: string; P2: string } | null = null;
   let seatMap: { east: 'P1' | 'P2'; west: 'P1' | 'P2' } | null = null;
+
+  const finalizeMatch = (
+    reason: string,
+    winner?: 'east' | 'west',
+    summaryFromNet: OnlineMatchSummary | null = null,
+  ) => {
+    if (matchEnded) return;
+    matchEnded = true;
+    clearWaitingForOpponentTimeout();
+    hideDisconnectOverlay();
+
+    const eastAlias = names.east;
+    const westAlias = names.west;
+    const history = (latestMatch?.gamesHistory ?? []).map((game) => ({ ...game }));
+    const defaultWinner =
+      (reason === 'completed' && winner ? winner : history.at(-1)?.winner) ?? 'east';
+    const defaultBestOf = latestMatch?.bestOf ?? lastKnownBestOf;
+    const mergedSummary: OnlineMatchSummary = summaryFromNet
+      ? {
+          ...summaryFromNet,
+          winner: summaryFromNet.winner ?? defaultWinner,
+          bestOf: summaryFromNet.bestOf ?? defaultBestOf,
+          gamesHistory:
+            summaryFromNet.gamesHistory && summaryFromNet.gamesHistory.length
+              ? summaryFromNet.gamesHistory
+              : history,
+          names: {
+            east: summaryFromNet.names?.east ?? eastAlias,
+            west: summaryFromNet.names?.west ?? westAlias,
+          },
+          seats: summaryFromNet.seats ?? seatMap ?? undefined,
+          mmr: summaryFromNet.mmr ?? {
+            east: { before: 0, after: 0 },
+            west: { before: 0, after: 0 },
+          },
+        }
+      : {
+          winner: defaultWinner,
+          bestOf: defaultBestOf,
+          gamesHistory: history,
+          names: { east: eastAlias, west: westAlias },
+          seats: seatMap ?? undefined,
+          mmr: {
+            east: { before: 0, after: 0 },
+            west: { before: 0, after: 0 },
+          },
+        };
+
+    const resolvedWinner = mergedSummary.winner;
+    showEnd(reason, resolvedWinner);
+    cfg.onMatchEnd?.(reason, resolvedWinner, mergedSummary);
+  };
+
+  const ensureWaitingForOpponentTimeout = (state: RoomStateMessage) => {
+    if (matchEnded || waitingTimeout !== null) return;
+
+    const baseDelay =
+      typeof state.startAtEpochMs === 'number' ? state.startAtEpochMs - Date.now() : 0;
+    const delay = Math.max(
+      WAITING_MIN_TIMEOUT_MS,
+      Math.min(WAITING_MAX_TIMEOUT_MS, baseDelay + WAITING_EXTRA_GRACE_MS),
+    );
+
+    const winnerSide = seatToSide(cfg.seat);
+
+    waitingTimeout = window.setTimeout(() => {
+      waitingTimeout = null;
+      console.warn('[OnlineGame] Opponent missing before start; finishing match early');
+      finalizeMatch('opponent_timeout', winnerSide, null);
+      try {
+        net?.disconnect();
+      } catch {
+        /* ignore */
+      }
+    }, delay);
+  };
 
   let rowsMirrored = false;
   let startCountdownTimer: number | null = null;
@@ -292,6 +382,8 @@ export function createOnlineApp(
 
   async function start() {
     console.log('[OnlineGame] Starting online game with config:', cfg);
+    matchEnded = false;
+    clearWaitingForOpponentTimeout();
     blockInputFor(SERVE_SELECT_TOTAL_MS + 200);
 
     net = await connectOnline(cfg);
@@ -303,9 +395,14 @@ export function createOnlineApp(
     net.onRoomState((state) => {
       console.log('[OnlineGame] Room state update:', state);
       if (state.state === 'READY' && typeof state.startAtEpochMs === 'number') {
+        clearWaitingForOpponentTimeout();
         startStartCountdown(state.startAtEpochMs);
       } else if (state.state === 'PLAYING') {
+        clearWaitingForOpponentTimeout();
         stopStartCountdown();
+      } else if (state.state === 'WAITING_FOR_OPPONENT') {
+        stopStartCountdown();
+        ensureWaitingForOpponentTimeout(state);
       }
     });
 
@@ -320,57 +417,10 @@ export function createOnlineApp(
       hideDisconnectOverlay();
     });
 
-    net.onMatchEnd(
-      (
-        reason: string,
-        winner?: 'east' | 'west',
-        summaryFromNet: OnlineMatchSummary | null = null,
-      ) => {
-        console.log('[OnlineGame] Match ended:', reason, 'winner:', winner);
-        hideDisconnectOverlay();
-        const eastAlias = names.east;
-        const westAlias = names.west;
-        const history = (latestMatch?.gamesHistory ?? []).map((game) => ({ ...game }));
-        const defaultWinner =
-          (reason === 'completed' && winner ? winner : history.at(-1)?.winner) ?? 'east';
-        const defaultBestOf = latestMatch?.bestOf ?? lastKnownBestOf;
-        const mergedSummary: OnlineMatchSummary = summaryFromNet
-          ? {
-              ...summaryFromNet,
-              winner: summaryFromNet.winner ?? defaultWinner,
-              bestOf: summaryFromNet.bestOf ?? defaultBestOf,
-              gamesHistory:
-                summaryFromNet.gamesHistory && summaryFromNet.gamesHistory.length
-                  ? summaryFromNet.gamesHistory
-                  : history,
-              names: {
-                east: summaryFromNet.names?.east ?? eastAlias,
-                west: summaryFromNet.names?.west ?? westAlias,
-              },
-              seats: summaryFromNet.seats ?? seatMap ?? undefined,
-              mmr: summaryFromNet.mmr ?? {
-                east: { before: 0, after: 0 },
-                west: { before: 0, after: 0 },
-              },
-            }
-          : {
-              winner: defaultWinner,
-              bestOf: defaultBestOf,
-              gamesHistory: history,
-              names: { east: eastAlias, west: westAlias },
-              seats: seatMap ?? undefined,
-              mmr: {
-                east: { before: 0, after: 0 },
-                west: { before: 0, after: 0 },
-              },
-            };
-
-        const resolvedWinner = mergedSummary.winner;
-        showEnd(reason, resolvedWinner);
-
-        cfg.onMatchEnd?.(reason, resolvedWinner, mergedSummary);
-      },
-    );
+    net.onMatchEnd((reason, winner, summaryFromNet = null) => {
+      console.log('[OnlineGame] Match ended:', reason, 'winner:', winner);
+      finalizeMatch(reason, winner, summaryFromNet);
+    });
 
     const startPromise = net.awaitStart();
 
@@ -552,6 +602,9 @@ export function createOnlineApp(
 
   const destroy = () => {
     console.log('[OnlineGame] Destroying online game');
+
+    clearWaitingForOpponentTimeout();
+    matchEnded = true;
 
     // Clean up disconnect overlay
     hideDisconnectOverlay();
