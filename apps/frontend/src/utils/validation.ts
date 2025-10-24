@@ -11,7 +11,7 @@ export interface ValidationResult {
  * - No spaces allowed.
  * - Must have at least one character before and after '@', and a domain after '.'.
  */
-export const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+export const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
 
 /**
  * Matches a valid username.

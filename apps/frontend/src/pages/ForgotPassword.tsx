@@ -19,23 +19,31 @@ const ForgotPassword: React.FC = () => {
     if (user) navigate('/');
   }, [user, navigate]);
 
+  const trimmedEmail = email.trim();
+  const emailIsValid = trimmedEmail ? validateEmail(trimmedEmail) : false;
+  const emailBorderClass = !trimmedEmail
+    ? 'border-white/15 bg-white/95 focus:border-sky-400'
+    : emailIsValid
+      ? 'border-emerald-400 bg-white focus:border-emerald-400'
+      : 'border-rose-400 bg-white focus:border-rose-400';
+
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
     setError(null);
     setSuccess(null);
 
-    if (!email.trim()) {
+    if (!trimmedEmail) {
       setError('Enter the email linked to your account.');
       return;
     }
-    if (!validateEmail(email.trim())) {
-      setError('Provide a valid email.');
+    if (!validateEmail(trimmedEmail)) {
+      setError(null);
       return;
     }
 
     setLoading(true);
     try {
-      await axios.post('/api/reset-password', { email: email.trim() });
+      await axios.post('/api/reset-password', { email: trimmedEmail });
       setSuccess('If the address is registered, a reset link is on the way.');
       enqueueSnackbar({
         message: 'Check your inbox for password reset instructions.',
@@ -94,12 +102,15 @@ const ForgotPassword: React.FC = () => {
                     id="resetEmail"
                     type="text"
                     autoComplete="email"
-                    className="w-full rounded-xl border border-white/15 bg-white/95 px-3 py-2 text-slate-900 shadow-sm focus:border-sky-400 focus:outline-none focus:ring-2 focus:ring-sky-500/40"
+                    className={`w-full rounded-xl border px-3 py-2 text-slate-900 shadow-sm focus:outline-none focus:ring-2 focus:ring-sky-500/40 ${emailBorderClass}`}
                     value={email}
                     onChange={(event) => setEmail(event.target.value)}
                     placeholder="you@example.com"
                     disabled={loading}
                   />
+                  {trimmedEmail && !emailIsValid && (
+                    <p className="mt-1 text-sm font-medium text-rose-300">Provide a valid email.</p>
+                  )}
                 </div>
 
                 {error && <p className="text-sm font-medium text-rose-300">{error}</p>}
