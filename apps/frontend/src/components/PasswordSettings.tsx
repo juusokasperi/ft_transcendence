@@ -27,6 +27,22 @@ const PasswordSettings: React.FC<PasswordSettingsProps> = ({ axios, active }) =>
   const currentInputRef = useRef<HTMLInputElement | null>(null);
   const newInputRef = useRef<HTMLInputElement | null>(null);
   const confirmInputRef = useRef<HTMLInputElement | null>(null);
+  type BorderState = ReturnType<typeof validatePassword>['state'] | '';
+  const getBorderClass = (state: BorderState) => {
+    if (state === 'valid') return 'border-emerald-500';
+    if (state === 'invalid') return 'border-rose-500';
+    if (state === 'weak') return 'border-amber-500';
+    return 'border-gray-300';
+  };
+  const newPasswordValidation = validatePassword(newPassword);
+  const confirmPasswordState: BorderState = (() => {
+    if (!confirmPassword) return '';
+    if (!newPassword) return 'invalid';
+    if (newPassword.startsWith(confirmPassword)) {
+      return confirmPassword === newPassword ? 'valid' : 'weak';
+    }
+    return 'invalid';
+  })();
 
   useEffect(() => {
     if (!active) {
@@ -78,9 +94,8 @@ const PasswordSettings: React.FC<PasswordSettingsProps> = ({ axios, active }) =>
       return false;
     }
 
-    const passwordResult = validatePassword(newPassword);
-    if (passwordResult.state !== 'valid') {
-      setError(passwordResult.msg);
+    if (newPasswordValidation.state !== 'valid') {
+      setError(newPasswordValidation.msg);
       return false;
     }
 
@@ -225,12 +240,17 @@ const PasswordSettings: React.FC<PasswordSettingsProps> = ({ axios, active }) =>
           )}
 
           <InputWrapper label="New password" htmlFor="new-password">
-            <div className="flex items-center rounded border border-gray-300 p-2">
+            <div
+              className={`flex items-center rounded border ${getBorderClass(newPasswordValidation.state)} p-2`}
+            >
               <input
                 id="new-password"
                 type={showNew ? 'text' : 'password'}
                 value={newPassword}
-                onChange={(e) => setNewPassword(e.target.value)}
+                onChange={(e) => {
+                  setNewPassword(e.target.value);
+                  setError(null);
+                }}
                 onFocus={() => setFocusedField('new')}
                 onBlur={() => setFocusedField(null)}
                 className="flex-1 border-none bg-transparent text-sm outline-none"
@@ -239,18 +259,27 @@ const PasswordSettings: React.FC<PasswordSettingsProps> = ({ axios, active }) =>
               />
               <ToggleButton onClick={() => setShowNew((prev) => !prev)} active={showNew} />
             </div>
-            <p className="mt-2 text-xs text-gray-500">
-              Minimum 12 characters. Include upper, lower, number, and special character.
-            </p>
+            {newPassword && newPasswordValidation.msg ? (
+              <p className="mt-2 text-xs text-rose-500">{newPasswordValidation.msg}</p>
+            ) : (
+              <p className="mt-2 text-xs text-gray-500">
+                Minimum 12 characters. Include upper, lower, number, and special character.
+              </p>
+            )}
           </InputWrapper>
 
           <InputWrapper label="Confirm new password" htmlFor="confirm-password">
-            <div className="flex items-center rounded border border-gray-300 p-2">
+            <div
+              className={`flex items-center rounded border ${getBorderClass(confirmPasswordState)} p-2`}
+            >
               <input
                 id="confirm-password"
                 type={showConfirm ? 'text' : 'password'}
                 value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
+                onChange={(e) => {
+                  setConfirmPassword(e.target.value);
+                  setError(null);
+                }}
                 onFocus={() => setFocusedField('confirm')}
                 onBlur={() => setFocusedField(null)}
                 className="flex-1 border-none bg-transparent text-sm outline-none"
@@ -259,6 +288,15 @@ const PasswordSettings: React.FC<PasswordSettingsProps> = ({ axios, active }) =>
               />
               <ToggleButton onClick={() => setShowConfirm((prev) => !prev)} active={showConfirm} />
             </div>
+            {confirmPasswordState === 'weak' && (
+              <p className="mt-2 text-xs text-amber-500">Keep typing to match the new password.</p>
+            )}
+            {confirmPasswordState === 'invalid' && (
+              <p className="mt-2 text-xs text-rose-500">Passwords do not match.</p>
+            )}
+            {confirmPasswordState === 'valid' && (
+              <p className="mt-2 text-xs text-emerald-500">Passwords match.</p>
+            )}
           </InputWrapper>
 
           {error && <p className="text-sm text-rose-500">{error}</p>}
