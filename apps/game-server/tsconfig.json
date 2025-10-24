@@ -12,5 +12,5 @@
     "verbatimModuleSyntax": true,
     "moduleDetection": "force"
   },
-  "include": ["index.ts", "ws.d.ts"]
+  "include": ["index.ts", "src/**/*.ts", "ws.d.ts"]
 }

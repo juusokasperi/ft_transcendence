@@ -37,11 +37,10 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
 }) => {
   return (
     <Card
-      title={<div className="w-full text-center">Local Game Settings</div>}
-      accent="from-pink-500 via-purple-500 to-indigo-500"
-      className="w-full max-w-4xl space-y-6 backdrop-blur"
+      title={<div className="text-center">Local Game Settings</div>}
+      className="w-full max-w-4xl space-y-2 backdrop-blur"
     >
-      <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+      <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
         <PlayerCard
           title="Player 1"
           player={settings.player1}
@@ -128,17 +127,14 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
         onReset={onResetRules}
       />
 
-      <div className="flex flex-wrap justify-center gap-4">
-        <PlayButton color="limegreen" onClick={onSave}>
+      <div className="flex flex-wrap justify-center gap-2 p-2">
+        <PlayButton size="sm" color="limegreen" onClick={onSave}>
           SAVE SETTINGS
         </PlayButton>
-        <PlayButton color="crimson" onClick={onReset}>
+        <PlayButton size="sm" color="crimson" onClick={onReset}>
           RESET SETTINGS
         </PlayButton>
-      </div>
-
-      <div className="flex justify-center">
-        <PlayButton color="cyan" onClick={onPlay}>
+        <PlayButton size="sm" color="cyan" onClick={onPlay}>
           PLAY
         </PlayButton>
       </div>

@@ -21,7 +21,4 @@ export function useLocalMatchEnd({ canvasRef, playing, onSummary, onAutoExit }: 
     autoExitDelayMs: 0,
     extractDetail: (event) => (event as CustomEvent<MatchSummary>).detail ?? null,
   });
-
-  // No return value; hook only wires events.
-  useEffect(() => {}, []);
 }
