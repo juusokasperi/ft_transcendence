@@ -71,7 +71,8 @@ const AuthForm: React.FC<AuthFormProps> = ({ type, onSubmit }) => {
       .replace(/\s+/g, '')
       .replace(/[^a-z0-9.@_%+-]/g, '')
       .slice(0, MAX_EMAIL_LENGTH);
-    setEmail(normalized);
+    const cleaned = normalized.replace(/^\.+/, '');
+    setEmail(cleaned);
   };
 
   const handleEmailBeforeInput = (event: React.FormEvent<HTMLInputElement>) => {

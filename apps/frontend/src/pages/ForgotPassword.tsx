@@ -33,7 +33,8 @@ const ForgotPassword: React.FC = () => {
       .replace(/\s+/g, '')
       .replace(/[^a-z0-9.@_%+-]/g, '')
       .slice(0, 254);
-    setEmail(normalized);
+    const cleaned = normalized.replace(/^\.+/, '');
+    setEmail(cleaned);
   };
 
   const handleEmailBeforeInput = (event: React.FormEvent<HTMLInputElement>) => {
