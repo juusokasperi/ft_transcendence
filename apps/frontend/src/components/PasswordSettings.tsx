@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import type { AxiosError, AxiosInstance } from 'axios';
 import Button from './Button';
-import { validatePassword } from '../utils/validation';
+import { validatePassword, PASSWORD_MAX_LENGTH } from '../utils/validation';
 import { useSnackbar } from '../context/SnackbarContext';
 
 interface PasswordSettingsProps {
@@ -223,13 +223,14 @@ const PasswordSettings: React.FC<PasswordSettingsProps> = ({ axios, active }) =>
                 <input
                   id="current-password"
                   type={showCurrent ? 'text' : 'password'}
-                  value={currentPassword}
-                  onChange={(e) => setCurrentPassword(e.target.value)}
-                  onFocus={() => setFocusedField('current')}
-                  onBlur={() => setFocusedField(null)}
-                  className="flex-1 border-none bg-transparent text-sm outline-none"
-                  autoComplete="current-password"
-                  ref={currentInputRef}
+                value={currentPassword}
+                onChange={(e) => setCurrentPassword(e.target.value.slice(0, PASSWORD_MAX_LENGTH))}
+                onFocus={() => setFocusedField('current')}
+                onBlur={() => setFocusedField(null)}
+                className="flex-1 border-none bg-transparent text-sm outline-none"
+                autoComplete="current-password"
+                ref={currentInputRef}
+                maxLength={PASSWORD_MAX_LENGTH}
                 />
                 <ToggleButton
                   onClick={() => setShowCurrent((prev) => !prev)}
@@ -248,7 +249,7 @@ const PasswordSettings: React.FC<PasswordSettingsProps> = ({ axios, active }) =>
                 type={showNew ? 'text' : 'password'}
                 value={newPassword}
                 onChange={(e) => {
-                  setNewPassword(e.target.value);
+                  setNewPassword(e.target.value.slice(0, PASSWORD_MAX_LENGTH));
                   setError(null);
                 }}
                 onFocus={() => setFocusedField('new')}
@@ -256,6 +257,7 @@ const PasswordSettings: React.FC<PasswordSettingsProps> = ({ axios, active }) =>
                 className="flex-1 border-none bg-transparent text-sm outline-none"
                 autoComplete="new-password"
                 ref={newInputRef}
+                maxLength={PASSWORD_MAX_LENGTH}
               />
               <ToggleButton onClick={() => setShowNew((prev) => !prev)} active={showNew} />
             </div>
@@ -277,7 +279,7 @@ const PasswordSettings: React.FC<PasswordSettingsProps> = ({ axios, active }) =>
                 type={showConfirm ? 'text' : 'password'}
                 value={confirmPassword}
                 onChange={(e) => {
-                  setConfirmPassword(e.target.value);
+                  setConfirmPassword(e.target.value.slice(0, PASSWORD_MAX_LENGTH));
                   setError(null);
                 }}
                 onFocus={() => setFocusedField('confirm')}
@@ -285,6 +287,7 @@ const PasswordSettings: React.FC<PasswordSettingsProps> = ({ axios, active }) =>
                 className="flex-1 border-none bg-transparent text-sm outline-none"
                 autoComplete="new-password"
                 ref={confirmInputRef}
+                maxLength={PASSWORD_MAX_LENGTH}
               />
               <ToggleButton onClick={() => setShowConfirm((prev) => !prev)} active={showConfirm} />
             </div>

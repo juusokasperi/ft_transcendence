@@ -5,6 +5,7 @@ import {
   validateUsername,
   emailInputAllowedRegex,
   usernameInputAllowedRegex,
+  PASSWORD_MAX_LENGTH,
 } from '../utils/validation';
 import Button from './Button';
 import GoogleIcon from './icons/GoogleIcon';
@@ -21,6 +22,7 @@ interface AuthFormProps {
 
 const USERNAME_MAX_LENGTH = 16;
 const MAX_EMAIL_LENGTH = 254;
+const MAX_PASSWORD_LENGTH = PASSWORD_MAX_LENGTH;
 
 const AuthForm: React.FC<AuthFormProps> = ({ type, onSubmit }) => {
   const [username, setUsername] = useState('');
@@ -205,7 +207,8 @@ const AuthForm: React.FC<AuthFormProps> = ({ type, onSubmit }) => {
             type={showPassword ? 'text' : 'password'}
             placeholder="Password"
             value={password}
-            onChange={(e) => setPassword(e.target.value)}
+            onChange={(e) => setPassword(e.target.value.slice(0, MAX_PASSWORD_LENGTH))}
+            maxLength={MAX_PASSWORD_LENGTH}
             className={`w-full rounded border px-3 py-2 ${
               password ? getBorderClass(passwordValidation.state) : 'border-gray-300'
             }`}
@@ -236,7 +239,8 @@ const AuthForm: React.FC<AuthFormProps> = ({ type, onSubmit }) => {
               type={showConfirmPassword ? 'text' : 'password'}
               placeholder="Confirm Password"
               value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
+              onChange={(e) => setConfirmPassword(e.target.value.slice(0, MAX_PASSWORD_LENGTH))}
+              maxLength={MAX_PASSWORD_LENGTH}
               className={`w-full rounded border px-3 py-2 ${getBorderClass(confirmPasswordState)}`}
             />
             <button
