@@ -35,8 +35,26 @@ export const passwordRegex =
 
 export const validateEmail = (value: string): boolean => emailRegex.test(value);
 
+const USERNAME_MIN_LENGTH = 3;
+const USERNAME_MAX_LENGTH = 16;
+
 export const validateUsername = (value: string): ValidationResult => {
   if (!value) return { state: '', msg: '' };
+
+  if (value.length < USERNAME_MIN_LENGTH) {
+    return {
+      state: 'invalid',
+      msg: `Username must be at least ${USERNAME_MIN_LENGTH} characters long.`,
+    };
+  }
+
+  if (value.length > USERNAME_MAX_LENGTH) {
+    return {
+      state: 'invalid',
+      msg: `Username must be ${USERNAME_MAX_LENGTH} characters or fewer.`,
+    };
+  }
+
   if (usernameRegex.test(value)) return { state: 'valid', msg: '' };
   return {
     state: 'invalid',

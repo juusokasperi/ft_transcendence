@@ -13,6 +13,8 @@ interface AuthFormProps {
   }) => void;
 }
 
+const USERNAME_MAX_LENGTH = 16;
+
 const AuthForm: React.FC<AuthFormProps> = ({ type, onSubmit }) => {
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
@@ -37,16 +39,16 @@ const AuthForm: React.FC<AuthFormProps> = ({ type, onSubmit }) => {
       return;
     }
 
+    const passVal = validatePassword(password);
+    if (passVal.state !== 'valid') {
+      setError(passVal.msg);
+      return;
+    }
+
     if (type === 'register') {
       const userVal = validateUsername(username);
       if (userVal.state !== 'valid') {
         setError(userVal.msg);
-        return;
-      }
-
-      const passVal = validatePassword(password);
-      if (passVal.state !== 'valid') {
-        setError(passVal.msg);
         return;
       }
 
@@ -106,7 +108,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ type, onSubmit }) => {
             type="text"
             placeholder="Username"
             value={username}
-            onChange={(e) => setUsername(e.target.value)}
+            onChange={(e) => setUsername(e.target.value.slice(0, USERNAME_MAX_LENGTH))}
             className={`w-full rounded border px-3 py-2 ${getBorderClass(
               usernameValidation.state,
             )}`}
@@ -130,7 +132,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ type, onSubmit }) => {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             className={`w-full rounded border px-3 py-2 ${
-              type === 'register' ? getBorderClass(passwordValidation.state) : 'border-gray-300'
+              password ? getBorderClass(passwordValidation.state) : 'border-gray-300'
             }`}
           />
           <button
@@ -142,8 +144,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ type, onSubmit }) => {
           </button>
         </div>
 
-        {/* show messages only on register */}
-        {type === 'register' && passwordValidation.msg && (
+        {password && passwordValidation.msg && (
           <p className="mt-1 text-sm text-red-500">{passwordValidation.msg}</p>
         )}
       </div>
