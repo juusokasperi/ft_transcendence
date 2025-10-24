@@ -25,17 +25,28 @@ const AuthForm: React.FC<AuthFormProps> = ({ type, onSubmit }) => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
+  const trimmedEmail = email.trim();
+  const emailValidationState = trimmedEmail ? (validateEmail(trimmedEmail) ? 'valid' : 'invalid') : '';
+  const confirmPasswordState =
+    type === 'register' && confirmPassword
+      ? password.startsWith(confirmPassword)
+        ? confirmPassword === password
+          ? 'valid'
+          : 'weak'
+        : 'invalid'
+      : '';
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
     setSuccess(null);
 
-    if (!email || !password || (type === 'register' && (!confirmPassword || !username))) {
+    if (!trimmedEmail || !password || (type === 'register' && (!confirmPassword || !username))) {
       setError('All fields are required.');
       return;
     }
 
-    if (!validateEmail(email)) {
+    if (!validateEmail(trimmedEmail)) {
       setError('Please enter a valid email address.');
       return;
     }
@@ -62,7 +73,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ type, onSubmit }) => {
     onSubmit({
       username,
       password,
-      email,
+      email: trimmedEmail,
       confirmPassword: type === 'register' ? confirmPassword : undefined,
     });
   };
@@ -94,8 +105,11 @@ const AuthForm: React.FC<AuthFormProps> = ({ type, onSubmit }) => {
           placeholder="Email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          className="w-full rounded border border-gray-300 px-3 py-2"
+          className={`w-full rounded border px-3 py-2 ${getBorderClass(emailValidationState)}`}
         />
+        {trimmedEmail && emailValidationState === 'invalid' && (
+          <p className="mt-1 text-sm text-red-500">Please enter a valid email address.</p>
+        )}
       </div>
 
       {/* Username */}
@@ -163,9 +177,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ type, onSubmit }) => {
               placeholder="Confirm Password"
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
-              className={`w-full rounded border px-3 py-2 ${
-                confirmPassword && confirmPassword !== password ? 'border-red-500' : 'border-gray-300'
-              }`}
+              className={`w-full rounded border px-3 py-2 ${getBorderClass(confirmPasswordState)}`}
             />
             <button
               type="button"
@@ -175,8 +187,11 @@ const AuthForm: React.FC<AuthFormProps> = ({ type, onSubmit }) => {
               {showConfirmPassword ? 'Hide' : 'Show'}
             </button>
           </div>
-          {confirmPassword && confirmPassword !== password && (
+          {confirmPasswordState === 'invalid' && (
             <p className="mt-1 text-sm text-red-500">Passwords do not match.</p>
+          )}
+          {confirmPasswordState === 'valid' && (
+            <p className="mt-1 text-sm text-emerald-500">Passwords match.</p>
           )}
         </div>
       )}
