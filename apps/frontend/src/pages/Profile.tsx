@@ -32,7 +32,7 @@ const Profile: React.FC = () => {
 
   const baseUsername = user?.username ?? '';
   const baseEmail = user?.email ?? '';
-  const isUsernameDirty = isEditing && username !== baseUsername;
+  const isUsernameDirty = isEditing && username !== baseUsername && username.length > 0;
   const isEmailDirty = isEditing && email !== baseEmail;
   const isAvatarDirty = isEditing && Boolean(image);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
