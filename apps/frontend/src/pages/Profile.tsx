@@ -6,12 +6,18 @@ import { PLACEHOLDER, resolveAvatarUrl } from '../utils/avatarUrl';
 import TwoFactorSettings from '../components/TwoFactorSettings';
 import PasswordSettings from '../components/PasswordSettings';
 import Button from '../components/Button';
-import { validateUsername, validateEmail } from '../utils/validation';
+import {
+  validateUsername,
+  validateEmail,
+  emailInputAllowedRegex,
+  usernameInputAllowedRegex,
+} from '../utils/validation';
 import ConfirmDialog from '../components/ConfirmDialog';
 import { useSnackbar } from '../context/SnackbarContext';
 
 const MAX_USERNAME_LENGTH = 24;
 const MAX_EMAIL_LENGTH = 254;
+const MAX_AVATAR_SIZE = 1024 * 1024; // 1MB, mirrors backend limit
 
 const Profile: React.FC = () => {
   const { axios, user, setUser } = useAppContext();
@@ -31,7 +37,7 @@ const Profile: React.FC = () => {
 
   const baseUsername = user?.username ?? '';
   const baseEmail = user?.email ?? '';
-  const isUsernameDirty = isEditing && username !== baseUsername;
+  const isUsernameDirty = isEditing && username !== baseUsername && username.length > 0;
   const isEmailDirty = isEditing && email !== baseEmail;
   const isAvatarDirty = isEditing && Boolean(image);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
@@ -74,6 +80,16 @@ const Profile: React.FC = () => {
   const handleImageChange = async (e: ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files) return;
     const file = e.target.files[0] ?? null;
+    if (file && file.size > MAX_AVATAR_SIZE) {
+      enqueueSnackbar({
+        message: 'Avatar size must be 1MB or less.',
+        variant: 'error',
+      });
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+      return;
+    }
     setImage(file);
     if (file) {
       setImagePreview(URL.createObjectURL(file));
@@ -96,8 +112,13 @@ const Profile: React.FC = () => {
   };
 
   const applyEmailInput = (raw: string) => {
-    const normalized = raw.replace(/[\s]/g, '').slice(0, MAX_EMAIL_LENGTH);
-    setEmail(normalized);
+    const normalized = raw
+      .toLowerCase()
+      .replace(/\s+/g, '')
+      .replace(/[^a-z0-9.@_%+-]/g, '')
+      .slice(0, MAX_EMAIL_LENGTH);
+    const cleaned = normalized.replace(/^\.+/, '');
+    setEmail(cleaned);
 
     if (!isEditing) return;
 
@@ -107,6 +128,40 @@ const Profile: React.FC = () => {
     }
 
     setEmailError(validateEmail(normalized) ? null : 'Please enter a valid email address.');
+  };
+
+  const handleEmailBeforeInput = (event: React.FormEvent<HTMLInputElement>) => {
+    const nativeEvent = event.nativeEvent as InputEvent;
+    if (
+      nativeEvent.inputType === 'insertText' &&
+      nativeEvent.data &&
+      !emailInputAllowedRegex.test(nativeEvent.data)
+    ) {
+      event.preventDefault();
+    }
+  };
+
+  const handleEmailKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
+    if (event.key === ' ') {
+      event.preventDefault();
+    }
+  };
+
+  const handleUsernameBeforeInput = (event: React.FormEvent<HTMLInputElement>) => {
+    const nativeEvent = event.nativeEvent as InputEvent;
+    if (
+      nativeEvent.inputType === 'insertText' &&
+      nativeEvent.data &&
+      !usernameInputAllowedRegex.test(nativeEvent.data)
+    ) {
+      event.preventDefault();
+    }
+  };
+
+  const handleUsernameKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
+    if (event.key === ' ') {
+      event.preventDefault();
+    }
   };
 
   const handleUsernameChange = async (): Promise<boolean> => {
@@ -441,6 +496,8 @@ const Profile: React.FC = () => {
                   value={isEditing ? username : (user?.username ?? '')}
                   placeholder={user?.username}
                   onChange={(e) => applyUsernameInput(e.target.value)}
+                  onBeforeInput={handleUsernameBeforeInput}
+                  onKeyDown={handleUsernameKeyDown}
                   disabled={!isEditing}
                   className={`w-full rounded-2xl border border-white/15 bg-white/5 px-4 py-3 text-sm text-white transition placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-400/60 disabled:cursor-not-allowed disabled:opacity-60 ${
                     isEditing && usernameError
@@ -464,6 +521,8 @@ const Profile: React.FC = () => {
                   value={isEditing ? email : (user?.email ?? '')}
                   placeholder={user?.email}
                   onChange={(e) => applyEmailInput(e.target.value)}
+                  onBeforeInput={handleEmailBeforeInput}
+                  onKeyDown={handleEmailKeyDown}
                   disabled={!isEditing}
                   className={`w-full rounded-2xl border border-white/15 bg-white/5 px-4 py-3 text-sm text-white transition placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-400/60 disabled:cursor-not-allowed disabled:opacity-60 ${
                     isEditing && emailError

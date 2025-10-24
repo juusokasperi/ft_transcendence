@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 import Button from '../components/Button';
-import { validateEmail } from '../utils/validation';
+import { validateEmail, emailInputAllowedRegex } from '../utils/validation';
 import { useAppContext } from '../context/AppContext';
 import { useSnackbar } from '../context/SnackbarContext';
 
@@ -19,23 +19,58 @@ const ForgotPassword: React.FC = () => {
     if (user) navigate('/');
   }, [user, navigate]);
 
+  const trimmedEmail = email.trim();
+  const emailIsValid = trimmedEmail ? validateEmail(trimmedEmail) : false;
+  const emailBorderClass = !trimmedEmail
+    ? 'border-white/15 bg-white/95 focus:border-sky-400'
+    : emailIsValid
+      ? 'border-emerald-400 bg-white focus:border-emerald-400'
+      : 'border-rose-400 bg-white focus:border-rose-400';
+
+  const applyEmailInput = (raw: string) => {
+    const normalized = raw
+      .toLowerCase()
+      .replace(/\s+/g, '')
+      .replace(/[^a-z0-9.@_%+-]/g, '')
+      .slice(0, 254);
+    const cleaned = normalized.replace(/^\.+/, '');
+    setEmail(cleaned);
+  };
+
+  const handleEmailBeforeInput = (event: React.FormEvent<HTMLInputElement>) => {
+    const nativeEvent = event.nativeEvent as InputEvent;
+    if (
+      nativeEvent.inputType === 'insertText' &&
+      nativeEvent.data &&
+      !emailInputAllowedRegex.test(nativeEvent.data)
+    ) {
+      event.preventDefault();
+    }
+  };
+
+  const handleEmailKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
+    if (event.key === ' ') {
+      event.preventDefault();
+    }
+  };
+
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
     setError(null);
     setSuccess(null);
 
-    if (!email.trim()) {
+    if (!trimmedEmail) {
       setError('Enter the email linked to your account.');
       return;
     }
-    if (!validateEmail(email.trim())) {
-      setError('Provide a valid email.');
+    if (!validateEmail(trimmedEmail)) {
+      setError(null);
       return;
     }
 
     setLoading(true);
     try {
-      await axios.post('/api/reset-password', { email: email.trim() });
+      await axios.post('/api/reset-password', { email: trimmedEmail });
       setSuccess('If the address is registered, a reset link is on the way.');
       enqueueSnackbar({
         message: 'Check your inbox for password reset instructions.',
@@ -92,14 +127,19 @@ const ForgotPassword: React.FC = () => {
                   </label>
                   <input
                     id="resetEmail"
-                    type="email"
+                    type="text"
                     autoComplete="email"
-                    className="w-full rounded-xl border border-white/15 bg-white/95 px-3 py-2 text-slate-900 shadow-sm focus:border-sky-400 focus:outline-none focus:ring-2 focus:ring-sky-500/40"
+                    className={`w-full rounded-xl border px-3 py-2 text-slate-900 shadow-sm focus:outline-none focus:ring-2 focus:ring-sky-500/40 ${emailBorderClass}`}
                     value={email}
-                    onChange={(event) => setEmail(event.target.value)}
+                    onChange={(event) => applyEmailInput(event.target.value)}
+                    onBeforeInput={handleEmailBeforeInput}
+                    onKeyDown={handleEmailKeyDown}
                     placeholder="you@example.com"
                     disabled={loading}
                   />
+                  {trimmedEmail && !emailIsValid && (
+                    <p className="mt-1 text-sm font-medium text-rose-300">Provide a valid email.</p>
+                  )}
                 </div>
 
                 {error && <p className="text-sm font-medium text-rose-300">{error}</p>}
