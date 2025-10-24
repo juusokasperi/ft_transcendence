@@ -15,6 +15,7 @@ type UseMatchmakingClientArgs = {
   dispatch: React.Dispatch<OnlineAction>;
   connectKey: number;
   requestReconnect: () => void;
+  enabled: boolean;
   onAuthError: (message?: string) => void;
   onAllocatorError: (message?: string) => void;
   onMatchTimeout?: () => void;
@@ -25,6 +26,7 @@ export function useMatchmakingClient({
   dispatch,
   connectKey,
   requestReconnect,
+  enabled,
   onAuthError,
   onAllocatorError,
   onMatchTimeout,
@@ -38,6 +40,10 @@ export function useMatchmakingClient({
     onMatchDeclined,
   });
   const clientRef = useRef<ReturnType<typeof createMatchmakingClient> | null>(null);
+  const requestReconnectRef = useRef(requestReconnect);
+  const pendingJoinRef = useRef<{ alias?: string } | null>(null);
+  const intentionalSocketsRef = useRef(new WeakSet<WebSocket>());
+  const enabledRef = useRef(enabled);
 
   useEffect(() => {
     handlersRef.current = {
@@ -50,6 +56,23 @@ export function useMatchmakingClient({
   }, [dispatch, onAuthError, onAllocatorError, onMatchTimeout, onMatchDeclined]);
 
   useEffect(() => {
+    requestReconnectRef.current = requestReconnect;
+  }, [requestReconnect]);
+
+  useEffect(() => {
+    enabledRef.current = enabled;
+    if (!enabled && clientRef.current) {
+      const currentClient = clientRef.current;
+      intentionalSocketsRef.current.add(currentClient.socket);
+      currentClient.socket.close();
+      clientRef.current = null;
+    }
+  }, [enabled]);
+
+  useEffect(() => {
+    if (!enabled) {
+      return;
+    }
     const client = createMatchmakingClient((msg: MatchmakingMessage) => {
       const handlers = handlersRef.current;
       switch (msg.type) {
@@ -57,12 +80,15 @@ export function useMatchmakingClient({
           handlers.dispatch({ type: 'connected', clientId: msg.clientId });
           break;
         case 'QUEUE_JOINED':
+          pendingJoinRef.current = null;
           handlers.dispatch({ type: 'queueJoined' });
           break;
         case 'QUEUE_LEFT':
+          pendingJoinRef.current = null;
           handlers.dispatch({ type: 'queueLeft' });
           break;
         case 'MATCH_FOUND':
+          pendingJoinRef.current = null;
           handlers.dispatch({
             type: 'matchFound',
             matchId: msg.matchId,
@@ -91,12 +117,18 @@ export function useMatchmakingClient({
           });
           break;
         case 'ERROR':
+          pendingJoinRef.current = null;
           if (msg.code === 'AUTH') {
             handlers.dispatch({ type: 'authError' });
             handlers.onAuthError(msg.message);
           } else if (msg.code === 'ALLOCATOR') {
             handlers.dispatch({ type: 'allocatorError' });
             handlers.onAllocatorError(msg.message);
+          }
+          break;
+        case 'INFO':
+          if (msg.message === 'New connection detected, closing this one') {
+            intentionalSocketsRef.current.add(client.socket);
           }
           break;
         case 'TOURNAMENT_LOBBY_UPDATED':
@@ -107,21 +139,63 @@ export function useMatchmakingClient({
           // noop for messages we do not handle
           break;
       }
+    }, {
+      onClose: (_event) => {
+        if (clientRef.current === client) {
+          clientRef.current = null;
+        }
+        if (intentionalSocketsRef.current.delete(client.socket)) {
+          return;
+        }
+        if (clientRef.current !== null) {
+          return;
+        }
+        if (!enabledRef.current) {
+          return;
+        }
+        requestReconnectRef.current();
+      },
     });
 
     clientRef.current = client;
+    if (pendingJoinRef.current) {
+      client.joinQueue(pendingJoinRef.current.alias);
+    }
     return () => {
+      intentionalSocketsRef.current.add(client.socket);
       client.socket.close();
       clientRef.current = null;
     };
-  }, [connectKey]);
+  }, [connectKey, enabled]);
 
   const joinQueue = useCallback((alias?: string) => {
     const trimmed = alias?.trim() || undefined;
-    clientRef.current?.joinQueue(trimmed);
+    pendingJoinRef.current = { alias: trimmed };
+
+    if (!enabledRef.current) {
+      requestReconnectRef.current();
+      return;
+    }
+
+    const client = clientRef.current;
+    if (!client) {
+      requestReconnectRef.current();
+      return;
+    }
+
+    const { socket } = client;
+    if (socket.readyState === WebSocket.CLOSING || socket.readyState === WebSocket.CLOSED) {
+      intentionalSocketsRef.current.add(socket);
+      socket.close();
+      requestReconnectRef.current();
+      return;
+    }
+
+    client.joinQueue(trimmed);
   }, []);
 
   const leaveQueue = useCallback(() => {
+    pendingJoinRef.current = null;
     clientRef.current?.leaveQueue();
   }, []);
 
@@ -138,6 +212,7 @@ export function useMatchmakingClient({
   }, []);
 
   const reconnect = useCallback(() => {
+    if (!enabledRef.current) return;
     requestReconnect();
   }, [requestReconnect]);
 

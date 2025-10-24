@@ -29,6 +29,7 @@ const OnlineGame: React.FC = () => {
 
   const [connectKey, setConnectKey] = useState(0);
   const queueElapsed = useQueueTimer(state.status);
+  const matchmakingEnabled = state.status !== 'starting' && state.status !== 'playing';
 
   const liveMessage = useMemo(() => {
     switch (state.status) {
@@ -96,6 +97,7 @@ const OnlineGame: React.FC = () => {
     dispatch,
     connectKey,
     requestReconnect: () => setConnectKey((key) => key + 1),
+    enabled: matchmakingEnabled,
     onAuthError: handleAuthError,
     onAllocatorError: handleAllocatorError,
     onMatchTimeout: handleMatchTimeout,
@@ -110,7 +112,7 @@ const OnlineGame: React.FC = () => {
     delayMs: 2500,
   });
 
-  const matchActive = state.status === 'starting' || state.status === 'playing';
+  const matchActive = !matchmakingEnabled;
 
   const { destroy: destroyGame } = useGameBootstrap({
     canvasRef,
@@ -154,8 +156,9 @@ const OnlineGame: React.FC = () => {
 
   const handleDeclineMatch = useCallback(() => {
     if (!state.matchId) return;
+    dispatch({ type: 'matchDeclined' });
     declineMatch(state.matchId);
-  }, [declineMatch, state.matchId]);
+  }, [declineMatch, dispatch, state.matchId]);
 
   if (state.status === 'starting' || state.status === 'playing') {
     return <PlayingView canvasRef={canvasRef} onQuit={handleQuit} />;
