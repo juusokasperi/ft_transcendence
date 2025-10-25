@@ -72,8 +72,6 @@ function createFakeApp() {
   return app;
 }
 
-
-
 const fastifyMock = vi.fn(() => createFakeApp());
 
 vi.mock('fastify', () => ({
