@@ -39,7 +39,7 @@ const renderEmailTemplate = ({
                 <h1 style="margin:0 0 14px;font-size:22px;line-height:30px;color:#f8fafc;">${title}</h1>
                 <p style="margin:0 0 20px;font-size:14px;line-height:22px;color:#cbd5f5;">${description}</p>
                 <div style="margin-bottom:22px;">
-                  <a href="${ctaUrl}" style="display:inline-block;padding:12px 32px;border-radius:999px;font-size:14px;font-weight:600;text-decoration:none;color:#f8fafc;background-image:linear-gradient(135deg,#2363eb,#8b5cf6);box-shadow:0 12px 28px rgba(35,99,235,0.45);">
+                  <a href="${ctaUrl}" style="display:inline-block;padding:12px 28px;border-radius:999px;font-size:14px;font-weight:600;text-decoration:none;color:#ffffff;background-image:linear-gradient(90deg,#6366f1,#a855f7);box-shadow:0 12px 28px rgba(49,46,129,0.4);letter-spacing:0.01em;transition:transform 150ms ease,opacity 150ms ease;">
                     ${ctaLabel}
                   </a>
                 </div>
