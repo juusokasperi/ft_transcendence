@@ -1,0 +1,97 @@
+volumes:
+  grafana-storage:
+    driver: local
+
+services:
+  prometheus:
+    image: prom/prometheus
+    restart: unless-stopped
+    profiles:
+      - monitoring
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+    networks:
+      - prod-private
+
+  nginx-exporter:
+    image: nginx/nginx-prometheus-exporter:latest
+    depends_on:
+      nginx:
+        condition: service_started
+    profiles:
+      - monitoring
+    command:
+      - '--nginx.scrape-uri=http://nginx:${NGINX_STUB_STATUS_PORT:-8081}/stub_status'
+    networks:
+      - prod-private
+
+  grafana:
+    image: grafana/grafana
+    restart: unless-stopped
+    profiles:
+      - monitoring
+    environment:
+      - GF_SECURITY_ADMIN_USER=${GRAFANA_ADMIN_USER}
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASS}
+      - GF_SERVER_ROOT_URL=https://localhost:${NGINX_HTTPS_PORT}/grafana/
+      - GF_SERVER_SERVE_FROM_SUB_PATH=true
+      - GF_SECURITY_ALLOW_EMBEDDING=true
+      - GF_SERVER_ENABLE_GZIP=true
+      - GF_SERVER_ROUTER_LOGGING=true
+    volumes:
+      - grafana-storage:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning
+      - ./grafana/dashboards/:/etc/grafana/dashboards
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - |
+          curl -sf http://localhost:3000/api/health \
+          | grep -q '"database": "ok"'
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - prod-private
+
+  grafana-setup:
+    build:
+      context: ./grafana-setup/
+    profiles:
+      - monitoring
+    depends_on:
+      grafana:
+        condition: service_healthy
+    environment:
+      - GRAFANA_URL=http://grafana:${GRAFANA_PORT}
+      - ADMIN_USER=${GRAFANA_ADMIN_USER}
+      - ADMIN_PASS=${GRAFANA_ADMIN_PASS}
+      - NEW_NAME=${GRAFANA_USER_NAME}
+      - NEW_LOGIN=${GRAFANA_USER_NAME}
+      - NEW_PASS=${GRAFANA_USER_PASS}
+    networks:
+      - prod-private
+
+  # How much cAdvisor can do really depends how much privileges you have
+  # on the host. Enabling too many things will fill the logs with spam and
+  # eat the CPU.
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor:v0.52.0
+    restart: unless-stopped
+    profiles:
+      - monitoring
+    command:
+      - '--disable_metrics=cpu_topology,disk,network,memory,memory_numa,tcp,udp,percpu,sched,process,hugetlb,referenced_memory,resctrl,cpuset,advtcp'
+      - '--docker_only=true'
+      - '--housekeeping_interval=30s'
+    cap_add:
+      - SYS_PTRACE
+    volumes:
+      - '/:/rootfs:ro'
+      - '/var/run:/var/run:ro'
+      - '/sys:/sys:ro'
+      - '/sys/fs/cgroup:/sys/fs/cgroup:ro'
+      - '/var/lib/docker/:/var/lib/docker:ro'
+      - '/var/run/docker.sock:/var/run/docker.sock:ro'
+    networks:
+      - prod-private

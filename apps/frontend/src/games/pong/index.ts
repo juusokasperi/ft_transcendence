@@ -1,8 +1,9 @@
 // src/app/index.ts
 export type AppMode = 'local' | 'online' | 'tournament';
 import type { PlayerSeat } from '@pong/render';
-import type { Preferences } from './modes/preferences';
-export type { Preferences } from './modes/preferences';
+import type { OnlineMatchSummary } from './modes/online/types';
+import type { Preferences } from './modes/shared/preferences';
+export type { Preferences } from './modes/shared/preferences';
 
 export type CreateAppOptions = {
   mode: AppMode;
@@ -14,7 +15,11 @@ export type CreateAppOptions = {
     seat: PlayerSeat;
     joinToken: string;
     randomSeed: number;
-    onMatchEnd?: (reason: string, winner?: 'east' | 'west') => void;
+    onMatchEnd?: (
+      reason: string,
+      winner?: 'east' | 'west',
+      summary?: OnlineMatchSummary | null,
+    ) => void;
   };
   preferences?: Preferences;
 };

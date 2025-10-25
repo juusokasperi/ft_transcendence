@@ -30,6 +30,7 @@ app.post(
             side: 'west' | 'east';
             tournamentParticipantId?: number;
             alias?: string;
+            mmr: number;
           }>;
           simulationStartTick: number;
           randomSeed: number;
@@ -153,6 +154,5 @@ app.post(
 
 app.listen({ port: PORT, host: '0.0.0.0' }, (err: Error | null, address: string) => {
   if (err) throw err;
-  console.log(`Allocator server listening on ${PORT}`);
   log(`Server started on port ${PORT}`);
 });

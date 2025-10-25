@@ -1,6 +1,7 @@
 import db from '../client.ts';
 import type { MatchWithPlayers, MatchPlayerPublic } from '../../types/types.ts';
 import type { MatchDb, MatchPlayer, MatchWithPlayersForUserDb } from '../../types/dbtypes.ts';
+import { logger } from '../../utils/logger.ts';
 
 function addMatchHelper(
   team1Score: number,
@@ -323,7 +324,7 @@ export function getMatchesWithPlayersForUser(
       return matchWithoutUserTeam;
     });
   } catch (error) {
-    console.error('Error fetching matches for user:', error);
+    logger.error({ error }, 'Error fetching matches for user:');
     return [];
   }
 }

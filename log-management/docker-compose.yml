@@ -11,21 +11,21 @@ volumes:
     driver: local
 
 services:
+
   elastic_cert_setup:
     profiles:
       - elk
     build:
       context: ./elastic_cert_setup/
       args:
-        STACK_VERSION: ${STACK_VERSION:?STACK_VERSION must be set}
+        STACK_VERSION: ${STACK_VERSION:-9.1.5}
       labels:
         - project=transcendence
     volumes:
       - elk_certs:/usr/share/elasticsearch/config/certs
     user: '0'
-    environment:
-      - ELASTIC_PASSWORD=${ELASTIC_PASSWORD}
-      - KIBANA_PASSWORD=${KIBANA_PASSWORD}
+    env_file:
+      - ./.env
     healthcheck:
       test: ['CMD-SHELL', '[ -f config/certs/elasticsearch/elasticsearch.crt ]']
       interval: 1s
@@ -40,12 +40,7 @@ services:
     build:
       context: ./elasticsearch/
       args:
-        STACK_VERSION: ${STACK_VERSION:?STACK_VERSION must be set}
-      labels:
-        - project=transcendence
-    depends_on:
-      elastic_cert_setup:
-        condition: service_healthy
+        STACK_VERSION: ${STACK_VERSION:-9.1.5}
     labels:
       co.elastic.logs/module: elasticsearch
     volumes:
@@ -53,9 +48,11 @@ services:
       - elasticsearch_data:/usr/share/elasticsearch/data
     ports:
       - ${ES_PORT}:9200
+    env_file:
+      - ./.env
     environment:
+      - ES_JAVA_OPTS=-Xms512m -Xmx512m
       - discovery.type=single-node
-      - ELASTIC_PASSWORD=${ELASTIC_PASSWORD}
       - bootstrap.memory_lock=true
       - xpack.security.enabled=true
       - xpack.security.http.ssl.enabled=true
@@ -75,15 +72,39 @@ services:
         hard: -1
     healthcheck:
       test:
-        [
-          'CMD-SHELL',
-          "curl -s --cacert config/certs/ca/ca.crt https://localhost:9200 | grep -q 'missing authentication credentials'",
-        ]
-      interval: 10s
+        - CMD-SHELL
+        - |
+          curl -fsSL --cacert config/certs/ca/ca.crt \
+          -u ${ELASTIC_USER:-elastic}:${ELASTIC_PASSWORD:-changeme} \
+          "https://localhost:${ES_PORT:-9200}/_cluster/health?wait_for_status=yellow&timeout=5s" \
+          > /dev/null
+      interval: 5s
       timeout: 10s
       retries: 120
+    depends_on:
+      elastic_cert_setup:
+        condition: service_completed_successfully
     networks:
       - devnet
+
+  # configures policies using the API
+  elasticsearch-post:
+    profiles:
+      - elk
+    build:
+      context: ./elasticsearch-post/
+    volumes:
+      - elk_certs:/usr/share/elk/config/certs
+    env_file:
+      - ./.env
+    environment:
+      - ES_URL=https://elasticsearch:${ES_PORT:-9200}
+      - ELASTIC_USER=${ELASTIC_USER:-elastic}
+    networks:
+      - devnet
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
 
   kibana:
     profiles:
@@ -91,12 +112,12 @@ services:
     build:
       context: ./kibana/
       args:
-        STACK_VERSION: ${STACK_VERSION:?STACK_VERSION must be set}
-      labels:
-        - project=transcendence
+        STACK_VERSION: ${STACK_VERSION:-9.1.5}
     depends_on:
       elasticsearch:
         condition: service_healthy
+      elastic_cert_setup:
+        condition: service_completed_successfully
     labels:
       co.elastic.logs/module: kibana
     volumes:
@@ -104,6 +125,8 @@ services:
       - kibana_data:/usr/share/kibana/data
     ports:
       - ${KIBANA_PORT}:5601
+    env_file:
+      - ./.env
     environment:
       - SERVERNAME=kibana
       - ELASTICSEARCH_HOSTS=https://elasticsearch:9200
@@ -126,17 +149,17 @@ services:
     profiles:
       - elk
     build:
-      labels:
-        - project=transcendence
       context: ./kibana-post/
+    env_file:
+      - ./.env
     environment:
-      - ELASTIC_USER=elastic
-      - ELASTIC_PASSWORD=${ELASTIC_PASSWORD}
-      - KIBANA_URL=http://kibana:5601
+      - KIBANA_URL=http://kibana:${KIBANA_PORT:-5601}
+      - ELASTIC_USER=${ELASTIC_USER:-elastic}
     networks:
       - devnet
     depends_on:
-      - kibana
+      kibana:
+        condition: service_healthy
 
   logstash:
     profiles:
@@ -144,25 +167,25 @@ services:
     build:
       context: ./logstash/
       args:
-        STACK_VERSION: ${STACK_VERSION:?STACK_VERSION must be set}
-      labels:
-        - project=transcendence
-    depends_on:
-      elasticsearch:
-        condition: service_healthy
-      kibana:
-        condition: service_healthy
+        STACK_VERSION: ${STACK_VERSION:-9.1.5}
     labels:
       co.elastic.logs/module: logstash
     volumes:
       - elk_certs:/usr/share/logstash/certs
       - logstash_data:/usr/share/logstash/data
+    env_file:
+      - ./.env
     environment:
       - xpack.monitoring.enabled=false
-      - ELASTIC_USER=elastic
-      - ELASTIC_PASSWORD=${ELASTIC_PASSWORD}
-      - ELASTIC_HOSTS=https://elasticsearch:9200
+      - ELASTIC_HOSTS=https://elasticsearch:${ES_PORT:-9200}
+      - ELASTIC_USER=${ELASTIC_USER:-elastic}
     mem_limit: ${KB_MEM_LIMIT}
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fs http://localhost:9600/_node/stats || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 15
+      start_period: 10s
     ports:
       # Listens for GELF input here. The GELF driver can only send to host IPs,
       # not into containers => this port needs to be exposed

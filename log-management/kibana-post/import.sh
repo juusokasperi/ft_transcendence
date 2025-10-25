@@ -20,7 +20,7 @@ if [ "$EXISTS" -gt 0 ]; then
   echo "Data view already exists, skipping import."
 else
 	echo "Importing data views..."
-	curl -X POST "${KIBANA_URL}/api/saved_objects/_import" \
+	curl -s -X POST "${KIBANA_URL}/api/saved_objects/_import" \
 	  -u "${ELASTIC_USER}:${ELASTIC_PASSWORD}" \
 	  -H "kbn-xsrf: true" \
 	  --form file=@/data/logstash.ndjson

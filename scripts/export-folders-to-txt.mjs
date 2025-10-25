@@ -18,6 +18,7 @@ const DEFAULT_DIRS = [
   'apps/chat',
   'apps/backend',
   'apps/frontend/src',
+  'apps/frontend/src/games/pong',
   'apps/frontend/tests',
   'apps/game-gateway',
   'apps/game-server',
@@ -28,6 +29,11 @@ const DEFAULT_DIRS = [
   'packages/pong/game-logic',
   'packages/pong/render',
   'packages/pong/shared',
+  'apps/frontend/src/pages/pong/local',
+  'packages/pong/render/src/client/engine',
+  'apps/frontend/src/games/pong/modes',
+  'apps',
+  'packages',
 ];
 
 const MAX_FILE_BYTES = 1024 * 1024; // 1MB guard

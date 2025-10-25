@@ -6,6 +6,7 @@ import {
   emailChangeHtml,
 } from './emailHtml.ts';
 import { FRONTEND_URL, MAIL_TRANSPORT_CONFIG, MAIL_FROM } from '../config.ts';
+import { logger } from '../logger.ts';
 
 /*
 	Falls back to nodemailer's Ethereal test account when no SMTP
@@ -51,7 +52,7 @@ async function dispatchEmail({ to, subject, html }: { to: string; subject: strin
   });
   const previewUrl = nodemailer.getTestMessageUrl(info);
   if (previewUrl) {
-    console.log('\x1b[0;32mPreview URL\x1b[0m: %s', previewUrl);
+    logger.info({ previewUrl }, 'Preview URL ready');
   }
   return info.accepted.length > 0;
 }
@@ -62,11 +63,11 @@ export async function sendConfirmationEmail(recipientEmail: string, token: strin
     const html = confirmationEmailHtml(url, FRONTEND_URL);
     return await dispatchEmail({
       to: recipientEmail,
-      subject: 'Confirm your email for BabylonPong',
+      subject: 'Confirm your email for Arcade Transcendence',
       html,
     });
   } catch (error) {
-    console.error('\x1b[0;31mError sending confirmation email\x1b[0m:', error);
+    logger.error({ error }, 'Error sending confirmation email');
     return false;
   }
 }
@@ -77,11 +78,11 @@ export async function sendResetPasswordEmail(recipientEmail: string, token: stri
     const html = resetPasswordHtml(url, FRONTEND_URL);
     return await dispatchEmail({
       to: recipientEmail,
-      subject: 'Reset your password for BabylonPong',
+      subject: 'Reset your password for Arcade Transcendence',
       html,
     });
   } catch (error) {
-    console.error('\x1b[0;31mError sending reset password email\x1b[0m:', error);
+    logger.error({ error }, 'Error sending reset password email');
     return false;
   }
 }
@@ -92,11 +93,11 @@ export async function sendDeleteEmail(recipientEmail: string, token: string) {
     const html = deleteUserHtml(url, FRONTEND_URL);
     return await dispatchEmail({
       to: recipientEmail,
-      subject: 'Delete your BabylonPong account',
+      subject: 'Delete your Arcade Transcendence account',
       html,
     });
   } catch (error) {
-    console.error('\x1b[0;31mError sending delete account email\x1b[0m:', error);
+    logger.error({ error }, 'Error sending delete account email');
     return false;
   }
 }
@@ -107,11 +108,11 @@ export async function sendEmailChangeEmail(recipientEmail: string, token: string
     const html = emailChangeHtml(url, FRONTEND_URL);
     return await dispatchEmail({
       to: recipientEmail,
-      subject: 'Confirm your new email for BabylonPong',
+      subject: 'Confirm your new email for Arcade Transcendence',
       html,
     });
   } catch (error) {
-    console.error('\x1b[0;31mError sending email change confirmation email\x1b[0m:', error);
+    logger.error({ error }, 'Error sending email change confirmation email');
     return false;
   }
 }

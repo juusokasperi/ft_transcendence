@@ -2,6 +2,7 @@ import { register } from 'prom-client';
 import { initSqliteMetrics } from './metrics/sqlite-patch.ts';
 import { registerMetrics } from './metrics/fastify-metrics.ts';
 import fastify from 'fastify';
+import type { FastifyBaseLogger } from 'fastify';
 import cors from '@fastify/cors';
 import fastifyMultipart from '@fastify/multipart';
 import fastifyStatic from '@fastify/static';
@@ -32,16 +33,23 @@ import { setupPurgeSchedulers } from './maintenance/purgeSchedulers.ts';
 import { runMigrations } from './db/migrations.ts';
 import { prettierErrorMessages } from './utils/errorHandler.ts';
 import './types/types.ts';
+import { logger } from './utils/logger.ts';
 
 if (ENABLE_SQLITE_METRICS === 'true') initSqliteMetrics();
 
+const isDev = process.env.NODE_ENV === 'development';
+
 const app = fastify({
-  logger: true,
+  logger: {
+    level: 'trace', // filters in logger.ts
+  },
   // trustProxy: true,
   ajv: {
     customOptions: { allErrors: true, removeAdditional: true },
   },
 });
+
+app.log = logger as FastifyBaseLogger;
 
 register.setDefaultLabels({
   service: 'api',
@@ -95,7 +103,9 @@ app.register(logoutRoutes, { prefix: '/api/logout' });
 app.register(signupRoutes, { prefix: '/api/signup' });
 app.register(refreshRoutes, { prefix: '/api/auth' });
 app.register(resetPasswordRoutes, { prefix: '/api/reset-password' });
-app.register(debugRoutes, { prefix: '/debug' });
+if (isDev) {
+  app.register(debugRoutes, { prefix: '/debug' });
+}
 
 app.addHook('onClose', async () => {
   teardownPurgeSchedulers();
@@ -107,7 +117,7 @@ await app.register(swaggerUi, {
 await app.ready();
 app.swagger();
 
-console.log(
+app.log.info(
   `\x1b[0;33mSwagger API documentation served at http://localhost:${BACKEND_PORT}/docs\x1b[0m`,
 );
 

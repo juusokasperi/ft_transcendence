@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { Routes, Route, useLocation } from 'react-router-dom';
-
+import { lazy } from 'react';
 import Registration from './pages/Registration';
 import Login from './pages/Login';
 import Home from './pages/Home';
@@ -9,13 +9,8 @@ import Profile from './pages/Profile';
 import Friends from './pages/Friends';
 import Stats from './pages/Stats';
 import Confirmation from './pages/Confirmation';
-import PingPong from './pages/pong/pong-homepage';
-import LocalGame from './pages/pong/local/local-game';
 import DeleteUser from './pages/DeleteUser';
 import ConfirmEmail from './pages/ConfirmEmail';
-import OnlineGame from './pages/pong/online-game';
-import Tournament from './pages/pong/tournament';
-import TournamentDetail from './pages/pong/tournament-detail';
 import ForgotPassword from './pages/ForgotPassword';
 import ResetPassword from './pages/ResetPassword';
 import PublicUser from './pages/PublicUser';
@@ -37,8 +32,10 @@ function computeChannelFromPath(pathname: string) {
   if (pathname.startsWith('/profile')) return 'lobby';
 
   // Ping-pong area
-  if (pathname.startsWith('/ping-pong/online')) return 'matchmaking';
-  if (pathname.startsWith('/ping-pong')) return 'ping-pong';
+  if (pathname.startsWith('/pong/online')) {
+    return 'matchmaking';
+  }
+  if (pathname.startsWith('/pong')) return 'ping-pong';
 
   return 'lobby';
 }
@@ -55,6 +52,12 @@ function ChatToggleButton({ open, setOpen }: { open: boolean; setOpen: (v: boole
     </button>
   );
 }
+import PongLayout from './pages/pong/PongLayout';
+const ModePicker = lazy(() => import('./pages/pong/ModePicker'));
+const LocalGame = lazy(() => import('./pages/pong/local/LocalGame'));
+const OnlineGame = lazy(() => import('./pages/pong/online/OnlineGame'));
+const Tournament = lazy(() => import('./pages/pong/tournament/TournamentPage'));
+const TournamentDetail = lazy(() => import('./pages/pong/tournament/TournamentDetail'));
 
 function App() {
   const location = useLocation();
@@ -82,11 +85,13 @@ function App() {
             <Route path={'/login'} element={<Login />} />
             <Route path={'/forgot-password'} element={<ForgotPassword />} />
             <Route path={'/reset-password/:token'} element={<ResetPassword />} />
-            <Route path={'/ping-pong'} element={<PingPong />} />
-            <Route path={'/ping-pong/local'} element={<LocalGame />} />
-            <Route path={'/ping-pong/online'} element={<OnlineGame />} />
-            <Route path={'/ping-pong/tournaments'} element={<Tournament />} />
-            <Route path={'/ping-pong/tournaments/:tournamentId'} element={<TournamentDetail />} />
+            <Route path="/pong" element={<PongLayout />}>
+              <Route index element={<ModePicker />} />
+              <Route path="local" element={<LocalGame />} />
+              <Route path="online" element={<OnlineGame />} />
+              <Route path="tournaments" element={<Tournament />} />
+              <Route path="tournaments/:tournamentId" element={<TournamentDetail />} />
+            </Route>
             <Route path={'/confirm/:confirmationToken'} element={<Confirmation />} />
             <Route path={'/delete-user/:confirmationToken'} element={<DeleteUser />} />
             <Route path={'/confirm-email/:token'} element={<ConfirmEmail />} />

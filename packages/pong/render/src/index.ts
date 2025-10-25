@@ -5,6 +5,9 @@ export { createEngine } from './client/engine/engine';
 export { createLifecycle } from './client/engine/lifecycle';
 export { disposeWorld } from './client/engine/teardown';
 
+// ── Shared constants ───────────────────────────────────────────────────────────
+export { TABLE_LENGTH_X, TABLE_WIDTH_Z, TABLE_DEPTH_Y } from './constants/table';
+
 // ── World / Scene ──────────────────────────────────────────────────────────────
 export { createWorld } from './client/scene/scene';
 export { setPaddleColors } from './client/scene/color';

@@ -85,8 +85,8 @@ function ensureUniqueUsername(preferred: string): string {
   const base =
     (preferred || 'user')
       .toLowerCase()
-      .replace(/[^a-z0-9_]+/g, '_')
-      .replace(/^_+|_+$/g, '')
+      .replace(/[^a-z0-9-]+/g, '-')
+      .replace(/^-+|-+$/g, '')
       .slice(0, 24) || 'user';
   let candidate = base;
   let n = 0;

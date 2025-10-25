@@ -4,6 +4,7 @@ import {
   getTournamentMatchById,
   getTournamentMatchRoster,
 } from '../db/queries/tournamentMatches.ts';
+import { logger } from '../utils/logger.ts';
 
 const redis = new Redis(REDIS_URL);
 
@@ -60,7 +61,7 @@ export async function notifyMatchesReady(tournamentId: number, matchIds: number[
   try {
     await redis.publish('tournament:matches_ready', JSON.stringify(payload));
   } catch (error) {
-    console.error('[Tournament] Failed to publish matches ready', { error });
+    logger.error({ error }, '[Tournament] Failed to publish matches ready');
   }
 }
 
@@ -73,6 +74,6 @@ export async function notifyTournamentStateUpdated(tournamentId: number) {
   try {
     await redis.publish('tournament:state_updated', JSON.stringify(payload));
   } catch (error) {
-    console.error('[Tournament] Failed to publish state update', { error });
+    logger.error({ error }, '[Tournament] Failed to publish state update');
   }
 }

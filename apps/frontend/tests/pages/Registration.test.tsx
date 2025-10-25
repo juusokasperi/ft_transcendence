@@ -49,7 +49,7 @@ describe('Registration page', () => {
     );
 
     fireEvent.change(screen.getByLabelText(/username/i), { target: { value: 'testuser' } });
-    fireEvent.change(screen.getByLabelText(/email/i), { target: { value: 'e@e.e' } });
+    fireEvent.change(screen.getByLabelText(/email/i), { target: { value: 'user@example.com' } });
     fireEvent.change(screen.getByLabelText('Password'), { target: { value: 'StrongPass123!' } });
     fireEvent.change(screen.getByLabelText('Confirm Password'), {
       target: { value: 'StrongPass123!' },
@@ -59,7 +59,7 @@ describe('Registration page', () => {
     await waitFor(() => {
       expect(axiosMock.post).toHaveBeenCalledWith('/api/signup', {
         username: 'testuser',
-        email: 'e@e.e',
+        email: 'user@example.com',
         password: 'StrongPass123!',
       });
       // no auto-login in email confirmation flow
@@ -86,7 +86,7 @@ describe('Registration page', () => {
     );
 
     fireEvent.change(screen.getByLabelText(/username/i), { target: { value: 'taken' } });
-    fireEvent.change(screen.getByLabelText(/email/i), { target: { value: 'e@e.e' } });
+    fireEvent.change(screen.getByLabelText(/email/i), { target: { value: 'user@example.com' } });
     fireEvent.change(screen.getByLabelText('Password'), { target: { value: 'StrongPass123!' } });
     fireEvent.change(screen.getByLabelText('Confirm Password'), {
       target: { value: 'StrongPass123!' },

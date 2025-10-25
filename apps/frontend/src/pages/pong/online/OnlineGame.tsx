@@ -1,0 +1,224 @@
+import React, { useCallback, useMemo, useReducer, useRef, useState } from 'react';
+import { useAppContext } from '../../../context/AppContext';
+import { useSnackbar } from '../../../context/SnackbarContext';
+import PlayingView from '../shared/components/PlayingView';
+
+import SurfaceCard from '../shared/components/SurfaceCard';
+import StatusBadge from './components/StatusBadge';
+import QueueControls from './components/QueueControls';
+import MatchFoundPanel from './components/MatchFoundPanel';
+import PostMatchOnlineView from './components/PostMatchOnlineView';
+import { useBodyClass } from '../shared/hooks/useBodyClass';
+
+import { useQueueTimer } from './hooks/useQueueTimer';
+import { useGameBootstrap } from './hooks/useGameBootstrap';
+import { useOnlineMatchEnd } from './hooks/useOnlineMatchEnd';
+import { useBootstrapConfig } from './hooks/useBootstrapConfig';
+import { useMatchmakingClient } from './hooks/useMatchmakingClient';
+import { useMatchOverEvent } from '../shared/hooks/useMatchOverEvent';
+
+import { initialState, reducer } from './state/machine';
+import PageContainer from '../shared/components/PageContainer';
+import PageSection from '../shared/components/PageSection';
+
+const OnlineGame: React.FC = () => {
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const [state, dispatch] = useReducer(reducer, initialState);
+  const { axios, navigate } = useAppContext();
+  const { enqueueSnackbar } = useSnackbar();
+
+  const [connectKey, setConnectKey] = useState(0);
+  const queueElapsed = useQueueTimer(state.status);
+  const matchmakingEnabled = state.status !== 'starting' && state.status !== 'playing';
+
+  const liveMessage = useMemo(() => {
+    switch (state.status) {
+      case 'connecting':
+        return 'Connecting to matchmaking.';
+      case 'idle':
+        return 'Idle. Not in queue.';
+      case 'in_queue':
+        return 'In queue. Looking for an opponent.';
+      case 'match_found': {
+        const name = state.opponent.username ?? 'opponent';
+        return `Match found. Opponent ${name}. Accept or decline.`;
+      }
+      case 'match_accepted':
+        return 'Match accepted. Waiting to start.';
+      case 'starting':
+        return 'Starting match.';
+      case 'playing':
+        return 'Match in progress.';
+      case 'postmatch':
+        return 'Match completed.';
+      default:
+        return '';
+    }
+  }, [state.status, state.opponent.username]);
+
+  const handleMatchDeclined = useCallback(() => {
+    enqueueSnackbar({ message: 'Match declined or unavailable.', variant: 'error' });
+  }, [enqueueSnackbar]);
+
+  const handleMatchTimeout = useCallback(() => {
+    enqueueSnackbar({ message: 'Pending match timed out.', variant: 'error' });
+  }, [enqueueSnackbar]);
+
+  const handleAllocatorError = useCallback(
+    (message?: string) => {
+      enqueueSnackbar({
+        message: message ?? 'No available game servers right now. Please try again shortly.',
+        variant: 'error',
+      });
+    },
+    [enqueueSnackbar],
+  );
+
+  const handleAuthError = useCallback(
+    async (message?: string) => {
+      const fallbackMessage = message ?? 'Authentication error. Please sign in again.';
+      if (message === 'Token expired') {
+        try {
+          await axios.post('/api/auth/refresh');
+          setConnectKey((key) => key + 1);
+          return;
+        } catch (error) {
+          console.error('[OnlineGame] Failed to refresh auth token', error);
+        }
+      }
+
+      enqueueSnackbar({ message: fallbackMessage, variant: 'error' });
+      navigate('/login');
+    },
+    [axios, enqueueSnackbar, navigate],
+  );
+
+  const { joinQueue, leaveQueue, acceptMatch, declineMatch, reconnect } = useMatchmakingClient({
+    dispatch,
+    connectKey,
+    requestReconnect: () => setConnectKey((key) => key + 1),
+    enabled: matchmakingEnabled,
+    onAuthError: handleAuthError,
+    onAllocatorError: handleAllocatorError,
+    onMatchTimeout: handleMatchTimeout,
+    onMatchDeclined: handleMatchDeclined,
+  });
+
+  const bootstrapConfig = useBootstrapConfig(state);
+  const { handleMatchEnd } = useOnlineMatchEnd({
+    seat: state.seat,
+    dispatch,
+    enqueueSnackbar,
+    delayMs: 2500,
+  });
+
+  const matchActive = !matchmakingEnabled;
+
+  const { destroy: destroyGame } = useGameBootstrap({
+    canvasRef,
+    active: matchActive,
+    config: bootstrapConfig,
+    onStarted: () => dispatch({ type: 'startPlaying' }),
+    onEnded: handleMatchEnd,
+  });
+
+  const handleQuit = useCallback(() => {
+    destroyGame();
+    dispatch({ type: 'reset' });
+    reconnect();
+  }, [destroyGame, reconnect]);
+
+  useBodyClass('pong-playing', matchActive);
+  useMatchOverEvent({
+    canvasRef,
+    active: matchActive,
+    onMatchOver: () => {},
+    onAutoExit: handleQuit,
+    autoExitDelayMs: 3000,
+  });
+
+  const handleJoinQueue = useCallback(
+    (alias?: string) => {
+      joinQueue(alias);
+    },
+    [joinQueue],
+  );
+
+  const handleLeaveQueue = useCallback(() => {
+    leaveQueue();
+  }, [leaveQueue]);
+
+  const handleAcceptMatch = useCallback(() => {
+    if (!state.matchId) return;
+    dispatch({ type: 'matchAccepted' });
+    acceptMatch(state.matchId);
+  }, [acceptMatch, state.matchId]);
+
+  const handleDeclineMatch = useCallback(() => {
+    if (!state.matchId) return;
+    dispatch({ type: 'matchDeclined' });
+    declineMatch(state.matchId);
+  }, [declineMatch, dispatch, state.matchId]);
+
+  if (state.status === 'starting' || state.status === 'playing') {
+    return <PlayingView canvasRef={canvasRef} onQuit={handleQuit} />;
+  }
+
+  if (state.status === 'postmatch' && state.postMatchSummary) {
+    return (
+      <PageContainer>
+        <PageSection>
+          <PostMatchOnlineView
+            summary={state.postMatchSummary}
+            onBackToMenu={() => navigate('/pong')}
+          />
+        </PageSection>
+      </PageContainer>
+    );
+  }
+
+  return (
+    <PageContainer>
+      <PageSection>
+        <div className="flex justify-center">
+          <SurfaceCard className="w-full max-w-xl space-y-4 p-4 shadow-2xl">
+            <div className="sr-only" role="status" aria-live="polite">
+              {liveMessage}
+            </div>
+            <header className="flex items-center justify-between">
+              <div>
+                <h2 className="text-xl font-semibold tracking-wide">Matchmaking</h2>
+                <p className="text-sm text-white/60">Queue up and play in real time.</p>
+              </div>
+              <StatusBadge status={state.status} />
+            </header>
+
+            {state.status === 'connecting' && (
+              <p className="text-white/60">Connecting to matchmaking…</p>
+            )}
+
+            {(state.status === 'idle' || state.status === 'in_queue') && (
+              <QueueControls
+                status={state.status}
+                queueElapsed={queueElapsed}
+                onJoin={handleJoinQueue}
+                onLeave={handleLeaveQueue}
+              />
+            )}
+
+            {state.status === 'match_found' || state.status === 'match_accepted' ? (
+              <MatchFoundPanel
+                opponent={state.opponent}
+                status={state.status}
+                onAccept={handleAcceptMatch}
+                onDecline={handleDeclineMatch}
+              />
+            ) : null}
+          </SurfaceCard>
+        </div>
+      </PageSection>
+    </PageContainer>
+  );
+};
+
+export default OnlineGame;

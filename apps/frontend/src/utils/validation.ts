@@ -11,7 +11,8 @@ export interface ValidationResult {
  * - No spaces allowed.
  * - Must have at least one character before and after '@', and a domain after '.'.
  */
-export const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+export const emailRegex =
+  /^(?!.*\.\.)(?!\.)(?!.*\.$)[A-Za-z0-9._%+-]+@(?:[A-Za-z0-9](?:[A-Za-z0-9-]*[A-Za-z0-9])?\.)+[A-Za-z]{2,}$/;
 
 /**
  * Matches a valid username.
@@ -30,13 +31,43 @@ export const usernameRegex = /^(?!-)([a-zA-Z0-9-]+)(?<!-)$/;
  * - At least one digit.
  * - At least one special character from: !@#$%^&*()-=+[]{};:|,<.>/?`
  */
-export const passwordRegex =
-  /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()\-=+[\]{};:|,<.>/?`]).{12,}$/;
+export const PASSWORD_MIN_LENGTH = 12;
+export const PASSWORD_MAX_LENGTH = 42;
+
+export const passwordAllowedCharsRegex = /^[a-zA-Z0-9!@#$%^&*()\-_=+\[\]{};:|,<.>/?]+$/;
+
+export const passwordRegex = new RegExp(
+  `^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[!@#$%^&*()\\-_=+\\[\\]{};:|,<.>/?])[a-zA-Z0-9!@#$%^&*()\\-_=+\\[\\]{};:|,<.>/?]{${PASSWORD_MIN_LENGTH},${PASSWORD_MAX_LENGTH}}$`,
+);
 
 export const validateEmail = (value: string): boolean => emailRegex.test(value);
 
+// Allowed character set for email input fields (before validation).
+export const emailInputAllowedRegex = /^[a-zA-Z0-9@._%+-]+$/;
+
+// Allowed character set for username input fields.
+export const usernameInputAllowedRegex = /^[a-zA-Z0-9-]+$/;
+
+const USERNAME_MIN_LENGTH = 3;
+const USERNAME_MAX_LENGTH = 16;
+
 export const validateUsername = (value: string): ValidationResult => {
   if (!value) return { state: '', msg: '' };
+
+  if (value.length < USERNAME_MIN_LENGTH) {
+    return {
+      state: 'invalid',
+      msg: `Username must be at least ${USERNAME_MIN_LENGTH} characters long.`,
+    };
+  }
+
+  if (value.length > USERNAME_MAX_LENGTH) {
+    return {
+      state: 'invalid',
+      msg: `Username must be ${USERNAME_MAX_LENGTH} characters or fewer.`,
+    };
+  }
+
   if (usernameRegex.test(value)) return { state: 'valid', msg: '' };
   return {
     state: 'invalid',
@@ -47,10 +78,24 @@ export const validateUsername = (value: string): ValidationResult => {
 export const validatePassword = (value: string): ValidationResult => {
   if (!value) return { state: '', msg: '' };
 
-  if (value.length < 12) {
+  if (value.length < PASSWORD_MIN_LENGTH) {
     return {
       state: 'weak',
-      msg: 'Password is too short (minimum 12 characters required).',
+      msg: `Password is too short (minimum ${PASSWORD_MIN_LENGTH} characters required).`,
+    };
+  }
+
+  if (value.length > PASSWORD_MAX_LENGTH) {
+    return {
+      state: 'invalid',
+      msg: `Password must be ${PASSWORD_MAX_LENGTH} characters or fewer.`,
+    };
+  }
+
+  if (!passwordAllowedCharsRegex.test(value)) {
+    return {
+      state: 'invalid',
+      msg: 'Password has invalid characters.',
     };
   }
 

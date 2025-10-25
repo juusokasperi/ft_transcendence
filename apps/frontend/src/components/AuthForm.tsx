@@ -1,5 +1,12 @@
 import React, { useState } from 'react';
-import { validateEmail, validatePassword, validateUsername } from '../utils/validation';
+import {
+  validateEmail,
+  validatePassword,
+  validateUsername,
+  emailInputAllowedRegex,
+  usernameInputAllowedRegex,
+  PASSWORD_MAX_LENGTH,
+} from '../utils/validation';
 import Button from './Button';
 import GoogleIcon from './icons/GoogleIcon';
 
@@ -13,6 +20,10 @@ interface AuthFormProps {
   }) => void;
 }
 
+const USERNAME_MAX_LENGTH = 16;
+const MAX_EMAIL_LENGTH = 254;
+const MAX_PASSWORD_LENGTH = PASSWORD_MAX_LENGTH;
+
 const AuthForm: React.FC<AuthFormProps> = ({ type, onSubmit }) => {
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
@@ -21,19 +32,90 @@ const AuthForm: React.FC<AuthFormProps> = ({ type, onSubmit }) => {
   const [success, setSuccess] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
+  const trimmedEmail = email.trim();
+  const emailValidationState = trimmedEmail
+    ? validateEmail(trimmedEmail)
+      ? 'valid'
+      : 'invalid'
+    : '';
+  const confirmPasswordState =
+    type === 'register' && confirmPassword
+      ? password.startsWith(confirmPassword)
+        ? confirmPassword === password
+          ? 'valid'
+          : 'weak'
+        : 'invalid'
+      : '';
+
+  const applyUsernameInput = (raw: string) => {
+    const sanitized = raw.replace(/[^a-zA-Z0-9-]/g, '').slice(0, USERNAME_MAX_LENGTH);
+    setUsername(sanitized);
+  };
+
+  const handleUsernameBeforeInput = (event: React.FormEvent<HTMLInputElement>) => {
+    const nativeEvent = event.nativeEvent as InputEvent;
+    if (
+      nativeEvent.inputType === 'insertText' &&
+      nativeEvent.data &&
+      !usernameInputAllowedRegex.test(nativeEvent.data)
+    ) {
+      event.preventDefault();
+    }
+  };
+
+  const handleUsernameKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
+    if (event.key === ' ') {
+      event.preventDefault();
+    }
+  };
+
+  const applyEmailInput = (raw: string) => {
+    const normalized = raw
+      .toLowerCase()
+      .replace(/\s+/g, '')
+      .replace(/[^a-z0-9.@_%+-]/g, '')
+      .slice(0, MAX_EMAIL_LENGTH);
+    const cleaned = normalized.replace(/^\.+/, '');
+    setEmail(cleaned);
+  };
+
+  const handleEmailBeforeInput = (event: React.FormEvent<HTMLInputElement>) => {
+    const nativeEvent = event.nativeEvent as InputEvent;
+    if (
+      nativeEvent.inputType === 'insertText' &&
+      nativeEvent.data &&
+      !emailInputAllowedRegex.test(nativeEvent.data)
+    ) {
+      event.preventDefault();
+    }
+  };
+
+  const handleEmailKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
+    if (event.key === ' ') {
+      event.preventDefault();
+    }
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
     setSuccess(null);
 
-    if (!email || !password || (type === 'register' && (!confirmPassword || !username))) {
+    if (!trimmedEmail || !password || (type === 'register' && (!confirmPassword || !username))) {
       setError('All fields are required.');
       return;
     }
 
-    if (!validateEmail(email)) {
+    if (!validateEmail(trimmedEmail)) {
       setError('Please enter a valid email address.');
+      return;
+    }
+
+    const passVal = validatePassword(password);
+    if (passVal.state !== 'valid') {
+      setError(passVal.msg);
       return;
     }
 
@@ -41,12 +123,6 @@ const AuthForm: React.FC<AuthFormProps> = ({ type, onSubmit }) => {
       const userVal = validateUsername(username);
       if (userVal.state !== 'valid') {
         setError(userVal.msg);
-        return;
-      }
-
-      const passVal = validatePassword(password);
-      if (passVal.state !== 'valid') {
-        setError(passVal.msg);
         return;
       }
 
@@ -59,7 +135,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ type, onSubmit }) => {
     onSubmit({
       username,
       password,
-      email,
+      email: trimmedEmail,
       confirmPassword: type === 'register' ? confirmPassword : undefined,
     });
   };
@@ -90,9 +166,14 @@ const AuthForm: React.FC<AuthFormProps> = ({ type, onSubmit }) => {
           type="text"
           placeholder="Email"
           value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          className="w-full rounded border border-gray-300 px-3 py-2"
+          onChange={(e) => applyEmailInput(e.target.value)}
+          onBeforeInput={handleEmailBeforeInput}
+          onKeyDown={handleEmailKeyDown}
+          className={`w-full rounded border px-3 py-2 ${getBorderClass(emailValidationState)}`}
         />
+        {trimmedEmail && emailValidationState === 'invalid' && (
+          <p className="mt-1 text-sm text-red-500">Please enter a valid email address.</p>
+        )}
       </div>
 
       {/* Username */}
@@ -106,7 +187,9 @@ const AuthForm: React.FC<AuthFormProps> = ({ type, onSubmit }) => {
             type="text"
             placeholder="Username"
             value={username}
-            onChange={(e) => setUsername(e.target.value)}
+            onChange={(e) => applyUsernameInput(e.target.value)}
+            onBeforeInput={handleUsernameBeforeInput}
+            onKeyDown={handleUsernameKeyDown}
             className={`w-full rounded border px-3 py-2 ${getBorderClass(
               usernameValidation.state,
             )}`}
@@ -128,9 +211,10 @@ const AuthForm: React.FC<AuthFormProps> = ({ type, onSubmit }) => {
             type={showPassword ? 'text' : 'password'}
             placeholder="Password"
             value={password}
-            onChange={(e) => setPassword(e.target.value)}
+            onChange={(e) => setPassword(e.target.value.slice(0, MAX_PASSWORD_LENGTH))}
+            maxLength={MAX_PASSWORD_LENGTH}
             className={`w-full rounded border px-3 py-2 ${
-              type === 'register' ? getBorderClass(passwordValidation.state) : 'border-gray-300'
+              password ? getBorderClass(passwordValidation.state) : 'border-gray-300'
             }`}
           />
           <button
@@ -142,8 +226,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ type, onSubmit }) => {
           </button>
         </div>
 
-        {/* show messages only on register */}
-        {type === 'register' && passwordValidation.msg && (
+        {password && passwordValidation.msg && (
           <p className="mt-1 text-sm text-red-500">{passwordValidation.msg}</p>
         )}
       </div>
@@ -154,18 +237,29 @@ const AuthForm: React.FC<AuthFormProps> = ({ type, onSubmit }) => {
           <label htmlFor="confirmPassword" className="mb-1 block font-medium">
             Confirm Password
           </label>
-          <input
-            id="confirmPassword"
-            type="password"
-            placeholder="Confirm Password"
-            value={confirmPassword}
-            onChange={(e) => setConfirmPassword(e.target.value)}
-            className={`w-full rounded border px-3 py-2 ${
-              confirmPassword && confirmPassword !== password ? 'border-red-500' : 'border-gray-300'
-            }`}
-          />
-          {confirmPassword && confirmPassword !== password && (
+          <div className="relative">
+            <input
+              id="confirmPassword"
+              type={showConfirmPassword ? 'text' : 'password'}
+              placeholder="Confirm Password"
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value.slice(0, MAX_PASSWORD_LENGTH))}
+              maxLength={MAX_PASSWORD_LENGTH}
+              className={`w-full rounded border px-3 py-2 ${getBorderClass(confirmPasswordState)}`}
+            />
+            <button
+              type="button"
+              onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+              className="absolute right-3 top-2 text-sm text-blue-600"
+            >
+              {showConfirmPassword ? 'Hide' : 'Show'}
+            </button>
+          </div>
+          {confirmPasswordState === 'invalid' && (
             <p className="mt-1 text-sm text-red-500">Passwords do not match.</p>
+          )}
+          {confirmPasswordState === 'valid' && (
+            <p className="mt-1 text-sm text-emerald-500">Passwords match.</p>
           )}
         </div>
       )}

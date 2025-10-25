@@ -26,10 +26,18 @@ CLEAN_HELPER_IMG ?= alpine:3.19
 SERVICES         = deps frontend backend nginx elastic_cert_setup elasticsearch kibana kibana-post logstash game-server matchmaking
 
 # Ensure required bind-mount directories exist
+# 1000:1000 == UID:GID of node user inside of container
 define ensure_dirs
 	@echo ">> Ensuring required bind-mount directories exist"
 	@if [ ! -d "./apps/backend/data/sqlite/uploads" ]; then \
 		mkdir -p ./apps/backend/data/sqlite/uploads; \
+		if [ "$$(id -u)" = "0" ]; then \
+			echo ">> Chowning."; \
+  			chown -R 1000:1000 ./apps/backend/data; \
+		else \
+			echo ">> Skipping chown; using chmod instead."; \
+			chmod -R 766 ./apps/backend/data; \
+		fi; \
 	fi
 endef
 
@@ -69,7 +77,7 @@ endef
 # ========================
 #  Orchestration
 # ========================
-.PHONY: all up detached prod detached-prod elk elk-detached down clean nuke check-leftovers fclean re stop restart restart-elk restart-% builder-init builder-use builder-prune builder-rm check-leftovers-global overview-docker
+.PHONY: all up detached prod prod-detached elk elk-detached down clean nuke check-leftovers fclean re stop restart restart-elk restart-% builder-init builder-use builder-prune builder-rm check-leftovers-global overview-docker
 all: up
 
 up:
@@ -93,15 +101,15 @@ prod:
 	$(ensure_builder)
 	$(ensure_certs)
 	@echo ">> Starting prod stack (attached)"
-	docker compose -p $(NAME_PROD) $(PROD_COMPOSE) $(ENV_ROOT) up --build
+	docker compose -p $(NAME_PROD) $(PROD_COMPOSE) $(ENV_ROOT) --profile elk --profile monitoring up --build
 
-detached-prod:
+prod-detached:
 	$(ensure_dirs)
 	$(ensure_env)
 	$(ensure_builder)
 	$(ensure_certs)
-	@echo ">> Starting prod stack (attached)"
-	docker compose -p $(NAME_PROD) $(PROD_COMPOSE) $(ENV_ROOT) up --build -d
+	@echo ">> Starting prod stack (detached)"
+	docker compose -p $(NAME_PROD) $(PROD_COMPOSE) $(ENV_ROOT) --profile elk --profile monitoring up --build -d
 
 elk:
 	$(ensure_dirs)
@@ -387,31 +395,31 @@ bash-%:
 
 pnpm-install:
 	@echo ">> Running pnpm install in 'deps' container"
-	docker compose -p $(NAME) run --rm deps bash -lc "COREPACK_ENABLE_DOWNLOAD_PROMPT=0 COREPACK_HOME=/tmp/corepack corepack pnpm install --frozen-lockfile"
+	docker compose -p $(NAME) run --rm deps bash -lc "export COREPACK_ENABLE_DOWNLOAD_PROMPT=0 COREPACK_HOME=/tmp/corepack PATH=\$$COREPACK_HOME/shims:\$$PATH && corepack enable && pnpm install --frozen-lockfile"
 
 build:
 	@echo ">> Running pnpm build via 'deps' container"
-	docker compose -p $(NAME) run --rm deps bash -lc "COREPACK_ENABLE_DOWNLOAD_PROMPT=0 COREPACK_HOME=/tmp/corepack corepack pnpm run build"
+	docker compose -p $(NAME) run --rm deps bash -lc "export COREPACK_ENABLE_DOWNLOAD_PROMPT=0 COREPACK_HOME=/tmp/corepack PATH=\$$COREPACK_HOME/shims:\$$PATH && corepack enable && pnpm run build"
 
 typecheck:
 	@echo ">> Type checking all packages via 'deps' container"
-	docker compose -p $(NAME) run --rm deps bash -lc "COREPACK_ENABLE_DOWNLOAD_PROMPT=0 COREPACK_HOME=/tmp/corepack corepack pnpm run typecheck"
+	docker compose -p $(NAME) run --rm deps bash -lc "export COREPACK_ENABLE_DOWNLOAD_PROMPT=0 COREPACK_HOME=/tmp/corepack PATH=\$$COREPACK_HOME/shims:\$$PATH && corepack enable && pnpm run typecheck"
 
 lint:
 	@echo ">> Linting all packages via 'deps' container"
-	docker compose -p $(NAME) run --rm deps bash -lc "COREPACK_ENABLE_DOWNLOAD_PROMPT=0 COREPACK_HOME=/tmp/corepack corepack pnpm run lint"
+	docker compose -p $(NAME) run --rm deps bash -lc "export COREPACK_ENABLE_DOWNLOAD_PROMPT=0 COREPACK_HOME=/tmp/corepack PATH=\$$COREPACK_HOME/shims:\$$PATH && corepack enable && pnpm run lint"
 
 fmt-check:
 	@echo ">> Prettier check via 'deps' container"
-	docker compose -p $(NAME) run --rm deps bash -lc "COREPACK_ENABLE_DOWNLOAD_PROMPT=0 COREPACK_HOME=/tmp/corepack corepack pnpm run check-format"
+	docker compose -p $(NAME) run --rm deps bash -lc "export COREPACK_ENABLE_DOWNLOAD_PROMPT=0 COREPACK_HOME=/tmp/corepack PATH=\$$COREPACK_HOME/shims:\$$PATH && corepack enable && pnpm run check-format"
 
 fmt:
 	@echo ">> Prettier write via 'deps' container"
-	docker compose -p $(NAME) run --rm deps bash -lc "COREPACK_ENABLE_DOWNLOAD_PROMPT=0 COREPACK_HOME=/tmp/corepack corepack pnpm run fix-format"
+	docker compose -p $(NAME) run --rm deps bash -lc "export COREPACK_ENABLE_DOWNLOAD_PROMPT=0 COREPACK_HOME=/tmp/corepack PATH=\$$COREPACK_HOME/shims:\$$PATH && corepack enable && pnpm run fix-format"
 
 test:
 	@echo ">> Running tests via 'deps' container"
-	docker compose -p $(NAME) run --rm deps bash -lc "COREPACK_ENABLE_DOWNLOAD_PROMPT=0 COREPACK_HOME=/tmp/corepack corepack pnpm test"
+	docker compose -p $(NAME) run --rm deps bash -lc "export COREPACK_ENABLE_DOWNLOAD_PROMPT=0 COREPACK_HOME=/tmp/corepack PATH=\$$COREPACK_HOME/shims:\$$PATH && corepack enable && pnpm test"
 
 migrate:
 	@echo ">> Running backend migrations"

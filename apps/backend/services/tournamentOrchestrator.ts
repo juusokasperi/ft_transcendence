@@ -17,6 +17,7 @@ import { markTournamentCompleted, updateTournamentStatus } from '../db/queries/t
 import type { TournamentParticipant } from '../types/types.ts';
 import { getMatchById } from '../db/queries/matches.ts';
 import { TOURNAMENT_REQUIRED_PARTICIPANTS } from '../utils/config.ts';
+import { logger } from '../utils/logger.ts';
 
 const REQUIRED_PARTICIPANTS = TOURNAMENT_REQUIRED_PARTICIPANTS;
 
@@ -290,7 +291,7 @@ export function checkAndAutoCompleteTournament(tournamentId: number): number | u
   if (activeParticipants.length === 1) {
     const winner = activeParticipants[0]!;
 
-    console.log(
+    logger.info(
       `[TournamentOrchestrator] Auto-completing tournament ${tournamentId}, only one participant remains: ${winner.alias} (ID: ${winner.id})`,
     );
 
