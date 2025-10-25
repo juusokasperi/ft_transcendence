@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 import Button from '../components/Button';
-import { validatePassword, PASSWORD_MAX_LENGTH } from '../utils/validation';
+import { type ValidationState, validatePassword, PASSWORD_MAX_LENGTH } from '../utils/validation';
 import { useAppContext } from '../context/AppContext';
 import { useSnackbar } from '../context/SnackbarContext';
 
@@ -33,6 +33,30 @@ const ResetPassword: React.FC = () => {
     }
   }, [resetToken]);
 
+  const passwordValidation = validatePassword(password);
+  const passwordBorderColor = !password
+    ? 'border-white/15'
+    : passwordValidation.state === 'valid'
+      ? 'border-emerald-400'
+      : passwordValidation.state === 'weak'
+        ? 'border-amber-400'
+        : 'border-rose-400';
+  const confirmPasswordState: ValidationState = (() => {
+    if (!confirmPassword) return '';
+    if (!password) return 'invalid';
+    if (password.startsWith(confirmPassword)) {
+      return confirmPassword === password ? 'valid' : 'weak';
+    }
+    return 'invalid';
+  })();
+  const confirmBorderColor = !confirmPassword
+    ? 'border-white/15'
+    : confirmPasswordState === 'valid'
+      ? 'border-emerald-400'
+      : confirmPasswordState === 'weak'
+        ? 'border-amber-400'
+        : 'border-rose-400';
+
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
     if (!resetToken || loading) return;
@@ -40,14 +64,13 @@ const ResetPassword: React.FC = () => {
     setError(null);
     setSuccess(null);
 
-    const { state, msg } = validatePassword(password);
-    if (state !== 'valid') {
-      setError(msg || 'Choose a stronger password.');
+    if (passwordValidation.state !== 'valid') {
+      setError(passwordValidation.msg || 'Choose a stronger password.');
       return;
     }
 
-    if (!confirmPassword.trim() || password !== confirmPassword) {
-      setError('Passwords do not match.');
+    if (confirmPasswordState !== 'valid') {
+      setError(confirmPassword ? 'Passwords do not match.' : 'Confirm your new password.');
       return;
     }
 
@@ -72,15 +95,6 @@ const ResetPassword: React.FC = () => {
       setConfirmPassword('');
     }
   };
-
-  const validation = validatePassword(password);
-  const borderColor = !password
-    ? 'border-white/15'
-    : validation.state === 'valid'
-      ? 'border-emerald-400'
-      : validation.state === 'weak'
-        ? 'border-amber-400'
-        : 'border-rose-400';
 
   return (
     <div className="min-h-screen bg-slate-950 text-white">
@@ -125,11 +139,12 @@ const ResetPassword: React.FC = () => {
                       id="newPassword"
                       type={showPassword ? 'text' : 'password'}
                       autoComplete="new-password"
-                      className={`w-full rounded-xl border ${borderColor} bg-white/95 px-3 py-2 text-slate-900 shadow-sm focus:outline-none focus:ring-2 focus:ring-purple-500/40`}
+                      className={`w-full rounded-xl border ${passwordBorderColor} bg-white/95 px-3 py-2 text-slate-900 shadow-sm focus:outline-none focus:ring-2 focus:ring-purple-500/40`}
                       value={password}
-                      onChange={(event) =>
-                        setPassword(event.target.value.slice(0, PASSWORD_MAX_LENGTH))
-                      }
+                      onChange={(event) => {
+                        setPassword(event.target.value.slice(0, PASSWORD_MAX_LENGTH));
+                        setError(null);
+                      }}
                       placeholder="Enter a strong password"
                       disabled={loading}
                       maxLength={PASSWORD_MAX_LENGTH}
@@ -143,8 +158,14 @@ const ResetPassword: React.FC = () => {
                       {showPassword ? 'Hide' : 'Show'}
                     </button>
                   </div>
-                  {validation.msg && (
-                    <p className="mt-1 text-sm text-amber-200/80">{validation.msg}</p>
+                  {password ? (
+                    passwordValidation.msg && (
+                      <p className="mt-1 text-sm text-amber-200/80">{passwordValidation.msg}</p>
+                    )
+                  ) : (
+                    <p className="mt-1 text-sm text-slate-200/80">
+                      Minimum 12 characters with upper, lower, number, and symbol.
+                    </p>
                   )}
                 </div>
 
@@ -159,19 +180,27 @@ const ResetPassword: React.FC = () => {
                     id="confirmPassword"
                     type={showPassword ? 'text' : 'password'}
                     autoComplete="new-password"
-                    className={`w-full rounded-xl border ${
-                      confirmPassword && password !== confirmPassword
-                        ? 'border-rose-400'
-                        : 'border-white/15'
-                    } bg-white/95 px-3 py-2 text-slate-900 shadow-sm focus:outline-none focus:ring-2 focus:ring-purple-500/40`}
+                    className={`w-full rounded-xl border ${confirmBorderColor} bg-white/95 px-3 py-2 text-slate-900 shadow-sm focus:outline-none focus:ring-2 focus:ring-purple-500/40`}
                     value={confirmPassword}
-                    onChange={(event) =>
-                      setConfirmPassword(event.target.value.slice(0, PASSWORD_MAX_LENGTH))
-                    }
+                    onChange={(event) => {
+                      setConfirmPassword(event.target.value.slice(0, PASSWORD_MAX_LENGTH));
+                      setError(null);
+                    }}
                     placeholder="Re-enter the password"
                     disabled={loading}
                     maxLength={PASSWORD_MAX_LENGTH}
                   />
+                  {confirmPasswordState === 'weak' && (
+                    <p className="mt-1 text-sm text-amber-200/90">
+                      Keep typing to match the new password.
+                    </p>
+                  )}
+                  {confirmPasswordState === 'invalid' && (
+                    <p className="mt-1 text-sm text-rose-300">Passwords do not match.</p>
+                  )}
+                  {confirmPasswordState === 'valid' && (
+                    <p className="mt-1 text-sm text-emerald-300">Passwords match.</p>
+                  )}
                 </div>
 
                 {error && <p className="text-sm font-medium text-rose-300">{error}</p>}
