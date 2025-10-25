@@ -13,8 +13,8 @@ import {
 import { ecsFormat } from '@elastic/ecs-pino-format';
 
 const redis = new Redis(REDIS_URL);
-
 const isDev = process.env.NODE_ENV === 'development';
+const MATCHES_SOFT_CAP = 200;
 
 function createLoggerOptions(isDev: boolean) {
   if (isDev) {
@@ -99,16 +99,34 @@ async function getMetricsFromPrometheus() {
   return metricsByNode;
 }
 
+function parsePrometheusText(text: string, metricName: string) {
+  const regex = new RegExp(`^${metricName}(?:\\{[^}]*\\})?\\s+([0-9eE.+-]+)$`, 'm');
+  const match = text.match(regex);
+  return match && typeof match[1] === 'string' ? parseFloat(match[1]) : null;
+}
+
 async function updateScoresFromHttpFallback() {
   //app.log.warn('Executing fallback scoring: querying nodes directly via HTTP.');
 
   for (const node of nodes) {
     try {
       const res = await axios.get(`${node.http}/metrics`, { timeout: 2000 });
-      const match = res.data.match(/^game_server_matches (\d+)/m);
-      const score = match ? Number(match[1]) : 9999;
+      const metrics = res.data;
+      const fd = parsePrometheusText(metrics, 'process_open_fds');
+      const maxFds = parsePrometheusText(metrics, 'process_max_fds') || 1024;
+      const matches = parsePrometheusText(metrics, 'game_server_matches');
+      let score;
 
-      //app.log.debug({ nodeId: node.id, score }, 'Calculated node score via fallback');
+      if (fd !== null && matches !== null) {
+        const fdLoad = fd / maxFds;
+        const matchesLoad = matches / MATCHES_SOFT_CAP;
+        score = fdLoad * 0.4 + matchesLoad * 0.6;
+        //app.log.debug({ nodeId: node.id, score }, 'Calculated normalized node score via fallback');
+      } else {
+        app.log.warn({ nodeId: node.id }, 'Fallback: Failed to parse required metrics from node.');
+        score = 9999;
+      }
+
       await redis.hset(
         'game-node:scores',
         node.id,
@@ -116,11 +134,15 @@ async function updateScoresFromHttpFallback() {
           id: node.id,
           http: node.http,
           ws: node.ws,
-          score,
+          score: Number(score.toFixed(4)),
+          fallback: true,
         }),
       );
     } catch (err) {
-      app.log.error({ nodeId: node.id, err }, 'Fallback failed for node, removing from scores.');
+      app.log.error(
+        { nodeId: node.id, err },
+        'Fallback HTTP request failed for node, removing from scores.',
+      );
       await redis.hdel('game-node:scores', node.id);
     }
   }
@@ -141,7 +163,7 @@ async function updateScores() {
 
       const cpuLoad = metrics.cpu;
       const fdLoad = metrics.fd / (metrics.maxFds || 1);
-      const matchesLoad = metrics.matches / 200;
+      const matchesLoad = metrics.matches / MATCHES_SOFT_CAP;
       const score = cpuLoad * 0.5 + fdLoad * 0.2 + matchesLoad * 0.3;
       //app.log.debug({ nodeId: node.id, metrics, score }, 'Calculated node score');
 
