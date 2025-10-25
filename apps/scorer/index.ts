@@ -7,6 +7,7 @@ import {
   GAME_SERVER_HTTP,
   GAME_SERVER_PORT,
   GAME_SERVER_SERVICE,
+  SCORER_PORT,
 } from './config';
 import { ecsFormat } from '@elastic/ecs-pino-format';
 
@@ -76,7 +77,7 @@ async function updateScores() {
 
 const start = async () => {
   try {
-    await app.listen({ port: 3000, host: '0.0.0.0' });
+    await app.listen({ port: SCORER_PORT, host: '0.0.0.0' });
     app.log.info({ nodes: nodes.map((n) => n.id) }, '[Scorer] Running scorer with nodes');
     setInterval(updateScores, 5000);
     updateScores();
