@@ -1,5 +1,5 @@
 import pino from 'pino';
-import ecsFormat from '@elastic/ecs-pino-format';
+import { ecsFormat } from '@elastic/ecs-pino-format';
 
 const isDev = process.env.NODE_ENV === 'development';
 
@@ -18,7 +18,7 @@ export const logger = isDev
   : pino({
       level: 'info',
       base: { service: 'api' },
-      ...ecsFormat.default(),
+      ...ecsFormat(),
     });
 
 export function log(
