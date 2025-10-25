@@ -16,7 +16,7 @@ export default function PongLayout() {
 
       <main
         aria-labelledby="page-title"
-        aria-label="PONG3D"
+        aria-label="PONG"
         className="absolute inset-x-0 bottom-0 top-[var(--navbar-h,80px)] overflow-y-auto"
       >
         <BackgroundVideo src={gifImg} fit="contain" position="center" />

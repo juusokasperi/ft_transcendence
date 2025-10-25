@@ -2,7 +2,7 @@ export const confirmationEmailHtml = (confirmUrl: string, frontendUrl: string): 
   return `<div
 		style="font-family: sans-serif; max-width: 400px; margin: 2rem auto;
 		padding: 1rem; border-radius: 0.5rem;">
-		<h2>Confirm your email address to get started on playing BabylonPong</h2>
+		<h2>Confirm your email address to get started on Arcade Transcendence</h2>
 			<a
 				href="${confirmUrl}"
 				style="
@@ -17,7 +17,7 @@ export const confirmationEmailHtml = (confirmUrl: string, frontendUrl: string): 
 			<p style="padding: 1rem 0; line-height: 2rem; font-size: 14px">
 				This link is valid for 24 hours. If you didn't register, please ignore this email.
 			</p>
-		<a href="${frontendUrl}" target="_blank" style="color: black">BabylonPong</a>
+		<a href="${frontendUrl}" target="_blank" style="color: black">Arcade Transcendence</a>
 	</div>`;
 };
 
@@ -25,7 +25,7 @@ export const resetPasswordHtml = (resetUrl: string, frontendUrl: string): string
   return `<div
 		style="font-family: sans-serif; max-width: 400px; margin: 2rem auto;
 		padding: 1rem; border-radius: 0.5rem;">
-		<h2>Reset your password for BabylonPong</h2>
+		<h2>Reset your password for Arcade Transcendence</h2>
 			<a
 				href="${resetUrl}"
 				style="
@@ -40,7 +40,7 @@ export const resetPasswordHtml = (resetUrl: string, frontendUrl: string): string
 			<p style="padding: 1rem 0; line-height: 2rem; font-size: 14px">
 				This link is valid for 30 minutes. If you didn't ask for a password change, please ignore this email.
 			</p>
-		<a href="${frontendUrl}" target="_blank" style="color: black">BabylonPong</a>
+		<a href="${frontendUrl}" target="_blank" style="color: black">Arcade Transcendence</a>
 	</div>`;
 };
 
@@ -48,7 +48,7 @@ export const deleteUserHtml = (resetUrl: string, frontendUrl: string): string =>
   return `<div
 		style="font-family: sans-serif; max-width: 400px; margin: 2rem auto;
 		padding: 1rem; border-radius: 0.5rem;">
-		<h2>You have requested for your user's deletion from BabylonPong.</h2>
+		<h2>You have requested for your user's deletion from Arcade Transcendence.</h2>
 			<a
 				href="${resetUrl}"
 				style="
@@ -63,7 +63,7 @@ export const deleteUserHtml = (resetUrl: string, frontendUrl: string): string =>
 			<p style="padding: 1rem 0; line-height: 2rem; font-size: 14px">
 				This link is valid for 24 hours. If you didn't ask for user deletion, please ignore this email.
 			</p>
-		<a href="${frontendUrl}" target="_blank" style="color: black">BabylonPong</a>
+		<a href="${frontendUrl}" target="_blank" style="color: black">Arcade Transcendence</a>
 	</div>`;
 };
 
@@ -71,7 +71,7 @@ export const emailChangeHtml = (confirmUrl: string, frontendUrl: string): string
   return `<div
 		style="font-family: sans-serif; max-width: 400px; margin: 2rem auto;
 		padding: 1rem; border-radius: 0.5rem;">
-		<h2>Confirm your new email address for BabylonPong</h2>
+		<h2>Confirm your new email address for Arcade Transcendence</h2>
 			<a
 				href="${confirmUrl}"
 				style="
@@ -86,6 +86,6 @@ export const emailChangeHtml = (confirmUrl: string, frontendUrl: string): string
 			<p style="padding: 1rem 0; line-height: 2rem; font-size: 14px">
 				This link is valid for 24 hours. If you didn't request an email change, please ignore this email.
 			</p>
-		<a href="${frontendUrl}" target="_blank" style="color: black">BabylonPong</a>
+		<a href="${frontendUrl}" target="_blank" style="color: black">Arcade Transcendence</a>
 	</div>`;
 };

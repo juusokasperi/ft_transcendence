@@ -15,12 +15,12 @@ const TournamentDetail: React.FC = () => {
   useEffect(() => {
     if (tournamentId === undefined) return;
     if (numericTournamentId === null) {
-      navigate('/pong3d/tournaments', { replace: true });
+      navigate('/pong/tournaments', { replace: true });
     }
   }, [navigate, numericTournamentId, tournamentId]);
 
   const handleBack = () => {
-    navigate('/pong3d/tournaments');
+    navigate('/pong/tournaments');
   };
 
   return <TournamentPage onBack={handleBack} focusTournamentId={numericTournamentId} />;

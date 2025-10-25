@@ -54,7 +54,7 @@ export const NGINX_PORT = process.env.NGINX_PORT as string;
 export const JWT_ACCESS_TTL = process.env.JWT_ACCESS_TTL || '4h';
 export const JWT_REFRESH_TTL = process.env.JWT_REFRESH_TTL || '30d';
 export const JWT_2FA_TTL = process.env.JWT_2FA_TTL || '10m';
-export const TFA_ISSUER = process.env.TFA_ISSUER || 'BabylonPong';
+export const TFA_ISSUER = process.env.TFA_ISSUER || 'Arcade Transcendence';
 export const TFA_CODE_DIGITS = Number(process.env.TFA_CODE_DIGITS || '6');
 export const ENABLE_SQLITE_METRICS = process.env.ENABLE_SQLITE_METRICS as string;
 export const TOURNAMENT_REQUIRED_PARTICIPANTS = numberFromEnv(
@@ -91,7 +91,7 @@ const MAIL_PASS = process.env.MAIL_PASS;
 const MAIL_SECURE = MAIL_SECURE_ENV ? MAIL_SECURE_ENV !== 'false' : undefined;
 
 export const MAIL_FROM =
-  process.env.MAIL_FROM || MAIL_USER || '"No Reply" <no-reply@babylonpong.com>';
+  process.env.MAIL_FROM || MAIL_USER || '"No Reply" <no-reply@pong.example@gmail.com>';
 
 export const MAIL_TRANSPORT_CONFIG: MailTransportConfig | null =
   MAIL_HOST && MAIL_USER && MAIL_PASS

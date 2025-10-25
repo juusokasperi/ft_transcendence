@@ -33,7 +33,7 @@ function App() {
             <Route path={'/login'} element={<Login />} />
             <Route path={'/forgot-password'} element={<ForgotPassword />} />
             <Route path={'/reset-password/:token'} element={<ResetPassword />} />
-            <Route path="/pong3d" element={<PongLayout />}>
+            <Route path="/pong" element={<PongLayout />}>
               <Route index element={<ModePicker />} />
               <Route path="local" element={<LocalGame />} />
               <Route path="online" element={<OnlineGame />} />

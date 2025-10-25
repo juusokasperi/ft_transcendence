@@ -66,7 +66,7 @@ describe('sendEmailChangeEmail', () => {
     expect(mockTransporter.sendMail).toHaveBeenCalledWith({
       from: 'test@example.com',
       to: recipientEmail,
-      subject: 'Confirm your new email for BabylonPong',
+      subject: 'Confirm your new email for Arcade Transcendence',
       html: expect.stringContaining(
         'confirm-email/abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890',
       ),
@@ -113,6 +113,6 @@ describe('sendEmailChangeEmail', () => {
 
     const callArgs = mockTransporter.sendMail.mock.calls[0][0];
     expect(callArgs.html).toContain('http://localhost:3000/confirm-email/testtoken123');
-    expect(callArgs.html).toContain('BabylonPong');
+    expect(callArgs.html).toContain('Arcade Transcendence');
   });
 });

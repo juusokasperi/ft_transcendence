@@ -63,7 +63,7 @@ export async function sendConfirmationEmail(recipientEmail: string, token: strin
     const html = confirmationEmailHtml(url, FRONTEND_URL);
     return await dispatchEmail({
       to: recipientEmail,
-      subject: 'Confirm your email for BabylonPong',
+      subject: 'Confirm your email for Arcade Transcendence',
       html,
     });
   } catch (error) {
@@ -78,7 +78,7 @@ export async function sendResetPasswordEmail(recipientEmail: string, token: stri
     const html = resetPasswordHtml(url, FRONTEND_URL);
     return await dispatchEmail({
       to: recipientEmail,
-      subject: 'Reset your password for BabylonPong',
+      subject: 'Reset your password for Arcade Transcendence',
       html,
     });
   } catch (error) {
@@ -93,7 +93,7 @@ export async function sendDeleteEmail(recipientEmail: string, token: string) {
     const html = deleteUserHtml(url, FRONTEND_URL);
     return await dispatchEmail({
       to: recipientEmail,
-      subject: 'Delete your BabylonPong account',
+      subject: 'Delete your Arcade Transcendence account',
       html,
     });
   } catch (error) {
@@ -108,7 +108,7 @@ export async function sendEmailChangeEmail(recipientEmail: string, token: string
     const html = emailChangeHtml(url, FRONTEND_URL);
     return await dispatchEmail({
       to: recipientEmail,
-      subject: 'Confirm your new email for BabylonPong',
+      subject: 'Confirm your new email for Arcade Transcendence',
       html,
     });
   } catch (error) {

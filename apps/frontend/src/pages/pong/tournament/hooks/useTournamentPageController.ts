@@ -439,7 +439,7 @@ export function useTournamentPageController(
             debugLog('membership:update', { member: false, tournamentId: msg.tournamentId });
           }
 
-          const detailPath = `/pong3d/tournaments/${msg.tournamentId}`;
+          const detailPath = `/pong/tournaments/${msg.tournamentId}`;
           const previousMembership = membershipRef.current;
           if (
             member &&
@@ -454,7 +454,7 @@ export function useTournamentPageController(
             previousMembership.tournamentId === msg.tournamentId &&
             locationRef.current === detailPath
           ) {
-            navigate('/pong3d/tournaments');
+            navigate('/pong/tournaments');
           }
 
           membershipRef.current = {
@@ -819,9 +819,9 @@ export function useTournamentPageController(
     focusStateRef.current = null;
     setActiveTournamentId(null);
     resetActiveTournamentState();
-    if (locationRef.current === `/pong3d/tournaments/${tournamentId}`) {
-      locationRef.current = '/pong3d/tournaments';
-      navigate('/pong3d/tournaments');
+    if (locationRef.current === `/pong/tournaments/${tournamentId}`) {
+      locationRef.current = '/pong/tournaments';
+      navigate('/pong/tournaments');
     }
     void loadTournaments();
     debugLog('action:leave-tournament', { tournamentId });
