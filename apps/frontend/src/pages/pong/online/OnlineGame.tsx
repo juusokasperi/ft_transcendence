@@ -170,7 +170,7 @@ const OnlineGame: React.FC = () => {
         <PageSection>
           <PostMatchOnlineView
             summary={state.postMatchSummary}
-            onBackToMenu={() => navigate('/pong3d')}
+            onBackToMenu={() => navigate('/pong')}
           />
         </PageSection>
       </PageContainer>

@@ -30,7 +30,7 @@ const ModePicker: React.FC = () => {
   return (
     <PageContainer>
       <PageSection>
-        <PageHeader id="page-title" title="PONG3D" align="center" />
+        <PageHeader id="page-title" title="PONG" align="center" />
 
         <Card>
           <nav
