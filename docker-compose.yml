@@ -72,7 +72,7 @@ services:
       - frontend_node_modules:/work/apps/frontend/node_modules
       - render_node_modules:/work/packages/pong/render/node_modules:ro
     networks: [devnet]
-    logging:
+    logging: # needed for logstash (ELK stack)
       driver: gelf
       options:
         gelf-address: udp://localhost:12201
@@ -105,7 +105,7 @@ services:
       - ./apps/backend/data/sqlite:/data
       - ./apps/backend/data/sqlite/uploads:/data/uploads
     networks: [devnet]
-    logging:
+    logging: # needed for logstash (ELK stack)
       driver: gelf
       options:
         gelf-address: udp://localhost:12201
@@ -121,7 +121,7 @@ services:
     volumes:
       - ./nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
     networks: [devnet]
-    logging:
+    logging: # needed for logstash (ELK stack)
       driver: gelf
       options:
         gelf-address: udp://localhost:12201
@@ -148,12 +148,12 @@ services:
       allocator:
         condition: service_started
     networks: [devnet]
-    logging:
+    logging: # needed for logstash (ELK stack)
       driver: gelf
       options:
         gelf-address: udp://localhost:12201
 
-  # 6a) Game server (WebSocket server) - template
+  # 6a) Game server (WebSocket server)
   game-server: &game-server-template
     image: node:22-bookworm
     init: true
@@ -173,7 +173,7 @@ services:
       deps:
         condition: service_completed_successfully
     networks: [devnet]
-    logging:
+    logging: # needed for logstash (ELK stack)
       driver: gelf
       options:
         gelf-address: udp://localhost:12201
@@ -202,7 +202,7 @@ services:
       deps:
         condition: service_completed_successfully
     networks: [devnet]
-    logging:
+    logging: # needed for logstash (ELK stack)
       driver: gelf
       options:
         gelf-address: udp://localhost:12201
@@ -217,8 +217,6 @@ services:
     environment:
       PNPM_STORE_DIR: /pnpm/store
       CHOKIDAR_USEPOLLING: "true"
-      COREPACK_ENABLE_DOWNLOAD_PROMPT: "0"
-      COREPACK_HOME: /tmp/corepack
       REDIS_URL: redis://redis:6379
     volumes:
       - .:/work:cached
@@ -232,7 +230,7 @@ services:
       redis:
         condition: service_started
     networks: [devnet]
-    logging:
+    logging: # needed for logstash (ELK stack)
       driver: gelf
       options:
         gelf-address: udp://localhost:12201
@@ -277,13 +275,13 @@ services:
       game-server-2:
         condition: service_started
     networks: [devnet]
-    logging:
+    logging: # needed for logstash (ELK stack)
       driver: gelf
       options:
         gelf-address: udp://localhost:12201
 
   # 11) Game Gateway
-  game-gateway:
+  game-gateway: # ASK LEON about logstash here
     image: node:22-bookworm
     init: true
     working_dir: /work/apps/game-gateway
@@ -308,5 +306,7 @@ services:
       - "55550:55550"
 
 include:
+  # stuff in this file will only run with `--profile elk`
   - log-management/docker-compose.yml
+  # stuff in this file will only run with `--profile monitoring`
   - monitoring/docker-compose.yml

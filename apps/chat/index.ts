@@ -128,10 +128,7 @@ function handleConnection(socket: WebSocket, _request: ChatRequest) {
         targetClient.socket.send(JSON.stringify(msg));
         socket.send(JSON.stringify(msg));
 
-        fastify.log.debug(
-          { from: client.username, to: data.to },
-          '[CHAT] sent private message',
-        );
+        fastify.log.debug({ from: client.username, to: data.to }, '[CHAT] sent private message');
         return;
       }
       case 'blockUser':
