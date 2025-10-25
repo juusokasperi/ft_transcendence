@@ -65,7 +65,8 @@ export const confirmationEmailHtml = (confirmUrl: string, frontendUrl: string): 
       'Thanks for creating an Arcade Transcendence account. Confirm your email so we can keep your games, stats, and friends safe.',
     ctaLabel: 'Confirm email',
     ctaUrl: confirmUrl,
-    validityText: "This link stays active for 24 hours. If you didn't create this account, please ignore this email.",
+    validityText:
+      "This link stays active for 24 hours. If you didn't create this account, please ignore this email.",
     frontendUrl,
   });
 
@@ -77,7 +78,8 @@ export const resetPasswordHtml = (resetUrl: string, frontendUrl: string): string
       'We received a request to reset your password. Use the secure button below to choose a new one and get back to the action.',
     ctaLabel: 'Reset password',
     ctaUrl: resetUrl,
-    validityText: "This link is valid for 30 minutes. If you didn’t request a reset, you can safely ignore this message.",
+    validityText:
+      'This link is valid for 30 minutes. If you didn’t request a reset, you can safely ignore this message.',
     frontendUrl,
   });
 
@@ -89,7 +91,8 @@ export const deleteUserHtml = (deleteUrl: string, frontendUrl: string): string =
       'You asked us to permanently delete your Arcade Transcendence profile. This action removes all data and cannot be undone.',
     ctaLabel: 'Delete my account',
     ctaUrl: deleteUrl,
-    validityText: "The confirmation link works for 24 hours. If you didn’t ask for this, please change your password and ignore the email.",
+    validityText:
+      'The confirmation link works for 24 hours. If you didn’t ask for this, please change your password and ignore the email.',
     frontendUrl,
   });
 
@@ -101,6 +104,7 @@ export const emailChangeHtml = (confirmUrl: string, frontendUrl: string): string
       'We just need you to confirm that this new email belongs to you. Once approved, it will replace the address on your Arcade Transcendence account.',
     ctaLabel: 'Confirm new email',
     ctaUrl: confirmUrl,
-    validityText: "This link remains active for 24 hours. If you didn’t request the change, please secure your account immediately.",
+    validityText:
+      'This link remains active for 24 hours. If you didn’t request the change, please secure your account immediately.',
     frontendUrl,
   });

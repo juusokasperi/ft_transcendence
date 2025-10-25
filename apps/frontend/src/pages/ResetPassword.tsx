@@ -158,17 +158,15 @@ const ResetPassword: React.FC = () => {
                       {showPassword ? 'Hide' : 'Show'}
                     </button>
                   </div>
-                  {password
-                    ? passwordValidation.msg && (
-                        <p className="mt-1 text-sm text-amber-200/80">
-                          {passwordValidation.msg}
-                        </p>
-                      )
-                    : (
-                        <p className="mt-1 text-sm text-slate-200/80">
-                          Minimum 12 characters with upper, lower, number, and symbol.
-                        </p>
-                      )}
+                  {password ? (
+                    passwordValidation.msg && (
+                      <p className="mt-1 text-sm text-amber-200/80">{passwordValidation.msg}</p>
+                    )
+                  ) : (
+                    <p className="mt-1 text-sm text-slate-200/80">
+                      Minimum 12 characters with upper, lower, number, and symbol.
+                    </p>
+                  )}
                 </div>
 
                 <div>
