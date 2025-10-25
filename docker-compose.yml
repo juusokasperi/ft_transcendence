@@ -220,14 +220,11 @@ services:
       COREPACK_ENABLE_DOWNLOAD_PROMPT: "0"
       COREPACK_HOME: /tmp/corepack
       REDIS_URL: redis://redis:6379
-    ports:
-      - "${CHAT_PORT:-6262}:6262"
     volumes:
       - .:/work:cached
       - pnpm-store:/pnpm/store
       - node_modules:/work/node_modules:ro
-      - allocator_node_modules:/work/apps/allocator/node_modules
-      - chat_node_modules:/work/apps/chat/node_modules:ro
+      - allocator_node_modules:/work/apps/allocator/node_modules:ro
     command: bash -lc "corepack enable && corepack prepare pnpm@${PNPM_VERSION:-9.12.3} --activate && pnpm dev"
     depends_on:
       deps:
