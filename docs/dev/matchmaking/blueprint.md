@@ -2998,7 +2998,7 @@ This reflects the current repo and where the matchmaking stack fits. It is a pnp
 
 - Apps (product surfaces)
   - `apps/frontend/` (React + Vite + Tailwind)
-    - Pages for auth, friends, profile, and PingPong (Local/Online/Tournament).
+    - Pages for auth, friends, profile, and Pong3d (Local/Online/Tournament).
     - Integrates `@pong/shared`, `@pong/game-logic`, `@pong/render`.
   - `apps/backend/` (Fastify API + SQLite)
     - `db/` client, Umzug migrations, and `queries/` per domain.

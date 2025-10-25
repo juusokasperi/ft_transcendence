@@ -152,6 +152,7 @@ export type MatchmakingMessage =
   | HandoffMessage
   | MatchTimeoutMessage
   | HandoffTimeoutMessage
+  | InfoMessage
   | TournamentLobbyUpdatedMessage
   | TournamentBracketSnapshotMessage
   | TournamentMatchesReadyMessage
@@ -174,6 +175,11 @@ export type JoinTokenClaims = {
 export type ErrorMessage = {
   type: 'ERROR';
   code: string;
+  message: string;
+};
+
+export type InfoMessage = {
+  type: 'INFO';
   message: string;
 };
 

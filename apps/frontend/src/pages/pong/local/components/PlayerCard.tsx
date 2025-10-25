@@ -1,5 +1,5 @@
 import React from 'react';
-import type { ControllerScheme } from '../../../../games/pong/modes/preferences';
+import type { ControllerScheme } from '../../../../games/pong/modes/shared/preferences';
 import type { PlayerSettings } from '../utils/storage';
 import Card from './Card';
 import ColorPalette, { type ColorOption } from './ColorPalette';

@@ -1,4 +1,4 @@
-import type { ControllerScheme } from '../../../../games/pong/modes/preferences';
+import type { ControllerScheme } from '../../../../games/pong/modes/shared/preferences';
 import type { UserSettings } from './storage';
 
 export const STORAGE_KEY = 'pong_local_settings_v1';

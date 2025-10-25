@@ -86,8 +86,8 @@ export function createScoreboard(): DomScoreboardAPI {
   panel.appendChild(names.west.row);
 
   function applyNameColumns() {
-    names.east.row.style.gridTemplateColumns = '18px max-content';
-    names.west.row.style.gridTemplateColumns = '18px max-content';
+    names.east.row.style.gridTemplateColumns = '14px max-content';
+    names.west.row.style.gridTemplateColumns = '14px max-content';
   }
   applyNameColumns();
 
