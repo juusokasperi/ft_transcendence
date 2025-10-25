@@ -24,7 +24,7 @@ export function createHttpServer({
       help: string,
       metric: keyof ReturnType<RoomRegistry['metrics']>,
     ) => {
-      new (app.metrics.client).Gauge({
+      new app.metrics.client.Gauge({
         name,
         help,
         collect() {

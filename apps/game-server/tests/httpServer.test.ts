@@ -3,6 +3,17 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 const getRoutes = new Map<string, any>();
 const postRoutes = new Map<string, { options: any; handler: any }>();
 
+const gaugeSetMock = vi.fn();
+const gaugeInstanceMock = { set: gaugeSetMock };
+const createdGauges: any[] = [];
+const gaugeConstructorMock = vi.fn((config) => {
+  createdGauges.push(config);
+  return gaugeInstanceMock;
+});
+const metricsClientMock = {
+  Gauge: gaugeConstructorMock,
+};
+
 const appLogMock = {
   info: vi.fn(),
   error: vi.fn(),
@@ -13,6 +24,8 @@ const appLogMock = {
 function createFakeApp() {
   const app: any = {};
   app.log = appLogMock;
+  app.metrics = { client: metricsClientMock };
+
   app.get = vi.fn((path: string, handler: any) => {
     getRoutes.set(path, handler);
     return app;
@@ -32,8 +45,34 @@ function createFakeApp() {
       cb(null, typeof opts === 'object' ? `http://localhost:${opts.port}` : String(opts));
     }
   });
+  app.after = vi.fn((cb) => {
+    cb();
+    return app;
+  });
+
+  app.register = vi.fn((plugin, opts) => {
+    if (opts && opts.endpoint === '/metrics') {
+      const metricsHandler = async (req: any, reply: any) => {
+        let payload = '';
+        for (const gaugeConfig of createdGauges) {
+          const gaugeInstance = {
+            set: (val: number) => {
+              payload += `${gaugeConfig.name} ${val}\n`;
+            },
+          };
+          gaugeConfig.collect.call(gaugeInstance);
+        }
+        reply.type('text/plain');
+        reply.send(payload);
+      };
+      app.get(opts.endpoint, metricsHandler);
+    }
+    return app;
+  });
   return app;
 }
+
+
 
 const fastifyMock = vi.fn(() => createFakeApp());
 
@@ -57,6 +96,7 @@ describe('createHttpServer', () => {
     getRoutes.clear();
     postRoutes.clear();
     vi.clearAllMocks();
+    createdGauges.length = 0;
   });
 
   it('registers health and metrics endpoints with expected semantics', async () => {
@@ -90,7 +130,7 @@ describe('createHttpServer', () => {
     const metricsReply = createReply();
     await metricsHandler({}, metricsReply);
 
-    expect(registry.metrics).toHaveBeenCalledTimes(1);
+    expect(registry.metrics).toHaveBeenCalledTimes(5);
     expect(metricsReply.type).toHaveBeenCalledWith('text/plain');
     const payload = metricsReply.send.mock.calls[0][0] as string;
     expect(payload).toContain('game_server_matches 2');
