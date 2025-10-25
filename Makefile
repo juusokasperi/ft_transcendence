@@ -395,31 +395,31 @@ bash-%:
 
 pnpm-install:
 	@echo ">> Running pnpm install in 'deps' container"
-	docker compose -p $(NAME) run --rm deps bash -lc "COREPACK_ENABLE_DOWNLOAD_PROMPT=0 COREPACK_HOME=/tmp/corepack corepack pnpm install --frozen-lockfile"
+	docker compose -p $(NAME) run --rm deps bash -lc "export COREPACK_ENABLE_DOWNLOAD_PROMPT=0 COREPACK_HOME=/tmp/corepack PATH=\$$COREPACK_HOME/shims:\$$PATH && corepack enable && pnpm install --frozen-lockfile"
 
 build:
 	@echo ">> Running pnpm build via 'deps' container"
-	docker compose -p $(NAME) run --rm deps bash -lc "COREPACK_ENABLE_DOWNLOAD_PROMPT=0 COREPACK_HOME=/tmp/corepack corepack pnpm run build"
+	docker compose -p $(NAME) run --rm deps bash -lc "export COREPACK_ENABLE_DOWNLOAD_PROMPT=0 COREPACK_HOME=/tmp/corepack PATH=\$$COREPACK_HOME/shims:\$$PATH && corepack enable && pnpm run build"
 
 typecheck:
 	@echo ">> Type checking all packages via 'deps' container"
-	docker compose -p $(NAME) run --rm deps bash -lc "COREPACK_ENABLE_DOWNLOAD_PROMPT=0 COREPACK_HOME=/tmp/corepack corepack pnpm run typecheck"
+	docker compose -p $(NAME) run --rm deps bash -lc "export COREPACK_ENABLE_DOWNLOAD_PROMPT=0 COREPACK_HOME=/tmp/corepack PATH=\$$COREPACK_HOME/shims:\$$PATH && corepack enable && pnpm run typecheck"
 
 lint:
 	@echo ">> Linting all packages via 'deps' container"
-	docker compose -p $(NAME) run --rm deps bash -lc "COREPACK_ENABLE_DOWNLOAD_PROMPT=0 COREPACK_HOME=/tmp/corepack corepack pnpm run lint"
+	docker compose -p $(NAME) run --rm deps bash -lc "export COREPACK_ENABLE_DOWNLOAD_PROMPT=0 COREPACK_HOME=/tmp/corepack PATH=\$$COREPACK_HOME/shims:\$$PATH && corepack enable && pnpm run lint"
 
 fmt-check:
 	@echo ">> Prettier check via 'deps' container"
-	docker compose -p $(NAME) run --rm deps bash -lc "COREPACK_ENABLE_DOWNLOAD_PROMPT=0 COREPACK_HOME=/tmp/corepack corepack pnpm run check-format"
+	docker compose -p $(NAME) run --rm deps bash -lc "export COREPACK_ENABLE_DOWNLOAD_PROMPT=0 COREPACK_HOME=/tmp/corepack PATH=\$$COREPACK_HOME/shims:\$$PATH && corepack enable && pnpm run check-format"
 
 fmt:
 	@echo ">> Prettier write via 'deps' container"
-	docker compose -p $(NAME) run --rm deps bash -lc "COREPACK_ENABLE_DOWNLOAD_PROMPT=0 COREPACK_HOME=/tmp/corepack corepack pnpm run fix-format"
+	docker compose -p $(NAME) run --rm deps bash -lc "export COREPACK_ENABLE_DOWNLOAD_PROMPT=0 COREPACK_HOME=/tmp/corepack PATH=\$$COREPACK_HOME/shims:\$$PATH && corepack enable && pnpm run fix-format"
 
 test:
 	@echo ">> Running tests via 'deps' container"
-	docker compose -p $(NAME) run --rm deps bash -lc "COREPACK_ENABLE_DOWNLOAD_PROMPT=0 COREPACK_HOME=/tmp/corepack corepack pnpm test"
+	docker compose -p $(NAME) run --rm deps bash -lc "export COREPACK_ENABLE_DOWNLOAD_PROMPT=0 COREPACK_HOME=/tmp/corepack PATH=\$$COREPACK_HOME/shims:\$$PATH && corepack enable && pnpm test"
 
 migrate:
 	@echo ">> Running backend migrations"
