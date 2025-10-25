@@ -344,7 +344,7 @@ export default function Chat({
 
   return (
     <motion.div
-      className={`fixed inset-x-3 bottom-3 z-50 flex h-[85vh] max-h-[calc(100vh-1.5rem)] flex-col overflow-hidden rounded-2xl border border-white/20 bg-gray-900/95 text-white shadow-2xl backdrop-blur-md transition-all duration-300 ease-in-out sm:inset-auto sm:bottom-6 sm:right-6 sm:left-auto sm:h-[40rem] sm:w-[36rem]`}
+      className={`fixed inset-x-3 bottom-3 z-50 flex h-[85vh] max-h-[calc(100vh-1.5rem)] flex-col overflow-hidden rounded-2xl border border-white/20 bg-gray-900/95 text-white shadow-2xl backdrop-blur-md transition-all duration-300 ease-in-out sm:inset-auto sm:bottom-6 sm:left-auto sm:right-6 sm:h-[40rem] sm:w-[36rem]`}
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: 20 }}
@@ -407,7 +407,7 @@ export default function Chat({
         </div>
 
         {/* Sidebar */}
-        <div className="w-full max-h-40 flex-shrink-0 overflow-y-auto border-t border-white/20 bg-black/20 text-sm sm:max-h-none sm:w-28 sm:border-t-0 sm:border-l sm:bg-transparent">
+        <div className="max-h-40 w-full flex-shrink-0 overflow-y-auto border-t border-white/20 bg-black/20 text-sm sm:max-h-none sm:w-28 sm:border-l sm:border-t-0 sm:bg-transparent">
           <div className="border-b border-white/10 p-2 font-semibold">Users</div>
           {users.map((u) => (
             <div
