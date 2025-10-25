@@ -1,5 +1,6 @@
 import fastify, { type FastifyInstance, type FastifyReply, type FastifyRequest } from 'fastify';
 import type { RoomRegistry } from '../../app/RoomRegistry.ts';
+import fastifyMetrics from 'fastify-metrics';
 
 type CreateHttpServerArgs = {
   adminSecret: string;
@@ -15,6 +16,37 @@ export function createHttpServer({
   onCreateRoom,
 }: CreateHttpServerArgs): FastifyInstance {
   const app = fastify();
+  app.register(fastifyMetrics, { endpoint: '/metrics', defaultMetrics: { enabled: true } });
+
+  app.after(() => {
+    const createDynamicGauge = (
+      name: string,
+      help: string,
+      metric: keyof ReturnType<RoomRegistry['metrics']>,
+    ) => {
+      new (app.metrics.client as any).Gauge({
+        name,
+        help,
+        collect() {
+          this.set(registry.metrics()[metric]);
+        },
+      });
+    };
+
+    createDynamicGauge('game_server_matches', 'Number of matches being played', 'matches');
+    createDynamicGauge('game_server_players', 'Number of players connected', 'players');
+    createDynamicGauge(
+      'game_server_rooms_waiting',
+      'Number of rooms waiting for players',
+      'roomsWaiting',
+    );
+    createDynamicGauge('game_server_rooms_ready', 'Number of rooms ready to start', 'roomsReady');
+    createDynamicGauge(
+      'game_server_rooms_playing',
+      'Number of rooms currently playing',
+      'roomsPlaying',
+    );
+  });
 
   const authPreHandler = (request: FastifyRequest, reply: FastifyReply, done: () => void) => {
     const secret = request.headers['x-admin-secret'];
@@ -24,18 +56,6 @@ export function createHttpServer({
     }
     done();
   };
-
-  app.get('/metrics', async (_request, reply) => {
-    const metrics = registry.metrics();
-    const lines = [
-      `game_server_matches ${metrics.matches}`,
-      `game_server_players ${metrics.players}`,
-      `game_server_rooms_waiting ${metrics.roomsWaiting}`,
-      `game_server_rooms_ready ${metrics.roomsReady}`,
-      `game_server_rooms_playing ${metrics.roomsPlaying}`,
-    ];
-    reply.type('text/plain').send(lines.join('\n'));
-  });
 
   app.get('/health', async (_request, reply) => {
     reply.send({ status: 'ok' });
