@@ -17,11 +17,7 @@ import type {
   ReadyMatch,
   TournamentSummary,
 } from '../state/types';
-import {
-  MAX_VISIBLE_TOURNAMENTS,
-  RECENT_TOURNAMENT_WINDOW_MS,
-  TOURNAMENT_SIZE,
-} from '../../../../config';
+import { MAX_VISIBLE_TOURNAMENTS, RECENT_TOURNAMENT_WINDOW_MS, TOURNAMENT_SIZE } from '../config';
 import { useMatchOverEvent } from '../../shared/hooks/useMatchOverEvent';
 
 export type MatchPhase = 'idle' | 'awaiting_start' | 'starting' | 'playing';
@@ -443,7 +439,7 @@ export function useTournamentPageController(
             debugLog('membership:update', { member: false, tournamentId: msg.tournamentId });
           }
 
-          const detailPath = `/ping-pong/tournaments/${msg.tournamentId}`;
+          const detailPath = `/pong/tournaments/${msg.tournamentId}`;
           const previousMembership = membershipRef.current;
           if (
             member &&
@@ -458,7 +454,7 @@ export function useTournamentPageController(
             previousMembership.tournamentId === msg.tournamentId &&
             locationRef.current === detailPath
           ) {
-            navigate('/ping-pong/tournaments');
+            navigate('/pong/tournaments');
           }
 
           membershipRef.current = {
@@ -823,9 +819,9 @@ export function useTournamentPageController(
     focusStateRef.current = null;
     setActiveTournamentId(null);
     resetActiveTournamentState();
-    if (locationRef.current === `/ping-pong/tournaments/${tournamentId}`) {
-      locationRef.current = '/ping-pong/tournaments';
-      navigate('/ping-pong/tournaments');
+    if (locationRef.current === `/pong/tournaments/${tournamentId}`) {
+      locationRef.current = '/pong/tournaments';
+      navigate('/pong/tournaments');
     }
     void loadTournaments();
     debugLog('action:leave-tournament', { tournamentId });

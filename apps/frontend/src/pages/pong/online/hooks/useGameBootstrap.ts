@@ -99,3 +99,8 @@ export function useGameBootstrap({
 
   return { destroy };
 }
+
+// Preload the online pong bootstrap bundle ahead of time to reduce latency
+export function preloadOnlinePong() {
+  return import('../../../../games/pong/host/online-embed').then(() => void 0).catch(() => void 0);
+}

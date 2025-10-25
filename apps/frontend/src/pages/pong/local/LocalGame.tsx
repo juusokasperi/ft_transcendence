@@ -1,4 +1,4 @@
-// apps/frontend/src/pages/pong/local/local-game.tsx
+// apps/frontend/src/pages/pong/local/LocalGame.tsx
 import React, { useCallback, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { BotDifficulty } from '../../../games/pong/ai/bot-controller';
@@ -6,10 +6,7 @@ import type { BotDifficulty } from '../../../games/pong/ai/bot-controller';
 import '@pong/render/ui/tailwind.css';
 import '@pong/render/register';
 
-import Navbar from '../../../components/Navbar';
 import { useSnackbar } from '../../../context/SnackbarContext';
-import gifImg from '../../../assets/gif.mp4';
-import { BackgroundVideo } from '../shared/components/BackgroundVideo';
 import { PlayingView, PostMatchView, SettingsView } from './components';
 import { useLocalSettings } from './hooks/useLocalSettings';
 import { usePongRuntime } from './hooks/usePongRuntime';
@@ -18,6 +15,8 @@ import { useKeyboardQuit } from './hooks/useKeyboardQuit';
 import { useBodyClass } from '../shared/hooks/useBodyClass';
 import { useLocalMatchEnd } from './hooks/useLocalMatchEnd';
 import type { MatchSummary } from './types';
+import PageContainer from '../shared/components/PageContainer';
+import PageSection from '../shared/components/PageSection';
 
 const LocalGame: React.FC = () => {
   const navigate = useNavigate();
@@ -71,7 +70,7 @@ const LocalGame: React.FC = () => {
   const handleQuit = useCallback(() => {
     setIsPlaying(false);
     restore();
-    navigate('/ping-pong');
+    navigate('/pong');
   }, [navigate, restore]);
 
   useKeyboardQuit(isPlaying, handleQuit);
@@ -107,44 +106,20 @@ const LocalGame: React.FC = () => {
   }, []);
 
   const handleReturnToMenu = useCallback(() => {
-    navigate('/ping-pong');
+    navigate('/pong');
   }, [navigate]);
 
   if (postMatch) {
     return (
-      <div className="fixed inset-0 overflow-hidden text-white">
-        <Navbar />
-
-        <main
-          aria-labelledby="postmatch-title"
-          className="absolute inset-x-0 bottom-0 top-[var(--navbar-h,80px)]"
-        >
-          <BackgroundVideo src={gifImg} fit="contain" position="center" />
-
-          <h1 id="postmatch-title" className="sr-only">
-            Match Summary
-          </h1>
-
-          <section
-            aria-labelledby="summary-heading"
-            className="relative z-10 h-full w-full overflow-y-auto"
-          >
-            <div className="mx-auto w-full max-w-5xl p-6">
-              <h2 id="summary-heading" className="sr-only">
-                Match result
-              </h2>
-
-              <div className="mt-6 md:mt-10">
-                <PostMatchView
-                  summary={postMatch}
-                  onPlayAgain={handlePlayAgain}
-                  onReturnToMenu={handleReturnToMenu}
-                />
-              </div>
-            </div>
-          </section>
-        </main>
-      </div>
+      <PageContainer>
+        <PageSection>
+          <PostMatchView
+            summary={postMatch}
+            onPlayAgain={handlePlayAgain}
+            onReturnToMenu={handleReturnToMenu}
+          />
+        </PageSection>
+      </PageContainer>
     );
   }
 
@@ -153,40 +128,23 @@ const LocalGame: React.FC = () => {
   }
 
   return (
-    <div className="fixed inset-0 overflow-hidden text-white">
-      <Navbar />
-
-      <main
-        aria-labelledby="settings-title"
-        className="absolute inset-x-0 bottom-0 top-[var(--navbar-h,80px)]"
-      >
-        <BackgroundVideo src={gifImg} fit="contain" position="center" />
-
-        <h1 id="settings-title" className="sr-only">
-          Local Match Settings
-        </h1>
-
-        <section className="relative z-10 h-full w-full overflow-y-auto">
-          <div className="mx-auto w-full max-w-4xl p-6">
-            <div className="mt-6 rounded-2xl md:mt-10">
-              <SettingsView
-                settings={settings}
-                onUpdateSettings={update}
-                onSave={handleSave}
-                onReset={handleReset}
-                onResetRules={resetRules}
-                onPlay={handlePlay}
-                aiEnabled={aiEnabled}
-                botDifficulty={botDifficulty}
-                onToggleAI={(enabled) => setAiEnabled(enabled)}
-                onDifficultyChange={(difficulty) => setBotDifficulty(difficulty)}
-                arrowSeatLabel={arrowSeatLabel}
-              />
-            </div>
-          </div>
-        </section>
-      </main>
-    </div>
+    <PageContainer>
+      <PageSection>
+        <SettingsView
+          settings={settings}
+          onUpdateSettings={update}
+          onSave={handleSave}
+          onReset={handleReset}
+          onResetRules={resetRules}
+          onPlay={handlePlay}
+          aiEnabled={aiEnabled}
+          botDifficulty={botDifficulty}
+          onToggleAI={setAiEnabled}
+          onDifficultyChange={setBotDifficulty}
+          arrowSeatLabel={arrowSeatLabel}
+        />
+      </PageSection>
+    </PageContainer>
   );
 };
 

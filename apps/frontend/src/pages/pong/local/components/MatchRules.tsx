@@ -77,12 +77,8 @@ const GAME_MAX: Partial<Record<keyof Ruleset['game'], number>> = {
 };
 
 /** Field configs (tiny & declarative) */
-const GAME_NUMBER_FIELDS: Array<{
-  key: keyof Ruleset['game'];
-  label: string;
-  tip: string;
-  min?: number;
-}> = [
+type GameNumberKey = 'targetScore' | 'winBy' | 'servesPerTurn' | 'deuceServesPerTurn';
+const GAME_NUMBER_FIELDS = [
   {
     key: 'targetScore',
     label: 'Target Score',
@@ -107,7 +103,12 @@ const GAME_NUMBER_FIELDS: Array<{
     tip: 'After deuce, service alternates every point. Officially: 1 serve each at deuce.',
     min: 1,
   },
-];
+] as const satisfies ReadonlyArray<{
+  key: GameNumberKey;
+  label: string;
+  tip: string;
+  min?: number;
+}>;
 
 export const MatchRules: React.FC<MatchRulesProps> = ({ rules, onUpdate, onReset }) => {
   const [open, setOpen] = useState(false);
@@ -133,8 +134,8 @@ export const MatchRules: React.FC<MatchRulesProps> = ({ rules, onUpdate, onReset
         onClick={() => setOpen((v) => !v)}
         className="flex w-full cursor-pointer items-center justify-between"
       >
-        <span className="text-2xl font-semibold text-yellow-400">Match Rules</span>
-        <span className="text-2xl leading-none text-yellow-400">{open ? '−' : '+'}</span>
+        <span className="text-xl font-semibold text-yellow-400">Match Rules</span>
+        <span className="text-xl leading-none text-yellow-400">{open ? '−' : '+'}</span>
       </button>
 
       {open && (
@@ -161,7 +162,7 @@ export const MatchRules: React.FC<MatchRulesProps> = ({ rules, onUpdate, onReset
             {/* Game: numeric fields from config (compute column by index parity) */}
             {GAME_NUMBER_FIELDS.map(({ key, label, tip, min = 1 }, i) => {
               const hardMax = GAME_MAX[key];
-              const value = rules.game[key] as number;
+              const value = rules.game[key];
 
               // Special handling for targetScore so we can auto-clamp mid-swap when it changes
               if (key === 'targetScore') {
@@ -218,7 +219,9 @@ export const MatchRules: React.FC<MatchRulesProps> = ({ rules, onUpdate, onReset
                     onChange={(e) => {
                       const raw = Number(e.target.value);
                       const max = hardMax ?? Number.POSITIVE_INFINITY;
-                      updateGame(key as any, clamp(raw, min, max) as any);
+                      const setGame = <K extends GameNumberKey>(k: K, v: Ruleset['game'][K]) =>
+                        updateGame(k, v);
+                      setGame(key, clamp(raw, min, max));
                     }}
                   />
                 </FieldRow>
@@ -245,7 +248,7 @@ export const MatchRules: React.FC<MatchRulesProps> = ({ rules, onUpdate, onReset
                     onChange={(e) => {
                       const raw = Number(e.target.value);
                       const next = clamp(raw, min, dynMax);
-                      updateMatch('decidingGameMidSwapAtPoints', next as any);
+                      updateMatch('decidingGameMidSwapAtPoints', next);
                     }}
                   />
                 );

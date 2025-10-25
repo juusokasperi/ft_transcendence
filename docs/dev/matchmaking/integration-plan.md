@@ -111,7 +111,7 @@ Frontend
   1. Open WS to `wss://<origin>/mm`; send `JOIN_QUEUE`.
   2. On `HANDOFF`, open WS to `wss://<origin>/g/${roomIdentifier}` with subprotocol `bearer,<joinToken>`.
   3. Wait for `START { startTick }`, then call `.onSnapshot()` on each server emission; pipe local axis via `.sendLocalAxis()`.
-- [ ] Add route `/ping-pong/online` that boots `createOnlineApp()` and shows connection status/errors.
+- [ ] Add route `/pong/online` that boots `createOnlineApp()` and shows connection status/errors.
 
 Stats & results
 

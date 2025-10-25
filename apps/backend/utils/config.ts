@@ -91,7 +91,7 @@ const MAIL_PASS = process.env.MAIL_PASS;
 const MAIL_SECURE = MAIL_SECURE_ENV ? MAIL_SECURE_ENV !== 'false' : undefined;
 
 export const MAIL_FROM =
-  process.env.MAIL_FROM || MAIL_USER || '"No Reply" <no-reply@arcadetranscendence.com>';
+  process.env.MAIL_FROM || MAIL_USER || '"No Reply" <no-reply@pong.example@gmail.com>';
 
 export const MAIL_TRANSPORT_CONFIG: MailTransportConfig | null =
   MAIL_HOST && MAIL_USER && MAIL_PASS

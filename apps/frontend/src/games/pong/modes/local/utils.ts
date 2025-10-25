@@ -1,7 +1,7 @@
 import type { DomScoreboardAPI } from '@pong/render';
 import { setPaddleColors } from '@pong/render';
-import type { Preferences } from '../preferences';
-import { hexToRgb, rgb01ToCss } from '../preferences';
+import type { Preferences } from '../shared/preferences';
+import { hexToRgb, rgb01ToCss } from '../shared/preferences';
 import type { TableEnd } from '@pong/shared';
 import { xorshift32, deriveSeed32 } from '@pong/shared';
 

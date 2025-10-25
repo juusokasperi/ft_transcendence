@@ -41,7 +41,7 @@ vi.mock('fastify', () => ({
   default: fastifyMock,
 }));
 
-const { createHttpServer } = await import('../utils/httpServer.ts');
+const { createHttpServer } = await import('../src/infra/http/index.ts');
 
 function createReply() {
   return {
@@ -52,17 +52,6 @@ function createReply() {
   };
 }
 
-function buildMatches(playersByMatch: Array<[string, number]> = []) {
-  const matches = new Map<string, any>();
-  for (const [id, playerCount] of playersByMatch) {
-    const players: Record<string, object | undefined> = { P1: undefined, P2: undefined };
-    if (playerCount >= 1) players.P1 = {};
-    if (playerCount >= 2) players.P2 = {};
-    matches.set(id, { players });
-  }
-  return matches;
-}
-
 describe('createHttpServer', () => {
   beforeEach(() => {
     getRoutes.clear();
@@ -71,14 +60,19 @@ describe('createHttpServer', () => {
   });
 
   it('registers health and metrics endpoints with expected semantics', async () => {
-    const matches = buildMatches([
-      ['room-1', 2],
-      ['room-2', 1],
-    ]);
+    const registry = {
+      metrics: vi.fn().mockReturnValue({
+        matches: 2,
+        players: 3,
+        roomsWaiting: 1,
+        roomsReady: 1,
+        roomsPlaying: 1,
+      }),
+    };
     const app = createHttpServer({
-      ADMIN_SECRET: 'top-secret',
-      HTTP_PORT: 7777,
-      matches: matches as any,
+      adminSecret: 'top-secret',
+      port: 7777,
+      registry: registry as any,
       onCreateRoom: vi.fn(),
     });
 
@@ -96,18 +90,30 @@ describe('createHttpServer', () => {
     const metricsReply = createReply();
     await metricsHandler({}, metricsReply);
 
+    expect(registry.metrics).toHaveBeenCalledTimes(1);
     expect(metricsReply.type).toHaveBeenCalledWith('text/plain');
     const payload = metricsReply.send.mock.calls[0][0] as string;
     expect(payload).toContain('game_server_matches 2');
     expect(payload).toContain('game_server_players 3');
+    expect(payload).toContain('game_server_rooms_waiting 1');
+    expect(payload).toContain('game_server_rooms_ready 1');
+    expect(payload).toContain('game_server_rooms_playing 1');
   });
 
   it('guards /admin/rooms with admin secret and forwards to onCreateRoom', async () => {
     const onCreateRoom = vi.fn().mockResolvedValue({ status: 'registered' });
     createHttpServer({
-      ADMIN_SECRET: 'super-secret',
-      HTTP_PORT: 8888,
-      matches: buildMatches() as any,
+      adminSecret: 'super-secret',
+      port: 8888,
+      registry: {
+        metrics: vi.fn().mockReturnValue({
+          matches: 0,
+          players: 0,
+          roomsWaiting: 0,
+          roomsReady: 0,
+          roomsPlaying: 0,
+        }),
+      } as any,
       onCreateRoom,
     });
 
@@ -143,9 +149,17 @@ describe('createHttpServer', () => {
   it('returns bad request when onCreateRoom throws', async () => {
     const onCreateRoom = vi.fn().mockRejectedValue(new Error('invalid payload'));
     createHttpServer({
-      ADMIN_SECRET: 'admin',
-      HTTP_PORT: 9999,
-      matches: buildMatches() as any,
+      adminSecret: 'admin',
+      port: 9999,
+      registry: {
+        metrics: vi.fn().mockReturnValue({
+          matches: 0,
+          players: 0,
+          roomsWaiting: 0,
+          roomsReady: 0,
+          roomsPlaying: 0,
+        }),
+      } as any,
       onCreateRoom,
     });
 
