@@ -26,18 +26,16 @@ import { useAppContext } from './context/AppContext';
  */
 function computeChannelFromPath(pathname: string) {
   // Home
-  if (pathname === '/') return 'lobby';
+  if (pathname === '/') return 'Lobby';
 
   // Force logged-in profile pages to use lobby channel
-  if (pathname.startsWith('/profile')) return 'lobby';
+  if (pathname.startsWith('/profile')) return 'Lobby';
 
-  // Ping-pong area
-  if (pathname.startsWith('/pong/online')) {
-    return 'matchmaking';
-  }
-  if (pathname.startsWith('/pong')) return 'ping-pong';
+  // Pong area
+  if (pathname.startsWith('/pong/tournaments')) return 'Tournaments';
+  if (pathname.startsWith('/pong/online')) return 'Online 1v1';
 
-  return 'lobby';
+  return 'Lobby';
 }
 
 function ChatToggleButton({ open, setOpen }: { open: boolean; setOpen: (v: boolean) => void }) {
