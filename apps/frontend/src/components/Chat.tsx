@@ -4,7 +4,7 @@ import { useAppContext } from '../context/AppContext';
 import SplitButton from './ui/SplitButton';
 import axios, { type AxiosInstance } from 'axios';
 
-const WS_URL = `${window.location.protocol === 'https:' ? 'wss' : 'ws'}://${window.location.hostname}:8080/chat`;
+const WS_URL = `${window.location.protocol === 'https:' ? 'wss' : 'ws'}://${window.location.host}/chat`;
 
 async function fetchUserUuidByUsername(
   axios: AxiosInstance,
