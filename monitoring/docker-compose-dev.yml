@@ -1,39 +1,32 @@
 services:
 
-
   prometheus-pre:
-    profiles: [monitoring]
     networks:
       - devnet
 
   prometheus:
-    profiles: [monitoring]
     networks:
       - devnet
     ports:
       - '9090:9090'
 
   nginx-exporter:
-    profiles: [monitoring]
     networks:
       - devnet
     ports:
       - '9113:9113'
 
   grafana:
-    profiles: [monitoring]
     networks:
       - devnet
     ports:
       - '3002:3000'
 
   grafana-setup:
-    profiles: [monitoring]
     networks:
       - devnet
 
   cadvisor:
-    profiles: [monitoring]
     networks:
       - devnet
     ports:

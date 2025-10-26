@@ -101,7 +101,10 @@ prod:
 	$(ensure_builder)
 	$(ensure_certs)
 	@echo ">> Starting prod stack (attached)"
-	docker compose -p $(NAME_PROD) $(PROD_COMPOSE) $(ENV_ROOT) --profile elk --profile monitoring up --build
+	docker compose -p $(NAME_PROD) $(PROD_COMPOSE) $(ENV_ROOT) \
+		-f ./monitoring/docker-compose-base.yml \
+		--profile elk \
+		up --build
 
 prod-detached:
 	$(ensure_dirs)
@@ -109,7 +112,9 @@ prod-detached:
 	$(ensure_builder)
 	$(ensure_certs)
 	@echo ">> Starting prod stack (detached)"
-	docker compose -p $(NAME_PROD) $(PROD_COMPOSE) $(ENV_ROOT) --profile elk --profile monitoring up --build -d
+	docker compose -p $(NAME_PROD) $(PROD_COMPOSE) $(ENV_ROOT) \
+		-f ./monitoring/docker-compose-base.yml \
+		--profile elk up --build -d
 
 elk:
 	$(ensure_dirs)
@@ -129,13 +134,16 @@ mon:
 	$(ensure_dirs)
 	$(ensure_env)
 	$(ensure_builder)
-	docker compose -p $(NAME)  --profile monitoring up --build
+	docker compose -p $(NAME) $(ENV_ROOT) $(ROOT_COMPOSE) \
+		-f ./monitoring/docker-compose-base.yml \
+		-f ./monitoring/docker-compose-dev.yml \
+		up --build
 
 mon-detached:
 	$(ensure_dirs)
 	$(ensure_env)
 	$(ensure_builder)
-	docker compose -p $(NAME)  --profile monitoring up --build -d
+	docker compose -p $(NAME) $(ROOT_COMPOSE) --profile monitoring up --build -d
 
 # Running compose with two `-p` flags doesnt work. 
 # But running compose down with multiple `--profile` flags is ok, it brings 
