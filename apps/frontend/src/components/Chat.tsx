@@ -2,9 +2,10 @@ import React, { useEffect, useRef, useState } from 'react';
 import { X } from 'lucide-react';
 import { useAppContext } from '../context/AppContext';
 import SplitButton from './ui/SplitButton';
-import axios, { type AxiosInstance } from 'axios';
+import type { AxiosInstance } from 'axios';
+import { wsUrl } from '../utils/url';
 
-const WS_URL = `${window.location.protocol === 'https:' ? 'wss' : 'ws'}://${window.location.host}/chat`;
+const WS_URL = wsUrl('/chat');
 
 async function fetchUserUuidByUsername(
   axios: AxiosInstance,
@@ -47,7 +48,7 @@ type ChatProps = {
 };
 
 export default function Chat({ onClose, username = 'Player', channel, isOpen = true }: ChatProps) {
-  const { user, navigate } = useAppContext();
+  const { user, navigate, axios: authAxios } = useAppContext();
 
   const chatUsername = user?.username || username;
 
@@ -62,7 +63,7 @@ export default function Chat({ onClose, username = 'Player', channel, isOpen = t
   const containerRef = useRef<HTMLDivElement | null>(null);
   const wasOpenRef = useRef(isOpen);
 
-  // Rate limiter: allow 3 messages, then cooldown for 2000ms
+  // Rate limiter: allow 2 messages, then cooldown for 2000ms
   const [sentCount, setSentCount] = useState(0);
   const [cooldown, setCooldown] = useState(false);
   const cooldownTimeoutRef = useRef<number | null>(null);
@@ -344,7 +345,7 @@ export default function Chat({ onClose, username = 'Player', channel, isOpen = t
         ]);
         break;
       case 'View profile': {
-        const uid = await fetchUserUuidByUsername(axios, targetUser);
+        const uid = await fetchUserUuidByUsername(authAxios, targetUser);
         if (uid) {
           navigate(`/users/${uid}`);
         } else {
