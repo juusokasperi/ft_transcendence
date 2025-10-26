@@ -8,6 +8,7 @@ volumes:
   render_node_modules: {}
   matchmaking_node_modules: {}
   game_server_node_modules: {}
+  chat_node_modules: {}
   allocator_node_modules: {}
   scorer_node_modules: {}
   redis_data: {}
@@ -125,7 +126,7 @@ services:
       options:
         gelf-address: udp://localhost:12201
 
-# 5) Matchmaking service (WebSocket server)
+  # 5) Matchmaking service (WebSocket server)
   matchmaking-service:
     image: node:22-bookworm
     init: true
@@ -135,8 +136,6 @@ services:
     environment:
       PNPM_STORE_DIR: /pnpm/store
       CHOKIDAR_USEPOLLING: "true"
-    #ports:
-      #- "${MATCHMAKING_PORT:-4242}:4242"
     volumes:
       - .:/work:cached
       - pnpm-store:/pnpm/store
@@ -149,12 +148,12 @@ services:
       allocator:
         condition: service_started
     networks: [devnet]
-    logging: # needed for logstash (ELK stack) #Ask Leon about this
+    logging: # needed for logstash (ELK stack)
       driver: gelf
       options:
         gelf-address: udp://localhost:12201
 
-# 6a) Game server (WebSocket server)
+  # 6a) Game server (WebSocket server)
   game-server: &game-server-template
     image: node:22-bookworm
     init: true
@@ -164,8 +163,6 @@ services:
     environment:
       PNPM_STORE_DIR: /pnpm/store
       CHOKIDAR_USEPOLLING: "true"
-    #ports:
-    #  - "${GAME_SERVER_PORT:-55553}:55553"
     volumes:
       - .:/work:cached
       - pnpm-store:/pnpm/store
@@ -176,16 +173,41 @@ services:
       deps:
         condition: service_completed_successfully
     networks: [devnet]
-    logging: # needed for logstash (ELK stack) #Ask Leon about this
+    logging: # needed for logstash (ELK stack)
       driver: gelf
       options:
         gelf-address: udp://localhost:12201
 
-# 6b) Game server 2
+  # 6b) Game server 2 (uses same template)
   game-server-2:
     <<: *game-server-template
 
-# 7) Allocator service (HTTP server)
+  # 7) Chat service (WebSocket server)
+  chat-service:
+    image: node:22-bookworm
+    init: true
+    working_dir: /work/apps/chat
+    env_file:
+      - .env
+    environment:
+      PNPM_STORE_DIR: /pnpm/store
+      CHOKIDAR_USEPOLLING: "true"
+    volumes:
+      - .:/work:cached
+      - pnpm-store:/pnpm/store
+      - node_modules:/work/node_modules:ro
+      - chat_node_modules:/work/apps/chat/node_modules:ro
+    command: bash -lc "corepack enable && corepack prepare pnpm@${PNPM_VERSION:-9.12.3} --activate && pnpm dev"
+    depends_on:
+      deps:
+        condition: service_completed_successfully
+    networks: [devnet]
+    logging: # needed for logstash (ELK stack)
+      driver: gelf
+      options:
+        gelf-address: udp://localhost:12201
+
+  # 8) Allocator service (HTTP server)
   allocator:
     image: node:22-bookworm
     init: true
@@ -196,8 +218,6 @@ services:
       PNPM_STORE_DIR: /pnpm/store
       CHOKIDAR_USEPOLLING: "true"
       REDIS_URL: redis://redis:6379
-    #ports:
-    # - "${ALLOCATOR_PORT}:-4000:4000"
     volumes:
       - .:/work:cached
       - pnpm-store:/pnpm/store
@@ -210,27 +230,25 @@ services:
       redis:
         condition: service_started
     networks: [devnet]
-    logging:
+    logging: # needed for logstash (ELK stack)
       driver: gelf
       options:
         gelf-address: udp://localhost:12201
 
-# 8) Redis
+  # 9) Redis
   redis:
     image: redis:8.2.1-alpine
     init: true
     restart: unless-stopped
-    #ports:
-    #  - "${REDIS_PORT}:-6379:6379"
     networks: [devnet]
     volumes:
       - redis_data:/data
-    logging:
+    logging: # needed for logstash (ELK stack)
       driver: gelf
       options:
         gelf-address: udp://localhost:12201
 
-# 9) Scorer service (Updating Redis for game server load)
+  # 10) Scorer service (Updating Redis for game server load)
   scorer:
     image: node:22-bookworm
     init: true
@@ -241,8 +259,6 @@ services:
       PNPM_STORE_DIR: /pnpm/store
       REDIS_URL: redis://redis:6379
       CHOKIDAR_USEPOLLING: "true"
-    #ports:
-    # - "${ALLOCATOR_PORT}:-4000:4000"
     volumes:
       - .:/work:cached
       - pnpm-store:/pnpm/store
@@ -259,12 +275,12 @@ services:
       game-server-2:
         condition: service_started
     networks: [devnet]
-    logging:
+    logging: # needed for logstash (ELK stack)
       driver: gelf
       options:
         gelf-address: udp://localhost:12201
 
-# 10) Game Gateway
+  # 11) Game Gateway
   game-gateway:
     image: node:22-bookworm
     init: true
@@ -288,6 +304,10 @@ services:
     networks: [devnet]
     ports:
       - "55550:55550"
+    logging: # needed for logstash (ELK stack)
+      driver: gelf
+      options:
+        gelf-address: udp://localhost:12201
 
 include:
   # stuff in this file will only run with `--profile elk`
