@@ -43,11 +43,7 @@ const app = fastify({
   logger: createLoggerOptions(isDev),
 });
 
-registerMetrics(app, {
-  labels: {
-    service: 'scorer',
-  },
-});
+registerMetrics(app, { labels: { service: 'scorer' } });
 
 const nodes = Array.from({ length: GAME_NODES_AMOUNT }, (_, i) => {
   let host = GAME_SERVER_SERVICE;

@@ -66,10 +66,7 @@ export const registerMetrics = (app: FastifyInstance, config: MetricsConfig = {}
     register: registryToUse,
   };
 
-  app.register(
-    fastifyMetrics,
-    metricsOptions,
-  );
+  app.register(fastifyMetrics, metricsOptions);
 };
 
 // Export prom-client register for direct access if needed

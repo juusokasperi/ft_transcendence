@@ -52,11 +52,7 @@ app.log = logger as FastifyBaseLogger;
 
 app.setErrorHandler(prettierErrorMessages);
 
-registerMetrics(app, {
-  labels: {
-    service: 'api',
-  },
-});
+registerMetrics(app, { labels: { service: 'api' } });
 
 await app.register(swagger, swaggerConfig);
 await app.register(cookie);

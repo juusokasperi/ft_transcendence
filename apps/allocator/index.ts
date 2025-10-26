@@ -14,11 +14,7 @@ const redis = new Redis(REDIS_URL);
 
 const app = fastify();
 
-registerMetrics(app, {
-  labels: {
-    service: 'allocator',
-  },
-});
+registerMetrics(app, { labels: { service: 'allocator' } });
 
 app.post(
   '/allocate',

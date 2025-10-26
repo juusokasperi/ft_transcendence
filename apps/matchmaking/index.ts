@@ -40,11 +40,7 @@ const app = Fastify({
   },
 });
 
-registerMetrics(app, {
-  labels: {
-    service: 'matchmaking',
-  },
-});
+registerMetrics(app, { labels: { service: 'matchmaking' } });
 
 app.log = logger as FastifyBaseLogger;
 

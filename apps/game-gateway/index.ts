@@ -38,11 +38,7 @@ const app = fastify({
   logger: createLoggerOptions(isDev),
 });
 
-registerMetrics(app, {
-  labels: {
-    service: 'game-gateway',
-  },
-});
+registerMetrics(app, { labels: { service: 'game-gateway' } });
 
 const proxy = new createProxyServer({ ws: true });
 
