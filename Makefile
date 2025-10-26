@@ -3,8 +3,8 @@ NAME             = ft-transcendence-dev
 NAME_PROD        = ft-transcendence-prod
 ROOT_COMPOSE     = -f docker-compose.yml
 PROD_COMPOSE     = -f docker-compose-prod.yml
-MON_PROD_COMPOSE = -f docker-compose-prod.yml -f ./monitoring/docker-compose-base.yml
-MON_DEV_COMPOSE  = -f docker-compose-prod.yml -f ./monitoring/docker-compose-base.yml -f ./monitoring/docker-compose-dev.yml
+MON_PROD_COMPOSE = -f ./monitoring/docker-compose-base.yml
+MON_DEV_COMPOSE  = -f ./monitoring/docker-compose-base.yml -f ./monitoring/docker-compose-dev.yml
 BUILDER_NAME     = ft-transcendence
 
 # No user-mapping variables needed anymore; volumes are cleaned by helper image
