@@ -21,10 +21,15 @@ services:
       - devnet
     ports:
       - '3002:3000'
+    environment:
+      - GF_SERVER_ROOT_URL=https://localhost:3000/
+      - GF_SERVER_SERVE_FROM_SUB_PATH=false
 
   grafana-setup:
     networks:
       - devnet
+    environment:
+      - GRAFANA_URL=http://grafana:3000
 
   cadvisor:
     networks:

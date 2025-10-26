@@ -61,8 +61,8 @@ services:
       - GF_SERVER_ROUTER_LOGGING=true
     volumes:
       - grafana-storage:/var/lib/grafana
-      - ./grafana/provisioning:/etc/grafana/provisioning
-      - ./grafana/dashboards/:/etc/grafana/dashboards
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning
+      - ./monitoring/grafana/dashboards/:/etc/grafana/dashboards
     healthcheck:
       test:
         - CMD-SHELL
