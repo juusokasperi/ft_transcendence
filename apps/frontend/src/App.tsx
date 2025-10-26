@@ -72,10 +72,8 @@ function App() {
           {/* Floating toggle so user can open/close chat — only show when chat is CLOSED */}
           {user && !chatOpen && <ChatToggleButton open={chatOpen} setOpen={setChatOpen} />}
 
-          {/* Mount Chat only when chatOpen is true */}
-          {user && chatOpen && (
-            <Chat onClose={() => setChatOpen(false)} channel={channel} defaultOpen={true} />
-          )}
+          {/* Keep Chat mounted to avoid StrictMode remount flicker */}
+          {user && <Chat onClose={() => setChatOpen(false)} channel={channel} isOpen={chatOpen} />}
           {/* Routes */}
           <Routes>
             <Route path={'/'} element={<Home />} />

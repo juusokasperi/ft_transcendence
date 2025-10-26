@@ -1,5 +1,4 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { motion } from 'framer-motion';
 import { X } from 'lucide-react';
 import { useAppContext } from '../context/AppContext';
 import SplitButton from './ui/SplitButton';
@@ -44,23 +43,10 @@ type ChatProps = {
   onClose: () => void;
   username?: string;
   channel: string;
-  size?: 'sm' | 'md' | 'lg';
-  defaultOpen?: boolean;
+  isOpen?: boolean;
 };
 
-const sizeClasses = {
-  sm: 'h-64 w-80',
-  md: 'h-96 w-[36rem]',
-  lg: 'h-[32rem] w-[48rem] bottom-6 right-6',
-};
-
-export default function Chat({
-  onClose,
-  username = 'Player',
-  channel,
-  size = 'md',
-  defaultOpen = true,
-}: ChatProps) {
+export default function Chat({ onClose, username = 'Player', channel, isOpen = true }: ChatProps) {
   const { user, navigate } = useAppContext();
 
   const chatUsername = user?.username || username;
@@ -73,6 +59,8 @@ export default function Chat({
 
   const wsRef = useRef<WebSocket | null>(null);
   const scrollRef = useRef<HTMLDivElement | null>(null);
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const wasOpenRef = useRef(isOpen);
 
   // Rate limiter: allow 3 messages, then cooldown for 2000ms
   const [sentCount, setSentCount] = useState(0);
@@ -84,6 +72,35 @@ export default function Chat({
   useEffect(() => {
     blockedRef.current = blocked;
   }, [blocked]);
+
+  useEffect(() => {
+    const node = containerRef.current;
+    if (!node) return;
+    if (isOpen) {
+      node.removeAttribute('inert');
+    } else {
+      node.setAttribute('inert', '');
+    }
+  }, [isOpen]);
+
+  useEffect(() => {
+    const wasOpen = wasOpenRef.current;
+    wasOpenRef.current = isOpen;
+
+    if (wasOpen && !isOpen) {
+      if (cooldownTimeoutRef.current) {
+        clearTimeout(cooldownTimeoutRef.current);
+        cooldownTimeoutRef.current = null;
+      }
+      setMessages([]);
+      setUsers([]);
+      setInput('');
+      setDmTarget(null);
+      setBlocked(new Set<string>());
+      setSentCount(0);
+      setCooldown(false);
+    }
+  }, [isOpen]);
 
   // normalize server user array -> UserItem[], dedupe by username, ensure self present
   const normalizeUsers = (list: Array<any>): UserItem[] => {
@@ -112,7 +129,7 @@ export default function Chat({
 
   // establish websocket and handlers
   useEffect(() => {
-    if (!defaultOpen) return;
+    if (!isOpen) return;
 
     const ws = new WebSocket(WS_URL);
     wsRef.current = ws;
@@ -236,14 +253,15 @@ export default function Chat({
       } catch {}
       wsRef.current = null;
     };
-  }, [channel, chatUsername, defaultOpen]);
+  }, [channel, chatUsername, isOpen]);
 
   // autoscroll on new messages
   useEffect(() => {
+    if (!isOpen) return;
     const el = scrollRef.current;
     if (!el) return;
     el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' });
-  }, [messages]);
+  }, [messages, isOpen]);
 
   // cleanup cooldown timers on unmount
   useEffect(() => {
@@ -340,14 +358,18 @@ export default function Chat({
     }
   };
 
-  if (!defaultOpen) return null;
+  const panelStateCls = isOpen
+    ? 'pointer-events-auto opacity-100 translate-y-0 scale-100'
+    : 'pointer-events-none opacity-0 translate-y-4 scale-[0.98]';
 
   return (
-    <motion.div
-      className={`fixed inset-x-3 bottom-3 z-50 flex h-[85vh] max-h-[calc(100vh-1.5rem)] flex-col overflow-hidden rounded-2xl border border-white/20 bg-gray-900/95 text-white shadow-2xl backdrop-blur-md transition-all duration-300 ease-in-out sm:inset-auto sm:bottom-6 sm:left-auto sm:right-6 sm:h-[40rem] sm:w-[36rem]`}
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: 20 }}
+    <div
+      ref={containerRef}
+      role="dialog"
+      aria-label={`Live Chat (${channel})`}
+      aria-hidden={!isOpen}
+      data-state={isOpen ? 'open' : 'closed'}
+      className={`fixed inset-x-3 bottom-3 z-50 flex h-[85vh] max-h-[calc(100vh-1.5rem)] flex-col overflow-hidden rounded-2xl border border-white/20 bg-gray-900/95 text-white shadow-2xl backdrop-blur-md transition duration-200 ease-out sm:inset-auto sm:bottom-6 sm:left-auto sm:right-6 sm:h-[40rem] sm:w-[36rem] ${panelStateCls}`}
     >
       {/* Header */}
       <div className="flex items-center justify-between border-b border-white/20 px-3 py-2">
@@ -474,6 +496,6 @@ export default function Chat({
           You're sending messages too fast — please wait a moment.
         </div>
       )}
-    </motion.div>
+    </div>
   );
 }
