@@ -40,11 +40,9 @@ const app = Fastify({
   },
 });
 
-await registerMetrics(app, {
+registerMetrics(app, {
   labels: {
     service: 'matchmaking',
-    env: process.env.NODE_ENV ?? 'dev',
-    version: process.env.GIT_SHA ?? 'dev',
   },
 });
 

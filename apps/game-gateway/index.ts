@@ -38,11 +38,9 @@ const app = fastify({
   logger: createLoggerOptions(isDev),
 });
 
-await registerMetrics(app, {
+registerMetrics(app, {
   labels: {
     service: 'game-gateway',
-    env: process.env.NODE_ENV ?? 'dev',
-    version: process.env.GIT_SHA ?? 'dev',
   },
 });
 

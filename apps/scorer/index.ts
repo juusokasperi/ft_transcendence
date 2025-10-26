@@ -43,11 +43,9 @@ const app = fastify({
   logger: createLoggerOptions(isDev),
 });
 
-await registerMetrics(app, {
+registerMetrics(app, {
   labels: {
     service: 'scorer',
-    env: process.env.NODE_ENV ?? 'dev',
-    version: process.env.GIT_SHA ?? 'dev',
   },
 });
 

@@ -14,11 +14,9 @@ const redis = new Redis(REDIS_URL);
 
 const app = fastify();
 
-await registerMetrics(app, {
+registerMetrics(app, {
   labels: {
     service: 'allocator',
-    env: process.env.NODE_ENV ?? 'dev',
-    version: process.env.GIT_SHA ?? 'dev',
   },
 });
 

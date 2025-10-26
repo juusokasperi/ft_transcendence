@@ -52,6 +52,12 @@ app.log = logger as FastifyBaseLogger;
 
 app.setErrorHandler(prettierErrorMessages);
 
+registerMetrics(app, {
+  labels: {
+    service: 'api',
+  },
+});
+
 await app.register(swagger, swaggerConfig);
 await app.register(cookie);
 await app.register(googleSign);
@@ -65,14 +71,6 @@ await app.register(cors, {
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
-});
-
-await registerMetrics(app, {
-  labels: {
-    service: 'api',
-    env: process.env.NODE_ENV ?? 'dev',
-    version: process.env.GIT_SHA ?? 'dev',
-  },
 });
 
 app.register(fastifyMultipart, {

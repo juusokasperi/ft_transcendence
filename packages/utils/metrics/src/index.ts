@@ -36,16 +36,24 @@ const defaultConfig: Required<Omit<MetricsConfig, 'labels' | 'registry'>> = {
   defaultMetrics: { enabled: true },
 };
 
-export const registerMetrics = async (
-  app: FastifyInstance,
-  config: MetricsConfig = {},
-): Promise<void> => {
+export const registerMetrics = (app: FastifyInstance, config: MetricsConfig = {}): void => {
   const finalConfig = {
     ...defaultConfig,
     ...config,
   };
 
+  const defaultLabels = {
+    env: process.env.NODE_ENV ?? 'dev',
+    version: process.env.GIT_SHA ?? 'dev',
+  };
+
+  const mergedLabels = {
+    ...defaultLabels,
+    ...(finalConfig.labels ?? {}),
+  };
   const registryToUse = finalConfig.registry ?? register;
+
+  registryToUse.setDefaultLabels(mergedLabels);
 
   // Set default labels if provided
   if (finalConfig.labels) {
@@ -58,7 +66,7 @@ export const registerMetrics = async (
     register: registryToUse,
   };
 
-  await app.register(
+  app.register(
     fastifyMetrics as unknown as FastifyPluginAsync<typeof metricsOptions>,
     metricsOptions,
   );
