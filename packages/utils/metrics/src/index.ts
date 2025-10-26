@@ -67,7 +67,7 @@ export const registerMetrics = (app: FastifyInstance, config: MetricsConfig = {}
   };
 
   app.register(
-    fastifyMetrics as unknown as FastifyPluginAsync<typeof metricsOptions>,
+    fastifyMetrics,
     metricsOptions,
   );
 };

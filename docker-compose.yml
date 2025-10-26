@@ -314,5 +314,6 @@ services:
 include:
   # stuff in this file will only run with `--profile elk`
   - log-management/docker-compose.yml
-  # stuff in this file will only run with `--profile monitoring`
-  - monitoring/docker-compose.yml
+  # stuff in these files will only run with `--profile monitoring`
+  - monitoring/docker-compose-prod.yml # base
+  - monitoring/docker-compose-dev.yml # override
