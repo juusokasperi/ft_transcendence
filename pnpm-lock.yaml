@@ -363,6 +363,9 @@ importers:
       fastify:
         specifier: ^5.6.0
         version: 5.6.0
+      fastify-metrics:
+        specifier: ^12.1.0
+        version: 12.1.0(fastify@5.6.0)
       ioredis:
         specifier: ^5.8.0
         version: 5.8.0
