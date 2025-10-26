@@ -205,12 +205,18 @@ importers:
 
   apps/chat:
     dependencies:
+      '@elastic/ecs-pino-format':
+        specifier: ^1.5.0
+        version: 1.5.0
       '@fastify/websocket':
         specifier: ^11.2.0
         version: 11.2.0
       fastify:
         specifier: ^5.6.0
         version: 5.6.1
+      pino:
+        specifier: ^10.0.0
+        version: 10.1.0
       uuid:
         specifier: ^9.0.0
         version: 9.0.1
@@ -218,6 +224,9 @@ importers:
         specifier: ^8.17.0
         version: 8.18.3
     devDependencies:
+      pino-pretty:
+        specifier: ^13.1.2
+        version: 13.1.2
       tsx:
         specifier: ^4.0.0
         version: 4.20.6

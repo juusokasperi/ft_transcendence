@@ -3,6 +3,7 @@ import websocket from '@fastify/websocket';
 import type { FastifyRequest } from 'fastify';
 import type { WebSocket, RawData } from 'ws';
 import { v4 as uuid } from 'uuid';
+import { ecsFormat } from '@elastic/ecs-pino-format';
 
 interface Client {
   id: string;
@@ -14,11 +15,32 @@ interface Client {
 
 const PORT = Number(process.env.CHAT_PORT || 6262);
 const HOST = process.env.CHAT_HOST || '0.0.0.0';
+const isDev = process.env.NODE_ENV === 'development';
+
+function createLoggerOptions(isDev: boolean) {
+  if (isDev) {
+    return {
+      level: 'debug',
+      transport: {
+        target: 'pino-pretty',
+        options: {
+          colorize: true,
+          translateTime: 'HH:MM:ss.l',
+          ignore: 'pid,hostname',
+        },
+      },
+    };
+  }
+
+  return {
+    level: 'info',
+    base: { service: 'chat-service' },
+    ...ecsFormat(),
+  };
+}
 
 const fastify = Fastify({
-  logger: {
-    level: process.env.LOG_LEVEL ?? 'info',
-  },
+  logger: createLoggerOptions(isDev),
 });
 
 const clients = new Map<string, Client>();
