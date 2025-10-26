@@ -21,14 +21,15 @@ scrape_configs:
           "matchmaking-service:${MATCHMAKING_PORT}",
           "scorer:${SCORER_PORT}",
           "chat:${CHAT_PORT}",
-          "game-server:${GAME_SERVER_HTTP}"
+          "game-server:${GAME_SERVER_HTTP}",
+          "game-server-2:${GAME_SERVER_HTTP}"
         ]
 
   # Game servers scraped separately for gameplay-specific metrics
   - job_name: 'game-servers'
     metrics_path: '/metrics'
     static_configs:
-      - targets: ["game-server:${GAME_SERVER_HTTP}"]
+      - targets: ["game-server:${GAME_SERVER_HTTP}", "game-server-2:${GAME_SERVER_HTTP}"]
     relabel_configs:
       # Rewrite instance label to point to its HTTP/game logic port
       - source_labels: [__address__]
