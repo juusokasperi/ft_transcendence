@@ -243,7 +243,7 @@ services:
     networks: [devnet]
     volumes:
       - redis_data:/data
-    logging:
+    logging: # needed for logstash (ELK stack)
       driver: gelf
       options:
         gelf-address: udp://localhost:12201
@@ -281,7 +281,7 @@ services:
         gelf-address: udp://localhost:12201
 
   # 11) Game Gateway
-  game-gateway: # ASK LEON about logstash here
+  game-gateway:
     image: node:22-bookworm
     init: true
     working_dir: /work/apps/game-gateway
@@ -304,6 +304,10 @@ services:
     networks: [devnet]
     ports:
       - "55550:55550"
+    logging: # needed for logstash (ELK stack)
+      driver: gelf
+      options:
+        gelf-address: udp://localhost:12201
 
 include:
   # stuff in this file will only run with `--profile elk`
