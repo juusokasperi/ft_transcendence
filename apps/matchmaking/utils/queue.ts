@@ -35,7 +35,7 @@ function cleanupBucket(bucketId: number) {
 export function tryMatchQueue(pendingMatches: Map<string, PendingMatch>) {
   const oldestPlayers: ClientInfo[] = [];
   for (const clients of buckets.values()) {
-    if (clients.length > 0) oldestPlayers.push(clients[0]!);
+    if (clients.length > 0 && clients[0]) oldestPlayers.push(clients[0]);
   }
   if (oldestPlayers.length === 0) return;
 
