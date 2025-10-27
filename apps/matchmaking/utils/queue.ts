@@ -101,7 +101,7 @@ export async function handleJoinQueue(client: ClientInfo, alias?: string) {
   bucket.push(client);
   log(`Client joined queue`, {
     uuid: client.uuid,
-    bucket: bucket,
+    bucket: bucketId,
     bucketSize: bucket.length,
     totalBuckets: buckets.size,
   });
