@@ -62,39 +62,34 @@ function getMatchPlayerId(matchId: number, userUuid: string): number | null {
 }
 
 function seedMatch(
-    team1Score: number,
-    team2Score: number,
-    team1Uuid: string,
-    team2Uuid: string,
-    team1Delta: number,
-    team2Delta: number,
-    tournamentId?: number,
-    tournamentStage?: string
+  team1Score: number,
+  team2Score: number,
+  team1Uuid: string,
+  team2Uuid: string,
+  team1Delta: number,
+  team2Delta: number,
+  tournamentId?: number,
+  tournamentStage?: string,
 ): number | null {
-    const transaction = db.transaction(() => {
-        const matchId = addMatch(
-            team1Score,
-            team2Score,
-            tournamentId,
-            tournamentStage
-        );
-        if (!matchId) throw new Error('Failed to create match entry');
+  const transaction = db.transaction(() => {
+    const matchId = addMatch(team1Score, team2Score, tournamentId, tournamentStage);
+    if (!matchId) throw new Error('Failed to create match entry');
 
-        if (!addMatchPlayer(matchId, team1Uuid, 1, team1Delta)) {
-            throw new Error(`Failed to add team 1 player ${team1Uuid}`);
-        }
-        if (!addMatchPlayer(matchId, team2Uuid, 2, team2Delta)) {
-            throw new Error(`Failed to add team 2 player ${team2Uuid}`);
-        }
-        return matchId;
-    });
-
-    try {
-        return transaction();
-    } catch (error) {
-        console.error("Failed to seed match:", error);
-        return null;
+    if (!addMatchPlayer(matchId, team1Uuid, 1, team1Delta)) {
+      throw new Error(`Failed to add team 1 player ${team1Uuid}`);
     }
+    if (!addMatchPlayer(matchId, team2Uuid, 2, team2Delta)) {
+      throw new Error(`Failed to add team 2 player ${team2Uuid}`);
+    }
+    return matchId;
+  });
+
+  try {
+    return transaction();
+  } catch (error) {
+    console.error('Failed to seed match:', error);
+    return null;
+  }
 }
 
 const createUser = async (username: string, email: string, password: string) => {
@@ -168,7 +163,7 @@ for (const [matchIdx, userUuid, stats] of statsData as any) {
   if (matchPlayerId) {
     upsertMatchPlayerStats(matchPlayerId, stats);
   } else {
-      console.warn(`Could not find MatchPlayer entry for match ${matchId}, user ${userUuid}`);
+    console.warn(`Could not find MatchPlayer entry for match ${matchId}, user ${userUuid}`);
   }
 
   let delta = 0;
