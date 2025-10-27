@@ -1,6 +1,6 @@
 import fastify, { type FastifyInstance, type FastifyReply, type FastifyRequest } from 'fastify';
 import type { RoomRegistry } from '../../app/RoomRegistry.ts';
-import fastifyMetrics from 'fastify-metrics';
+import { registerMetrics } from '@utils/metrics';
 
 type CreateHttpServerArgs = {
   adminSecret: string;
@@ -16,7 +16,7 @@ export function createHttpServer({
   onCreateRoom,
 }: CreateHttpServerArgs): FastifyInstance {
   const app = fastify();
-  app.register(fastifyMetrics, { endpoint: '/metrics', defaultMetrics: { enabled: true } });
+  registerMetrics(app, { labels: { service: 'game-server' } });
 
   app.after(() => {
     const createDynamicGauge = (

@@ -1,8 +1,10 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import type { Variants } from 'framer-motion';
 import { useAppContext } from '../context/AppContext';
 import { Link } from 'react-router-dom';
+import Chat from '../components/Chat';
+import SplitButton from '../components/ui/SplitButton';
 import Navbar from '../components/Navbar';
 import backgroundImg from '../assets/background.png';
 import tetristImg from '../assets/tetrist.jpg';
@@ -68,7 +70,8 @@ const games = [
 ];
 
 const Hero: React.FC = () => {
-  const { user } = useAppContext();
+  const [chatOpen, setChatOpen] = useState(false);
+  const { axios, user } = useAppContext();
 
   return (
     <>

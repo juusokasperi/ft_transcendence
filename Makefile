@@ -3,6 +3,8 @@ NAME             = ft-transcendence-dev
 NAME_PROD        = ft-transcendence-prod
 ROOT_COMPOSE     = -f docker-compose.yml
 PROD_COMPOSE     = -f docker-compose-prod.yml
+MON_PROD_COMPOSE = -f ./monitoring/docker-compose-base.yml
+MON_DEV_COMPOSE  = -f ./monitoring/docker-compose-base.yml -f ./monitoring/docker-compose-dev.yml
 BUILDER_NAME     = ft-transcendence
 
 # No user-mapping variables needed anymore; volumes are cleaned by helper image
@@ -101,7 +103,10 @@ prod:
 	$(ensure_builder)
 	$(ensure_certs)
 	@echo ">> Starting prod stack (attached)"
-	docker compose -p $(NAME_PROD) $(PROD_COMPOSE) $(ENV_ROOT) --profile elk --profile monitoring up --build
+	docker compose -p $(NAME_PROD) $(PROD_COMPOSE) $(ENV_ROOT) \
+		${MON_PROD_COMPOSE} \
+		--profile elk \
+		up --build
 
 prod-detached:
 	$(ensure_dirs)
@@ -109,7 +114,9 @@ prod-detached:
 	$(ensure_builder)
 	$(ensure_certs)
 	@echo ">> Starting prod stack (detached)"
-	docker compose -p $(NAME_PROD) $(PROD_COMPOSE) $(ENV_ROOT) --profile elk --profile monitoring up --build -d
+	docker compose -p $(NAME_PROD) $(PROD_COMPOSE) $(ENV_ROOT) \
+		${MON_PROD_COMPOSE} \
+		--profile elk up --build -d
 
 elk:
 	$(ensure_dirs)
@@ -129,13 +136,17 @@ mon:
 	$(ensure_dirs)
 	$(ensure_env)
 	$(ensure_builder)
-	docker compose -p $(NAME)  --profile monitoring up --build
+	docker compose -p $(NAME) $(ENV_ROOT) $(ROOT_COMPOSE) \
+		${MON_DEV_COMPOSE} \
+		up --build
 
 mon-detached:
 	$(ensure_dirs)
 	$(ensure_env)
 	$(ensure_builder)
-	docker compose -p $(NAME)  --profile monitoring up --build -d
+	docker compose -p $(NAME) $(ENV_ROOT) $(ROOT_COMPOSE) \
+		${MON_DEV_COMPOSE} \
+		up --build -d
 
 # Running compose with two `-p` flags doesnt work. 
 # But running compose down with multiple `--profile` flags is ok, it brings 
@@ -143,9 +154,13 @@ mon-detached:
 # as well
 down:
 	@echo ">> Stopping & removing default stack (volumes, local images, orphans)"
-	- docker compose -p $(NAME) $(ROOT_COMPOSE)  $(ENV_ROOT) --profile elk --profile monitoring down -v --rmi local --remove-orphans
+	- docker compose -p $(NAME) $(ROOT_COMPOSE) $(ENV_ROOT) \
+		${MON_DEV_COMPOSE} \
+		--profile elk down -v --rmi local --remove-orphans
 	@echo ">> Stopping & removing prod stack (volumes, local images, orphans)"
-	- docker compose -p $(NAME_PROD) $(PROD_COMPOSE) $(ENV_ROOT) --profile elk --profile monitoring down -v --rmi local --remove-orphans
+	- docker compose -p $(NAME_PROD) $(PROD_COMPOSE) $(ENV_ROOT) \
+		${MON_PROD_COMPOSE} \
+		--profile elk down -v --rmi local --remove-orphans
 
 
 # ========================
@@ -203,9 +218,9 @@ fclean:
 	@echo ">> Removing images referenced by dev compose (elk profile)"
 	- docker compose -p $(NAME) $(ROOT_COMPOSE) $(ENV_ROOT) --profile elk config --images | sort -u | xargs -r docker image rm -f
 	@echo ">> Removing images referenced by dev compose (monitoring profile)"
-	- docker compose -p $(NAME) $(ROOT_COMPOSE) $(ENV_ROOT) --profile monitoring config --images | sort -u | xargs -r docker image rm -f
+	- docker compose -p $(NAME) $(ROOT_COMPOSE) ${MON_DEV_COMPOSE} $(ENV_ROOT) config --images | sort -u | xargs -r docker image rm -f
 	@echo ">> Removing images referenced by prod compose"
-	- docker compose -p $(NAME_PROD) $(PROD_COMPOSE) $(ENV_ROOT) config --images | sort -u | xargs -r docker image rm -f
+	- docker compose -p $(NAME_PROD) $(PROD_COMPOSE) ${MON_PROD_COMPOSE} $(ENV_ROOT) config --images | sort -u | xargs -r docker image rm -f
 	@echo ">> Pruning build cache for builder '$(BUILDER)'"
 	-$(MAKE) builder-prune
 	@echo ">> Removing builder '$(BUILDER)'"
@@ -232,10 +247,6 @@ restart-elk:
 	$(ensure_env)
 	@echo ">> Restarting services in profile 'elk'"
 	docker compose -p $(NAME) --profile elk restart
-
-restart-mon:
-	$(ensure_env)
-	docker compose -p $(NAME) --profile monitoring restart
 
 restart-%:
 	$(ensure_env)
