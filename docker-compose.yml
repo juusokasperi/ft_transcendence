@@ -280,7 +280,7 @@ services:
       options:
         gelf-address: udp://localhost:12201
     ports:
-      - "3000:3000"
+      - "4008:4008"
 
   # 11) Game Gateway
   game-gateway:
