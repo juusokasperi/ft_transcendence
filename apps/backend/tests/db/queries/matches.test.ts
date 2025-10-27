@@ -20,14 +20,16 @@ describe('Match Functions', () => {
   });
 
   it('Create 1v1 match', async () => {
-    const { addMatch, getMatchWithPlayers } = await import('../../../db/queries/matches.ts');
+    const { addMatch, addMatchPlayer, getMatchWithPlayers } = await import('../../../db/queries/matches.ts');
     const { addUser } = await import('../../../db/queries/users.ts');
     const player1Id = 'uuid-1';
     const player2Id = 'uuid-2';
     addUser(player1Id, 'Joe', 'hashPass', 'test@mail.com');
     addUser(player2Id, 'Bob', 'hashPass', 'test1@mail.com');
 
-    const matchId = addMatch(21, 15, player1Id, player2Id, 5, 10);
+    const matchId = addMatch(21, 15);
+    addMatchPlayer(matchId, player1Id, 1, 5);
+    addMatchPlayer(matchId, player2Id, 2, 10);
     expect(matchId).toBeTruthy();
     expect(typeof matchId).toBe('number');
 
@@ -42,7 +44,7 @@ describe('Match Functions', () => {
   });
 
   it('Create 2v2 match', async () => {
-    const { addMatch, getMatchWithPlayers } = await import('../../../db/queries/matches.ts');
+    const { addMatch, addMatchPlayer, getMatchWithPlayers } = await import('../../../db/queries/matches.ts');
     const { addUser } = await import('../../../db/queries/users.ts');
     const player1Id = 'uuid-1';
     const player2Id = 'uuid-2';
@@ -56,7 +58,11 @@ describe('Match Functions', () => {
     const team1 = [player1Id, player2Id];
     const team2 = [player3Id, player4Id];
 
-    const matchId = addMatch(21, 15, team1, team2, 5, 10);
+    const matchId = addMatch(21, 15);
+    addMatchPlayer(matchId, team1[0], 1, 5);
+    addMatchPlayer(matchId, team1[1], 1, 5);
+    addMatchPlayer(matchId, team2[0], 2, 10);
+    addMatchPlayer(matchId, team2[1], 2, 10);
     expect(matchId).toBeTruthy();
     expect(typeof matchId).toBe('number');
 
@@ -70,17 +76,5 @@ describe('Match Functions', () => {
     expect(match!.players.team1[1]!.username).toBe('Bob');
     expect(match!.players.team2[0]!.username).toBe('Alice');
     expect(match!.players.team2[1]!.username).toBe('Elizabeth');
-  });
-
-  it('Transaction rollback, if Match/MatchPlayer fails, nothing goes to database', async () => {
-    const { addMatch } = await import('../../../db/queries/matches.ts');
-
-    const matchId = addMatch(21, 15, 'invalid-uuid', 'invalid-uuid-2', 11, 5);
-    expect(matchId).toBeNull();
-
-    const matches = testDb.prepare('SELECT COUNT(*) as count from Matches').get() as {
-      count: number;
-    };
-    expect(matches.count).toBe(0);
   });
 });
