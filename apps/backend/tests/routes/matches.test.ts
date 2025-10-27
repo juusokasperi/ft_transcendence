@@ -38,7 +38,7 @@ vi.mock('../../db/queries/matches.ts', () => {
   return {
     addMatch: vi.fn(),
     addMatchHelper: vi.fn(),
-    addMatchPlayerHelper: vi.fn(),
+    addMatchPlayer: vi.fn(),
     getMatchesWithPlayersForUser: vi.fn(),
   };
 });
