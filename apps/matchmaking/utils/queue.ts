@@ -16,13 +16,6 @@ export interface TournamentMatchContext {
 const MMR_BUCKET_SIZE = 50;
 const buckets = new Map<number, ClientInfo[]>();
 
-function cleanupBucket(bucketId: number) {
-  const bucket = buckets.get(bucketId);
-  if (bucket && bucket.length === 0) {
-    buckets.delete(bucketId);
-  }
-}
-
 /**
  * Clients are spread into buckets based on MMR. First index of each bucket
  * contains the oldest player in said bucket, so we make an array of those indexes,
@@ -102,13 +95,14 @@ export async function handleJoinQueue(client: ClientInfo, alias?: string) {
   if (alias) {
     client.alias = alias;
   }
-  const bucket = Math.floor(client.mmr / MMR_BUCKET_SIZE);
-  if (!buckets.has(bucket)) buckets.set(bucket, []);
-  buckets.get(bucket)!.push(client);
+  const bucketId = Math.floor(client.mmr / MMR_BUCKET_SIZE);
+  if (!buckets.has(bucketId)) buckets.set(bucketId, []);
+  const bucket = buckets.get(bucketId)!;
+  bucket.push(client);
   log(`Client joined queue`, {
     uuid: client.uuid,
     bucket: bucket,
-    bucketSize: buckets.get(bucket)!.length,
+    bucketSize: bucket.length,
     totalBuckets: buckets.size,
   });
   client.socket.send(JSON.stringify({ type: 'QUEUE_JOINED' }));
@@ -130,8 +124,8 @@ export function addToPendingMatches(
       matchId,
       accepted: Array.from(accepted),
     });
-    if (accepted.has(a.id)) handleJoinQueue(a);
-    if (accepted.has(b.id)) handleJoinQueue(b);
+    if (accepted.has(a.id)) returnToQueue(a);
+    if (accepted.has(b.id)) returnToQueue(b);
   }, 15000);
 
   pendingMatches.set(matchId, { a, b, accepted, timer });
@@ -180,11 +174,11 @@ export function handleDeclineMatch(
   log(`Player declined match`, { matchId, uuid: client.uuid });
   if (match.a.id !== client.id) {
     match.a.socket.send(JSON.stringify(msg));
-    handleJoinQueue(match.a);
+    returnToQueue(match.a);
   }
   if (match.b.id !== client.id) {
     match.b.socket.send(JSON.stringify(msg));
-    handleJoinQueue(match.b);
+    returnToQueue(match.b);
   }
   clearTimeout(match.timer);
   pendingMatches.delete(matchId);
@@ -291,4 +285,36 @@ export function removeFromQueue(id: string): boolean {
 
 export function clearQueue() {
   buckets.clear();
+}
+
+function cleanupBucket(bucketId: number) {
+  const bucket = buckets.get(bucketId);
+  if (bucket && bucket.length === 0) {
+    buckets.delete(bucketId);
+  }
+}
+
+/**
+ * In case of f.ex. client A accepts, client B declines,
+ * client A is returned to the right place in queue to ensure fair matchmaking.
+ *
+ * @param client
+ */
+function returnToQueue(client: ClientInfo) {
+  if (!isAuthenticated(client)) return;
+
+  const bucketId = Math.floor(client.mmr / MMR_BUCKET_SIZE);
+  if (!buckets.has(bucketId)) buckets.set(bucketId, []);
+  const bucket = buckets.get(bucketId)!;
+  bucket.push(client);
+  bucket.sort((a, b) => a.joinedAt - b.joinedAt);
+
+  log(`Client returned to queue bucket`, {
+    uuid: client.uuid,
+    bucket: bucketId,
+    bucketSize: bucket.length,
+    totalBuckets: buckets.size,
+  });
+
+  client.socket.send(JSON.stringify({ type: 'QUEUE_JOINED' }));
 }
