@@ -31,6 +31,7 @@ import {
 import { handleJoinQueue } from './utils/queue.ts';
 import Redis from 'ioredis';
 import { handleAdmitConfirmed } from './utils/pendingHandoffs.ts';
+import { registerMetrics } from '@utils/metrics';
 
 const redisSub = new Redis(REDIS_URL);
 const app = Fastify({
@@ -38,6 +39,8 @@ const app = Fastify({
     level: 'trace', // filters in logger.ts
   },
 });
+
+registerMetrics(app, { labels: { service: 'matchmaking' } });
 
 app.log = logger as FastifyBaseLogger;
 

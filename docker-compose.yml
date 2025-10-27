@@ -279,6 +279,8 @@ services:
       driver: gelf
       options:
         gelf-address: udp://localhost:12201
+    ports:
+      - "4008:4008"
 
   # 11) Game Gateway
   game-gateway:
@@ -312,5 +314,3 @@ services:
 include:
   # stuff in this file will only run with `--profile elk`
   - log-management/docker-compose.yml
-  # stuff in this file will only run with `--profile monitoring`
-  - monitoring/docker-compose.yml

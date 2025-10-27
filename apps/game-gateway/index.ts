@@ -6,6 +6,7 @@ import Redis from 'ioredis';
 import { REDIS_URL, PORT } from './config';
 import { verifyJoinToken } from '@pong/shared/auth/tokenSign';
 import { ecsFormat } from '@elastic/ecs-pino-format';
+import { registerMetrics } from '@utils/metrics';
 
 const redis = new Redis(REDIS_URL);
 
@@ -36,6 +37,8 @@ function createLoggerOptions(isDev: boolean) {
 const app = fastify({
   logger: createLoggerOptions(isDev),
 });
+
+registerMetrics(app, { labels: { service: 'game-gateway' } });
 
 const proxy = new createProxyServer({ ws: true });
 

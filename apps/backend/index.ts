@@ -1,6 +1,4 @@
-import { register } from 'prom-client';
 import { initSqliteMetrics } from './metrics/sqlite-patch.ts';
-import { registerMetrics } from './metrics/fastify-metrics.ts';
 import fastify from 'fastify';
 import type { FastifyBaseLogger } from 'fastify';
 import cors from '@fastify/cors';
@@ -34,6 +32,7 @@ import { runMigrations } from './db/migrations.ts';
 import { prettierErrorMessages } from './utils/errorHandler.ts';
 import './types/types.ts';
 import { logger } from './utils/logger.ts';
+import { registerMetrics } from '@utils/metrics';
 
 if (ENABLE_SQLITE_METRICS === 'true') initSqliteMetrics();
 
@@ -51,15 +50,9 @@ const app = fastify({
 
 app.log = logger as FastifyBaseLogger;
 
-register.setDefaultLabels({
-  service: 'api',
-  env: process.env.NODE_ENV ?? 'dev',
-  version: process.env.GIT_SHA ?? 'dev',
-});
-
-registerMetrics(app);
-
 app.setErrorHandler(prettierErrorMessages);
+
+registerMetrics(app, { labels: { service: 'api' } });
 
 await app.register(swagger, swaggerConfig);
 await app.register(cookie);
