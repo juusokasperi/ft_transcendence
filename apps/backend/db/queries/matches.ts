@@ -3,33 +3,12 @@ import type { MatchWithPlayers, MatchPlayerPublic } from '../../types/types.ts';
 import type { MatchDb, MatchPlayer, MatchWithPlayersForUserDb } from '../../types/dbtypes.ts';
 import { logger } from '../../utils/logger.ts';
 
-function addMatchHelper(
-  team1Score: number,
-  team2Score: number,
-  tournamentId?: number,
-  tournamentStage?: string,
-): number | null {
-  try {
-    const result = db
-      .prepare(
-        `
-			INSERT INTO Matches (team_1_score, team_2_score, tournament_id, tournament_stage)
-			VALUES (?, ?, ?, ?)
-			`,
-      )
-      .run(team1Score, team2Score, tournamentId ?? null, tournamentStage ?? null);
-    return result.lastInsertRowid as number;
-  } catch (error) {
-    return null;
-  }
-}
-
-function addMatchPlayerHelper(
+export function addMatchPlayer(
   matchId: number,
   uuid: string,
   team: number,
   rankingDelta: number,
-): number | null {
+): number {
   try {
     const result = db
       .prepare(
@@ -41,67 +20,28 @@ function addMatchPlayerHelper(
       .run(matchId, uuid, team, rankingDelta);
     return result.lastInsertRowid as number;
   } catch (error) {
-    return null;
+    throw new Error(`Failed to add MatchPlayer ${uuid} to match ${matchId}`);
   }
 }
 
 export function addMatch(
   team1Score: number,
   team2Score: number,
-  team1Player: string,
-  team2Player: string,
-  team1RankingDelta: number,
-  team2RankingDelta: number,
   tournamentId?: number,
   tournamentStage?: string,
-): number | null;
-export function addMatch(
-  team1Score: number,
-  team2Score: number,
-  team1Players: string[],
-  team2Players: string[],
-  team1RankingDelta: number,
-  team2RankingDelta: number,
-  tournamentId?: number,
-  tournamentStage?: string,
-): number | null;
-export function addMatch(
-  team1Score: number,
-  team2Score: number,
-  team1: string | string[],
-  team2: string | string[],
-  team1RankingDelta: number,
-  team2RankingDelta: number,
-  tournamentId?: number,
-  tournamentStage?: string,
-): number | null {
-  const transaction = db.transaction(() => {
-    let matchId;
-    if (tournamentId !== undefined && tournamentStage !== undefined)
-      matchId = addMatchHelper(team1Score, team2Score, tournamentId, tournamentStage);
-    else matchId = addMatchHelper(team1Score, team2Score);
-
-    if (!matchId) throw new Error('Failed to create match');
-
-    const team1Players = Array.isArray(team1) ? team1 : [team1];
-    const team2Players = Array.isArray(team2) ? team2 : [team2];
-
-    for (const playerId of team1Players) {
-      const result = addMatchPlayerHelper(matchId, playerId, 1, team1RankingDelta);
-      if (!result) throw new Error(`Failed to add team 1 player: ${playerId}`);
-    }
-    for (const playerId of team2Players) {
-      const result = addMatchPlayerHelper(matchId, playerId, 2, team2RankingDelta);
-      if (!result) throw new Error(`Failed to add team 2 player: ${playerId}`);
-    }
-
-    return matchId;
-  });
-
+): number {
   try {
-    return transaction();
+    const result = db
+      .prepare(
+        `
+			INSERT INTO Matches (team_1_score, team_2_score, tournament_id, tournament_stage)
+			VALUES (?, ?, ?, ?)
+			`,
+      )
+      .run(team1Score, team2Score, tournamentId ?? null, tournamentStage ?? null);
+    return result.lastInsertRowid as number;
   } catch (error) {
-    return null;
+    throw new Error(`Failed to create match entry`);
   }
 }
 
