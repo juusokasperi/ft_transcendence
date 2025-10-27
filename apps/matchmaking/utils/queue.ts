@@ -16,28 +16,62 @@ export interface TournamentMatchContext {
 const MMR_BUCKET_SIZE = 50;
 const buckets = new Map<number, ClientInfo[]>();
 
-export function tryMatchQueue(pendingMatches: Map<string, PendingMatch>) {
-  for (const [bucketId, clients] of buckets) {
-    if (clients.length === 0) continue;
+function cleanupBucket(bucketId: number) {
+  const bucket = buckets.get(bucketId);
+  if (bucket && bucket.length === 0) {
+    buckets.delete(bucketId);
+  }
+}
 
-    const a = clients[0]!;
+/**
+ * Clients are spread into buckets based on MMR. First index of each bucket
+ * contains the oldest player in said bucket, so we make an array of those indexes,
+ * sort them based on the joinedAt value and start matching.
+ * This helps us avoid starvation problem, where f.ex. oldest player has a
+ * higher MMR than the rest of the queue potentially blocking from anybody getting matched.
+ *
+ * @param pendingMatches
+ */
+export function tryMatchQueue(pendingMatches: Map<string, PendingMatch>) {
+  const oldestPlayers: ClientInfo[] = [];
+  for (const clients of buckets.values()) {
+    if (clients.length > 0) oldestPlayers.push(clients[0]!);
+  }
+  if (oldestPlayers.length === 0) return;
+
+  oldestPlayers.sort((a, b) => a.joinedAt - b.joinedAt);
+
+  const matchedPlayerIds = new Set<string>();
+
+  for (const a of oldestPlayers) {
+    if (matchedPlayerIds.has(a.id)) continue;
+
+    const bucketId = Math.floor(a.mmr / MMR_BUCKET_SIZE);
+    const aBucket = buckets.get(bucketId);
+    if (!aBucket || aBucket[0]?.id !== a.id) continue;
+
     const waitedMs = Date.now() - a.joinedAt;
-    const window = Math.min(500, 50 + Math.floor(waitedMs / 2500) * 50);
+    const window = Math.min(500, MMR_BUCKET_SIZE + Math.floor(waitedMs / 2500) * MMR_BUCKET_SIZE);
     const bucketsToCheck = Math.ceil(window / MMR_BUCKET_SIZE);
+
     for (let offset = -bucketsToCheck; offset <= bucketsToCheck; ++offset) {
       const searchBucket = buckets.get(bucketId + offset);
       if (!searchBucket) continue;
 
       const startIdx = offset === 0 ? 1 : 0;
+      let matchFound = false;
       for (let i = startIdx; i < searchBucket.length; ++i) {
         const b = searchBucket[i]!;
 
         if (Math.abs(a.mmr - b.mmr) <= window) {
-          clients.shift();
+          aBucket.shift();
           searchBucket.splice(i, 1);
 
-          if (clients.length === 0) buckets.delete(bucketId);
-          if (searchBucket.length === 0) buckets.delete(bucketId + offset);
+          matchedPlayerIds.add(a.id);
+          matchedPlayerIds.add(b.id);
+
+          cleanupBucket(bucketId);
+          cleanupBucket(bucketId + offset);
 
           log('Pair found in queue buckets', {
             a: a.uuid,
@@ -46,9 +80,11 @@ export function tryMatchQueue(pendingMatches: Map<string, PendingMatch>) {
             totalBuckets: buckets.size,
           });
           addToPendingMatches(a, b, pendingMatches);
-          return;
+          matchFound = true;
+          break;
         }
       }
+      if (matchFound) break;
     }
   }
 }
@@ -245,8 +281,8 @@ export function removeFromQueue(id: string): boolean {
   for (const [bucketId, clients] of buckets) {
     const idx = clients.findIndex((c) => c.id === id);
     if (idx !== -1) {
-      if (clients.length === 1) buckets.delete(bucketId);
-      else clients.splice(idx, 1);
+      clients.splice(idx, 1);
+      cleanupBucket(bucketId);
       return true;
     }
   }
