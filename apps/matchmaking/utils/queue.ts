@@ -13,22 +13,41 @@ export interface TournamentMatchContext {
   participants?: Array<{ participantId: number; userUuid: string; alias?: string }>;
 }
 
-const queue: ClientInfo[] = [];
+const MMR_BUCKET_SIZE = 50;
+const buckets = new Map<number, ClientInfo[]>();
 
 export function tryMatchQueue(pendingMatches: Map<string, PendingMatch>) {
-  queue.sort((a, b) => a.joinedAt - b.joinedAt);
-  for (let i = 0; i < queue.length; ++i) {
-    const a = queue[i]!;
+  for (const [bucketId, clients] of buckets) {
+    if (clients.length === 0) continue;
+
+    const a = clients[0]!;
     const waitedMs = Date.now() - a.joinedAt;
     const window = Math.min(500, 50 + Math.floor(waitedMs / 2500) * 50);
-    for (let j = i + 1; j < queue.length; ++j) {
-      const b = queue[j]!;
-      if (Math.abs(a.mmr - b.mmr) <= window) {
-        queue.splice(j, 1);
-        queue.splice(i, 1);
-        log('Pair found in queue', { a: a.uuid, b: b.uuid, window });
-        addToPendingMatches(a, b, pendingMatches);
-        return;
+    const bucketsToCheck = Math.ceil(window / MMR_BUCKET_SIZE);
+    for (let offset = -bucketsToCheck; offset <= bucketsToCheck; ++offset) {
+      const searchBucket = buckets.get(bucketId + offset);
+      if (!searchBucket) continue;
+
+      const startIdx = offset === 0 ? 1 : 0;
+      for (let i = startIdx; i < searchBucket.length; ++i) {
+        const b = searchBucket[i]!;
+
+        if (Math.abs(a.mmr - b.mmr) <= window) {
+          clients.shift();
+          searchBucket.splice(i, 1);
+
+          if (clients.length === 0) buckets.delete(bucketId);
+          if (searchBucket.length === 0) buckets.delete(bucketId + offset);
+
+          log('Pair found in queue buckets', {
+            a: a.uuid,
+            b: b.uuid,
+            window,
+            totalBuckets: buckets.size,
+          });
+          addToPendingMatches(a, b, pendingMatches);
+          return;
+        }
       }
     }
   }
@@ -37,7 +56,7 @@ export function tryMatchQueue(pendingMatches: Map<string, PendingMatch>) {
 export function handleLeaveQueue(client: ClientInfo) {
   if (removeFromQueue(client.id)) {
     client.socket.send(JSON.stringify({ type: 'QUEUE_LEFT' }));
-    log('Client left queue', { uuid: client.uuid, queueSize: queue.length });
+    log('Client left queue', { uuid: client.uuid, totalBuckets: buckets.size });
   }
 }
 
@@ -47,8 +66,15 @@ export async function handleJoinQueue(client: ClientInfo, alias?: string) {
   if (alias) {
     client.alias = alias;
   }
-  queue.push(client);
-  log(`Client joined queue`, { uuid: client.uuid, queueSize: queue.length });
+  const bucket = Math.floor(client.mmr / MMR_BUCKET_SIZE);
+  if (!buckets.has(bucket)) buckets.set(bucket, []);
+  buckets.get(bucket)!.push(client);
+  log(`Client joined queue`, {
+    uuid: client.uuid,
+    bucket: bucket,
+    bucketSize: buckets.get(bucket)!.length,
+    totalBuckets: buckets.size,
+  });
   client.socket.send(JSON.stringify({ type: 'QUEUE_JOINED' }));
 }
 
@@ -216,14 +242,17 @@ export async function createMatch(
 }
 
 export function removeFromQueue(id: string): boolean {
-  const idx = queue.findIndex((c) => c.id === id);
-  if (idx !== -1) {
-    queue.splice(idx, 1);
-    return true;
+  for (const [bucketId, clients] of buckets) {
+    const idx = clients.findIndex((c) => c.id === id);
+    if (idx !== -1) {
+      if (clients.length === 1) buckets.delete(bucketId);
+      else clients.splice(idx, 1);
+      return true;
+    }
   }
   return false;
 }
 
 export function clearQueue() {
-  queue.length = 0;
+  buckets.clear();
 }
