@@ -55,11 +55,6 @@ export const registerMetrics = (app: FastifyInstance, config: MetricsConfig = {}
 
   registryToUse.setDefaultLabels(mergedLabels);
 
-  // Set default labels if provided
-  if (finalConfig.labels) {
-    registryToUse.setDefaultLabels(finalConfig.labels);
-  }
-
   const metricsOptions = {
     endpoint: finalConfig.endpoint,
     defaultMetrics: finalConfig.defaultMetrics,
