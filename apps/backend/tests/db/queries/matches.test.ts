@@ -20,7 +20,9 @@ describe('Match Functions', () => {
   });
 
   it('Create 1v1 match', async () => {
-    const { addMatch, addMatchPlayer, getMatchWithPlayers } = await import('../../../db/queries/matches.ts');
+    const { addMatch, addMatchPlayer, getMatchWithPlayers } = await import(
+      '../../../db/queries/matches.ts'
+    );
     const { addUser } = await import('../../../db/queries/users.ts');
     const player1Id = 'uuid-1';
     const player2Id = 'uuid-2';
@@ -44,7 +46,9 @@ describe('Match Functions', () => {
   });
 
   it('Create 2v2 match', async () => {
-    const { addMatch, addMatchPlayer, getMatchWithPlayers } = await import('../../../db/queries/matches.ts');
+    const { addMatch, addMatchPlayer, getMatchWithPlayers } = await import(
+      '../../../db/queries/matches.ts'
+    );
     const { addUser } = await import('../../../db/queries/users.ts');
     const player1Id = 'uuid-1';
     const player2Id = 'uuid-2';
