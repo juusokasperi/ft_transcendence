@@ -1,6 +1,6 @@
 import type { FastifyInstance } from 'fastify';
 import { authPreHandler, matchAuthPreHandler } from '../hooks/auth.ts';
-import { addMatch } from '../db/queries/matches.ts';
+import { addMatch, addMatchPlayer } from '../db/queries/matches.ts';
 import {
   createTournament,
   getTournamentById,
@@ -57,6 +57,7 @@ import {
   updateTournamentStatusSchema,
   reportMatchResultSchema,
 } from '../schemas/tournamentSchemas.ts';
+import db from '../db/client.ts';
 
 export async function tournamentRoutes(app: FastifyInstance) {
   app.get(
@@ -341,22 +342,20 @@ export async function tournamentRoutes(app: FastifyInstance) {
                 'Calculated scores and winner from games history',
               );
 
-              createdMatchId = addMatch(
-                team1Score,
-                team2Score,
-                [team1Uuid],
-                [team2Uuid],
-                0, // team1RankingDelta - ranking updated separately for tournaments
-                0, // team2RankingDelta
-                tournamentId,
-                match.roundNumber === 1
-                  ? 'semifinal'
-                  : match.roundPosition === 1
-                    ? 'final'
-                    : 'bronze',
-              );
+              const createdMatchAndPlayersTransaction = db.transaction(() => {
+                const tournamentStage =
+                  match.roundNumber === 1
+                    ? 'semifinal'
+                    : match.roundPosition === 1
+                      ? 'final'
+                      : 'bronze';
+                const newMatchId = addMatch(team1Score, team2Score, tournamentId, tournamentStage);
+                addMatchPlayer(newMatchId, team1Uuid, 1, 0);
+                addMatchPlayer(newMatchId, team2Uuid, 2, 0);
+                return newMatchId;
+              });
 
-              // Link tournament match with the Match ID
+              createdMatchId = createdMatchAndPlayersTransaction();
               if (createdMatchId) {
                 linkTournamentMatchResult(matchId, createdMatchId);
                 req.log.info(
