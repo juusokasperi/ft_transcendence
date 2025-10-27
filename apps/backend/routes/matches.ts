@@ -4,6 +4,7 @@ import db from '../db/client.ts';
 import { getUserStats, updateUserRanking } from '../db/queries/users.ts';
 import {
   addMatch,
+  addMatchPlayer,
   getMatchesWithPlayersForUser,
   getMatchWithPlayers,
 } from '../db/queries/matches.ts';
@@ -16,28 +17,19 @@ import {
 } from '../schemas/matchSchemas.ts';
 import { upsertMatchPlayerStats } from '../db/queries/matchPlayerStats.ts';
 
-// Different stages of tournament can affect ELO ranking more
-function getTournamentMultiplier(tournamentStage?: string): number {
-  if (!tournamentStage) return 1.0;
+const ELO_FLOOR = 600;
 
-  // Add stuff here, so the awarded points can be different based on the tournament stage
-  const multipliers: Record<string, number> = {
-    quarterfinal: 1.15,
-    semifinal: 1.25,
-    final: 1.5,
-  };
-  return multipliers[tournamentStage] || 1.0;
+interface PlayerDelta {
+  uuid: string;
+  delta: number;
 }
 
 function calculateEloChange(
   playerElo: number,
   opponentElo: number,
   matchResult: 'win' | 'loss' | 'draw',
-  tournamentStage?: string,
 ): number {
-  const baseK = 32;
-  const tournamentMultiplier = getTournamentMultiplier(tournamentStage);
-  const K = baseK * tournamentMultiplier;
+  const K = 32;
 
   const expectedScore = 1 / (1 + Math.pow(10, (opponentElo - playerElo) / 400));
   let actualScore: number;
@@ -48,18 +40,32 @@ function calculateEloChange(
   return Math.round(K * (actualScore - expectedScore));
 }
 
-function updateTeamRanking(players: string[], stats: (UserStats | null)[], points: number): void {
+function updateAndRecordTeamRanking(
+  matchId: number,
+  teamNumber: number,
+  players: string[],
+  stats: (UserStats | null)[],
+  calculatedDelta: number,
+): PlayerDelta[] {
+  const actualDeltas: PlayerDelta[] = [];
+
   for (let i = 0; i < players.length; ++i) {
     const playerId = players[i];
     if (!playerId) throw new Error(`Player at index ${i} is undefined`);
-
     const playerStats = stats[i];
     if (!playerStats) throw new Error(`Stats for player at index ${i} is null`);
 
-    const newRanking = playerStats.ranking + points;
+    const currentRanking = playerStats.ranking;
+    const calculatedRanking = currentRanking + calculatedDelta;
+    const newRanking = Math.max(ELO_FLOOR, calculatedRanking);
+    const actualDelta = newRanking - currentRanking;
     if (!updateUserRanking(playerId, newRanking))
-      throw new Error(`Failed to update ranking for player ${players[i]}`);
+      throw new Error(`Failed to update ranking for player ${playerId}`);
+    addMatchPlayer(matchId, playerId, teamNumber, actualDelta);
+    actualDeltas.push({ uuid: playerId, delta: actualDelta });
   }
+
+  return actualDeltas;
 }
 
 export async function matchRoutes(app: FastifyInstance) {
@@ -71,22 +77,12 @@ export async function matchRoutes(app: FastifyInstance) {
     },
     async (req: FastifyRequest, res: FastifyReply) => {
       const transaction = db.transaction(() => {
-        const {
-          team1Players,
-          team2Players,
-          team1Score,
-          team2Score,
-          tournamentId,
-          tournamentStage,
-        } = req.body as {
+        const { team1Players, team2Players, team1Score, team2Score } = req.body as {
           team1Players: string[];
           team2Players: string[];
           team1Score: number;
           team2Score: number;
-          tournamentId?: number;
-          tournamentStage?: string;
         };
-
         const team1Stats = team1Players.map((id) => getUserStats(id));
         const team2Stats = team2Players.map((id) => getUserStats(id));
         const hasNullStats = [...team1Stats, ...team2Stats].some((stat) => stat === null);
@@ -109,35 +105,31 @@ export async function matchRoutes(app: FastifyInstance) {
           team1Result = 'draw';
           team2Result = 'draw';
         }
-        const team1RankingDelta = calculateEloChange(
-          team1AvgElo,
-          team2AvgElo,
-          team1Result,
-          tournamentStage,
-        );
-        const team2RankingDelta = calculateEloChange(
-          team2AvgElo,
-          team1AvgElo,
-          team2Result,
-          tournamentStage,
-        );
+        const team1CalculatedDelta = calculateEloChange(team1AvgElo, team2AvgElo, team1Result);
+        const team2CalculatedDelta = calculateEloChange(team2AvgElo, team1AvgElo, team2Result);
 
-        const matchId = addMatch(
-          team1Score,
-          team2Score,
+        const matchId = addMatch(team1Score, team2Score);
+
+        const team1ActualDeltas = updateAndRecordTeamRanking(
+          matchId,
+          1,
           team1Players,
-          team2Players,
-          team1RankingDelta,
-          team2RankingDelta,
-          tournamentId,
-          tournamentStage,
+          team1Stats,
+          team1CalculatedDelta,
         );
-        if (!matchId) throw new Error('Failed to create match');
-        updateTeamRanking(team1Players, team1Stats, team1RankingDelta);
-        updateTeamRanking(team2Players, team2Stats, team2RankingDelta);
+        const team2ActualDeltas = updateAndRecordTeamRanking(
+          matchId,
+          2,
+          team2Players,
+          team2Stats,
+          team2CalculatedDelta,
+        );
         return {
           matchId,
-          eloChanges: { team1: team1RankingDelta, team2: team2RankingDelta },
+          eloChanges: {
+            team1: team1ActualDeltas,
+            team2: team2ActualDeltas,
+          },
         };
       });
 
