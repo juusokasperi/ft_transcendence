@@ -36,6 +36,8 @@ const appLogMock = {
   warn: vi.fn(),
 };
 
+const appRegisterMock = vi.fn();
+
 const fastifyMock = vi.fn(() => ({
   server: {
     on: serverOnMock,
@@ -43,6 +45,7 @@ const fastifyMock = vi.fn(() => ({
   get: appGetMock,
   listen: appListenMock,
   log: appLogMock,
+  register: appRegisterMock,
 }));
 
 vi.mock('fastify', () => ({
@@ -135,6 +138,7 @@ describe('game gateway upgrade flow', () => {
     appLogMock.debug.mockReset();
     appLogMock.warn.mockReset();
     fastifyMock.mockReset();
+    appRegisterMock.mockReset();
     fastifyMock.mockImplementation(() => ({
       server: {
         on: serverOnMock,
@@ -142,6 +146,7 @@ describe('game gateway upgrade flow', () => {
       get: appGetMock,
       listen: appListenMock,
       log: appLogMock,
+      register: appRegisterMock,
     }));
     vi.resetModules();
   });
