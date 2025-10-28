@@ -1,7 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { createTestDb, cleanupTestDb } from '../../setup.ts';
 import type { Database } from 'better-sqlite3';
-import db from '../../../db/client.ts';
 
 describe('Match Functions', () => {
   let testDb: Database;
@@ -85,13 +84,13 @@ describe('Match Functions', () => {
 
   it('Transaction rollback, if MatchPlayer fails, nothing goes to database', async () => {
     const { addMatch, addMatchPlayer } = await import('../../../db/queries/matches.ts');
-    const initialMatchCount = (db.prepare('SELECT COUNT(*) as count FROM Matches').get() as any)
+    const initialMatchCount = (testDb.prepare('SELECT COUNT(*) as count FROM Matches').get() as any)
       .count;
     const initialPlayerCount = (
-      db.prepare('SELECT COUNT(*) as count FROM MatchPlayers').get() as any
+      testDb.prepare('SELECT COUNT(*) as count FROM MatchPlayers').get() as any
     ).count;
 
-    const failingTransaction = db.transaction(() => {
+    const failingTransaction = testDb.transaction(() => {
       const matchId = addMatch(21, 15); // This would succeed
       if (!matchId) throw new Error('Match entry failed unexpectedly');
       addMatchPlayer(matchId, 'invalid-uuid', 1, 11);
@@ -102,9 +101,9 @@ describe('Match Functions', () => {
       failingTransaction();
     }).toThrow();
 
-    const finalMatchCount = (db.prepare('SELECT COUNT(*) as count FROM Matches').get() as any)
+    const finalMatchCount = (testDb.prepare('SELECT COUNT(*) as count FROM Matches').get() as any)
       .count;
-    const finalPlayerCount = (db.prepare('SELECT COUNT(*) as count FROM MatchPlayers').get() as any)
+    const finalPlayerCount = (testDb.prepare('SELECT COUNT(*) as count FROM MatchPlayers').get() as any)
       .count;
     expect(finalMatchCount).toBe(initialMatchCount);
     expect(finalPlayerCount).toBe(initialPlayerCount);
