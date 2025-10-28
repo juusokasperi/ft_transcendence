@@ -44,8 +44,6 @@ export const addMatchSchema = {
         minimum: 0,
         description: 'Final score for team 2',
       },
-      tournamentId: TournamentIDSchema,
-      tournamentStage: TournamentStageSchema,
     },
     additionalProperties: false,
   },
@@ -58,8 +56,26 @@ export const addMatchSchema = {
         eloChanges: {
           type: 'object',
           properties: {
-            team1: { type: 'number' },
-            team2: { type: 'number' },
+            team1: {
+              type: 'array',
+              items: {
+                type: 'object',
+                properties: {
+                  uuid: UuidSchema,
+                  delta: { type: 'number' },
+                },
+              },
+            },
+            team2: {
+              type: 'array',
+              items: {
+                type: 'object',
+                properties: {
+                  uuid: UuidSchema,
+                  delta: { type: 'number' },
+                },
+              },
+            },
           },
         },
       },

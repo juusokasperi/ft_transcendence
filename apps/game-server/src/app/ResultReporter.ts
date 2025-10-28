@@ -249,11 +249,15 @@ export class ResultReporter {
 
     const data = matchRes.data as {
       matchId: number;
-      eloChanges?: { team1?: number; team2?: number };
+      eloChanges?: {
+        team1: Array<{ uuid: string; delta: number }>;
+        team2: Array<{ uuid: string; delta: number }>;
+      };
     };
 
-    const eastDelta = data.eloChanges?.team1 ?? 0;
-    const westDelta = data.eloChanges?.team2 ?? 0;
+    // Backend technically supports 2v2, but we assume 1v1 for game server
+    const eastDelta = data.eloChanges?.team1[0]?.delta ?? 0;
+    const westDelta = data.eloChanges?.team2[0]?.delta ?? 0;
 
     // 2) Post per-player stats for this match (best-effort)
     // TODO: consider moving this logic server-side to reduce client trust

@@ -4,7 +4,6 @@ import {
   addUser,
   updateUserSettings,
   updateLastSeen,
-  getUserByUsername,
   getUserStats,
   updateUserRanking,
 } from '../db/queries/users.ts';
@@ -13,7 +12,7 @@ import db from '../db/client.ts';
 import { v4 as uuidv4 } from 'uuid';
 import bcrypt from 'bcrypt';
 import { addFriend, respondToFriendReq } from '../db/queries/friends.ts';
-import { addMatch } from '../db/queries/matches.ts';
+import { addMatch, addMatchPlayer } from '../db/queries/matches.ts';
 import { createSettings } from '../db/queries/unconfirmedUsers.ts';
 import { deleteUser } from '../db/queries/userDelete.ts';
 
@@ -62,6 +61,37 @@ function getMatchPlayerId(matchId: number, userUuid: string): number | null {
   return row?.id ?? null;
 }
 
+function seedMatch(
+  team1Score: number,
+  team2Score: number,
+  team1Uuid: string,
+  team2Uuid: string,
+  team1Delta: number,
+  team2Delta: number,
+  tournamentId?: number,
+  tournamentStage?: string,
+): number | null {
+  const transaction = db.transaction(() => {
+    const matchId = addMatch(team1Score, team2Score, tournamentId, tournamentStage);
+    if (!matchId) throw new Error('Failed to create match entry');
+
+    if (!addMatchPlayer(matchId, team1Uuid, 1, team1Delta)) {
+      throw new Error(`Failed to add team 1 player ${team1Uuid}`);
+    }
+    if (!addMatchPlayer(matchId, team2Uuid, 2, team2Delta)) {
+      throw new Error(`Failed to add team 2 player ${team2Uuid}`);
+    }
+    return matchId;
+  });
+
+  try {
+    return transaction();
+  } catch (error) {
+    console.error('Failed to seed match:', error);
+    return null;
+  }
+}
+
 const createUser = async (username: string, email: string, password: string) => {
   const passwordHash = await bcrypt.hash(password, 10);
   const uuid = uuidv4();
@@ -86,11 +116,11 @@ respondToFriendReq(uuidWil, uuidJoe, true);
 addFriend(uuidBob, uuidWil);
 // Create a few matches
 const matchIds = [
-  addMatch(3, 0, uuidBob, uuidJoe, 30, -10),
-  addMatch(2, 0, uuidBob, uuidJoe, 10, -5),
-  addMatch(4, 1, uuidWil, uuidBob, -2, 8),
-  addMatch(3, 0, uuidJoe, uuidWil, 0, 10),
-  addMatch(4, 1, uuidJoe, uuidWil, 5, 10, 1, 'final'),
+  seedMatch(3, 0, uuidBob, uuidJoe, 30, -10),
+  seedMatch(2, 0, uuidBob, uuidJoe, 10, -5),
+  seedMatch(4, 1, uuidWil, uuidBob, -2, 8),
+  seedMatch(3, 0, uuidJoe, uuidWil, 0, 10),
+  seedMatch(4, 1, uuidJoe, uuidWil, 5, 10, 1, 'final'),
 ];
 
 const statsData = [
@@ -124,11 +154,18 @@ const statsData = [
 
 for (const [matchIdx, userUuid, stats] of statsData as any) {
   const matchId = matchIds[matchIdx];
-  if (!matchId) continue;
+  if (!matchId) {
+    console.warn(`Skipping stats for match index ${matchIdx} because match creation failed.`);
+    continue;
+  }
+
   const matchPlayerId = getMatchPlayerId(matchId, userUuid);
   if (matchPlayerId) {
     upsertMatchPlayerStats(matchPlayerId, stats);
+  } else {
+    console.warn(`Could not find MatchPlayer entry for match ${matchId}, user ${userUuid}`);
   }
+
   let delta = 0;
   if (matchIdx === 0) delta = userUuid === uuidBob ? 30 : -10;
   if (matchIdx === 1) delta = userUuid === uuidBob ? 10 : -5;
@@ -181,7 +218,7 @@ for (let i = 0; i < 25; i++) {
     wilPoints = 0;
     joePoints = 0;
   }
-  const matchId = addMatch(
+  const matchId = seedMatch(
     wilStats.gamesWon,
     joeStats.gamesWon,
     uuidWil,
@@ -212,7 +249,7 @@ for (let i = 0; i < 3; i++) {
   ];
   const [wilStats, ghostStats] = generateMatchStats(games);
   if (!wilStats || !ghostStats) continue;
-  const matchId = addMatch(wilStats.gamesWon, ghostStats.gamesWon, uuidWil, uuidGhost, 10, -5);
+  const matchId = seedMatch(wilStats.gamesWon, ghostStats.gamesWon, uuidWil, uuidGhost, 10, -5);
   if (!matchId) continue;
 
   const wilMatchPlayerId = getMatchPlayerId(matchId, uuidWil);

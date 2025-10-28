@@ -464,22 +464,23 @@ export function createOnlineApp(
           betweenHalfFired = false;
           pendingBetweenSwap = false;
           betweenSwapApplied = false;
-          const now = performance.now();
-          const spinMs = Math.max(0, until - now);
-          if (spinMs > 0) {
-            orbitCameraFor(world.camera, spinMs, {
-              onHalf: () => {
-                // Halfway through the rotation: perform the visual swap now.
-                betweenHalfFired = true;
-                if (!betweenSwapApplied) {
-                  rowsMirrored = applyOnlineSideSwap(left.mesh, right.mesh, rowsMirrored);
-                  betweenSwapApplied = true;
-                }
-                // If the server event came earlier and we deferred, it's now fulfilled.
-                pendingBetweenSwap = false;
-              },
-            });
-          }
+          // TODO: Check
+          // const now = performance.now();
+          // const spinMs = Math.max(0, until - now);
+          // if (spinMs > 0) {
+          //   orbitCameraFor(world.camera, spinMs, {
+          //     onHalf: () => {
+          //       // Halfway through the rotation: perform the visual swap now.
+          //       betweenHalfFired = true;
+          //       if (!betweenSwapApplied) {
+          //         rowsMirrored = applyOnlineSideSwap(left.mesh, right.mesh, rowsMirrored);
+          //         betweenSwapApplied = true;
+          //       }
+          //       // If the server event came earlier and we deferred, it's now fulfilled.
+          //       pendingBetweenSwap = false;
+          //     },
+          //   });
+          // }
         }
       }
       prevPhase = s.phase;

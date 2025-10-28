@@ -38,7 +38,7 @@ vi.mock('../../db/queries/matches.ts', () => {
   return {
     addMatch: vi.fn(),
     addMatchHelper: vi.fn(),
-    addMatchPlayerHelper: vi.fn(),
+    addMatchPlayer: vi.fn(),
     getMatchesWithPlayersForUser: vi.fn(),
   };
 });
@@ -147,7 +147,7 @@ describe('POST /api/matches', () => {
     expect(res.json().error).toMatch(/One or more players not found in database/i);
   });
 
-  it('200 returns { message, matchId, eloChanges: { team1, team2 } }', async () => {
+  it('200 returns { message, matchId, eloChanges: { team1: [{ uuid, delta }], team2: [{ uuid, delta}] } }', async () => {
     (usersQueries.getUserStats as unknown as Mock)
       .mockReturnValueOnce({ uuid: 'uuid-1', ranking: 800 })
       .mockReturnValueOnce({ uuid: 'uuid-2', ranking: 2200 });
@@ -174,8 +174,18 @@ describe('POST /api/matches', () => {
       message: 'Match successfully added to database',
       matchId: 123,
       eloChanges: {
-        team1: expect.any(Number),
-        team2: expect.any(Number),
+        team1: expect.arrayContaining([
+          expect.objectContaining({
+            uuid: expect.any(String),
+            delta: expect.any(Number),
+          }),
+        ]),
+        team2: expect.arrayContaining([
+          expect.objectContaining({
+            uuid: expect.any(String),
+            delta: expect.any(Number),
+          }),
+        ]),
       },
     });
     expect(usersQueries.getUserStats).toHaveBeenCalledTimes(2);
@@ -185,10 +195,16 @@ describe('POST /api/matches', () => {
     expect(usersQueries.updateUserRanking).toHaveBeenCalledTimes(2);
 
     const eloChanges = responseData.eloChanges;
-    expect(eloChanges.team1).toBeGreaterThan(0);
-    expect(eloChanges.team2).toBeLessThan(0);
-    expect(usersQueries.updateUserRanking).toHaveBeenCalledWith('uuid-1', 800 + eloChanges.team1);
-    expect(usersQueries.updateUserRanking).toHaveBeenCalledWith('uuid-2', 2200 + eloChanges.team2);
+    expect(eloChanges.team1[0].delta).toBeGreaterThan(0);
+    expect(eloChanges.team2[0].delta).toBeLessThan(0);
+    expect(usersQueries.updateUserRanking).toHaveBeenCalledWith(
+      'uuid-1',
+      800 + eloChanges.team1[0].delta,
+    );
+    expect(usersQueries.updateUserRanking).toHaveBeenCalledWith(
+      'uuid-2',
+      2200 + eloChanges.team2[0].delta,
+    );
   });
 });
 
