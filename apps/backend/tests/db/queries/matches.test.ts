@@ -103,8 +103,9 @@ describe('Match Functions', () => {
 
     const finalMatchCount = (testDb.prepare('SELECT COUNT(*) as count FROM Matches').get() as any)
       .count;
-    const finalPlayerCount = (testDb.prepare('SELECT COUNT(*) as count FROM MatchPlayers').get() as any)
-      .count;
+    const finalPlayerCount = (
+      testDb.prepare('SELECT COUNT(*) as count FROM MatchPlayers').get() as any
+    ).count;
     expect(finalMatchCount).toBe(initialMatchCount);
     expect(finalPlayerCount).toBe(initialPlayerCount);
   });
