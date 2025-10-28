@@ -3,10 +3,20 @@ import type { LoggerOptions as PinoLoggerOptions } from 'pino';
 import ecsFormat from '@elastic/ecs-pino-format';
 import type { FastifyBaseLogger, FastifyServerOptions } from 'fastify';
 
+export type LogLevel = 'trace' | 'debug' | 'info' | 'warn' | 'error' | 'fatal' | 'log';
+export type PinoLogLevel = 'trace' | 'debug' | 'info' | 'warn' | 'error' | 'fatal';
+
 export interface LoggerOptions {
   service: string;
   isDev?: boolean;
-  level?: 'trace' | 'debug' | 'info' | 'warn' | 'error' | 'fatal';
+  level?: PinoLogLevel;
+}
+
+/**
+ * Maps 'log' level to 'info' for Pino compatibility
+ */
+function mapLogLevel(level: LogLevel): PinoLogLevel {
+  return level === 'log' ? 'info' : level;
 }
 
 function createLoggerConfig(options: LoggerOptions): PinoLoggerOptions {
@@ -56,12 +66,17 @@ export function createFastifyLoggerConfig(options: LoggerOptions): FastifyServer
 
 export const logger = createLogger({ service: 'default' });
 
+/**
+ * Helper function for structured logging with context
+ * Accepts 'log' as a level which maps to 'info'
+ */
 export function log(
   message: string,
   context?: Record<string, unknown>,
-  level: 'trace' | 'debug' | 'info' | 'warn' | 'error' | 'fatal' = 'info',
+  level: LogLevel = 'info',
 ): void {
-  logger[level](context ?? {}, message);
+  const pinoLevel = mapLogLevel(level);
+  logger[pinoLevel](context ?? {}, message);
 }
 
 export type { FastifyBaseLogger };
