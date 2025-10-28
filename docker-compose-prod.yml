@@ -88,6 +88,7 @@ services:
       - MATCHMAKING_PORT=${MATCHMAKING_PORT:-4242}
       - GATEWAY_PORT=${GATEWAY_PORT:-55550}
       - GAME_SERVER_PORT=${GAME_SERVER_PORT:-55553}
+      - CHAT_PORT=${CHAT_PORT:-6262}
       - KIBANA_PORT=${KIBANA_PORT:-5601}
       - GRAFANA_PORT=${GRAFANA_PORT:-3000}
       - NGINX_STUB_STATUS_PORT=${NGINX_STUB_STATUS_PORT:-8081}
@@ -148,6 +149,25 @@ services:
   # 6b) Game server 2
   game-server-2:
     <<: *game-server-template
+
+  # chat-service:
+  #   build:
+  #     context: .
+  #     dockerfile: ./node.template.dockerfile
+  #     args:
+  #       PNPM_VERSION: ${PNPM_VERSION:-9.12.3}
+  #       SERVICE_NAME: chat-service
+  #       SERVICE_DIR: chat-service
+  #   image: ft-transcendence-chat-service-prod:latest
+  #   init: true
+  #   restart: unless-stopped
+  #   env_file:
+  #     - .env
+  #   environment:
+  #     <<: *prod-env
+  #   networks:
+  #     - prod-private
+  #   logging: *logstash-logging
 
   # Allocator
   allocator:
