@@ -150,6 +150,8 @@ services:
   game-server-2:
     <<: *game-server-template
 
+  # TODO: enable when chat has a prod build script
+    # currently this expects to be able to ru `pnpm build:vite`
   # chat-service:
   #   build:
   #     context: .
