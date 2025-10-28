@@ -464,7 +464,7 @@ export function createOnlineApp(
           betweenHalfFired = false;
           pendingBetweenSwap = false;
           betweenSwapApplied = false;
-          // TODO: Check 
+          // TODO: Check
           // const now = performance.now();
           // const spinMs = Math.max(0, until - now);
           // if (spinMs > 0) {
