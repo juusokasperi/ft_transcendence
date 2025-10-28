@@ -35,6 +35,7 @@
     "@fastify/static": "^8.2.0",
     "@fastify/swagger": "^9.5.1",
     "@fastify/swagger-ui": "^5.2.3",
+    "@utils/logger": "workspace:^",
     "@utils/metrics": "workspace:^",
     "bcrypt": "^6.0.0",
     "better-sqlite3": "^12.2.0",
@@ -44,7 +45,6 @@
     "jsonwebtoken": "^9.0.2",
     "nodemailer": "^7.0.6",
     "otplib": "^12.0.1",
-    "pino": "^10.0.0",
     "prom-client": "^15.1.3",
     "umzug": "^3.8.2",
     "uuid": "^13.0.0"

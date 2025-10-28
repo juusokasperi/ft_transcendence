@@ -1,4 +1,5 @@
 import pino from 'pino';
+import type { LoggerOptions as PinoLoggerOptions } from 'pino';
 import ecsFormat from '@elastic/ecs-pino-format';
 import type { FastifyBaseLogger, FastifyServerOptions } from 'fastify';
 
@@ -8,30 +9,34 @@ export interface LoggerOptions {
   level?: 'trace' | 'debug' | 'info' | 'warn' | 'error' | 'fatal';
 }
 
-function createLoggerConfig(options: LoggerOptions) {
+function createLoggerConfig(options: LoggerOptions): PinoLoggerOptions {
   const {
     service,
     isDev = process.env.NODE_ENV === 'development',
     level = isDev ? 'debug' : 'info',
   } = options;
 
-  return isDev
-    ? {
-        level,
-        transport: {
-          target: 'pino-pretty',
-          options: {
-            colorize: true,
-            translateTime: 'HH:MM:ss.l',
-            ignore: 'pid,hostname',
-          },
+  if (isDev) {
+    return {
+      level,
+      transport: {
+        target: 'pino-pretty',
+        options: {
+          colorize: true,
+          translateTime: 'HH:MM:ss.l',
+          ignore: 'pid,hostname',
         },
-      }
-    : {
-        level,
-        base: { service },
-        ...ecsFormat(),
-      };
+      },
+    };
+  }
+
+  // For production, merge ECS format separately
+  const ecsConfig = ecsFormat();
+  return {
+    level,
+    base: { service },
+    ...ecsConfig,
+  } as PinoLoggerOptions;
 }
 
 /**
@@ -45,13 +50,11 @@ export function createLogger(options: LoggerOptions): FastifyBaseLogger {
  * Creates Fastify-compatible logger options
  * This returns configuration that Fastify accepts directly
  */
-export function createFastifyLoggerConfig(
-  options: LoggerOptions
-): FastifyServerOptions['logger'] {
+export function createFastifyLoggerConfig(options: LoggerOptions): FastifyServerOptions['logger'] {
   return createLoggerConfig(options);
 }
 
-export const logger = createLogger({service:'default'});
+export const logger = createLogger({ service: 'default' });
 
 export function log(
   message: string,

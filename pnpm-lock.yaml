@@ -138,6 +138,9 @@ importers:
       '@fastify/swagger-ui':
         specifier: ^5.2.3
         version: 5.2.3
+      '@utils/logger':
+        specifier: workspace:^
+        version: link:../../packages/utils/logger
       '@utils/metrics':
         specifier: workspace:^
         version: link:../../packages/utils/metrics
@@ -165,9 +168,6 @@ importers:
       otplib:
         specifier: ^12.0.1
         version: 12.0.1
-      pino:
-        specifier: ^10.0.0
-        version: 10.1.0
       prom-client:
         specifier: ^15.1.3
         version: 15.1.3
@@ -556,6 +556,28 @@ importers:
         version: 7.1.12(@types/node@24.9.1)(jiti@2.6.1)(lightningcss@1.30.2)(tsx@4.20.6)(yaml@2.8.1)
 
   packages/pong/shared: {}
+
+  packages/utils/logger:
+    dependencies:
+      '@elastic/ecs-pino-format':
+        specifier: ^1.5.0
+        version: 1.5.0
+      pino:
+        specifier: ^10.0.0
+        version: 10.1.0
+    devDependencies:
+      '@types/node':
+        specifier: ^24.4.0
+        version: 24.9.1
+      fastify:
+        specifier: ^5.6.0
+        version: 5.6.1
+      rimraf:
+        specifier: ^6.0.1
+        version: 6.0.1
+      typescript:
+        specifier: ^5.9.2
+        version: 5.9.3
 
   packages/utils/metrics:
     dependencies:
