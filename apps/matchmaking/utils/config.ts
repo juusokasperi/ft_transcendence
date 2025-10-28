@@ -1,5 +1,5 @@
 import dotenv from 'dotenv';
-import { log } from './log.ts';
+import { log } from '@utils/logger';
 
 dotenv.config();
 

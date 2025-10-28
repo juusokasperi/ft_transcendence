@@ -1,7 +1,7 @@
 import crypto from 'crypto';
 import fs from 'fs';
 import path from 'path';
-import { logger } from './logger.ts';
+import { logger } from '@utils/logger';
 
 /*
 	Seeds a secret to backend .env and (TODO) to match server .env

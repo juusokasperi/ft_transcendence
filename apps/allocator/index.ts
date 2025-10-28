@@ -1,4 +1,3 @@
-import { log } from './utils/log.ts';
 import { ADMIN_SECRET, PORT, REDIS_URL, IDEMPOTENCY_PREFIX } from './utils/config.ts';
 import fastify from 'fastify';
 import { v4 as uuid } from 'uuid';
@@ -9,6 +8,7 @@ import axios from 'axios';
 import Redis from 'ioredis';
 import { AllocateSchema } from './utils/schema.ts';
 import { registerMetrics } from '@utils/metrics';
+import { log } from '@utils/logger';
 
 const redis = new Redis(REDIS_URL);
 

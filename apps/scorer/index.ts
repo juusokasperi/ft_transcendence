@@ -10,37 +10,15 @@ import {
   GAME_SERVER_SERVICE,
   SCORER_PORT,
 } from './config';
-import { ecsFormat } from '@elastic/ecs-pino-format';
 import { registerMetrics } from '@utils/metrics';
+import { createFastifyLoggerConfig } from '@utils/logger';
 
 const redis = new Redis(REDIS_URL);
 const isDev = process.env.NODE_ENV === 'development';
 const MATCHES_SOFT_CAP = 200;
 
-function createLoggerOptions(isDev: boolean) {
-  if (isDev) {
-    return {
-      level: 'debug',
-      transport: {
-        target: 'pino-pretty',
-        options: {
-          colorize: true,
-          translateTime: 'HH:MM:ss.l',
-          ignore: 'pid,hostname',
-        },
-      },
-    };
-  }
-
-  return {
-    level: 'info',
-    base: { service: 'scorer' },
-    ...ecsFormat(),
-  };
-}
-
 const app = fastify({
-  logger: createLoggerOptions(isDev),
+  logger: createFastifyLoggerConfig({ service: 'scorer' }),
 });
 
 registerMetrics(app, { labels: { service: 'scorer' } });

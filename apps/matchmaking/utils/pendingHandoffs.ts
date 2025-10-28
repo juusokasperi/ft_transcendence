@@ -1,6 +1,6 @@
 import type { MatchMode, ClientInfo } from '../types/types';
 import { handleJoinQueue } from './queue';
-import { log } from './log';
+import { log } from '@utils/logger';
 
 interface PendingHandoff {
   timers: Record<string, NodeJS.Timeout>;

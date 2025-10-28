@@ -80,12 +80,12 @@ importers:
 
   apps/allocator:
     dependencies:
-      '@elastic/ecs-pino-format':
-        specifier: ^1.0.0
-        version: 1.5.0
       '@pong/shared':
         specifier: workspace:*
         version: link:../../packages/pong/shared
+      '@utils/logger':
+        specifier: workspace:^
+        version: link:../../packages/utils/logger
       '@utils/metrics':
         specifier: workspace:^
         version: link:../../packages/utils/metrics
@@ -101,9 +101,6 @@ importers:
       ioredis:
         specifier: ^5.8.0
         version: 5.8.2
-      pino:
-        specifier: ^10.0.0
-        version: 10.1.0
       uuid:
         specifier: ^13.0.0
         version: 13.0.0
@@ -348,12 +345,12 @@ importers:
 
   apps/game-gateway:
     dependencies:
-      '@elastic/ecs-pino-format':
-        specifier: ^1.0.0
-        version: 1.5.0
       '@pong/shared':
         specifier: workspace:*
         version: link:../../packages/pong/shared
+      '@utils/logger':
+        specifier: workspace:^
+        version: link:../../packages/utils/logger
       '@utils/metrics':
         specifier: workspace:^
         version: link:../../packages/utils/metrics
@@ -369,9 +366,6 @@ importers:
       ioredis:
         specifier: ^5.8.0
         version: 5.8.2
-      pino:
-        specifier: ^10.0.0
-        version: 10.1.0
       uuid:
         specifier: ^13.0.0
         version: 13.0.0
@@ -440,15 +434,15 @@ importers:
 
   apps/matchmaking:
     dependencies:
-      '@elastic/ecs-pino-format':
-        specifier: ^1.5.0
-        version: 1.5.0
       '@fastify/websocket':
         specifier: ^11.0.1
         version: 11.2.0
       '@pong/shared':
         specifier: workspace:*
         version: link:../../packages/pong/shared
+      '@utils/logger':
+        specifier: workspace:^
+        version: link:../../packages/utils/logger
       '@utils/metrics':
         specifier: workspace:^
         version: link:../../packages/utils/metrics
@@ -467,9 +461,6 @@ importers:
       jsonwebtoken:
         specifier: ^9.0.2
         version: 9.0.2
-      pino:
-        specifier: ^10.0.0
-        version: 10.1.0
       uuid:
         specifier: ^13.0.0
         version: 13.0.0
@@ -489,9 +480,9 @@ importers:
 
   apps/scorer:
     dependencies:
-      '@elastic/ecs-pino-format':
-        specifier: ^1.0.0
-        version: 1.5.0
+      '@utils/logger':
+        specifier: workspace:^
+        version: link:../../packages/utils/logger
       '@utils/metrics':
         specifier: workspace:^
         version: link:../../packages/utils/metrics
@@ -507,9 +498,6 @@ importers:
       ioredis:
         specifier: ^5.8.0
         version: 5.8.2
-      pino:
-        specifier: ^10.0.0
-        version: 10.1.0
       uuid:
         specifier: ^13.0.0
         version: 13.0.0

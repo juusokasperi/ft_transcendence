@@ -7,7 +7,6 @@ import { v4 as uuid } from 'uuid';
 import { PORT, REDIS_URL } from './utils/config.ts';
 import type { ClientInfo, PendingMatch } from './types/types.ts';
 import type { MatchmakingClientMessage } from '@pong/shared/protocol/net';
-import { logger, log } from './utils/log.ts';
 import { extractToken, handleAuth } from './auth/auth.ts';
 import {
   handleAcceptMatch,
@@ -32,17 +31,14 @@ import { handleJoinQueue } from './utils/queue.ts';
 import Redis from 'ioredis';
 import { handleAdmitConfirmed } from './utils/pendingHandoffs.ts';
 import { registerMetrics } from '@utils/metrics';
+import { log, createFastifyLoggerConfig } from '@utils/logger';
 
 const redisSub = new Redis(REDIS_URL);
 const app = Fastify({
-  logger: {
-    level: 'trace', // filters in logger.ts
-  },
+  logger: createFastifyLoggerConfig({ service: 'matchmaking' }),
 });
 
 registerMetrics(app, { labels: { service: 'matchmaking' } });
-
-app.log = logger as FastifyBaseLogger;
 
 redisSub.subscribe('room_ready');
 redisSub.subscribe('tournament:matches_ready');
