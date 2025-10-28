@@ -179,8 +179,14 @@ async function handleConnection(socket: WebSocket, req: FastifyRequest) {
   socket.on('close', () => {
     log('Client disconnected', { id });
     handleClientDisconnectFromTournament(client, clients);
-    clients.delete(id);
+    for (const [matchId, match] of pendingMatches) {
+      if (match.a.id === id || match.b.id === id) {
+        handleDeclineMatch(matchId, client, pendingMatches);
+        break;
+      }
+    }
     removeFromQueue(id);
+    clients.delete(id);
     //removeFromTournamentLobby(id)
     //which broadcasts TOURNAMENT_LOBBY_UPDATE or something similar to clients in lobby
     //waiting for tournament to start

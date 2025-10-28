@@ -13,23 +13,71 @@ export interface TournamentMatchContext {
   participants?: Array<{ participantId: number; userUuid: string; alias?: string }>;
 }
 
-const queue: ClientInfo[] = [];
+const MMR_BUCKET_SIZE = 50;
+const buckets = new Map<number, ClientInfo[]>();
 
+/**
+ * Clients are spread into buckets based on MMR. First index of each bucket
+ * contains the oldest player in said bucket, so we make an array of those indexes,
+ * sort them based on the joinedAt value and start matching.
+ * This helps us avoid starvation problem, where f.ex. oldest player has a
+ * higher MMR than the rest of the queue potentially blocking from anybody getting matched.
+ *
+ * @param pendingMatches
+ */
 export function tryMatchQueue(pendingMatches: Map<string, PendingMatch>) {
-  queue.sort((a, b) => a.joinedAt - b.joinedAt);
-  for (let i = 0; i < queue.length; ++i) {
-    const a = queue[i]!;
+  const oldestPlayers: ClientInfo[] = [];
+  for (const clients of buckets.values()) {
+    if (clients.length > 0 && clients[0]) oldestPlayers.push(clients[0]);
+  }
+  if (oldestPlayers.length === 0) return;
+
+  oldestPlayers.sort((a, b) => a.joinedAt - b.joinedAt);
+
+  const matchedPlayerIds = new Set<string>();
+
+  for (const a of oldestPlayers) {
+    if (matchedPlayerIds.has(a.id)) continue;
+
+    const bucketId = Math.floor(a.mmr / MMR_BUCKET_SIZE);
+    const aBucket = buckets.get(bucketId);
+    if (!aBucket || aBucket[0]?.id !== a.id) continue;
+
     const waitedMs = Date.now() - a.joinedAt;
-    const window = Math.min(500, 50 + Math.floor(waitedMs / 2500) * 50);
-    for (let j = i + 1; j < queue.length; ++j) {
-      const b = queue[j]!;
-      if (Math.abs(a.mmr - b.mmr) <= window) {
-        queue.splice(j, 1);
-        queue.splice(i, 1);
-        log('Pair found in queue', { a: a.uuid, b: b.uuid, window });
-        addToPendingMatches(a, b, pendingMatches);
-        return;
+    const window = Math.min(500, MMR_BUCKET_SIZE + Math.floor(waitedMs / 2500) * MMR_BUCKET_SIZE);
+    const bucketsToCheck = Math.ceil(window / MMR_BUCKET_SIZE);
+
+    for (let offset = -bucketsToCheck; offset <= bucketsToCheck; ++offset) {
+      const searchBucket = buckets.get(bucketId + offset);
+      if (!searchBucket) continue;
+
+      const startIdx = offset === 0 ? 1 : 0;
+      let matchFound = false;
+      for (let i = startIdx; i < searchBucket.length; ++i) {
+        const b = searchBucket[i]!;
+
+        if (Math.abs(a.mmr - b.mmr) <= window) {
+          aBucket.shift();
+          searchBucket.splice(i, 1);
+
+          matchedPlayerIds.add(a.id);
+          matchedPlayerIds.add(b.id);
+
+          cleanupBucket(bucketId);
+          cleanupBucket(bucketId + offset);
+
+          log('Pair found in queue buckets', {
+            a: a.uuid,
+            b: b.uuid,
+            window,
+            totalBuckets: buckets.size,
+          });
+          addToPendingMatches(a, b, pendingMatches);
+          matchFound = true;
+          break;
+        }
       }
+      if (matchFound) break;
     }
   }
 }
@@ -37,7 +85,7 @@ export function tryMatchQueue(pendingMatches: Map<string, PendingMatch>) {
 export function handleLeaveQueue(client: ClientInfo) {
   if (removeFromQueue(client.id)) {
     client.socket.send(JSON.stringify({ type: 'QUEUE_LEFT' }));
-    log('Client left queue', { uuid: client.uuid, queueSize: queue.length });
+    log('Client left queue', { uuid: client.uuid, totalBuckets: buckets.size });
   }
 }
 
@@ -47,8 +95,16 @@ export async function handleJoinQueue(client: ClientInfo, alias?: string) {
   if (alias) {
     client.alias = alias;
   }
-  queue.push(client);
-  log(`Client joined queue`, { uuid: client.uuid, queueSize: queue.length });
+  const bucketId = Math.floor(client.mmr / MMR_BUCKET_SIZE);
+  if (!buckets.has(bucketId)) buckets.set(bucketId, []);
+  const bucket = buckets.get(bucketId)!;
+  bucket.push(client);
+  log(`Client joined queue`, {
+    uuid: client.uuid,
+    bucket: bucketId,
+    bucketSize: bucket.length,
+    totalBuckets: buckets.size,
+  });
   client.socket.send(JSON.stringify({ type: 'QUEUE_JOINED' }));
 }
 
@@ -68,8 +124,8 @@ export function addToPendingMatches(
       matchId,
       accepted: Array.from(accepted),
     });
-    if (accepted.has(a.id)) handleJoinQueue(a);
-    if (accepted.has(b.id)) handleJoinQueue(b);
+    if (accepted.has(a.id)) returnToQueue(a);
+    if (accepted.has(b.id)) returnToQueue(b);
   }, 15000);
 
   pendingMatches.set(matchId, { a, b, accepted, timer });
@@ -118,11 +174,11 @@ export function handleDeclineMatch(
   log(`Player declined match`, { matchId, uuid: client.uuid });
   if (match.a.id !== client.id) {
     match.a.socket.send(JSON.stringify(msg));
-    handleJoinQueue(match.a);
+    returnToQueue(match.a);
   }
   if (match.b.id !== client.id) {
     match.b.socket.send(JSON.stringify(msg));
-    handleJoinQueue(match.b);
+    returnToQueue(match.b);
   }
   clearTimeout(match.timer);
   pendingMatches.delete(matchId);
@@ -216,14 +272,49 @@ export async function createMatch(
 }
 
 export function removeFromQueue(id: string): boolean {
-  const idx = queue.findIndex((c) => c.id === id);
-  if (idx !== -1) {
-    queue.splice(idx, 1);
-    return true;
+  for (const [bucketId, clients] of buckets) {
+    const idx = clients.findIndex((c) => c.id === id);
+    if (idx !== -1) {
+      clients.splice(idx, 1);
+      cleanupBucket(bucketId);
+      return true;
+    }
   }
   return false;
 }
 
 export function clearQueue() {
-  queue.length = 0;
+  buckets.clear();
+}
+
+function cleanupBucket(bucketId: number) {
+  const bucket = buckets.get(bucketId);
+  if (bucket && bucket.length === 0) {
+    buckets.delete(bucketId);
+  }
+}
+
+/**
+ * In case of f.ex. client A accepts, client B declines,
+ * client A is returned to the right place in queue to ensure fair matchmaking.
+ *
+ * @param client
+ */
+function returnToQueue(client: ClientInfo) {
+  if (!isAuthenticated(client)) return;
+
+  const bucketId = Math.floor(client.mmr / MMR_BUCKET_SIZE);
+  if (!buckets.has(bucketId)) buckets.set(bucketId, []);
+  const bucket = buckets.get(bucketId)!;
+  bucket.push(client);
+  bucket.sort((a, b) => a.joinedAt - b.joinedAt);
+
+  log(`Client returned to queue bucket`, {
+    uuid: client.uuid,
+    bucket: bucketId,
+    bucketSize: bucket.length,
+    totalBuckets: buckets.size,
+  });
+
+  client.socket.send(JSON.stringify({ type: 'QUEUE_JOINED' }));
 }
