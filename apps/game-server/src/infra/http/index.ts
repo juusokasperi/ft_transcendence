@@ -16,7 +16,7 @@ export function createHttpServer({
   registry,
   onCreateRoom,
 }: CreateHttpServerArgs): FastifyInstance {
-  const app = fastify({logger: createFastifyLoggerConfig({service:'game-server'})});
+  const app = fastify({ logger: createFastifyLoggerConfig({ service: 'game-server' }) });
   registerMetrics(app, { labels: { service: 'game-server' } });
 
   app.after(() => {
