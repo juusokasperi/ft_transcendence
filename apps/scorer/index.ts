@@ -14,7 +14,6 @@ import { registerMetrics } from '@utils/metrics';
 import { createFastifyLoggerConfig } from '@utils/logger';
 
 const redis = new Redis(REDIS_URL);
-const isDev = process.env.NODE_ENV === 'development';
 const MATCHES_SOFT_CAP = 200;
 
 const app = fastify({

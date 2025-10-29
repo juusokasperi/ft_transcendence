@@ -1,5 +1,4 @@
 import Fastify from 'fastify';
-import type { FastifyBaseLogger } from 'fastify';
 import websocket from '@fastify/websocket';
 import type { FastifyRequest } from 'fastify';
 import type { WebSocket, RawData } from 'ws';

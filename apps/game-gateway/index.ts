@@ -10,8 +10,6 @@ import { createFastifyLoggerConfig } from '@utils/logger';
 
 const redis = new Redis(REDIS_URL);
 
-const isDev = process.env.NODE_ENV === 'development';
-
 const app = fastify({
   logger: createFastifyLoggerConfig({ service: 'game-gateway' }),
 });

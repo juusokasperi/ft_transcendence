@@ -1,6 +1,5 @@
 import { initSqliteMetrics } from './metrics/sqlite-patch.ts';
 import fastify from 'fastify';
-import type { FastifyBaseLogger } from 'fastify';
 import cors from '@fastify/cors';
 import fastifyMultipart from '@fastify/multipart';
 import fastifyStatic from '@fastify/static';
