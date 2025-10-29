@@ -1,6 +1,6 @@
 import fastifyMetrics from 'fastify-metrics';
 import { register, Registry } from 'prom-client';
-import type { FastifyInstance} from 'fastify';
+import type { FastifyInstance } from 'fastify';
 
 export interface MetricsLabels {
   service: string;

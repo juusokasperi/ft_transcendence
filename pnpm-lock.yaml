@@ -387,6 +387,9 @@ importers:
       '@pong/shared':
         specifier: workspace:*
         version: link:../../packages/pong/shared
+      '@utils/logger':
+        specifier: workspace:^
+        version: link:../../packages/utils/logger
       '@utils/metrics':
         specifier: workspace:^
         version: link:../../packages/utils/metrics
@@ -418,9 +421,6 @@ importers:
       '@types/ws':
         specifier: ^8.18.1
         version: 8.18.1
-      pino-pretty:
-        specifier: ^13.1.2
-        version: 13.1.2
 
   apps/matchmaking:
     dependencies:
@@ -540,6 +540,9 @@ importers:
       fastify:
         specifier: ^5.6.0
         version: 5.6.1
+      pino-pretty:
+        specifier: ^13.1.2
+        version: 13.1.2
       rimraf:
         specifier: ^6.0.1
         version: 6.0.1

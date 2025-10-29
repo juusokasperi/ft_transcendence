@@ -1,4 +1,5 @@
 import pino from 'pino';
+import pinoPretty from 'pino-pretty';
 import type { LoggerOptions as PinoLoggerOptions } from 'pino';
 import ecsFormat from '@elastic/ecs-pino-format';
 import type { FastifyBaseLogger, FastifyServerOptions } from 'fastify';
@@ -27,6 +28,7 @@ function createLoggerConfig(options: LoggerOptions): PinoLoggerOptions {
   } = options;
 
   if (isDev) {
+    void pinoPretty; // the import is need for run-time even though not used here
     return {
       level,
       transport: {

@@ -1,15 +1,15 @@
 import type { Scheduler } from './Time.ts';
-import type { Logger } from './Logger.ts';
 import type { AppConfig } from './Config.ts';
 import type { MatchSession } from './RoomRegistry.ts';
 import type { Broadcaster } from './Broadcaster.ts';
 import type { ResultReporter } from './ResultReporter.ts';
 import { reconnectGraceMs, seatToSide } from '../domain/Policies.ts';
 import type { MatchRunner } from './MatchRunner.ts';
+import type { FastifyBaseLogger } from '@utils/logger';
 
 export class ReconnectManager {
   private readonly scheduler: Scheduler;
-  private readonly logger: Logger;
+  private readonly logger: FastifyBaseLogger;
   private readonly config: AppConfig;
   private readonly broadcaster: Broadcaster;
   private readonly reporter: ResultReporter;
@@ -22,7 +22,7 @@ export class ReconnectManager {
 
   constructor(args: {
     scheduler: Scheduler;
-    logger: Logger;
+    logger: FastifyBaseLogger;
     config: AppConfig;
     broadcaster: Broadcaster;
     reporter: ResultReporter;
