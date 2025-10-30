@@ -176,6 +176,17 @@ down-soft:
 		${LOG_PROD_COMPOSE} \
 		down --remove-orphans
 
+# Keep images and named volumes
+down-soft:
+	@echo ">> Stopping & removing default stack (volumes, local images, orphans)"
+	- docker compose -p $(NAME) $(ROOT_COMPOSE) $(ENV_ROOT) \
+		${MON_DEV_COMPOSE} \
+		--profile elk down --remove-orphans
+	@echo ">> Stopping & removing prod stack (volumes, local images, orphans)"
+	- docker compose -p $(NAME_PROD) $(PROD_COMPOSE) $(ENV_ROOT) \
+		${MON_PROD_COMPOSE} \
+		--profile elk down --remove-orphans
+
 
 # ========================
 #  Cleaning
