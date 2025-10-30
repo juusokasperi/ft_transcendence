@@ -40,7 +40,7 @@ define ensure_dirs
   			chown -R 1000:1000 ./apps/backend/data; \
 		else \
 			echo ">> Skipping chown; using chmod instead."; \
-			chmod -R 766 ./apps/backend/data; \
+			chmod -R 777 ./apps/backend/data; \
 		fi; \
 	fi
 endef
