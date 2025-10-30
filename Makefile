@@ -148,10 +148,6 @@ mon-detached:
 		${MON_DEV_COMPOSE} \
 		up --build -d
 
-# Running compose with two `-p` flags doesnt work. 
-# But running compose down with multiple `--profile` flags is ok, it brings 
-# down containers with the specified profiles AND containers with no profile 
-# as well
 down:
 	@echo ">> Stopping & removing default stack (volumes, local images, orphans)"
 	- docker compose -p $(NAME) $(ROOT_COMPOSE) $(ENV_ROOT) \
@@ -161,6 +157,17 @@ down:
 	- docker compose -p $(NAME_PROD) $(PROD_COMPOSE) $(ENV_ROOT) \
 		${MON_PROD_COMPOSE} \
 		--profile elk down -v --rmi local --remove-orphans
+
+# Keep images and named volumes
+down-soft:
+	@echo ">> Stopping & removing default stack (volumes, local images, orphans)"
+	- docker compose -p $(NAME) $(ROOT_COMPOSE) $(ENV_ROOT) \
+		${MON_DEV_COMPOSE} \
+		--profile elk down --remove-orphans
+	@echo ">> Stopping & removing prod stack (volumes, local images, orphans)"
+	- docker compose -p $(NAME_PROD) $(PROD_COMPOSE) $(ENV_ROOT) \
+		${MON_PROD_COMPOSE} \
+		--profile elk down --remove-orphans
 
 
 # ========================
