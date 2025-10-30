@@ -2,7 +2,7 @@ import axios from 'axios';
 import jwt from 'jsonwebtoken';
 import type { OnlineMatchSummary } from '@pong/shared/protocol/net';
 import type { MatchSession, PlayerConnectionState } from './RoomRegistry.ts';
-import type { Logger } from './Logger.ts';
+import type { FastifyBaseLogger } from '@utils/logger';
 import type { Seat, ExpectedPlayer } from '../domain/MatchTypes.ts';
 
 type MatchOverEvent = { winner?: string };
@@ -20,9 +20,9 @@ type ResolvedPlayer = {
 export class ResultReporter {
   private readonly apiUrl: string;
   private readonly matchSecret: string;
-  private readonly logger: Logger;
+  private readonly logger: FastifyBaseLogger;
 
-  constructor(args: { apiUrl: string; matchSecret: string; logger: Logger }) {
+  constructor(args: { apiUrl: string; matchSecret: string; logger: FastifyBaseLogger }) {
     this.apiUrl = args.apiUrl;
     this.matchSecret = args.matchSecret;
     this.logger = args.logger;

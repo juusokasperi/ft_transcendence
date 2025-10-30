@@ -1,12 +1,12 @@
 import type { MatchSession, PlayerConnectionState } from './RoomRegistry.ts';
 import type { Scheduler, Clock } from './Time.ts';
-import type { Logger } from './Logger.ts';
 import type { AppConfig } from './Config.ts';
 import { quantizeMs } from '../domain/PauseQuantizer.ts';
 import { stepOnce } from '../domain/TickEngine.ts';
 import { Broadcaster } from './Broadcaster.ts';
 import { ResultReporter } from './ResultReporter.ts';
 import { SERVE_SELECT_TOTAL_MS } from '@pong/shared';
+import type { FastifyBaseLogger } from '@utils/logger';
 
 type MatchOverEvent = { winner?: string } | undefined;
 
@@ -16,7 +16,7 @@ export class MatchRunner {
   private readonly broadcaster: Broadcaster;
   private readonly reporter: ResultReporter;
   private readonly config: AppConfig;
-  private readonly logger: Logger;
+  private readonly logger: FastifyBaseLogger;
   private readonly onCompleted: (
     session: MatchSession,
     summary: Awaited<ReturnType<ResultReporter['report']>>,
@@ -29,7 +29,7 @@ export class MatchRunner {
     broadcaster: Broadcaster;
     reporter: ResultReporter;
     config: AppConfig;
-    logger: Logger;
+    logger: FastifyBaseLogger;
     onCompleted: (
       session: MatchSession,
       summary: Awaited<ReturnType<ResultReporter['report']>>,

@@ -4,7 +4,7 @@ import {
   getTournamentMatchById,
   getTournamentMatchRoster,
 } from '../db/queries/tournamentMatches.ts';
-import { logger } from '../utils/logger.ts';
+import { logger } from '@utils/logger';
 
 const redis = new Redis(REDIS_URL);
 

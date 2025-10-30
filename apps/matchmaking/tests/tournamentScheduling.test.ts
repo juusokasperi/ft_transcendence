@@ -21,7 +21,7 @@ vi.mock('../utils/queue.ts', () => ({
 }));
 
 const logMock = vi.fn();
-vi.mock('../utils/log.ts', () => ({
+vi.mock('@utils/logger', () => ({
   log: logMock,
 }));
 

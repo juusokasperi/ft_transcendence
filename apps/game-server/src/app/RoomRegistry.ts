@@ -1,5 +1,4 @@
 import type { WebSocket } from 'ws';
-import type { Logger } from './Logger.ts';
 import {
   createRoomReservation,
   seatForSide,
@@ -7,6 +6,7 @@ import {
 } from '../domain/RoomReservation.ts';
 import { MatchModel } from '../domain/MatchModel.ts';
 import type { RoomReservation, Seat } from '../domain/MatchTypes.ts';
+import type { FastifyBaseLogger } from '@utils/logger';
 
 export type PlayerConnectionState = {
   seat: Seat;
@@ -26,11 +26,11 @@ export type MatchSession = {
 };
 
 export class RoomRegistry {
-  private readonly logger: Logger;
+  private readonly logger: FastifyBaseLogger;
   private readonly reservations = new Map<string, RoomReservation>();
   private readonly sessions = new Map<string, MatchSession>();
 
-  constructor(args: { logger: Logger }) {
+  constructor(args: { logger: FastifyBaseLogger }) {
     this.logger = args.logger;
   }
 

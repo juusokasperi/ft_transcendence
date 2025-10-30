@@ -1,7 +1,6 @@
 import type { Redis } from 'ioredis';
 import { loadConfig, type AppConfig } from './Config.ts';
 import { systemClock, nodeScheduler, type Clock, type Scheduler } from './Time.ts';
-import { createConsoleLogger, type Logger } from './Logger.ts';
 import { createRedisFactory } from './RedisFactory.ts';
 import { RoomRegistry } from './RoomRegistry.ts';
 import { Broadcaster } from './Broadcaster.ts';
@@ -13,12 +12,13 @@ import { WSServer } from '../infra/ws/WSServer.ts';
 import type { MatchSession } from './RoomRegistry.ts';
 import type { OnlineMatchSummary } from '@pong/shared/protocol/net';
 import type { CreateRoomRequest } from '../domain/RoomReservation.ts';
+import { createLogger, type FastifyBaseLogger } from '@utils/logger';
 
 export class GameServer {
   private config: AppConfig;
   private clock: Clock;
   private scheduler: Scheduler;
-  private logger: Logger;
+  private logger: FastifyBaseLogger;
   private redis: Redis;
   private registry: RoomRegistry;
   private broadcaster: Broadcaster;
@@ -31,7 +31,7 @@ export class GameServer {
     this.config = loadConfig();
     this.clock = systemClock();
     this.scheduler = nodeScheduler();
-    this.logger = createConsoleLogger();
+    this.logger = createLogger({ service: 'game-server' });
 
     const redisFactory = createRedisFactory(this.config.redisUrl);
     this.redis = redisFactory.create();

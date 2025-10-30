@@ -68,6 +68,9 @@ importers:
       typescript:
         specifier: ^5.9.2
         version: 5.9.3
+      typescript-eslint:
+        specifier: ^8.46.2
+        version: 8.46.2(eslint@9.38.0(jiti@2.6.1))(typescript@5.9.3)
       vite:
         specifier: ^7.1.5
         version: 7.1.12(@types/node@24.9.1)(jiti@2.6.1)(lightningcss@1.30.2)(tsx@4.20.6)(yaml@2.8.1)
@@ -80,12 +83,12 @@ importers:
 
   apps/allocator:
     dependencies:
-      '@elastic/ecs-pino-format':
-        specifier: ^1.0.0
-        version: 1.5.0
       '@pong/shared':
         specifier: workspace:*
         version: link:../../packages/pong/shared
+      '@utils/logger':
+        specifier: workspace:^
+        version: link:../../packages/utils/logger
       '@utils/metrics':
         specifier: workspace:^
         version: link:../../packages/utils/metrics
@@ -101,25 +104,15 @@ importers:
       ioredis:
         specifier: ^5.8.0
         version: 5.8.2
-      pino:
-        specifier: ^10.0.0
-        version: 10.1.0
       uuid:
         specifier: ^13.0.0
         version: 13.0.0
       ws:
         specifier: ^8.18.3
         version: 8.18.3
-    devDependencies:
-      pino-pretty:
-        specifier: ^13.1.2
-        version: 13.1.2
 
   apps/backend:
     dependencies:
-      '@elastic/ecs-pino-format':
-        specifier: ^1.0.0
-        version: 1.5.0
       '@fastify/cookie':
         specifier: ^11.0.2
         version: 11.0.2
@@ -138,6 +131,9 @@ importers:
       '@fastify/swagger-ui':
         specifier: ^5.2.3
         version: 5.2.3
+      '@utils/logger':
+        specifier: workspace:^
+        version: link:../../packages/utils/logger
       '@utils/metrics':
         specifier: workspace:^
         version: link:../../packages/utils/metrics
@@ -165,9 +161,6 @@ importers:
       otplib:
         specifier: ^12.0.1
         version: 12.0.1
-      pino:
-        specifier: ^10.0.0
-        version: 10.1.0
       prom-client:
         specifier: ^15.1.3
         version: 15.1.3
@@ -196,9 +189,6 @@ importers:
       '@types/uuid':
         specifier: ^10.0.0
         version: 10.0.0
-      pino-pretty:
-        specifier: ^13.1.2
-        version: 13.1.2
       vite:
         specifier: ^7.1.5
         version: 7.1.12(@types/node@24.9.1)(jiti@2.6.1)(lightningcss@1.30.2)(tsx@4.20.6)(yaml@2.8.1)
@@ -348,12 +338,12 @@ importers:
 
   apps/game-gateway:
     dependencies:
-      '@elastic/ecs-pino-format':
-        specifier: ^1.0.0
-        version: 1.5.0
       '@pong/shared':
         specifier: workspace:*
         version: link:../../packages/pong/shared
+      '@utils/logger':
+        specifier: workspace:^
+        version: link:../../packages/utils/logger
       '@utils/metrics':
         specifier: workspace:^
         version: link:../../packages/utils/metrics
@@ -369,9 +359,6 @@ importers:
       ioredis:
         specifier: ^5.8.0
         version: 5.8.2
-      pino:
-        specifier: ^10.0.0
-        version: 10.1.0
       uuid:
         specifier: ^13.0.0
         version: 13.0.0
@@ -385,15 +372,9 @@ importers:
       '@types/node':
         specifier: ^24.4.0
         version: 24.9.1
-      pino-pretty:
-        specifier: ^13.1.2
-        version: 13.1.2
 
   apps/game-server:
     dependencies:
-      '@elastic/ecs-pino-format':
-        specifier: ^1.0.0
-        version: 1.5.0
       '@fastify/websocket':
         specifier: ^11.2.0
         version: 11.2.0
@@ -403,6 +384,9 @@ importers:
       '@pong/shared':
         specifier: workspace:*
         version: link:../../packages/pong/shared
+      '@utils/logger':
+        specifier: workspace:^
+        version: link:../../packages/utils/logger
       '@utils/metrics':
         specifier: workspace:^
         version: link:../../packages/utils/metrics
@@ -434,21 +418,18 @@ importers:
       '@types/ws':
         specifier: ^8.18.1
         version: 8.18.1
-      pino-pretty:
-        specifier: ^13.1.2
-        version: 13.1.2
 
   apps/matchmaking:
     dependencies:
-      '@elastic/ecs-pino-format':
-        specifier: ^1.5.0
-        version: 1.5.0
       '@fastify/websocket':
         specifier: ^11.0.1
         version: 11.2.0
       '@pong/shared':
         specifier: workspace:*
         version: link:../../packages/pong/shared
+      '@utils/logger':
+        specifier: workspace:^
+        version: link:../../packages/utils/logger
       '@utils/metrics':
         specifier: workspace:^
         version: link:../../packages/utils/metrics
@@ -467,9 +448,6 @@ importers:
       jsonwebtoken:
         specifier: ^9.0.2
         version: 9.0.2
-      pino:
-        specifier: ^10.0.0
-        version: 10.1.0
       uuid:
         specifier: ^13.0.0
         version: 13.0.0
@@ -480,18 +458,15 @@ importers:
       '@types/ws':
         specifier: ^8.5.12
         version: 8.18.1
-      pino-pretty:
-        specifier: ^13.1.2
-        version: 13.1.2
       vitest:
         specifier: ^3.2.4
         version: 3.2.4(@types/debug@4.1.12)(@types/node@24.9.1)(jiti@2.6.1)(jsdom@26.1.0)(lightningcss@1.30.2)(tsx@4.20.6)(yaml@2.8.1)
 
   apps/scorer:
     dependencies:
-      '@elastic/ecs-pino-format':
-        specifier: ^1.0.0
-        version: 1.5.0
+      '@utils/logger':
+        specifier: workspace:^
+        version: link:../../packages/utils/logger
       '@utils/metrics':
         specifier: workspace:^
         version: link:../../packages/utils/metrics
@@ -507,19 +482,12 @@ importers:
       ioredis:
         specifier: ^5.8.0
         version: 5.8.2
-      pino:
-        specifier: ^10.0.0
-        version: 10.1.0
       uuid:
         specifier: ^13.0.0
         version: 13.0.0
       ws:
         specifier: ^8.18.3
         version: 8.18.3
-    devDependencies:
-      pino-pretty:
-        specifier: ^13.1.2
-        version: 13.1.2
 
   packages/pong/game-logic:
     dependencies:
@@ -557,6 +525,28 @@ importers:
 
   packages/pong/shared: {}
 
+  packages/utils/logger:
+    dependencies:
+      '@elastic/ecs-pino-format':
+        specifier: ^1.5.0
+        version: 1.5.0
+      pino:
+        specifier: ^10.0.0
+        version: 10.1.0
+    devDependencies:
+      fastify:
+        specifier: ^5.6.0
+        version: 5.6.1
+      pino-pretty:
+        specifier: ^13.1.2
+        version: 13.1.2
+      rimraf:
+        specifier: ^6.0.1
+        version: 6.0.1
+      typescript:
+        specifier: ^5.9.2
+        version: 5.9.3
+
   packages/utils/metrics:
     dependencies:
       fastify-metrics:
@@ -566,12 +556,6 @@ importers:
         specifier: ^15.1.3
         version: 15.1.3
     devDependencies:
-      '@types/better-sqlite3':
-        specifier: ^7.6.13
-        version: 7.6.13
-      '@types/node':
-        specifier: ^24.4.0
-        version: 24.9.1
       fastify:
         specifier: ^5.6.0
         version: 5.6.1
@@ -4299,6 +4283,13 @@ packages:
     hasBin: true
     peerDependencies:
       typescript: 5.0.x || 5.1.x || 5.2.x || 5.3.x || 5.4.x || 5.5.x || 5.6.x || 5.7.x || 5.8.x || 5.9.x
+
+  typescript-eslint@8.46.2:
+    resolution: {integrity: sha512-vbw8bOmiuYNdzzV3lsiWv6sRwjyuKJMQqWulBOU7M0RrxedXledX8G8kBbQeiOYDnTfiXz0Y4081E1QMNB6iQg==}
+    engines: {node: ^18.18.0 || ^20.9.0 || >=21.1.0}
+    peerDependencies:
+      eslint: ^8.57.0 || ^9.0.0
+      typescript: '>=4.8.4 <6.0.0'
 
   typescript@5.9.3:
     resolution: {integrity: sha512-jl1vZzPDinLr9eUt3J/t7V6FgNEw9QjvBPdysz9KfQDD41fQrC2Y4vKQdiaUpFT4bXlb1RHhLpp8wtm6M5TgSw==}
@@ -8685,6 +8676,17 @@ snapshots:
       minimatch: 9.0.5
       typescript: 5.9.3
       yaml: 2.8.1
+
+  typescript-eslint@8.46.2(eslint@9.38.0(jiti@2.6.1))(typescript@5.9.3):
+    dependencies:
+      '@typescript-eslint/eslint-plugin': 8.46.2(@typescript-eslint/parser@8.46.2(eslint@9.38.0(jiti@2.6.1))(typescript@5.9.3))(eslint@9.38.0(jiti@2.6.1))(typescript@5.9.3)
+      '@typescript-eslint/parser': 8.46.2(eslint@9.38.0(jiti@2.6.1))(typescript@5.9.3)
+      '@typescript-eslint/typescript-estree': 8.46.2(typescript@5.9.3)
+      '@typescript-eslint/utils': 8.46.2(eslint@9.38.0(jiti@2.6.1))(typescript@5.9.3)
+      eslint: 9.38.0(jiti@2.6.1)
+      typescript: 5.9.3
+    transitivePeerDependencies:
+      - supports-color
 
   typescript@5.9.3: {}
 

@@ -8,7 +8,7 @@ import type { Broadcaster } from '../../app/Broadcaster.ts';
 import type { MatchRunner } from '../../app/MatchRunner.ts';
 import type { ReconnectManager } from '../../app/ReconnectManager.ts';
 import { AuthService } from '../../app/AuthService.ts';
-import type { Logger } from '../../app/Logger.ts';
+import type { FastifyBaseLogger } from '@utils/logger';
 
 // TODO: Replace with import from AuthService when VerifiedJoinTokenClaims is exported there.
 // import type { VerifiedJoinTokenClaims } from '../../app/AuthService.ts';
@@ -36,7 +36,7 @@ export class WSServer {
   private readonly reconnects: ReconnectManager;
   private readonly auth: AuthService;
   private readonly redis: Redis;
-  private readonly logger: Logger;
+  private readonly logger: FastifyBaseLogger;
   private readonly app: FastifyInstance;
 
   constructor(args: {
@@ -46,7 +46,7 @@ export class WSServer {
     runner: MatchRunner;
     reconnects: ReconnectManager;
     redis: Redis;
-    logger: Logger;
+    logger: FastifyBaseLogger;
     auth?: AuthService;
   }) {
     this.config = args.config;

@@ -12,7 +12,7 @@ import type {
 } from '@pong/shared/protocol/net';
 import { createMatch } from './queue.ts';
 import type { ClientInfo } from '../types/types.ts';
-import { log } from './log.ts';
+import { log } from '@utils/logger';
 import {
   API_URL,
   TOURNAMENT_MATCH_AUTO_START_DELAY_MS,

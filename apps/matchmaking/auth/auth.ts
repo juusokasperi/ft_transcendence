@@ -3,7 +3,7 @@ import { SECRET, API_URL } from '../utils/config.ts';
 import type { WebSocket } from 'ws';
 import type { IncomingMessage } from 'http';
 import type { ClientInfo } from '../types/types.ts';
-import { log } from '../utils/log.ts';
+import { log } from '@utils/logger';
 
 export async function verifySiteToken(token: string): Promise<{ username: string; uuid: string }> {
   const payload = jwt.verify(token, SECRET) as { username: string; uuid: string };

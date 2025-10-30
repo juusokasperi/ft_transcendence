@@ -1,5 +1,5 @@
 import umzug from './umzug.ts';
-import { logger } from '../utils/logger.ts';
+import { logger } from '@utils/logger';
 
 export const runMigrations = async () => {
   const migrations = await umzug.up();

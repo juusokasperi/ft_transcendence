@@ -6,7 +6,7 @@ import {
   emailChangeHtml,
 } from './emailHtml.ts';
 import { FRONTEND_URL, MAIL_TRANSPORT_CONFIG, MAIL_FROM } from '../config.ts';
-import { logger } from '../logger.ts';
+import { logger } from '@utils/logger';
 
 /*
 	Falls back to nodemailer's Ethereal test account when no SMTP

@@ -1,11 +1,15 @@
 import type { WebSocket } from 'ws';
 import type { MatchSession, PlayerConnectionState } from './RoomRegistry.ts';
-import type { Logger } from './Logger.ts';
+import type { FastifyBaseLogger } from '@utils/logger';
 import type { AppConfig } from './Config.ts';
 import { resolveRoomState } from '../domain/RoomReservation.ts';
 import type { RoomState } from '@pong/shared/protocol/net';
 
-function safeSend(socket: WebSocket | undefined, payload: unknown, logger: Logger): void {
+function safeSend(
+  socket: WebSocket | undefined,
+  payload: unknown,
+  logger: FastifyBaseLogger,
+): void {
   if (!socket) return;
   try {
     socket.send(JSON.stringify(payload));
@@ -26,9 +30,9 @@ function forEachSeat(
 
 export class Broadcaster {
   private readonly config: AppConfig;
-  private readonly logger: Logger;
+  private readonly logger: FastifyBaseLogger;
 
-  constructor(args: { config: AppConfig; logger: Logger }) {
+  constructor(args: { config: AppConfig; logger: FastifyBaseLogger }) {
     this.config = args.config;
     this.logger = args.logger;
   }

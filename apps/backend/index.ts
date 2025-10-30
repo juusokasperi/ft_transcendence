@@ -1,6 +1,5 @@
 import { initSqliteMetrics } from './metrics/sqlite-patch.ts';
 import fastify from 'fastify';
-import type { FastifyBaseLogger } from 'fastify';
 import cors from '@fastify/cors';
 import fastifyMultipart from '@fastify/multipart';
 import fastifyStatic from '@fastify/static';
@@ -31,24 +30,20 @@ import { setupPurgeSchedulers } from './maintenance/purgeSchedulers.ts';
 import { runMigrations } from './db/migrations.ts';
 import { prettierErrorMessages } from './utils/errorHandler.ts';
 import './types/types.ts';
-import { logger } from './utils/logger.ts';
 import { registerMetrics } from '@utils/metrics';
+import { createFastifyLoggerConfig } from '@utils/logger';
 
 if (ENABLE_SQLITE_METRICS === 'true') initSqliteMetrics();
 
 const isDev = process.env.NODE_ENV === 'development';
 
 const app = fastify({
-  logger: {
-    level: 'trace', // filters in logger.ts
-  },
+  logger: createFastifyLoggerConfig({ service: 'api' }),
   // trustProxy: true,
   ajv: {
     customOptions: { allErrors: true, removeAdditional: true },
   },
 });
-
-app.log = logger as FastifyBaseLogger;
 
 app.setErrorHandler(prettierErrorMessages);
 

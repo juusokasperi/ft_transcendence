@@ -1,6 +1,7 @@
 import fastify, { type FastifyInstance, type FastifyReply, type FastifyRequest } from 'fastify';
 import type { RoomRegistry } from '../../app/RoomRegistry.ts';
 import { registerMetrics } from '@utils/metrics';
+import { createFastifyLoggerConfig } from '@utils/logger';
 
 type CreateHttpServerArgs = {
   adminSecret: string;
@@ -15,7 +16,7 @@ export function createHttpServer({
   registry,
   onCreateRoom,
 }: CreateHttpServerArgs): FastifyInstance {
-  const app = fastify();
+  const app = fastify({ logger: createFastifyLoggerConfig({ service: 'game-server' }) });
   registerMetrics(app, { labels: { service: 'game-server' } });
 
   app.after(() => {

@@ -8,7 +8,16 @@ import sonarjs from 'eslint-plugin-sonarjs';
 
 export default [
   // Ignore build artifacts and generated files — no need to lint them
-  { ignores: ['dist/**', 'node_modules/**', 'docs/**', '*.d.ts'] },
+  {
+    ignores: [
+      'dist/**',
+      'node_modules/**',
+      'docs/**',
+      '*.d.ts',
+      'volumes/**',
+      'apps/frontend/.vite/**',
+    ],
+  },
 
   // Base recommended rules for plain JavaScript
   js.configs.recommended,
