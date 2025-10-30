@@ -2,6 +2,8 @@ networks:
   prod-private:
     driver: bridge
     internal: true
+  prod-public:
+    driver: bridge
 
 volumes:
   elk_certs:
