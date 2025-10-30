@@ -5,6 +5,8 @@ ROOT_COMPOSE     = -f docker-compose.yml
 PROD_COMPOSE     = -f docker-compose-prod.yml
 MON_PROD_COMPOSE = -f ./monitoring/docker-compose-base.yml
 MON_DEV_COMPOSE  = -f ./monitoring/docker-compose-base.yml -f ./monitoring/docker-compose-dev.yml
+LOG_PROD_COMPOSE = -f ./log-management/docker-compose-base.yml
+LOG_DEV_COMPOSE  = -f ./log-management/docker-compose-base.yml -f ./log-management/docker-compose-dev.yml
 BUILDER_NAME     = ft-transcendence
 
 # No user-mapping variables needed anymore; volumes are cleaned by helper image
@@ -105,7 +107,7 @@ prod:
 	@echo ">> Starting prod stack (attached)"
 	docker compose -p $(NAME_PROD) $(PROD_COMPOSE) $(ENV_ROOT) \
 		${MON_PROD_COMPOSE} \
-		--profile elk \
+		${LOG_PROD_COMPOSE} \
 		up --build
 
 prod-detached:
@@ -116,21 +118,22 @@ prod-detached:
 	@echo ">> Starting prod stack (detached)"
 	docker compose -p $(NAME_PROD) $(PROD_COMPOSE) $(ENV_ROOT) \
 		${MON_PROD_COMPOSE} \
-		--profile elk up --build -d
+		${LOG_PROD_COMPOSE} \
+		up --build -d
 
 elk:
 	$(ensure_dirs)
 	$(ensure_env)
 	$(ensure_builder)
 	@echo ">> Starting profile 'elk' (attached)"
-	docker compose -p $(NAME) --profile elk up --build
+	docker compose -p $(NAME) ${LOG_DEV_COMPOSE} up --build
 
 elk-detached:
 	$(ensure_dirs)
 	$(ensure_env)
 	$(ensure_builder)
 	@echo ">> Starting profile 'elk' (detached)"
-	docker compose -p $(NAME) --profile elk up --build -d
+	docker compose -p $(NAME) ${LOG_DEV_COMPOSE} up --build -d
 
 mon:
 	$(ensure_dirs)
@@ -152,22 +155,26 @@ down:
 	@echo ">> Stopping & removing default stack (volumes, local images, orphans)"
 	- docker compose -p $(NAME) $(ROOT_COMPOSE) $(ENV_ROOT) \
 		${MON_DEV_COMPOSE} \
-		--profile elk down -v --rmi local --remove-orphans
+		${LOG_DEV_COMPOSE} \
+		down -v --rmi local --remove-orphans
 	@echo ">> Stopping & removing prod stack (volumes, local images, orphans)"
 	- docker compose -p $(NAME_PROD) $(PROD_COMPOSE) $(ENV_ROOT) \
 		${MON_PROD_COMPOSE} \
-		--profile elk down -v --rmi local --remove-orphans
+		${LOG_PROD_COMPOSE} \
+		down -v --rmi local --remove-orphans
 
 # Keep images and named volumes
 down-soft:
 	@echo ">> Stopping & removing default stack (volumes, local images, orphans)"
 	- docker compose -p $(NAME) $(ROOT_COMPOSE) $(ENV_ROOT) \
 		${MON_DEV_COMPOSE} \
-		--profile elk down --remove-orphans
+		${LOG_DEV_COMPOSE} \
+		down --remove-orphans
 	@echo ">> Stopping & removing prod stack (volumes, local images, orphans)"
 	- docker compose -p $(NAME_PROD) $(PROD_COMPOSE) $(ENV_ROOT) \
 		${MON_PROD_COMPOSE} \
-		--profile elk down --remove-orphans
+		${LOG_PROD_COMPOSE} \
+		down --remove-orphans
 
 
 # ========================

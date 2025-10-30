@@ -310,7 +310,3 @@ services:
       driver: gelf
       options:
         gelf-address: udp://localhost:12201
-
-include:
-  # stuff in this file will only run with `--profile elk`
-  - log-management/docker-compose.yml
