@@ -64,16 +64,17 @@ function App() {
 
   // compute channel whenever location changes
   const channel = useMemo(() => computeChannelFromPath(location.pathname), [location.pathname]);
+  const isTournamentPage = location.pathname.startsWith('/pong/tournaments');
 
   return (
     <SidebarProvider>
       <SnackbarProvider>
         <div>
           {/* Floating toggle so user can open/close chat — only show when chat is CLOSED */}
-          {user && !chatOpen && <ChatToggleButton open={chatOpen} setOpen={setChatOpen} />}
+          {user && !isTournamentPage && !chatOpen && <ChatToggleButton open={chatOpen} setOpen={setChatOpen} />}
 
           {/* Keep Chat mounted to avoid StrictMode remount flicker */}
-          {user && <Chat onClose={() => setChatOpen(false)} channel={channel} isOpen={chatOpen} />}
+          {user && !isTournamentPage && <Chat onClose={() => setChatOpen(false)} channel={channel} isOpen={chatOpen} />}
           {/* Routes */}
           <Routes>
             <Route path={'/'} element={<Home />} />

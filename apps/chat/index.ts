@@ -161,6 +161,25 @@ function handleConnection(socket: WebSocket, _request: ChatRequest) {
         client.blocked.delete(data.username);
         socket.send(JSON.stringify({ type: 'userUnblocked', username: data.username }));
         return;
+      case 'tournamentMsg': {
+        if (!client.channel) return;
+        fastify.log.info(
+          { channel: client.channel, msg: data.message },
+          '[CHAT] broadcast tournament message',
+        );
+
+        broadcast(
+          {
+            type: 'tournamentMsg',
+            message: data.message,
+            matchInfo: data.matchInfo ?? null,
+            countdown: data.countdown ?? null,
+          },
+          client.channel,
+        );
+  return;
+}
+
       default:
         fastify.log.warn({ clientId: id, type: data.type }, '[CHAT] Unknown message type');
     }

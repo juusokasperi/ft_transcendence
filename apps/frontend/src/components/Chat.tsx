@@ -226,6 +226,19 @@ export default function Chat({ onClose, username = 'Player', channel, isOpen = t
         ]);
         return;
       }
+      // tournament system message
+      if (data.type === 'tournamentMsg') {
+        setMessages((prev) => [
+          ...prev,
+          {
+            system: true,
+            message: `🏓 ${data.message}${
+              data.countdown ? ` — starts in ${data.countdown}s` : ''
+            }`,
+          },
+        ]);
+        return;
+      }
 
       // invite/profile/error/system
       if (data.type === 'inviteGame') {
@@ -370,7 +383,8 @@ export default function Chat({ onClose, username = 'Player', channel, isOpen = t
       aria-label={`Live Chat (${channel})`}
       aria-hidden={!isOpen}
       data-state={isOpen ? 'open' : 'closed'}
-      className={`fixed inset-x-3 bottom-3 z-50 flex h-[85vh] max-h-[calc(100vh-1.5rem)] flex-col overflow-hidden rounded-2xl border border-white/20 bg-gray-900/95 text-white shadow-2xl backdrop-blur-md transition duration-200 ease-out sm:inset-auto sm:bottom-6 sm:left-auto sm:right-6 sm:h-[40rem] sm:w-[36rem] ${panelStateCls}`}
+      className={`fixed inset-x-3 bottom-3 z-50 flex h-[85vh] max-h-[calc(100vh-1.5rem)] flex-col overflow-hidden rounded-2xl border border-white/20 text-white shadow-2xl backdrop-blur-md transition duration-200 ease-out sm:inset-auto sm:bottom-6 sm:left-auto sm:right-6 sm:h-[40rem] sm:w-[36rem] ${panelStateCls}  bg-gray-900/20 border-white/10`}
+
     >
       {/* Header */}
       <div className="flex items-center justify-between border-b border-white/20 px-3 py-2">
