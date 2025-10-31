@@ -50,7 +50,7 @@ services:
     ports:
       - ${ES_PORT}:9200
     environment:
-      - ES_JAVA_OPTS=-Xms512m -Xmx512m
+      - ES_JAVA_OPTS=-Xms512m -Xmx512m -XX:MaxDirectMemorySize=256M
       - discovery.type=single-node
       - bootstrap.memory_lock=true
       - xpack.security.enabled=true
@@ -168,6 +168,7 @@ services:
       - elk_certs:/usr/share/logstash/certs
       - logstash_data:/usr/share/logstash/data
     environment:
+      - LS_JAVA_OPTS=-Xms512m -Xmx512m -XX:MaxDirectMemorySize=256M
       - xpack.monitoring.enabled=false
       - ELASTIC_HOSTS=https://elasticsearch:${ES_PORT:-9200}
       - ELASTIC_USER=${ELASTIC_USER:-elastic}
