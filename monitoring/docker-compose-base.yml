@@ -97,18 +97,30 @@ services:
   cadvisor:
     image: gcr.io/cadvisor/cadvisor:v0.52.0
     restart: unless-stopped
-    command:
-      - '--disable_metrics=cpu_topology,disk,network,memory,memory_numa,tcp,udp,percpu,sched,process,hugetlb,referenced_memory,resctrl,cpuset,advtcp'
-      - '--docker_only=true'
-      - '--housekeeping_interval=30s'
-    cap_add:
-      - SYS_PTRACE
-    volumes:
-      - '/:/rootfs:ro'
-      - '/var/run:/var/run:ro'
-      - '/sys:/sys:ro'
-      - '/sys/fs/cgroup:/sys/fs/cgroup:ro'
-      - '/var/lib/docker/:/var/lib/docker:ro'
-      - '/var/run/docker.sock:/var/run/docker.sock:ro'
+  command:
+    - '--disable_metrics=cpu_topology,disk,network,memory,memory_numa,tcp,udp,percpu,sched,process,hugetlb,referenced_memory,resctrl,cpuset,advtcp'
+    - '--housekeeping_interval=30s'
+    - '--store_container_labels=false'
+    - '--allow_dynamic_housekeeping=true'
+    - '--enable_load_reader=true'
+  volumes:
+    - '/:/rootfs:ro'
+    - '/sys:/sys:ro'
+    - '/sys/fs/cgroup:/sys/fs/cgroup:ro'
+    - '/proc:/proc:ro'
+    #
+    # command:
+    #   - '--disable_metrics=cpu_topology,disk,network,memory,memory_numa,tcp,udp,percpu,sched,process,hugetlb,referenced_memory,resctrl,cpuset,advtcp'
+    #   - '--docker_only=true'
+    #   - '--housekeeping_interval=30s'
+    # cap_add:
+    #   - SYS_PTRACE
+    # volumes:
+    #   - '/:/rootfs:ro'
+    #   - '/var/run:/var/run:ro'
+    #   - '/sys:/sys:ro'
+    #   - '/sys/fs/cgroup:/sys/fs/cgroup:ro'
+    #   - '/var/lib/docker/:/var/lib/docker:ro'
+    #   - '/var/run/docker.sock:/var/run/docker.sock:ro'
     networks:
       - prod-private
