@@ -375,7 +375,8 @@ async function handleConnection(socket: WebSocket, _request: ChatRequest) {
           inviter.socket.send(
             JSON.stringify({
               type: 'inviteDeclined',
-              username: invite.toUsername,
+              from: invite.fromUsername,
+              to: invite.toUsername,
             }),
           );
         }
@@ -383,7 +384,8 @@ async function handleConnection(socket: WebSocket, _request: ChatRequest) {
         socket.send(
           JSON.stringify({
             type: 'inviteDeclined',
-            username: invite.fromUsername,
+            from: invite.fromUsername,
+            to: invite.toUsername,
           }),
         );
 

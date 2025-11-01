@@ -257,10 +257,17 @@ export default function Chat({ onClose, username = 'Player', channel, isOpen = t
       }
 
       if (data.type === 'inviteDeclined') {
-        setMessages((prev) => [
-          ...prev,
-          { system: true, message: `${data.username} declined your invitation.` },
-        ]);
+        if (data.to === chatUsername) {
+          setMessages((prev) => [
+            ...prev,
+            { system: true, message: `You declined ${data.from}'s invitation.` },
+          ]);
+        } else {
+          setMessages((prev) => [
+            ...prev,
+            { system: true, message: `${data.to} declined your invitation.` },
+          ]);
+        }
       }
 
       if (data.type === 'inviteExpired') {
