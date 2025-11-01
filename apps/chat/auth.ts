@@ -2,6 +2,7 @@ import { Client } from './types.ts';
 import jwt from 'jsonwebtoken';
 import type { IncomingMessage } from 'http';
 
+// Add a proper handler for the chat ENV variables
 const SECRET = process.env.SECRET || 'yourSecretForJWTToken';
 
 async function verifySiteToken(token: string): Promise<{ username: string; uuid: string }> {
