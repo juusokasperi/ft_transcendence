@@ -1,8 +1,8 @@
 import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
-import type { InviteLobby, ClientInfo } from '../types/types';
+import type { InviteLobby, ClientInfo } from '../types/types.ts';
 import { log } from '@utils/logger';
 import { v4 as uuid } from 'uuid';
-import { createMatch } from './queue';
+import { createMatch } from './queue.ts';
 
 const inviteMatches = new Map<string, InviteLobby>(); // lobbyId -> inviteLobby
 const playerToInviteLobby = new Map<string, InviteLobby>(); // playerId -> inviteLobby
