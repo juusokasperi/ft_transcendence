@@ -30,7 +30,7 @@ export async function inviteRoute(app: FastifyInstance) {
         });
       }
       if (playerToInviteLobby.has(player2Uuid)) {
-        log('Player 2 already in invite match map', { player1Uuid });
+        log('Player 2 already in invite match map', { player2Uuid });
         return res.send({
           status: 'INVITEE_UNAVAILABLE',
           message: 'Invitee is already scheduled for another match',
@@ -150,11 +150,6 @@ export async function handleInviteLobbyJoin(client: ClientInfo) {
       playerUuid: client.uuid,
     });
   } else {
-    if (lobby.timer) {
-      clearTimeout(lobby.timer);
-      lobby.timer = undefined;
-    }
-
     client.socket.send(
       JSON.stringify({
         type: 'JOINED_INVITE_LOBBY',

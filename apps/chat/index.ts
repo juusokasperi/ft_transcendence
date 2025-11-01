@@ -82,7 +82,6 @@ async function createInviteMatch(
   message?: string;
 }> {
   try {
-    console.log(MM_SERVICE_URL);
     const response = await fetch(`${MM_SERVICE_URL}/invite-match`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -168,7 +167,6 @@ async function handleConnection(socket: WebSocket, _request: ChatRequest) {
       return;
     }
 
-    fastify.log.info(data);
     switch (data.type) {
       case 'setName':
         client.username = data.username;
@@ -398,24 +396,26 @@ async function handleConnection(socket: WebSocket, _request: ChatRequest) {
   socket.on('close', () => {
     fastify.log.info({ clientId: id }, '[CHAT] Client disconnected');
     const client = clients.get(id);
-    if (!client || !client.username || !client.channel) return;
+    if (client && client.uuid) {
+      const toDelete: string[] = [];
+      pendingInvites.forEach((invite, inviteId) => {
+        if (invite.fromUserUuid === client.uuid || invite.toUserUuid === client.uuid) {
+          toDelete.push(inviteId);
 
-    const toDelete: string[] = [];
-    pendingInvites.forEach((invite, inviteId) => {
-      if (invite.fromUserUuid === client.uuid || invite.toUserUuid === client.uuid) {
-        toDelete.push(inviteId);
-
-        const otherUserId =
-          invite.fromUserUuid === client.uuid ? invite.toUserUuid : invite.fromUserUuid;
-        const otherClient = findClientById(otherUserId);
-        if (otherClient) {
-          otherClient.socket.send(
-            JSON.stringify({ type: 'inviteCancelled', username: client.username }),
-          );
+          const otherUserId =
+            invite.fromUserUuid === client.uuid ? invite.toUserUuid : invite.fromUserUuid;
+          const otherClient = findClientById(otherUserId);
+          if (otherClient) {
+            otherClient.socket.send(
+              JSON.stringify({ type: 'inviteCancelled', username: client.username }),
+            );
+          }
         }
-      }
-    });
-    toDelete.forEach((inviteId) => pendingInvites.delete(inviteId));
+      });
+      toDelete.forEach((inviteId) => pendingInvites.delete(inviteId));
+    }
+
+    if (!client || !client.username || !client.channel) return;
 
     broadcast(
       {
