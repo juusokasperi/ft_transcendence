@@ -39,7 +39,6 @@ const OnlineGame: React.FC = () => {
     if (newTimestamp && newTimestamp !== lastTimestamp.current) {
       lastTimestamp.current = newTimestamp;
       if (state.status !== 'starting' && state.status !== 'playing') {
-        console.log('[OnlineGame] Timestamp changed, reconnecting to MM..');
         setConnectKey((key) => key + 1);
       }
     }
