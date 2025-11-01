@@ -199,13 +199,15 @@ async function allocateAndHandoffInvite(lobby: InviteLobby) {
   }
 }
 
+const inviteGraceTimers = new Map<string, NodeJS.Timeout>();
+
 export function clearLobbiesWithClient(client: ClientInfo) {
   const inviteLobby = playerToInviteLobby.get(client.uuid);
   if (inviteLobby) {
     // Add a small grace period before destroying the lobby.
     // This prevents a race condition where a client reconnecting for the invite
     // causes the old connection's 'close' event to destroy the lobby.
-    setTimeout(() => {
+    const timer = setTimeout(() => {
       const lobby = inviteMatches.get(inviteLobby.lobbyId);
       // If the lobby still exists and hasn't been joined by both players, destroy it.
       if (lobby && (!lobby.player1Client || !lobby.player2Client)) {
@@ -216,10 +218,13 @@ export function clearLobbiesWithClient(client: ClientInfo) {
         destroyInviteLobby(inviteLobby.lobbyId);
       }
     }, 2000); // 2-second grace period
+    inviteGraceTimers.set(inviteLobby.lobbyId, timer);
   }
 }
 
 export function clearInviteLobbies() {
+  inviteGraceTimers.forEach((timer) => clearTimeout(timer));
+  inviteGraceTimers.clear();
   inviteMatches.forEach((lobby) => {
     if (lobby.timer) clearTimeout(lobby.timer);
   });
