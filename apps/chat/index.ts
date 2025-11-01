@@ -395,7 +395,6 @@ async function handleConnection(socket: WebSocket, _request: ChatRequest) {
 
   socket.on('close', () => {
     fastify.log.info({ clientId: id }, '[CHAT] Client disconnected');
-    const client = clients.get(id);
     if (client && client.uuid) {
       const toDelete: string[] = [];
       pendingInvites.forEach((invite, inviteId) => {
