@@ -26,12 +26,14 @@ async function fetchUserUuidByUsername(
     return null;
   }
 }
+
 type ChatMessage = {
   from?: string;
   to?: string;
   message: string;
   system?: boolean;
   type?: string; // "chat" | "privateMessage" | "dm" | undefined
+  inviteId?: string;
 };
 
 type UserItem = {
@@ -57,6 +59,7 @@ export default function Chat({ onClose, username = 'Player', channel, isOpen = t
   const [input, setInput] = useState('');
   const [dmTarget, setDmTarget] = useState<string | null>(null);
   const [blocked, setBlocked] = useState<Set<string>>(new Set());
+  const [pendingInvites, setPendingInvites] = useState<Map<string, string>>(new Map());
 
   const wsRef = useRef<WebSocket | null>(null);
   const scrollRef = useRef<HTMLDivElement | null>(null);
@@ -100,6 +103,7 @@ export default function Chat({ onClose, username = 'Player', channel, isOpen = t
       setBlocked(new Set<string>());
       setSentCount(0);
       setCooldown(false);
+      setPendingInvites(new Map());
     }
   }, [isOpen]);
 
@@ -183,14 +187,14 @@ export default function Chat({ onClose, username = 'Player', channel, isOpen = t
       if (data.type === 'userJoined') {
         setMessages((prev) => [
           ...prev,
-          { system: true, message: `✅ ${data.username} joined ${channel}` },
+          { system: true, message: `${data.username} joined ${channel}` },
         ]);
         return;
       }
       if (data.type === 'userLeft') {
         setMessages((prev) => [
           ...prev,
-          { system: true, message: `❌ ${data.username} left ${channel}` },
+          { system: true, message: `${data.username} left ${channel}` },
         ]);
         return;
       }
@@ -205,10 +209,7 @@ export default function Chat({ onClose, username = 'Player', channel, isOpen = t
         setUsers((prev) =>
           prev.map((u) => (u.username === data.username ? { ...u, isBlocked: true } : u)),
         );
-        setMessages((prev) => [
-          ...prev,
-          { system: true, message: `🚫 You blocked ${data.username}` },
-        ]);
+        setMessages((prev) => [...prev, { system: true, message: `You blocked ${data.username}` }]);
         return;
       }
       if (data.type === 'userUnblocked') {
@@ -222,23 +223,73 @@ export default function Chat({ onClose, username = 'Player', channel, isOpen = t
         );
         setMessages((prev) => [
           ...prev,
-          { system: true, message: `✅ You unblocked ${data.username}` },
+          { system: true, message: `You unblocked ${data.username}` },
         ]);
         return;
       }
 
       // invite/profile/error/system
       if (data.type === 'inviteGame') {
+        setPendingInvites((prev) => new Map(prev).set(data.inviteId, data.from));
         setMessages((prev) => [
           ...prev,
-          { system: true, message: `🎮 Game invite from ${data.from}` },
+          { system: true, message: `Game invite from ${data.from}`, inviteId: data.inviteId },
         ]);
         return;
       }
+
+      if (data.type === 'inviteSent') {
+        setMessages((prev) => [...prev, { system: true, message: `Invite sent to ${data.to}` }]);
+        return;
+      }
+
+      if (data.type === 'inviteAccepted') {
+        setMessages((prev) => [
+          ...prev,
+          { system: true, message: `Invite accepted. Joining game.` },
+        ]);
+        setTimeout(() => {
+          // Use state with a timestamp to force re-render if already on the page
+          navigate('/pong/online', { state: { timestamp: Date.now() } });
+          onClose();
+        }, 500);
+        return;
+      }
+
+      if (data.type === 'inviteDeclined') {
+        if (data.to === chatUsername) {
+          setMessages((prev) => [
+            ...prev,
+            { system: true, message: `You declined ${data.from}'s invitation.` },
+          ]);
+        } else {
+          setMessages((prev) => [
+            ...prev,
+            { system: true, message: `${data.to} declined your invitation.` },
+          ]);
+        }
+      }
+
+      if (data.type === 'inviteExpired') {
+        setMessages((prev) => [
+          ...prev,
+          { system: true, message: `Invite with ${data.username} expired` },
+        ]);
+        return;
+      }
+
+      if (data.type === 'inviteCancelled') {
+        setMessages((prev) => [
+          ...prev,
+          { system: true, message: `${data.username} left the chat, invite cancelled` },
+        ]);
+        return;
+      }
+
       if (data.type === 'profile') {
         setMessages((prev) => [
           ...prev,
-          { system: true, message: `👤 Profile: ${data.username} (id: ${data.userId})` },
+          { system: true, message: `Profile: ${data.username} (id: ${data.userId})` },
         ]);
         return;
       }
@@ -305,7 +356,7 @@ export default function Chat({ onClose, username = 'Player', channel, isOpen = t
       // optionally show a quick system message or toast
       setMessages((prev) => [
         ...prev,
-        { system: true, message: "⛔ Slow down — you're sending messages too fast. Wait 2s." },
+        { system: true, message: "Slow down — you're sending messages too fast. Wait 2s." },
       ]);
       return;
     }
@@ -323,6 +374,28 @@ export default function Chat({ onClose, username = 'Player', channel, isOpen = t
     setInput('');
   };
 
+  const handleAcceptInvite = (inviteId: string) => {
+    const ws = wsRef.current;
+    if (!ws || ws.readyState !== WebSocket.OPEN) return;
+    ws.send(JSON.stringify({ type: 'acceptInvite', inviteId }));
+    setPendingInvites((prev) => {
+      const copy = new Map(prev);
+      copy.delete(inviteId);
+      return copy;
+    });
+  };
+
+  const handleDeclineInvite = (inviteId: string) => {
+    const ws = wsRef.current;
+    if (!ws || ws.readyState !== WebSocket.OPEN) return;
+    ws.send(JSON.stringify({ type: 'declineInvite', inviteId }));
+    setPendingInvites((prev) => {
+      const copy = new Map(prev);
+      copy.delete(inviteId);
+      return copy;
+    });
+  };
+
   const handleAction = async (action: string, targetUser: string) => {
     const ws = wsRef.current;
     // actions should be allowed regardless of cooldown (they don't send many messages)
@@ -338,11 +411,8 @@ export default function Chat({ onClose, username = 'Player', channel, isOpen = t
       case 'Unblock user':
         ws.send(JSON.stringify({ type: 'unblockUser', username: targetUser }));
         break;
-      case 'Invite to game':
-        setMessages((prev) => [
-          ...prev,
-          { system: true, message: `🎮 Invite sent to ${targetUser}` },
-        ]);
+      case 'Invite to 1v1':
+        ws.send(JSON.stringify({ type: 'inviteUser', username: targetUser }));
         break;
       case 'View profile': {
         const uid = await fetchUserUuidByUsername(authAxios, targetUser);
@@ -351,7 +421,7 @@ export default function Chat({ onClose, username = 'Player', channel, isOpen = t
         } else {
           setMessages((prev) => [
             ...prev,
-            { system: true, message: `⚠️ Invalid or missing profile for ${targetUser}` },
+            { system: true, message: `Invalid or missing profile for ${targetUser}` },
           ]);
         }
         break;
@@ -386,6 +456,27 @@ export default function Chat({ onClose, username = 'Player', channel, isOpen = t
         <div ref={scrollRef} className="min-h-0 flex-1 space-y-2 overflow-y-auto p-3 text-sm">
           {messages.map((msg, idx) => {
             if (msg.system) {
+              if (msg.inviteId && pendingInvites.has(msg.inviteId)) {
+                return (
+                  <div key={idx} className="rounded bg-blue-900/40 p-2">
+                    <div className="italic text-blue-200">{msg.message}</div>
+                    <div className="mt-2 flex gap-2">
+                      <button
+                        onClick={() => handleAcceptInvite(msg.inviteId!)}
+                        className="rounded bg-green-600 px-3 py-1 text-xs font-semibold hover:bg-green-500"
+                      >
+                        Accept
+                      </button>
+                      <button
+                        onClick={() => handleDeclineInvite(msg.inviteId!)}
+                        className="rounded bg-red-600 px-3 py-1 text-xs font-semibold hover:bg-red-500"
+                      >
+                        Decline
+                      </button>
+                    </div>
+                  </div>
+                );
+              }
               return (
                 <div key={idx} className="italic text-gray-400">
                   {msg.message}

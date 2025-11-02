@@ -1,4 +1,5 @@
-import React, { useCallback, useMemo, useReducer, useRef, useState } from 'react';
+import React, { useCallback, useMemo, useReducer, useRef, useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import { useAppContext } from '../../../context/AppContext';
 import { useSnackbar } from '../../../context/SnackbarContext';
 import PlayingView from '../shared/components/PlayingView';
@@ -26,10 +27,22 @@ const OnlineGame: React.FC = () => {
   const [state, dispatch] = useReducer(reducer, initialState);
   const { axios, navigate } = useAppContext();
   const { enqueueSnackbar } = useSnackbar();
+  const location = useLocation();
 
   const [connectKey, setConnectKey] = useState(0);
   const queueElapsed = useQueueTimer(state.status);
   const matchmakingEnabled = state.status !== 'starting' && state.status !== 'playing';
+
+  const lastTimestamp = useRef(location.state?.timestamp);
+  useEffect(() => {
+    const newTimestamp = location.state?.timestamp;
+    if (newTimestamp && newTimestamp !== lastTimestamp.current) {
+      lastTimestamp.current = newTimestamp;
+      if (state.status !== 'starting' && state.status !== 'playing') {
+        setConnectKey((key) => key + 1);
+      }
+    }
+  }, [location.state?.timestamp, state.status]);
 
   const liveMessage = useMemo(() => {
     switch (state.status) {
