@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { validateEmail, validateUsername } from '../utils/validation';
 import { useAppContext } from '../context/AppContext';
 import { AxiosError } from 'axios';
 import { resolveAvatarUrl } from '../utils/avatarUrl';
@@ -39,19 +40,45 @@ const Friends: React.FC = () => {
 
   const { axios } = useAppContext();
   const { enqueueSnackbar } = useSnackbar();
+  const [friendError, setFriendError] = useState<string | null>(null);
 
   // Add friend
   const handleAddFriend = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!friendName.trim()) return;
 
+    // Recompute sanitized/normalized input here to avoid race conditions between onChange and submit
+    const raw = String(friendName).slice(0, 254);
+    let cleaned = raw.replace(/\s+/g, '');
+    const isEmail = cleaned.includes('@');
+    if (isEmail) {
+      cleaned = cleaned.toLowerCase().replace(/[^a-z0-9.@_%+-]/g, '').slice(0, 254);
+      if (!validateEmail(cleaned)) {
+        setFriendError('Please enter a valid email address.');
+        // ensure UI reflects cleaned value
+        setFriendName(cleaned);
+        return;
+      }
+    } else {
+      cleaned = cleaned.replace(/[^a-zA-Z0-9-]/g, '').slice(0, 254);
+      const usernameValidation = validateUsername(cleaned);
+      if (usernameValidation.state !== 'valid') {
+        setFriendError(usernameValidation.msg || 'Invalid username');
+        setFriendName(cleaned);
+        return;
+      }
+    }
+
     try {
-      await axios.post('/api/friends', { username: friendName });
+  // Backend schema expects a `username` field which may contain a username, uuid or email.
+  const payload = { username: cleaned };
+  await axios.post('/api/friends', payload);
       enqueueSnackbar({
         message: `Friend request sent to ${friendName}`,
         variant: 'success',
       });
       setFriendName('');
+      setFriendError(null);
       fetchSentPendingFriends();
     } catch (err) {
       const axiosErr = err as AxiosError<{ message?: string }>;
@@ -59,6 +86,9 @@ const Friends: React.FC = () => {
         message: String(axiosErr?.response?.data?.message ?? 'Failed to send friend request'),
         variant: 'error',
       });
+      // if server responds with a validation-like error, show inline as well
+      const msg = String(axiosErr?.response?.data?.message ?? 'Failed to send friend request');
+      setFriendError(msg);
     }
   };
 
@@ -368,20 +398,61 @@ const Friends: React.FC = () => {
                 </p>
               </div>
               <form onSubmit={handleAddFriend} className="flex flex-col gap-3 sm:flex-row">
-                <input
-                  type="text"
-                  value={friendName}
-                  onChange={(e) => setFriendName(e.target.value)}
-                  placeholder="Enter username or email"
-                  className="flex-1 rounded-2xl border border-white/15 bg-white/5 px-4 py-3 text-sm text-white placeholder:text-slate-400 focus:border-indigo-300 focus:outline-none focus:ring-2 focus:ring-indigo-400/50"
-                />
-                <button
-                  type="submit"
-                  className="inline-flex items-center justify-center rounded-2xl bg-gradient-to-r from-indigo-500 to-purple-500 px-5 py-3 text-sm font-semibold text-white shadow shadow-indigo-900/40 transition hover:from-indigo-400 hover:to-purple-400 disabled:cursor-not-allowed disabled:opacity-60"
-                  disabled={!friendName.trim()}
-                >
-                  Send request
-                </button>
+                <div className="flex-1">
+                  <input
+                    type="text"
+                    value={friendName}
+                    onChange={(e) => {
+                      const raw = String(e.target.value).slice(0, 254);
+                      // remove whitespace first
+                      let cleaned = raw.replace(/\s+/g, '');
+                      if (cleaned.includes('@')) {
+                        // allow only common email characters, normalize to lowercase
+                        cleaned = cleaned.toLowerCase().replace(/[^a-z0-9.@_%+-]/g, '').slice(0, 254);
+                      } else {
+                        // username allowed set: letters, numbers, dash
+                        cleaned = cleaned.replace(/[^a-zA-Z0-9-]/g, '').slice(0, 254);
+                      }
+                      setFriendName(cleaned);
+                      // clear any previous inline error when the user edits the field
+                      setFriendError(null);
+                    }}
+                    maxLength={254}
+                    placeholder="Enter username or email"
+                    className="w-full rounded-2xl border border-white/15 bg-white/5 px-4 py-3 text-sm text-white placeholder:text-slate-400 focus:border-indigo-300 focus:outline-none focus:ring-2 focus:ring-indigo-400/50"
+                  />
+                  <div className="mt-1 text-xs">
+                    {friendError ? (
+                      <p className="text-rose-300">{friendError}</p>
+                    ) : friendName ? (
+                      friendName.includes('@') ? (
+                        validateEmail(friendName) ? (
+                          <p className="text-emerald-300">Looks like a valid email address.</p>
+                        ) : (
+                          <p className="text-rose-300">Looks like an email but format seems invalid.</p>
+                        )
+                      ) : validateUsername(friendName).state === 'valid' ? (
+                        <p className="text-emerald-300">Looks like a valid username.</p>
+                      ) : (
+                        <p className="text-slate-300">Enter a username (3–16 chars) or an email address.</p>
+                      )
+                    ) : (
+                      <p className="text-slate-400"></p>
+                    )}
+                  </div>
+                </div>
+                <div className="flex-shrink-0">
+                  <button
+                    type="submit"
+                    className="inline-flex items-center justify-center rounded-2xl bg-gradient-to-r from-indigo-500 to-purple-500 px-5 py-3 text-sm font-semibold text-white shadow shadow-indigo-900/40 transition hover:from-indigo-400 hover:to-purple-400 disabled:cursor-not-allowed disabled:opacity-60"
+                    disabled={
+                      !friendName.trim() ||
+                      (friendName.includes('@') ? !validateEmail(friendName) : validateUsername(friendName).state !== 'valid')
+                    }
+                  >
+                    Send request
+                  </button>
+                </div>
               </form>
             </div>
           )}
