@@ -29,7 +29,7 @@ const TournamentLobbyPanel: React.FC<TournamentLobbyPanelProps> = ({
 }) => {
   return (
     <div className="flex flex-col gap-6">
-      <SurfaceCard className="shadow-2xl p-6">
+      <SurfaceCard className="p-6 shadow-2xl">
         <h2 className="mb-4 text-lg font-semibold">Create a new tournament</h2>
         <div className="flex flex-col gap-3">
           <input
@@ -64,7 +64,7 @@ const TournamentLobbyPanel: React.FC<TournamentLobbyPanelProps> = ({
         </div>
       </SurfaceCard>
 
-      <SurfaceCard className="shadow-2xl p-6">
+      <SurfaceCard className="p-6 shadow-2xl">
         <h2 className="mb-4 text-lg font-semibold">Open tournaments</h2>
         {availableTournaments.length === 0 ? (
           <p className="text-sm text-white/60">No tournaments available yet. Create one above!</p>

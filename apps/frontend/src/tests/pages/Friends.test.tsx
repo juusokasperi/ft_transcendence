@@ -1,6 +1,6 @@
 import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
-import { vi } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 // Mock AppContext and Snackbar to provide minimal hooks used by Friends
 vi.mock('../../context/AppContext', () => ({
