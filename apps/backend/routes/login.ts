@@ -21,16 +21,20 @@ function serializeUserResponse(user: {
   tfa?: boolean;
   createdAt?: string | null;
 }) {
-  const stats = getUserStats(user.uuid);
+  const stats = getUserStats(user.uuid) ?? null;
+  const wins = typeof stats?.wins === 'number' ? stats.wins : 0;
+  const losses = typeof stats?.losses === 'number' ? stats.losses : 0;
+  const createdAt = user.createdAt ?? stats?.createdAt ?? null;
+
   return {
     username: user.username,
     uuid: user.uuid,
     avatar: user.avatar ?? null,
     email: user.email ?? null,
     tfa: !!user.tfa,
-    wins: stats?.wins ?? 0,
-    losses: stats?.losses ?? 0,
-    createdAt: user.createdAt ?? null,
+    wins,
+    losses,
+    createdAt,
   };
 }
 
