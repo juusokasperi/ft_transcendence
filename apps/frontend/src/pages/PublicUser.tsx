@@ -10,6 +10,7 @@ import { StatsSection } from '../components/StatsOverview';
 import { useRequireAuth } from '../hooks/useRequireAuth';
 import FriendshipStatus from '../components/FriendshipStatus';
 import type { Friendship } from '../types';
+import { Spinner } from '@ft/spinner';
 
 interface UserStats {
   username: string;
@@ -263,7 +264,10 @@ const PublicUser: React.FC = () => {
 
             {loading ? (
               <div className="flex h-64 items-center justify-center text-sm text-slate-300/70">
-                Pulling user's latest games…
+                <span className="inline-flex items-center gap-2">
+                  <Spinner size={20} color="#A855F7" aria-label="Loading recent matches" />
+                  <span>Pulling user's latest games</span>
+                </span>
               </div>
             ) : matches1v1.length > 0 ? (
               <div className="bg-slate-900 p-4">
@@ -297,7 +301,11 @@ const PublicUser: React.FC = () => {
                           disabled={loadingMore}
                           className="inline-flex items-center justify-center rounded-full bg-gradient-to-r from-indigo-500 to-purple-500 px-5 py-2 text-sm font-semibold text-white shadow shadow-indigo-900/40 transition hover:from-indigo-400 hover:to-purple-400 disabled:cursor-not-allowed disabled:opacity-50"
                         >
-                          {loadingMore ? 'Loading…' : 'Load more matches'}
+                          {loadingMore ? (
+                            <Spinner size={20} color="#FFFFFF" aria-label="Loading more matches" />
+                          ) : (
+                            'Load more matches'
+                          )}
                         </button>
                       </div>
                     ) : (

@@ -5,6 +5,7 @@ import Button from '../components/Button';
 import { type ValidationState, validatePassword, PASSWORD_MAX_LENGTH } from '../utils/validation';
 import { useAppContext } from '../context/AppContext';
 import { useSnackbar } from '../context/SnackbarContext';
+import { Spinner } from '@ft/spinner';
 
 const ResetPassword: React.FC = () => {
   const { token: resetToken } = useParams<{ token: string }>();
@@ -207,7 +208,14 @@ const ResetPassword: React.FC = () => {
                 {success && <p className="text-sm font-medium text-emerald-300">{success}</p>}
 
                 <Button type="submit" fullWidth disabled={loading || !resetToken}>
-                  {loading ? 'Updating password…' : 'Update password'}
+                  {loading ? (
+                    <span className="inline-flex items-center gap-2">
+                      <Spinner size={18} color="#FFFFFF" aria-label="Updating password" />
+                      <span>Updating password</span>
+                    </span>
+                  ) : (
+                    'Update password'
+                  )}
                 </Button>
 
                 <p className="text-sm text-slate-300/80">
