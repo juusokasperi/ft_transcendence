@@ -2,6 +2,7 @@ import React from 'react';
 import Button from '../../../../components/Button';
 import SurfaceCard from '../../shared/components/SurfaceCard';
 import type { TournamentSummary } from '../state/types';
+import { ALIAS_MAX_LENGTH, aliasInputAllowedRegex } from '../../../../utils/alias';
 
 export type TournamentLobbyPanelProps = {
   tournamentName: string;
@@ -43,6 +44,17 @@ const TournamentLobbyPanel: React.FC<TournamentLobbyPanelProps> = ({
               onChange={(event) => onAliasInputChange(event.target.value)}
               placeholder="Your alias (optional)"
               className="w-full rounded-full border border-white/10 bg-black/50 px-4 py-2 text-sm text-white placeholder:text-white/40 focus:border-indigo-400 focus:outline-none"
+              maxLength={ALIAS_MAX_LENGTH}
+              onBeforeInput={(event) => {
+                const nativeEvent = event.nativeEvent as InputEvent;
+                if (
+                  nativeEvent.inputType === 'insertText' &&
+                  nativeEvent.data &&
+                  !aliasInputAllowedRegex.test(nativeEvent.data)
+                ) {
+                  event.preventDefault();
+                }
+              }}
             />
             <Button variant="primary" onClick={onCreateTournament} disabled={!connectionReady}>
               Create tournament
@@ -95,6 +107,17 @@ const TournamentLobbyPanel: React.FC<TournamentLobbyPanelProps> = ({
                         onChange={(event) => onAliasInputChange(event.target.value)}
                         placeholder="Your alias (optional)"
                         className="flex-1 rounded-full border border-white/10 bg-black/50 px-4 py-2 text-sm text-white placeholder:text-white/40 focus:border-indigo-400 focus:outline-none"
+                        maxLength={ALIAS_MAX_LENGTH}
+                        onBeforeInput={(event) => {
+                          const nativeEvent = event.nativeEvent as InputEvent;
+                          if (
+                            nativeEvent.inputType === 'insertText' &&
+                            nativeEvent.data &&
+                            !aliasInputAllowedRegex.test(nativeEvent.data)
+                          ) {
+                            event.preventDefault();
+                          }
+                        }}
                       />
                       <Button
                         variant="secondary"
