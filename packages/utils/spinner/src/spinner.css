@@ -1,0 +1,67 @@
+/* iOS-like activity indicator made from 12 dots around a circle
+   Container accepts CSS variables:
+     --ft-spinner-size (px)
+     --ft-spinner-color
+*/
+.ft-spinner {
+  width: var(--ft-spinner-size, 40px);
+  height: var(--ft-spinner-size, 40px);
+  display: inline-block;
+  position: relative;
+}
+
+.ft-spinner__dot {
+  --dot-size: calc(var(--ft-spinner-size) * 0.16);
+  width: var(--dot-size);
+  height: var(--dot-size);
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform-origin: center center;
+  display: block;
+}
+
+.ft-spinner__dot-inner {
+  display: block;
+  width: 100%;
+  height: 100%;
+  background: var(--ft-spinner-color, #A855F7);
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  opacity: 0.25;
+  animation: ft-spinner-fade 1.2s linear infinite;
+}
+
+/* position 12 dots in circle and stagger their animation delays */
+/* angles: 0,30,60...330 degrees */
+.ft-spinner__dot:nth-child(1)  { transform: rotate(0deg)   translateY(calc(-0.45 * var(--ft-spinner-size))); }
+.ft-spinner__dot:nth-child(2)  { transform: rotate(30deg)  translateY(calc(-0.45 * var(--ft-spinner-size))); }
+.ft-spinner__dot:nth-child(3)  { transform: rotate(60deg)  translateY(calc(-0.45 * var(--ft-spinner-size))); }
+.ft-spinner__dot:nth-child(4)  { transform: rotate(90deg)  translateY(calc(-0.45 * var(--ft-spinner-size))); }
+.ft-spinner__dot:nth-child(5)  { transform: rotate(120deg) translateY(calc(-0.45 * var(--ft-spinner-size))); }
+.ft-spinner__dot:nth-child(6)  { transform: rotate(150deg) translateY(calc(-0.45 * var(--ft-spinner-size))); }
+.ft-spinner__dot:nth-child(7)  { transform: rotate(180deg) translateY(calc(-0.45 * var(--ft-spinner-size))); }
+.ft-spinner__dot:nth-child(8)  { transform: rotate(210deg) translateY(calc(-0.45 * var(--ft-spinner-size))); }
+.ft-spinner__dot:nth-child(9)  { transform: rotate(240deg) translateY(calc(-0.45 * var(--ft-spinner-size))); }
+.ft-spinner__dot:nth-child(10) { transform: rotate(270deg) translateY(calc(-0.45 * var(--ft-spinner-size))); }
+.ft-spinner__dot:nth-child(11) { transform: rotate(300deg) translateY(calc(-0.45 * var(--ft-spinner-size))); }
+.ft-spinner__dot:nth-child(12) { transform: rotate(330deg) translateY(calc(-0.45 * var(--ft-spinner-size))); }
+
+/* staggered delays: later dots start later creating rotating effect */
+.ft-spinner__dot:nth-child(1)  .ft-spinner__dot-inner { animation-delay: -1.1s; }
+.ft-spinner__dot:nth-child(2)  .ft-spinner__dot-inner { animation-delay: -1.0s; }
+.ft-spinner__dot:nth-child(3)  .ft-spinner__dot-inner { animation-delay: -0.9s; }
+.ft-spinner__dot:nth-child(4)  .ft-spinner__dot-inner { animation-delay: -0.8s; }
+.ft-spinner__dot:nth-child(5)  .ft-spinner__dot-inner { animation-delay: -0.7s; }
+.ft-spinner__dot:nth-child(6)  .ft-spinner__dot-inner { animation-delay: -0.6s; }
+.ft-spinner__dot:nth-child(7)  .ft-spinner__dot-inner { animation-delay: -0.5s; }
+.ft-spinner__dot:nth-child(8)  .ft-spinner__dot-inner { animation-delay: -0.4s; }
+.ft-spinner__dot:nth-child(9)  .ft-spinner__dot-inner { animation-delay: -0.3s; }
+.ft-spinner__dot:nth-child(10) .ft-spinner__dot-inner { animation-delay: -0.2s; }
+.ft-spinner__dot:nth-child(11) .ft-spinner__dot-inner { animation-delay: -0.1s; }
+.ft-spinner__dot:nth-child(12) .ft-spinner__dot-inner { animation-delay:  0s; }
+
+@keyframes ft-spinner-fade {
+  0% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+  100% { opacity: 0.25; transform: translate(-50%, -50%) scale(0.35); }
+}
