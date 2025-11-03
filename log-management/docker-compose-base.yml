@@ -21,7 +21,7 @@ services:
     build:
       context: ./log-management/elastic_cert_setup/
       args:
-        STACK_VERSION: ${STACK_VERSION:-9.1.5}
+        STACK_VERSION: ${ES_STACK_VERSION:-9.1.5}
     volumes:
       - elk_certs:/usr/share/elasticsearch/config/certs
     user: '0'
@@ -40,16 +40,16 @@ services:
     build:
       context: ./log-management/elasticsearch/
       args:
-        STACK_VERSION: ${STACK_VERSION:-9.1.5}
+        STACK_VERSION: ${ES_STACK_VERSION:-9.1.5}
     labels:
       co.elastic.logs/module: elasticsearch
     restart: unless-stopped
     volumes:
       - elk_certs:/usr/share/elasticsearch/config/certs
       - elasticsearch_data:/usr/share/elasticsearch/data
-    ports:
-      - ${ES_PORT}:9200
     environment:
+      - ELASTIC_USER=${ELASTIC_USER}
+      - ELASTIC_PASSWORD=${ELASTIC_PASSWORD}
       - ES_JAVA_OPTS=-Xms512m -Xmx512m -XX:MaxDirectMemorySize=256M
       - discovery.type=single-node
       - bootstrap.memory_lock=true
@@ -63,12 +63,8 @@ services:
       - xpack.security.transport.ssl.certificate=certs/elasticsearch/elasticsearch.crt
       - xpack.security.transport.ssl.certificate_authorities=certs/ca/ca.crt
       - xpack.security.transport.ssl.verification_mode=certificate
-      - xpack.license.self_generated.type=${LICENSE}
+      - xpack.license.self_generated.type=${ES_LICENSE}
     mem_limit: ${ES_MEM_LIMIT}
-    ulimits:
-      memlock:
-        soft: -1
-        hard: -1
     healthcheck:
       test:
         - CMD-SHELL
@@ -107,7 +103,7 @@ services:
     build:
       context: ./log-management/kibana/
       args:
-        STACK_VERSION: ${STACK_VERSION:-9.1.5}
+        STACK_VERSION: ${ES_STACK_VERSION:-9.1.5}
     restart: unless-stopped
     depends_on:
       elasticsearch:
@@ -123,11 +119,11 @@ services:
       - ELASTICSEARCH_USERNAME=kibana_system
       - ELASTICSEARCH_PASSWORD=${KIBANA_PASSWORD}
       - ELASTICSEARCH_SSL_CERTIFICATEAUTHORITIES=/usr/share/kibana/config/certs/ca/ca.crt
-      - XPACK_SECURITY_ENCRYPTIONKEY=${ENCRYPTION_KEY}
-      - XPACK_ENCRYPTEDSAVEDOBJECTS_ENCRYPTIONKEY=${ENCRYPTION_KEY}
-      - XPACK_REPORTING_ENCRYPTIONKEY=${ENCRYPTION_KEY}
+      - XPACK_SECURITY_ENCRYPTIONKEY=${ES_ENCRYPTION_KEY}
+      - XPACK_ENCRYPTEDSAVEDOBJECTS_ENCRYPTIONKEY=${ES_ENCRYPTION_KEY}
+      - XPACK_REPORTING_ENCRYPTIONKEY=${ES_ENCRYPTION_KEY}
       - SERVER_BASEPATH=/kibana
-      - SERVER_PUBLICBASEURL=https://localhost/kibana
+      - SERVER_PUBLICBASEURL=${FRONTEND_URL}/kibana
       - SERVER_REWRITEBASEPATH=false
     mem_limit: ${KB_MEM_LIMIT}
     healthcheck:
@@ -160,7 +156,7 @@ services:
     build:
       context: ./log-management/logstash/
       args:
-        STACK_VERSION: ${STACK_VERSION:-9.1.5}
+        STACK_VERSION: ${ES_STACK_VERSION:-9.1.5}
     labels:
       co.elastic.logs/module: logstash
     restart: unless-stopped
@@ -168,17 +164,19 @@ services:
       - elk_certs:/usr/share/logstash/certs
       - logstash_data:/usr/share/logstash/data
     environment:
+      - ELASTIC_USER=${ELASTIC_USER}
+      - ELASTIC_PASSWORD=${ELASTIC_PASSWORD}
       - LS_JAVA_OPTS=-Xms512m -Xmx512m -XX:MaxDirectMemorySize=256M
       - xpack.monitoring.enabled=false
       - ELASTIC_HOSTS=https://elasticsearch:${ES_PORT:-9200}
       - ELASTIC_USER=${ELASTIC_USER:-elastic}
       - ELASTIC_PASSWORD=${ELASTIC_PASSWORD}
-    mem_limit: ${KB_MEM_LIMIT}
+    mem_limit: ${LS_MEM_LIMIT}
     healthcheck:
       test: ["CMD-SHELL", "curl -fs http://localhost:9600/_node/stats || exit 1"]
       interval: 10s
       timeout: 5s
-      retries: 15
+      retries: 150
       start_period: 10s
     ports:
       # Listens for GELF input here. The GELF driver can only send to host IPs,
