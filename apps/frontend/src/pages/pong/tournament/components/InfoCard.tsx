@@ -28,7 +28,7 @@ const TournamentInfoCard: React.FC<TournamentInfoCardProps> = ({
   onLeave,
 }) => {
   return (
-    <SurfaceCard className="p-5 shadow-xl">
+    <SurfaceCard className="shadow-2xl p-6">
       <h2 className="mb-2 text-lg font-semibold">
         {tournamentId !== null ? `Tournament #${tournamentId}` : 'Tournament lobby'}
       </h2>
