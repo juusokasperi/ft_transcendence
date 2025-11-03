@@ -8,6 +8,8 @@ volumes:
     driver: local
   prometheus-config:
     driver: local
+  alertmanager-config:
+    driver: local
 
 services:
 
@@ -23,8 +25,14 @@ services:
       - CHAT_PORT=${CHAT_PORT}
       - GAME_SERVER_HTTP=${GAME_SERVER_HTTP}
       - GAME_SERVER_PORT=${GAME_SERVER_PORT}
+      - MAIL_HOST=${MAIL_HOST}
+      - MAIL_FROM_RAW=${MAIL_FROM_RAW}
+      - MAIL_USER=${MAIL_USER}
+      - MAIL_PASS=${MAIL_PASS}
+      - ALERT_MAIL_TO=${ALERT_MAIL_TO}
     volumes:
       - prometheus-config:/etc/prometheus
+      - alertmanager-config:/etc/alertmanager
     restart: no
 
   prometheus:
@@ -37,6 +45,18 @@ services:
       - prometheus-config:/etc/prometheus:ro
     networks:
       - prod-private
+
+  alertmanager:
+    image: prom/alertmanager
+    restart: unless-stopped
+    depends_on:
+      prometheus-pre:
+        condition: service_completed_successfully
+    volumes:
+      - alertmanager-config:/etc/alertmanager:ro
+    networks:
+      - prod-private
+      - prod-public
 
   nginx-exporter:
     image: nginx/nginx-prometheus-exporter:latest

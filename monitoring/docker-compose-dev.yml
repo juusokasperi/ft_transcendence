@@ -10,6 +10,12 @@ services:
     ports:
       - '9090:9090'
 
+  alertmanager:
+    networks:
+      - devnet
+    ports:
+      - '9093:9093'
+
   nginx-exporter:
     networks:
       - devnet
