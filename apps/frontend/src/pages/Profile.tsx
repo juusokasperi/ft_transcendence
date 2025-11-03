@@ -443,7 +443,12 @@ const Profile: React.FC = () => {
               </div>
               <div className="flex flex-col items-center gap-1 text-center">
                 <p className="text-lg font-semibold">{user?.username}</p>
-                <p className="text-xs uppercase tracking-[0.3em] text-slate-400">{user?.email}</p>
+                <p
+                  className="max-w-[260px] truncate text-center text-xs uppercase tracking-[0.3em] text-slate-400"
+                  title={user?.email ?? ''}
+                >
+                  {user?.email}
+                </p>
               </div>
               {isEditing && (
                 <input
