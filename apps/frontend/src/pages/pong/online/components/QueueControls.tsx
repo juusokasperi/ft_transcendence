@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import Button from '../../../../components/Button';
 import type { Status } from '../state/types';
 import { formatSeconds } from '../utils/format';
+import { Spinner } from '@ft/spinner';
 
 type QueueControlsProps = {
   status: Status;
@@ -23,9 +24,12 @@ const QueueControls: React.FC<QueueControlsProps> = ({
   if (status === 'in_queue') {
     return (
       <div className="space-y-3">
-        <p className="text-white/70">
-          Looking for an opponent…{' '}
-          <span className="ml-2 font-mono text-sm text-white/50">
+        <p className="flex items-center gap-2 text-white/70">
+          <span className="inline-flex items-center gap-2">
+            <Spinner size={16} color="#A855F7" aria-label="Searching for opponent" />
+            <span>Looking for an opponent</span>
+          </span>
+          <span className="font-mono text-sm text-white/50">
             ({formatSeconds(queueElapsed)})
           </span>
         </p>
