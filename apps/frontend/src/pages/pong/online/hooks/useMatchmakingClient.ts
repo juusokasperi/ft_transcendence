@@ -173,7 +173,7 @@ export function useMatchmakingClient({
   }, [connectKey, enabled]);
 
   const joinQueue = useCallback((alias?: string) => {
-    const normalized = alias ? sanitizeAliasInput(alias) : '';
+    const normalized = sanitizeAliasInput(alias ?? '');
     const finalAlias = normalized.length ? normalized : undefined;
     pendingJoinRef.current = { alias: finalAlias };
 

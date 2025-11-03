@@ -123,7 +123,7 @@ function normalizePlayerSettings(value: unknown, fallback: PlayerSettings): Play
   let name = typeof record.name === 'string' ? record.name : '';
   name = sanitizeAliasInput(name);
   if (!name) {
-    name = sanitizeAliasInput(fallback.name) || fallback.name;
+    name = sanitizeAliasInput(fallback.name);
   }
   const paddleColor =
     typeof record.paddleColor === 'string' && record.paddleColor.trim()

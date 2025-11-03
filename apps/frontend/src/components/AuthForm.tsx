@@ -35,9 +35,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ type, onSubmit }) => {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const clearError = () => {
-    if (error) {
-      setError(null);
-    }
+    setError(null);
   };
 
   const trimmedEmail = email.trim();
