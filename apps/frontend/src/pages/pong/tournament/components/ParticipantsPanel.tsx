@@ -15,7 +15,7 @@ const TournamentParticipantsPanel: React.FC<TournamentParticipantsPanelProps> = 
   currentUserUuid,
 }) => {
   return (
-    <SurfaceCard as="aside" className="shadow-2xl p-6">
+    <SurfaceCard as="aside" className="p-6 shadow-2xl">
       <h2 className="mb-3 text-lg font-semibold">Participants</h2>
       {!hasActiveTournament ? (
         <p className="text-sm text-white/60">Join a tournament to see participants.</p>

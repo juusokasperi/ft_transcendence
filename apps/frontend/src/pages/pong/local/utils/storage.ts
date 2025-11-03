@@ -1,5 +1,6 @@
 import type { Ruleset } from '@pong/shared';
 import type { ControllerScheme } from '../../../../games/pong/modes/shared/preferences';
+import { sanitizeAliasInput } from '../../../../utils/alias';
 
 export type AccessibilitySettings = {
   colorBlindMode: 'none' | 'protanopia' | 'deuteranopia' | 'tritanopia' | 'highContrast';
@@ -54,7 +55,12 @@ export function writeSettingsToStorage(
   key: string,
   settings: UserSettings,
 ): void {
-  storage.setItem(key, JSON.stringify(settings));
+  const sanitized = {
+    ...settings,
+    player1: { ...settings.player1, name: sanitizeAliasInput(settings.player1.name) },
+    player2: { ...settings.player2, name: sanitizeAliasInput(settings.player2.name) },
+  };
+  storage.setItem(key, JSON.stringify(sanitized));
 }
 
 export function clearStoredSettings(storage: Storage, key: string): void {
@@ -114,7 +120,11 @@ function normalizePlayerSettings(value: unknown, fallback: PlayerSettings): Play
   }
 
   const record = value as Record<string, unknown>;
-  const name = typeof record.name === 'string' && record.name.trim() ? record.name : fallback.name;
+  let name = typeof record.name === 'string' ? record.name : '';
+  name = sanitizeAliasInput(name);
+  if (!name) {
+    name = sanitizeAliasInput(fallback.name) || fallback.name;
+  }
   const paddleColor =
     typeof record.paddleColor === 'string' && record.paddleColor.trim()
       ? record.paddleColor

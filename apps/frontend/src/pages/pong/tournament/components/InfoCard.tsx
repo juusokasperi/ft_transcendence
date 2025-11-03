@@ -1,6 +1,7 @@
 import React from 'react';
 import Button from '../../../../components/Button';
 import SurfaceCard from '../../shared/components/SurfaceCard';
+import { ALIAS_MAX_LENGTH, aliasInputAllowedRegex } from '../../../../utils/alias';
 
 export type TournamentInfoCardProps = {
   tournamentId: number | null;
@@ -28,7 +29,7 @@ const TournamentInfoCard: React.FC<TournamentInfoCardProps> = ({
   onLeave,
 }) => {
   return (
-    <SurfaceCard className="shadow-2xl p-6">
+    <SurfaceCard className="p-6 shadow-2xl">
       <h2 className="mb-2 text-lg font-semibold">
         {tournamentId !== null ? `Tournament #${tournamentId}` : 'Tournament lobby'}
       </h2>
@@ -42,6 +43,17 @@ const TournamentInfoCard: React.FC<TournamentInfoCardProps> = ({
           onChange={(event) => onAliasInputChange(event.target.value)}
           placeholder="Preferred alias"
           className="w-full rounded-full border border-white/10 bg-black/50 px-4 py-2 text-sm text-white placeholder:text-white/40 focus:border-indigo-400 focus:outline-none md:max-w-xs"
+          maxLength={ALIAS_MAX_LENGTH}
+          onBeforeInput={(event) => {
+            const nativeEvent = event.nativeEvent as InputEvent;
+            if (
+              nativeEvent.inputType === 'insertText' &&
+              nativeEvent.data &&
+              !aliasInputAllowedRegex.test(nativeEvent.data)
+            ) {
+              event.preventDefault();
+            }
+          }}
         />
         {currentParticipantId !== null ? (
           <Button variant="outline" size="sm" onClick={onLeave}>

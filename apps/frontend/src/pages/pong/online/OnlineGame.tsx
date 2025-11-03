@@ -1,7 +1,6 @@
 import React, { useCallback, useMemo, useReducer, useRef, useState, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useAppContext } from '../../../context/AppContext';
-import { AxiosError } from 'axios';
 import Button from '../../../components/Button';
 import { useSnackbar } from '../../../context/SnackbarContext';
 import PlayingView from '../shared/components/PlayingView';
@@ -100,14 +99,6 @@ const OnlineGame: React.FC = () => {
           return;
         } catch (err) {
           console.error('[OnlineGame] Failed to refresh auth token', err);
-          const axiosErr = err as AxiosError;
-          // Only navigate to login on a 401, otherwise just log and maybe show a subtle error.
-          // The user might be on another page and their main session is fine.
-          if (axiosErr.response?.status === 401) {
-            enqueueSnackbar({ message: 'Session expired. Please log in.', variant: 'error' });
-            navigate('/login');
-          }
-          return; // Do not proceed to the final navigate for non-401 errors
         }
       }
 

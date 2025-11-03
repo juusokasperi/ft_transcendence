@@ -34,6 +34,12 @@ const AuthForm: React.FC<AuthFormProps> = ({ type, onSubmit }) => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
+  const clearError = () => {
+    if (error) {
+      setError(null);
+    }
+  };
+
   const trimmedEmail = email.trim();
   const emailValidationState = trimmedEmail
     ? validateEmail(trimmedEmail)
@@ -50,6 +56,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ type, onSubmit }) => {
       : '';
 
   const applyUsernameInput = (raw: string) => {
+    clearError();
     const sanitized = raw.replace(/[^a-zA-Z0-9-]/g, '').slice(0, USERNAME_MAX_LENGTH);
     setUsername(sanitized);
   };
@@ -72,6 +79,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ type, onSubmit }) => {
   };
 
   const applyEmailInput = (raw: string) => {
+    clearError();
     const normalized = raw
       .toLowerCase()
       .replace(/\s+/g, '')
@@ -211,7 +219,10 @@ const AuthForm: React.FC<AuthFormProps> = ({ type, onSubmit }) => {
             type={showPassword ? 'text' : 'password'}
             placeholder="Password"
             value={password}
-            onChange={(e) => setPassword(e.target.value.slice(0, MAX_PASSWORD_LENGTH))}
+            onChange={(e) => {
+              clearError();
+              setPassword(e.target.value.slice(0, MAX_PASSWORD_LENGTH));
+            }}
             maxLength={MAX_PASSWORD_LENGTH}
             className={`w-full rounded border px-3 py-2 ${
               password ? getBorderClass(passwordValidation.state) : 'border-gray-300'
@@ -243,7 +254,10 @@ const AuthForm: React.FC<AuthFormProps> = ({ type, onSubmit }) => {
               type={showConfirmPassword ? 'text' : 'password'}
               placeholder="Confirm Password"
               value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value.slice(0, MAX_PASSWORD_LENGTH))}
+              onChange={(e) => {
+                clearError();
+                setConfirmPassword(e.target.value.slice(0, MAX_PASSWORD_LENGTH));
+              }}
               maxLength={MAX_PASSWORD_LENGTH}
               className={`w-full rounded border px-3 py-2 ${getBorderClass(confirmPasswordState)}`}
             />
