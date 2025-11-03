@@ -3,6 +3,11 @@ import Button from '../../../../components/Button';
 import type { Status } from '../state/types';
 import { formatSeconds } from '../utils/format';
 import { Spinner } from '@ft/spinner';
+import {
+  ALIAS_MAX_LENGTH,
+  aliasInputAllowedRegex,
+  sanitizeAliasInput,
+} from '../../../../utils/alias';
 
 type QueueControlsProps = {
   status: Status;
@@ -53,10 +58,21 @@ const QueueControls: React.FC<QueueControlsProps> = ({
     >
       <input
         value={alias}
-        onChange={(event) => setAlias(event.target.value)}
+        onChange={(event) => setAlias(sanitizeAliasInput(event.target.value))}
         placeholder="Your alias (optional)"
         className="w-full rounded-full border border-white/10 bg-black/50 px-4 py-2 text-sm text-white placeholder:text-white/40 focus:border-indigo-400 focus:outline-none"
         disabled={disabled}
+        maxLength={ALIAS_MAX_LENGTH}
+        onBeforeInput={(event) => {
+          const nativeEvent = event.nativeEvent as InputEvent;
+          if (
+            nativeEvent.inputType === 'insertText' &&
+            nativeEvent.data &&
+            !aliasInputAllowedRegex.test(nativeEvent.data)
+          ) {
+            event.preventDefault();
+          }
+        }}
       />
       <Button type="submit" variant="primary" fullWidth disabled={disabled}>
         Find a Match

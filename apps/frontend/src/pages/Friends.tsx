@@ -27,6 +27,21 @@ const tabs = [
 
 type TabKey = (typeof tabs)[number]['key'];
 
+const sanitizeFriendIdentifier = (input: string): { value: string; isEmail: boolean } => {
+  const raw = String(input).slice(0, 254);
+  let cleaned = raw.replace(/\s+/g, '');
+  const isEmail = cleaned.includes('@');
+  if (isEmail) {
+    cleaned = cleaned
+      .toLowerCase()
+      .replace(/[^a-z0-9.@_%+-]/g, '')
+      .slice(0, 254);
+  } else {
+    cleaned = cleaned.replace(/[^a-zA-Z0-9-]/g, '').slice(0, 254);
+  }
+  return { value: cleaned, isEmail };
+};
+
 const Friends: React.FC = () => {
   const [activeTab, setActiveTab] = useState<TabKey>('online');
   const [friendName, setFriendName] = useState('');
@@ -47,12 +62,14 @@ const Friends: React.FC = () => {
     e.preventDefault();
     if (!friendName.trim()) return;
 
-    // Recompute sanitized/normalized input here to avoid race conditions between onChange and submit
-    const raw = String(friendName).slice(0, 254);
-    let cleaned = raw.replace(/\s+/g, '');
-    const isEmail = cleaned.includes('@');
+    const { value: cleaned, isEmail } = sanitizeFriendIdentifier(friendName);
+    if (!cleaned) {
+      setFriendError('Please enter a username or email.');
+      setFriendName(cleaned);
+      return;
+    }
+
     if (isEmail) {
-      cleaned = cleaned.toLowerCase().replace(/[^a-z0-9.@_%+-]/g, '').slice(0, 254);
       if (!validateEmail(cleaned)) {
         setFriendError('Please enter a valid email address.');
         // ensure UI reflects cleaned value
@@ -60,7 +77,6 @@ const Friends: React.FC = () => {
         return;
       }
     } else {
-      cleaned = cleaned.replace(/[^a-zA-Z0-9-]/g, '').slice(0, 254);
       const usernameValidation = validateUsername(cleaned);
       if (usernameValidation.state !== 'valid') {
         setFriendError(usernameValidation.msg || 'Invalid username');
@@ -70,9 +86,9 @@ const Friends: React.FC = () => {
     }
 
     try {
-  // Backend schema expects a `username` field which may contain a username, uuid or email.
-  const payload = { username: cleaned };
-  await axios.post('/api/friends', payload);
+      // Backend schema expects a `username` field which may contain a username, uuid or email.
+      const payload = { username: cleaned };
+      await axios.post('/api/friends', payload);
       enqueueSnackbar({
         message: `Friend request sent to ${friendName}`,
         variant: 'success',
@@ -403,16 +419,7 @@ const Friends: React.FC = () => {
                     type="text"
                     value={friendName}
                     onChange={(e) => {
-                      const raw = String(e.target.value).slice(0, 254);
-                      // remove whitespace first
-                      let cleaned = raw.replace(/\s+/g, '');
-                      if (cleaned.includes('@')) {
-                        // allow only common email characters, normalize to lowercase
-                        cleaned = cleaned.toLowerCase().replace(/[^a-z0-9.@_%+-]/g, '').slice(0, 254);
-                      } else {
-                        // username allowed set: letters, numbers, dash
-                        cleaned = cleaned.replace(/[^a-zA-Z0-9-]/g, '').slice(0, 254);
-                      }
+                      const { value: cleaned } = sanitizeFriendIdentifier(e.target.value);
                       setFriendName(cleaned);
                       // clear any previous inline error when the user edits the field
                       setFriendError(null);
@@ -429,16 +436,18 @@ const Friends: React.FC = () => {
                         validateEmail(friendName) ? (
                           <p className="text-emerald-300">Looks like a valid email address.</p>
                         ) : (
-                          <p className="text-rose-300">Looks like an email but format seems invalid.</p>
+                          <p className="text-rose-300">
+                            Looks like an email but format seems invalid.
+                          </p>
                         )
                       ) : validateUsername(friendName).state === 'valid' ? (
                         <p className="text-emerald-300">Looks like a valid username.</p>
                       ) : (
-                        <p className="text-slate-300">Enter a username (3–16 chars) or an email address.</p>
+                        <p className="text-slate-300">
+                          Enter a username (3–16 chars) or an email address.
+                        </p>
                       )
-                    ) : (
-                      <p className="text-slate-400"></p>
-                    )}
+                    ) : null}
                   </div>
                 </div>
                 <div className="flex-shrink-0">
@@ -447,7 +456,9 @@ const Friends: React.FC = () => {
                     className="inline-flex items-center justify-center rounded-2xl bg-gradient-to-r from-indigo-500 to-purple-500 px-5 py-3 text-sm font-semibold text-white shadow shadow-indigo-900/40 transition hover:from-indigo-400 hover:to-purple-400 disabled:cursor-not-allowed disabled:opacity-60"
                     disabled={
                       !friendName.trim() ||
-                      (friendName.includes('@') ? !validateEmail(friendName) : validateUsername(friendName).state !== 'valid')
+                      (friendName.includes('@')
+                        ? !validateEmail(friendName)
+                        : validateUsername(friendName).state !== 'valid')
                     }
                   >
                     Send request

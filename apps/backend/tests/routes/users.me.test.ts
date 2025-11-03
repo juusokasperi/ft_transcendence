@@ -102,12 +102,25 @@ describe('GET /api/users/me', () => {
     expect(res.json().message).toMatch(/User not found/i);
   });
 
-  it('200 returns { username, uuid, avatar }', async () => {
+  it('200 returns user profile with stats', async () => {
     (usersQueries.getUserByUuid as unknown as Mock).mockReturnValueOnce({
       uuid: USER_UUID,
       username: 'alice',
       avatar: 'https://example.com/a.png',
+      email: 'alice@example.com',
       tfa: false,
+      createdAt: '2024-01-01T00:00:00.000Z',
+    });
+    (usersQueries.getUserStats as unknown as Mock).mockReturnValueOnce({
+      username: 'alice',
+      uuid: USER_UUID,
+      avatar: 'https://example.com/a.png',
+      ranking: 0,
+      createdAt: '2024-01-01T00:00:00.000Z',
+      wins: 5,
+      losses: 2,
+      totalMatches: 7,
+      online: false,
     });
 
     const token = makeToken(USER_UUID);
@@ -121,8 +134,12 @@ describe('GET /api/users/me', () => {
     expect(res.json()).toEqual({
       username: 'alice',
       uuid: USER_UUID,
+      email: 'alice@example.com',
       avatar: 'https://example.com/a.png',
       tfa: false,
+      wins: 5,
+      losses: 2,
+      createdAt: '2024-01-01T00:00:00.000Z',
     });
   });
 });
