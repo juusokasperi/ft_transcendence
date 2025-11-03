@@ -5,6 +5,7 @@ import Button from '../components/Button';
 import { validateEmail, emailInputAllowedRegex } from '../utils/validation';
 import { useAppContext } from '../context/AppContext';
 import { useSnackbar } from '../context/SnackbarContext';
+import { Spinner } from '@ft/spinner';
 
 const ForgotPassword: React.FC = () => {
   const { axios, user, navigate } = useAppContext();
@@ -146,7 +147,14 @@ const ForgotPassword: React.FC = () => {
                 {success && <p className="text-sm font-medium text-emerald-300">{success}</p>}
 
                 <Button type="submit" fullWidth disabled={loading}>
-                  {loading ? 'Sending link…' : 'Send reset link'}
+                  {loading ? (
+                    <span className="inline-flex items-center gap-2">
+                      <Spinner size={18} color="#FFFFFF" aria-label="Sending reset link" />
+                      <span>Sending link</span>
+                    </span>
+                  ) : (
+                    'Send reset link'
+                  )}
                 </Button>
 
                 <p className="text-sm text-slate-300/80">
