@@ -4,6 +4,11 @@ import type { PlayerSettings } from '../utils/storage';
 import Card from './Card';
 import ColorPalette, { type ColorOption } from './ColorPalette';
 import { DEFAULT_PONG_PALETTE } from './palettes';
+import {
+  ALIAS_MAX_LENGTH,
+  aliasInputAllowedRegex,
+  sanitizeAliasInput,
+} from '../../../../utils/alias';
 
 type ControllerOption = {
   value: ControllerScheme;
@@ -34,11 +39,22 @@ export const PlayerCard: React.FC<PlayerCardProps> = ({
       <input
         type="text"
         value={player.name}
-        onChange={(event) => onNameChange(event.target.value)}
+        onChange={(event) => onNameChange(sanitizeAliasInput(event.target.value))}
         className="w-64 rounded border border-white/20 bg-black/40 px-3 py-2 text-base outline-none placeholder:text-white/40 focus:border-white/40"
         placeholder="Choose player name..."
         aria-label="Player name"
         autoComplete="name"
+        maxLength={ALIAS_MAX_LENGTH}
+        onBeforeInput={(event) => {
+          const nativeEvent = event.nativeEvent as InputEvent;
+          if (
+            nativeEvent.inputType === 'insertText' &&
+            nativeEvent.data &&
+            !aliasInputAllowedRegex.test(nativeEvent.data)
+          ) {
+            event.preventDefault();
+          }
+        }}
       />
 
       <ColorPalette
