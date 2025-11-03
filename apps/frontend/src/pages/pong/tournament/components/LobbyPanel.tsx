@@ -37,6 +37,7 @@ const TournamentLobbyPanel: React.FC<TournamentLobbyPanelProps> = ({
             onChange={(event) => onTournamentNameChange(event.target.value)}
             placeholder="Tournament name"
             className="w-full rounded-full border border-white/10 bg-black/50 px-4 py-2 text-sm text-white placeholder:text-white/40 focus:border-indigo-400 focus:outline-none"
+            maxLength={20}
           />
           <div className="flex flex-col gap-3 md:flex-row md:items-center">
             <input
