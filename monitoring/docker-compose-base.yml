@@ -29,7 +29,7 @@ services:
       - MAIL_FROM_RAW=${MAIL_FROM_RAW}
       - MAIL_USER=${MAIL_USER}
       - MAIL_PASS=${MAIL_PASS}
-      - ALERT_MAIL_TO=${ALERT_MAIL_TO}
+      - ALERT_MAIL_TO=${ALERT_MAIL_TO:-test@example.com}
     volumes:
       - prometheus-config:/etc/prometheus
       - alertmanager-config:/etc/alertmanager
