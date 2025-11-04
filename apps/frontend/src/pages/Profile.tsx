@@ -596,18 +596,18 @@ const Profile: React.FC = () => {
                     type="submit"
                     disabled={loading}
                     withMinWidth={false}
-                  variant="success"
-                  className="flex-1 px-6 py-2 text-sm"
-                >
-                  {loading ? (
-                    <span className="inline-flex items-center gap-2">
-                      <Spinner size={18} color="#FFFFFF" aria-label="Saving profile changes" />
-                      <span>Saving</span>
-                    </span>
-                  ) : (
-                    'Save changes'
-                  )}
-                </Button>
+                    variant="success"
+                    className="flex-1 px-6 py-2 text-sm"
+                  >
+                    {loading ? (
+                      <span className="inline-flex items-center gap-2">
+                        <Spinner size={18} color="#FFFFFF" aria-label="Saving profile changes" />
+                        <span>Saving</span>
+                      </span>
+                    ) : (
+                      'Save changes'
+                    )}
+                  </Button>
 
                   <Button
                     type="button"

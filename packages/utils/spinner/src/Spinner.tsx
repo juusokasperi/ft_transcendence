@@ -1,5 +1,4 @@
-import React from 'react';
-import './spinner.css';
+import React, { useEffect } from 'react';
 
 export type SpinnerProps = {
   size?: number; // px
@@ -8,26 +7,84 @@ export type SpinnerProps = {
   'aria-label'?: string;
 };
 
+const DOT_COUNT = 12;
+const DOT_ANGLE_STEP = 360 / DOT_COUNT;
+const DOT_ANIMATION_DELAY_STEP = 0.1; // seconds
+const DOT_ANIMATION_START_DELAY = -1.1; // seconds
+const KEYFRAMES_ID = 'ft-spinner-keyframes';
+
+const ensureKeyframes = () => {
+  if (typeof document === 'undefined') {
+    return;
+  }
+  if (document.getElementById(KEYFRAMES_ID)) {
+    return;
+  }
+  const style = document.createElement('style');
+  style.id = KEYFRAMES_ID;
+  style.textContent = `
+@keyframes ft-spinner-fade {
+  0% { opacity: 1; transform: scale(1); }
+  100% { opacity: 0.25; transform: scale(0.35); }
+}
+`;
+  document.head.appendChild(style);
+};
+
 export const Spinner: React.FC<SpinnerProps> = ({
   size = 40,
   color = '#A855F7',
   className = '',
   'aria-label': ariaLabel = 'Loading',
 }) => {
-  const style = {
-    // CSS variables for dynamic size/color
-    ['--ft-spinner-size' as any]: `${size}px`,
-    ['--ft-spinner-color' as any]: color,
-  } as React.CSSProperties;
+  useEffect(() => {
+    ensureKeyframes();
+  }, []);
+
+  const radius = size * 0.45;
+  const dotSize = size * 0.16;
 
   return (
-    <div className={`ft-spinner ${className}`} style={style} role="status" aria-label={ariaLabel}>
-      {Array.from({ length: 12 }).map((_, i) => (
-        <div className="ft-spinner__dot" key={i}>
-          <span className="ft-spinner__dot-inner" />
-        </div>
-      ))}
-    </div>
+    <span
+      className={`relative inline-block align-middle ${className}`}
+      style={{ width: size, height: size }}
+      role="status"
+      aria-label={ariaLabel}
+    >
+      {Array.from({ length: DOT_COUNT }).map((_, index) => {
+        const angle = index * DOT_ANGLE_STEP;
+        const animationDelay = DOT_ANIMATION_START_DELAY + index * DOT_ANIMATION_DELAY_STEP;
+        const radians = (angle * Math.PI) / 180;
+        const offsetX = Math.sin(radians) * radius;
+        const offsetY = -Math.cos(radians) * radius;
+        return (
+          <span
+            key={angle}
+            className="absolute block"
+            style={{
+              width: dotSize,
+              height: dotSize,
+              transform: 'translate(-50%, -50%)',
+              left: `calc(50% + ${offsetX}px)`,
+              top: `calc(50% + ${offsetY}px)`,
+            }}
+          >
+            <span className="absolute left-1/2 top-1/2 block h-full w-full -translate-x-1/2 -translate-y-1/2">
+              <span
+                className="block h-full w-full rounded-full"
+                style={{
+                  backgroundColor: color,
+                  opacity: 0.25,
+                  transformOrigin: 'center center',
+                  animation: 'ft-spinner-fade 1.2s linear infinite',
+                  animationDelay: `${animationDelay}s`,
+                }}
+              />
+            </span>
+          </span>
+        );
+      })}
+    </span>
   );
 };
 
