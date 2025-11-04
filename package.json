@@ -23,9 +23,9 @@
     "test": "pnpm -r --if-present test",
     "typecheck": "pnpm -r --if-present typecheck",
     "check-env": "node scripts/check-env.mjs",
-	"check-versions": "syncpack list-mismatches --config .config/syncpackrc.json",
-	"fix-versions": "syncpack fix-mismatches --config .config/syncpackrc.json",
-	"check-deps": "pnpm depcruise --config .config/dependency-cruiser.js --output-type err-long ."
+    "check-versions": "syncpack list-mismatches --config .config/syncpackrc.json",
+    "fix-versions": "syncpack fix-mismatches --config .config/syncpackrc.json",
+    "check-deps": "pnpm depcruise --config .config/dependency-cruiser.js --output-type err-long ."
   },
   "repository": {
     "type": "git",
