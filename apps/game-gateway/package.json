@@ -23,8 +23,8 @@
   },
   "dependencies": {
     "@pong/shared": "workspace:*",
-    "@utils/logger": "workspace:^",
-    "@utils/metrics": "workspace:^",
+    "@utils/logger": "workspace:*",
+    "@utils/metrics": "workspace:*",
     "dotenv": "^17.2.2",
     "fastify": "^5.6.0",
     "http-proxy": "^1.18.1",
