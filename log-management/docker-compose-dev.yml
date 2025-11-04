@@ -18,6 +18,9 @@ services:
   kibana:
     ports:
       - ${KIBANA_PORT}:5601
+    environment:
+      - SERVER_BASEPATH=
+      - SERVER_PUBLICBASEURL=${FRONTEND_URL}
     networks:
       - devnet
 

@@ -126,14 +126,18 @@ elk:
 	$(ensure_env)
 	$(ensure_builder)
 	@echo ">> Starting profile 'elk' (attached)"
-	docker compose -p $(NAME) ${LOG_DEV_COMPOSE} up --build
+	docker compose -p $(NAME) $(ROOT_COMPOSE) $(ENV_ROOT) \
+		${LOG_DEV_COMPOSE} \
+		up --build
 
 elk-detached:
 	$(ensure_dirs)
 	$(ensure_env)
 	$(ensure_builder)
 	@echo ">> Starting profile 'elk' (detached)"
-	docker compose -p $(NAME) ${LOG_DEV_COMPOSE} up --build -d
+	docker compose -p $(NAME) $(ROOT_COMPOSE) $(ENV_ROOT) \
+		${LOG_DEV_COMPOSE} \
+		up --build -d
 
 mon:
 	$(ensure_dirs)
