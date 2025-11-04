@@ -54,15 +54,19 @@ export const Spinner: React.FC<SpinnerProps> = ({
       {Array.from({ length: DOT_COUNT }).map((_, index) => {
         const angle = index * DOT_ANGLE_STEP;
         const animationDelay = DOT_ANIMATION_START_DELAY + index * DOT_ANIMATION_DELAY_STEP;
+        const radians = (angle * Math.PI) / 180;
+        const offsetX = Math.sin(radians) * radius;
+        const offsetY = -Math.cos(radians) * radius;
         return (
           <span
             key={angle}
-            className="absolute left-1/2 top-1/2 block"
+            className="absolute block"
             style={{
               width: dotSize,
               height: dotSize,
-              transform: `translateX(${radius}px) rotate(${angle}deg) translateY(-${radius}px)`,
-              transformOrigin: 'center center',
+              transform: 'translate(-50%, -50%)',
+              left: `calc(50% + ${offsetX}px)`,
+              top: `calc(50% + ${offsetY}px)`,
             }}
           >
             <span className="absolute left-1/2 top-1/2 block h-full w-full -translate-x-1/2 -translate-y-1/2">

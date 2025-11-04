@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import Button from '../../../../components/Button';
 import type { Status } from '../state/types';
 import { formatSeconds } from '../utils/format';
-import { Spinner } from '@ft/spinner';
+import { InlineSpinner } from '@ft/spinner';
 import {
   ALIAS_MAX_LENGTH,
   aliasInputAllowedRegex,
@@ -30,10 +30,13 @@ const QueueControls: React.FC<QueueControlsProps> = ({
     return (
       <div className="space-y-3">
         <p className="flex items-center gap-2 text-white/70">
-          <span className="inline-flex items-center gap-2">
-            <Spinner size={16} color="#A855F7" aria-label="Searching for opponent" />
-            <span>Looking for an opponent</span>
-          </span>
+          <InlineSpinner
+            size={16}
+            color="#A855F7"
+            label="Looking for an opponent"
+            className="text-white/70"
+            labelClassName="text-white/70"
+          />
           <span className="font-mono text-sm text-white/50">({formatSeconds(queueElapsed)})</span>
         </p>
         <Button type="button" variant="secondary" fullWidth onClick={onLeave} disabled={disabled}>

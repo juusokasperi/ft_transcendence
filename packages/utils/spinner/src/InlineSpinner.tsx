@@ -6,6 +6,9 @@ export type InlineSpinnerProps = {
   size?: number;
   color?: string;
   className?: string;
+  labelClassName?: string;
+  ariaLabel?: string;
+  spinnerClassName?: string;
 };
 
 export const InlineSpinner: React.FC<InlineSpinnerProps> = ({
@@ -13,6 +16,9 @@ export const InlineSpinner: React.FC<InlineSpinnerProps> = ({
   size = 16,
   color,
   className = '',
+  labelClassName = 'text-sm text-gray-700',
+  ariaLabel,
+  spinnerClassName,
 }) => {
   return (
     <span
@@ -20,8 +26,13 @@ export const InlineSpinner: React.FC<InlineSpinnerProps> = ({
       role="status"
       aria-live="polite"
     >
-      <Spinner size={size} color={color} aria-label={label ?? 'Loading'} />
-      {label ? <span className="text-sm text-gray-700">{label}</span> : null}
+      <Spinner
+        size={size}
+        color={color}
+        className={spinnerClassName}
+        aria-label={ariaLabel ?? label ?? 'Loading'}
+      />
+      {label ? <span className={labelClassName}>{label}</span> : null}
     </span>
   );
 };

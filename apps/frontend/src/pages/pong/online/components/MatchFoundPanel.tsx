@@ -1,7 +1,7 @@
 import React from 'react';
 import Button from '../../../../components/Button';
 import type { OpponentInfo, Status } from '../state/types';
-import { Spinner } from '@ft/spinner';
+import { InlineSpinner } from '@ft/spinner';
 
 type MatchFoundPanelProps = {
   opponent: OpponentInfo;
@@ -28,10 +28,14 @@ const MatchFoundPanel: React.FC<MatchFoundPanelProps> = ({
       </div>
       <Button type="button" variant="success" fullWidth disabled={accepting} onClick={onAccept}>
         {accepting ? (
-          <span className="inline-flex items-center justify-center gap-2">
-            <Spinner size={18} color="#A855F7" aria-label="Waiting for opponent confirmation" />
-            <span>Accepted, waiting</span>
-          </span>
+          <InlineSpinner
+            size={18}
+            color="#A855F7"
+            label="Accepted, waiting"
+            ariaLabel="Waiting for opponent confirmation"
+            className="justify-center text-current"
+            labelClassName="text-current"
+          />
         ) : (
           'Accept'
         )}

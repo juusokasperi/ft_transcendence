@@ -4,7 +4,7 @@ import { useAppContext } from '../../../context/AppContext';
 import Button from '../../../components/Button';
 import { useSnackbar } from '../../../context/SnackbarContext';
 import PlayingView from '../shared/components/PlayingView';
-import { Spinner } from '@ft/spinner';
+import { InlineSpinner } from '@ft/spinner';
 
 import SurfaceCard from '../shared/components/SurfaceCard';
 import StatusBadge from './components/StatusBadge';
@@ -232,9 +232,14 @@ const OnlineGame: React.FC = () => {
             </header>
 
             {state.status === 'connecting' && (
-              <div className="flex items-center gap-2 text-white/60">
-                <Spinner size={18} color="#A855F7" aria-label="Connecting to matchmaking" />
-                <span>Connecting to matchmaking</span>
+              <div className="text-white/60">
+                <InlineSpinner
+                  size={18}
+                  color="#A855F7"
+                  label="Connecting to matchmaking"
+                  className="text-white/60"
+                  labelClassName="text-white/60"
+                />
               </div>
             )}
 

@@ -1,6 +1,6 @@
 import React from 'react';
 import Button from '../../../../components/Button';
-import { Spinner } from '@ft/spinner';
+import { InlineSpinner } from '@ft/spinner';
 
 export type TournamentPageHeaderProps = {
   isDetailView: boolean;
@@ -55,18 +55,26 @@ const TournamentPageHeader: React.FC<TournamentPageHeaderProps> = ({
           {connectionReady ? (
             <span className="ml-2 font-semibold text-emerald-400">Ready</span>
           ) : (
-            <span className="ml-2 inline-flex items-center gap-2 font-semibold text-rose-300">
-              <Spinner size={14} color="#F87171" aria-label="Connecting to tournament service" />
-              <span>Connecting</span>
-            </span>
+            <InlineSpinner
+              size={14}
+              color="#F87171"
+              label="Connecting"
+              ariaLabel="Connecting to tournament service"
+              className="ml-2 font-semibold text-rose-300"
+              labelClassName="font-semibold text-rose-300"
+            />
           )}
         </span>
         <Button variant="secondary" size="sm" onClick={onRefresh} disabled={loading}>
           {loading ? (
-            <span className="inline-flex items-center gap-2">
-              <Spinner size={16} color="#FFFFFF" aria-label="Refreshing tournament data" />
-              <span>Refreshing</span>
-            </span>
+            <InlineSpinner
+              size={16}
+              color="#FFFFFF"
+              label="Refreshing"
+              ariaLabel="Refreshing tournament data"
+              className="text-current"
+              labelClassName="text-current"
+            />
           ) : isDetailView ? (
             'Refresh data'
           ) : (
