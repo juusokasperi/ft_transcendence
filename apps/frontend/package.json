@@ -19,7 +19,7 @@
     "@clerk/clerk-react": "^5.46.2",
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.1",
-    "@ft/electric_border": "workspace:*",
+    "@ft/reactbits": "workspace:*",
     "@ft/spinner": "workspace:*",
     "@mui/icons-material": "^7.3.2",
     "@mui/material": "^7.3.2",

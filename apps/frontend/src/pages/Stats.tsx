@@ -6,6 +6,7 @@ import Navbar from '../components/Navbar';
 import { useSnackbar } from '../context/SnackbarContext';
 import { DesktopMatches, MobileMatches } from '../components/StatsMatches';
 import { StatsSection } from '../components/StatsOverview';
+import { SplashCursor } from '@ft/reactbits';
 
 interface MatchPlayerPublic {
   uuid: string;
@@ -134,6 +135,7 @@ const Stats: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-slate-950">
+      <SplashCursor SPLAT_FORCE={4000} SPLAT_RADIUS={0.18} COLOR_UPDATE_SPEED={8} />
       <Navbar />
       <div className="relative min-h-[calc(100vh-6rem)] pb-20 pt-28 text-white">
         <div className="pointer-events-none absolute inset-x-0 top-0 h-72 bg-gradient-to-b from-indigo-600/40 via-purple-500/10 to-transparent blur-3xl" />
@@ -241,5 +243,4 @@ const Stats: React.FC = () => {
     </div>
   );
 };
-
 export default Stats;

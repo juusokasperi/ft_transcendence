@@ -9,7 +9,7 @@ import Navbar from '../components/Navbar';
 import backgroundImg from '../assets/background.png';
 import tetristImg from '../assets/tetrist.jpg';
 import snakeImg from '../assets/snake.jpeg';
-import ElectricBorder from '@ft/electric_border';
+import { ElectricBorder } from '@ft/reactbits';
 
 const containerVariants: Variants = {
   hidden: {},
