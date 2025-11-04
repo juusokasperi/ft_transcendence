@@ -112,6 +112,10 @@ export async function userRoutes(app: FastifyInstance) {
         const u = getUserByUuid(uuid);
         if (!u) return res.status(404).send({ message: 'User not found' });
 
+        const stats = getUserStats(uuid);
+        const wins = stats?.wins ?? 0;
+        const losses = stats?.losses ?? 0;
+
         const { pass } = req.query as { pass?: string };
         const returnBody = {
           username: u.username,
@@ -119,6 +123,9 @@ export async function userRoutes(app: FastifyInstance) {
           email: u.email,
           avatar: u.avatar ?? null,
           tfa: !!u.tfa,
+          wins,
+          losses,
+          createdAt: u.createdAt ?? null,
           ...(pass && pass === 'yes' ? { hasPass: !!u.passwordHash } : {}),
         };
         // return only what the FE needs to render header/profile

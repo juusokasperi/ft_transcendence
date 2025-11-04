@@ -1,5 +1,10 @@
 import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
-import { getUserByEmail, updateLastSeen, getUserByUuid } from '../db/queries/users.ts';
+import {
+  getUserByEmail,
+  updateLastSeen,
+  getUserByUuid,
+  getUserStats,
+} from '../db/queries/users.ts';
 import bcrypt from 'bcrypt';
 import { normalizeCredentials } from '../hooks/auth.ts';
 import { loginSchema, loginTwoFactorSchema } from '../schemas/authSchemas.ts';
@@ -7,6 +12,31 @@ import { signTwoFactorToken, verifyTwoFactorToken } from '../utils/jwt.ts';
 import { issueTokensForUser } from '../utils/authTokens.ts';
 import { ACCESS_TOKEN_COOKIE_NAME, REFRESH_TOKEN_COOKIE_NAME } from '../utils/config.ts';
 import { verifyTotpToken } from '../utils/twoFactor.ts';
+
+function serializeUserResponse(user: {
+  uuid: string;
+  username: string;
+  avatar?: string | null;
+  email?: string | null;
+  tfa?: boolean;
+  createdAt?: string | null;
+}) {
+  const stats = getUserStats(user.uuid) ?? null;
+  const wins = typeof stats?.wins === 'number' ? stats.wins : 0;
+  const losses = typeof stats?.losses === 'number' ? stats.losses : 0;
+  const createdAt = user.createdAt ?? stats?.createdAt ?? null;
+
+  return {
+    username: user.username,
+    uuid: user.uuid,
+    avatar: user.avatar ?? null,
+    email: user.email ?? null,
+    tfa: !!user.tfa,
+    wins,
+    losses,
+    createdAt,
+  };
+}
 
 // TODO:
 // Extra checks and route for 2FA
@@ -66,13 +96,7 @@ export async function loginRoutes(app: FastifyInstance) {
           maxAge: issued.refreshCookieMaxAge,
         });
         res.status(200).send({
-          user: {
-            username: userInDb.username,
-            uuid: userInDb.uuid,
-            avatar: userInDb.avatar || null,
-            email: userInDb.email,
-            tfa: !!userInDb.tfa,
-          },
+          user: serializeUserResponse(userInDb),
         });
       } catch (error) {
         res.status(500).send({ message: 'Failed to fetch login info from database.' });
@@ -139,13 +163,7 @@ export async function loginRoutes(app: FastifyInstance) {
         });
 
         res.status(200).send({
-          user: {
-            username: user.username,
-            uuid: user.uuid,
-            avatar: user.avatar || null,
-            email: user.email,
-            tfa: true,
-          },
+          user: serializeUserResponse({ ...user, tfa: true }),
         });
       } catch (error) {
         res.status(500).send({ message: 'Failed to verify two-factor code.' });
