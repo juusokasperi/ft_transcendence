@@ -6,6 +6,7 @@ import { Link, useLocation } from 'react-router-dom';
 import type { User } from '../types';
 import Navbar from '../components/Navbar';
 import { useSnackbar } from '../context/SnackbarContext';
+import { Spinner } from '@ft/spinner';
 
 const highlights = [
   'Single account for every arcade title',
@@ -231,7 +232,14 @@ const Login: React.FC = () => {
                         Forgot your password?
                       </Link>
                     </p>
-                    {loading && <p className="mt-3 text-sm text-indigo-200/80">Authenticating…</p>}
+                    {loading && (
+                      <p className="mt-3 text-sm text-indigo-200/80">
+                        <span className="inline-flex items-center gap-2">
+                          <Spinner size={16} color="#A855F7" aria-label="Authenticating" />
+                          <span>Authenticating</span>
+                        </span>
+                      </p>
+                    )}
                   </>
                 ) : (
                   <form onSubmit={handleTwoFactorSubmit} className="space-y-4">
@@ -269,7 +277,14 @@ const Login: React.FC = () => {
                         className="flex-1 rounded-full bg-gradient-to-r from-indigo-500 to-purple-500 px-5 py-2 text-sm font-semibold text-white shadow shadow-indigo-900/40 transition hover:from-indigo-400 hover:to-purple-400"
                         disabled={twoFactorLoading || twoFactorCode.length !== 6}
                       >
-                        {twoFactorLoading ? 'Verifying…' : 'Verify code'}
+                        {twoFactorLoading ? (
+                          <span className="inline-flex items-center justify-center gap-2">
+                            <Spinner size={18} color="#FFFFFF" aria-label="Verifying code" />
+                            <span>Verifying</span>
+                          </span>
+                        ) : (
+                          'Verify code'
+                        )}
                       </button>
                       <button
                         type="button"

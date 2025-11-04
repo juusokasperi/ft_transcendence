@@ -1,5 +1,6 @@
 import React from 'react';
 import Button from '../../../../components/Button';
+import { InlineSpinner } from '@ft/spinner';
 
 export type TournamentPageHeaderProps = {
   isDetailView: boolean;
@@ -51,14 +52,34 @@ const TournamentPageHeader: React.FC<TournamentPageHeaderProps> = ({
         )}
         <span>
           Connection:
-          <span
-            className={`ml-2 font-semibold ${connectionReady ? 'text-emerald-400' : 'text-rose-400'}`}
-          >
-            {connectionReady ? 'Ready' : 'Connecting…'}
-          </span>
+          {connectionReady ? (
+            <span className="ml-2 font-semibold text-emerald-400">Ready</span>
+          ) : (
+            <InlineSpinner
+              size={14}
+              color="#F87171"
+              label="Connecting"
+              ariaLabel="Connecting to tournament service"
+              className="ml-2 font-semibold text-rose-300"
+              labelClassName="font-semibold text-rose-300"
+            />
+          )}
         </span>
         <Button variant="secondary" size="sm" onClick={onRefresh} disabled={loading}>
-          {loading ? 'Refreshing…' : isDetailView ? 'Refresh data' : 'Refresh list'}
+          {loading ? (
+            <InlineSpinner
+              size={16}
+              color="#FFFFFF"
+              label="Refreshing"
+              ariaLabel="Refreshing tournament data"
+              className="text-current"
+              labelClassName="text-current"
+            />
+          ) : isDetailView ? (
+            'Refresh data'
+          ) : (
+            'Refresh list'
+          )}
         </Button>
       </div>
     </header>

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Spinner } from '@ft/spinner';
 import { useAppContext } from '../context/AppContext';
 import { AxiosError } from 'axios';
 import Navbar from '../components/Navbar';
@@ -174,7 +175,10 @@ const Stats: React.FC = () => {
 
             {loading ? (
               <div className="flex h-64 items-center justify-center text-sm text-slate-300/70">
-                Pulling your latest games…
+                <span className="inline-flex items-center gap-2">
+                  <Spinner size={20} color="#A855F7" aria-label="Loading recent matches" />
+                  <span>Pulling your latest games</span>
+                </span>
               </div>
             ) : matches1v1.length > 0 ? (
               <div className="bg-slate-900 p-4">
@@ -208,7 +212,11 @@ const Stats: React.FC = () => {
                           disabled={loadingMore}
                           className="inline-flex items-center justify-center rounded-full bg-gradient-to-r from-indigo-500 to-purple-500 px-5 py-2 text-sm font-semibold text-white shadow shadow-indigo-900/40 transition hover:from-indigo-400 hover:to-purple-400 disabled:cursor-not-allowed disabled:opacity-50"
                         >
-                          {loadingMore ? 'Loading…' : 'Load more matches'}
+                          {loadingMore ? (
+                            <Spinner size={20} color="#FFFFFF" aria-label="Loading more matches" />
+                          ) : (
+                            'Load more matches'
+                          )}
                         </button>
                       </div>
                     ) : (

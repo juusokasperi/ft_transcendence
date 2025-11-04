@@ -6,6 +6,7 @@ import type { AxiosResponse } from 'axios';
 import { Link } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 import { useSnackbar } from '../context/SnackbarContext';
+import { Spinner } from '@ft/spinner';
 
 const highlights = [
   'Reserve your arcade handle before tournaments open',
@@ -105,7 +106,14 @@ const Registration: React.FC = () => {
                 </p>
 
                 <AuthForm type="register" onSubmit={handleRegister} />
-                {loading && <p className="mt-3 text-sm text-indigo-200/80">Creating account…</p>}
+                {loading && (
+                  <p className="mt-3 text-sm text-indigo-200/80">
+                    <span className="inline-flex items-center gap-2">
+                      <Spinner size={16} color="#A855F7" aria-label="Creating account" />
+                      <span>Creating account</span>
+                    </span>
+                  </p>
+                )}
 
                 <p className="mt-6 text-center text-sm text-slate-300/80">
                   Already have an account?

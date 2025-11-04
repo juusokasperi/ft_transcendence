@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import Button from '../../../../components/Button';
 import type { Status } from '../state/types';
 import { formatSeconds } from '../utils/format';
+import { InlineSpinner } from '@ft/spinner';
 import {
   ALIAS_MAX_LENGTH,
   aliasInputAllowedRegex,
@@ -28,11 +29,15 @@ const QueueControls: React.FC<QueueControlsProps> = ({
   if (status === 'in_queue') {
     return (
       <div className="space-y-3">
-        <p className="text-white/70">
-          Looking for an opponent…{' '}
-          <span className="ml-2 font-mono text-sm text-white/50">
-            ({formatSeconds(queueElapsed)})
-          </span>
+        <p className="flex items-center gap-2 text-white/70">
+          <InlineSpinner
+            size={16}
+            color="#A855F7"
+            label="Looking for an opponent"
+            className="text-white/70"
+            labelClassName="text-white/70"
+          />
+          <span className="font-mono text-sm text-white/50">({formatSeconds(queueElapsed)})</span>
         </p>
         <Button type="button" variant="secondary" fullWidth onClick={onLeave} disabled={disabled}>
           Leave Queue

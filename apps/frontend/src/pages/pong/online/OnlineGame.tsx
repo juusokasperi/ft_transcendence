@@ -4,6 +4,7 @@ import { useAppContext } from '../../../context/AppContext';
 import Button from '../../../components/Button';
 import { useSnackbar } from '../../../context/SnackbarContext';
 import PlayingView from '../shared/components/PlayingView';
+import { InlineSpinner } from '@ft/spinner';
 
 import SurfaceCard from '../shared/components/SurfaceCard';
 import StatusBadge from './components/StatusBadge';
@@ -231,7 +232,15 @@ const OnlineGame: React.FC = () => {
             </header>
 
             {state.status === 'connecting' && (
-              <p className="text-white/60">Connecting to matchmaking…</p>
+              <div className="text-white/60">
+                <InlineSpinner
+                  size={18}
+                  color="#A855F7"
+                  label="Connecting to matchmaking"
+                  className="text-white/60"
+                  labelClassName="text-white/60"
+                />
+              </div>
             )}
 
             {(state.status === 'idle' || state.status === 'in_queue') && (

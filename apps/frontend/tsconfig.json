@@ -4,7 +4,7 @@
     "baseUrl": "../../",
     "lib": ["ES2022", "DOM", "DOM.Iterable"],
     "jsx": "react-jsx",
-    "types": ["vite/client", "vitest", "node"],
+    "types": ["vite/client", "vitest", "node", "react", "react-dom"],
     "noEmit": true
   },
   "include": ["src", "types", "vite-env.d.ts", "vite.config.ts", "*"]

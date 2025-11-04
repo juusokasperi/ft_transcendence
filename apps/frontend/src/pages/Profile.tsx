@@ -14,6 +14,7 @@ import {
 } from '../utils/validation';
 import ConfirmDialog from '../components/ConfirmDialog';
 import { useSnackbar } from '../context/SnackbarContext';
+import { Spinner } from '@ft/spinner';
 
 const MAX_USERNAME_LENGTH = 24;
 const MAX_EMAIL_LENGTH = 254;
@@ -598,7 +599,14 @@ const Profile: React.FC = () => {
                     variant="success"
                     className="flex-1 px-6 py-2 text-sm"
                   >
-                    {loading ? 'Updating…' : 'Save changes'}
+                    {loading ? (
+                      <span className="inline-flex items-center gap-2">
+                        <Spinner size={18} color="#FFFFFF" aria-label="Saving profile changes" />
+                        <span>Saving</span>
+                      </span>
+                    ) : (
+                      'Save changes'
+                    )}
                   </Button>
 
                   <Button
@@ -624,7 +632,16 @@ const Profile: React.FC = () => {
         open={deleteDialogOpen}
         title="Delete account?"
         description="We will email you a confirmation link. This action cannot be reversed once complete."
-        confirmLabel={isDeleting ? 'Sending…' : 'Yes, delete'}
+        confirmLabel={
+          isDeleting ? (
+            <span className="inline-flex items-center gap-2">
+              <Spinner size={18} color="#FFFFFF" aria-label="Sending delete confirmation" />
+              <span>Sending</span>
+            </span>
+          ) : (
+            'Yes, delete'
+          )
+        }
         cancelLabel="Keep account"
         confirmDisabled={isDeleting}
         tone="danger"

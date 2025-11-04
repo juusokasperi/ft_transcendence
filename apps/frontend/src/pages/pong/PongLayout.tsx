@@ -6,6 +6,7 @@ import { BackgroundVideo } from './shared/components/BackgroundVideo';
 import gifImg from '../../assets/gif.mp4';
 import PageContainer from './shared/components/PageContainer';
 import PageSection from './shared/components/PageSection';
+import { Spinner } from '@ft/spinner';
 
 export default function PongLayout() {
   return (
@@ -29,7 +30,9 @@ export default function PongLayout() {
             fallback={
               <PageContainer>
                 <PageSection>
-                  <div className="text-white/80">Loading…</div>
+                  <div className="flex justify-center">
+                    <Spinner color="#A855F7" aria-label="Loading content" />
+                  </div>
                 </PageSection>
               </PageContainer>
             }

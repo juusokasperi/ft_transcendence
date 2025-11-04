@@ -2,6 +2,7 @@ import React from 'react';
 import type { TournamentParticipantState } from '@pong/shared/protocol/net';
 import SurfaceCard from '../../shared/components/SurfaceCard';
 import { participantStatusLabel } from '../utils/utils';
+import { InlineSpinner } from '@ft/spinner';
 
 export type TournamentParticipantsPanelProps = {
   participants: TournamentParticipantState[];
@@ -20,7 +21,16 @@ const TournamentParticipantsPanel: React.FC<TournamentParticipantsPanelProps> = 
       {!hasActiveTournament ? (
         <p className="text-sm text-white/60">Join a tournament to see participants.</p>
       ) : participants.length === 0 ? (
-        <p className="text-sm text-white/60">Waiting for players…</p>
+        <p className="text-sm text-white/60">
+          <InlineSpinner
+            size={16}
+            color="#FFFFFF"
+            label="Waiting for players"
+            ariaLabel="Waiting for players to join"
+            className="text-white/60"
+            labelClassName="text-white/60"
+          />
+        </p>
       ) : (
         <ul className="space-y-2">
           {participants.map((participant) => (
