@@ -90,10 +90,10 @@ importers:
         specifier: workspace:*
         version: link:../../packages/pong/shared
       '@utils/logger':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../packages/utils/logger
       '@utils/metrics':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../packages/utils/metrics
       axios:
         specifier: ^1.12.0
@@ -135,10 +135,10 @@ importers:
         specifier: ^5.2.3
         version: 5.2.3
       '@utils/logger':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../packages/utils/logger
       '@utils/metrics':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../packages/utils/metrics
       bcrypt:
         specifier: ^6.0.0
@@ -348,10 +348,10 @@ importers:
         specifier: workspace:*
         version: link:../../packages/pong/shared
       '@utils/logger':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../packages/utils/logger
       '@utils/metrics':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../packages/utils/metrics
       dotenv:
         specifier: ^17.2.2
@@ -391,10 +391,10 @@ importers:
         specifier: workspace:*
         version: link:../../packages/pong/shared
       '@utils/logger':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../packages/utils/logger
       '@utils/metrics':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../packages/utils/metrics
       axios:
         specifier: ^1.12.0
@@ -434,10 +434,10 @@ importers:
         specifier: workspace:*
         version: link:../../packages/pong/shared
       '@utils/logger':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../packages/utils/logger
       '@utils/metrics':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../packages/utils/metrics
       axios:
         specifier: ^1.12.0
@@ -471,10 +471,10 @@ importers:
   apps/scorer:
     dependencies:
       '@utils/logger':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../packages/utils/logger
       '@utils/metrics':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../packages/utils/metrics
       axios:
         specifier: ^1.12.0
