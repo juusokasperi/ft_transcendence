@@ -15,7 +15,11 @@ export const InlineSpinner: React.FC<InlineSpinnerProps> = ({
   className = '',
 }) => {
   return (
-    <span className={`inline-flex items-center gap-2 ${className}`} role="status" aria-live="polite">
+    <span
+      className={`inline-flex items-center gap-2 ${className}`}
+      role="status"
+      aria-live="polite"
+    >
       <Spinner size={size} color={color} aria-label={label ?? 'Loading'} />
       {label ? <span className="text-sm text-gray-700">{label}</span> : null}
     </span>

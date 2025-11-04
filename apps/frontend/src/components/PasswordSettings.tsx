@@ -310,14 +310,26 @@ const PasswordSettings: React.FC<PasswordSettingsProps> = ({ axios, active }) =>
               Cancel
             </Button>
             <Button type="submit" disabled={loading}>
-              {loading ? <InlineSpinner label="Saving..." /> : hasPassword ? 'Update Password' : 'Set Password'}
+              {loading ? (
+                <InlineSpinner label="Saving..." />
+              ) : hasPassword ? (
+                'Update Password'
+              ) : (
+                'Set Password'
+              )}
             </Button>
           </div>
         </form>
       ) : (
         <div className="space-y-3">
           <div className="text-sm text-gray-600">
-            {initialising ? <InlineSpinner label="Loading..." /> : hasPassword ? '' : 'You currently sign in via Google.'}
+            {initialising ? (
+              <InlineSpinner label="Loading..." />
+            ) : hasPassword ? (
+              ''
+            ) : (
+              'You currently sign in via Google.'
+            )}
           </div>
           <Button type="button" onClick={beginEdit} disabled={initialising}>
             {hasPassword ? 'Change Password' : 'Set Password'}

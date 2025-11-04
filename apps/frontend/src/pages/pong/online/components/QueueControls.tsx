@@ -34,9 +34,7 @@ const QueueControls: React.FC<QueueControlsProps> = ({
             <Spinner size={16} color="#A855F7" aria-label="Searching for opponent" />
             <span>Looking for an opponent</span>
           </span>
-          <span className="font-mono text-sm text-white/50">
-            ({formatSeconds(queueElapsed)})
-          </span>
+          <span className="font-mono text-sm text-white/50">({formatSeconds(queueElapsed)})</span>
         </p>
         <Button type="button" variant="secondary" fullWidth onClick={onLeave} disabled={disabled}>
           Leave Queue
