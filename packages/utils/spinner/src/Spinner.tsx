@@ -45,7 +45,7 @@ export const Spinner: React.FC<SpinnerProps> = ({
   const dotSize = size * 0.16;
 
   return (
-    <div
+    <span
       className={`relative inline-block align-middle ${className}`}
       style={{ width: size, height: size }}
       role="status"
@@ -61,7 +61,7 @@ export const Spinner: React.FC<SpinnerProps> = ({
             style={{
               width: dotSize,
               height: dotSize,
-              transform: `translateX(${radius / 2}px) rotate(${angle}deg) translateY(-${radius}px)`,
+              transform: `translateX(${radius}px) rotate(${angle}deg) translateY(-${radius}px)`,
               transformOrigin: 'center center',
             }}
           >
@@ -80,7 +80,7 @@ export const Spinner: React.FC<SpinnerProps> = ({
           </span>
         );
       })}
-    </div>
+    </span>
   );
 };
 
