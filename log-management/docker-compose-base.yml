@@ -64,7 +64,7 @@ services:
       - xpack.security.transport.ssl.certificate_authorities=certs/ca/ca.crt
       - xpack.security.transport.ssl.verification_mode=certificate
       - xpack.license.self_generated.type=${ES_LICENSE}
-    mem_limit: ${ES_MEM_LIMIT}
+    mem_limit: 1536m
     healthcheck:
       test:
         - CMD-SHELL
@@ -125,7 +125,7 @@ services:
       - SERVER_BASEPATH=/kibana
       - SERVER_PUBLICBASEURL=${FRONTEND_URL}/kibana
       - SERVER_REWRITEBASEPATH=false
-    mem_limit: ${KB_MEM_LIMIT}
+    mem_limit: 1024m
     healthcheck:
       test:
        - CMD-SHELL
@@ -171,7 +171,7 @@ services:
       - ELASTIC_HOSTS=https://elasticsearch:${ES_PORT:-9200}
       - ELASTIC_USER=${ELASTIC_USER:-elastic}
       - ELASTIC_PASSWORD=${ELASTIC_PASSWORD}
-    mem_limit: ${LS_MEM_LIMIT}
+    mem_limit: 1024m
     healthcheck:
       test: ["CMD-SHELL", "curl -fs http://localhost:9600/_node/stats || exit 1"]
       interval: 10s
