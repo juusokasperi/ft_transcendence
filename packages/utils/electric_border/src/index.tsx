@@ -1,11 +1,6 @@
-import React, {
-  CSSProperties,
-  PropsWithChildren,
-  useEffect,
-  useId,
-  useLayoutEffect,
-  useRef,
-} from 'react';
+/// <reference types="react" />
+import type { CSSProperties, PropsWithChildren } from 'react';
+import React, { useCallback, useEffect, useId, useLayoutEffect, useRef } from 'react';
 
 export type ElectricBorderProps = PropsWithChildren<{
   color?: string;
@@ -38,7 +33,7 @@ const ElectricBorder: React.FC<ElectricBorderProps> = ({
   speed = 1,
   chaos = 1,
   thickness = 2,
-  className,
+  className = '',
   style,
 }) => {
   const rawId = useId().replace(/[:]/g, '');
@@ -47,7 +42,7 @@ const ElectricBorder: React.FC<ElectricBorderProps> = ({
   const rootRef = useRef<HTMLDivElement | null>(null);
   const strokeRef = useRef<HTMLDivElement | null>(null);
 
-  const updateAnim = () => {
+  const updateAnim = useCallback(() => {
     const svg = svgRef.current;
     const host = rootRef.current;
     if (!svg || !host) return;
@@ -67,23 +62,28 @@ const ElectricBorder: React.FC<ElectricBorderProps> = ({
 
     const dyAnims = Array.from(
       svg.querySelectorAll<SVGAnimateElement>('feOffset > animate[attributeName="dy"]'),
-    );
+    ) as SVGAnimationElement[];
     if (dyAnims.length >= 2) {
-      dyAnims[0].setAttribute('values', `${height}; 0`);
-      dyAnims[1].setAttribute('values', `0; -${height}`);
+      const first = dyAnims[0];
+      const second = dyAnims[1];
+      if (first) first.setAttribute('values', `${height}; 0`);
+      if (second) second.setAttribute('values', `0; -${height}`);
     }
 
     const dxAnims = Array.from(
       svg.querySelectorAll<SVGAnimateElement>('feOffset > animate[attributeName="dx"]'),
-    );
+    ) as SVGAnimationElement[];
     if (dxAnims.length >= 2) {
-      dxAnims[0].setAttribute('values', `${width}; 0`);
-      dxAnims[1].setAttribute('values', `0; -${width}`);
+      const first = dxAnims[0];
+      const second = dxAnims[1];
+      if (first) first.setAttribute('values', `${width}; 0`);
+      if (second) second.setAttribute('values', `0; -${width}`);
     }
 
     const baseDur = 6;
+    const anims: SVGAnimationElement[] = [...dyAnims, ...dxAnims];
     const dur = Math.max(0.001, baseDur / (speed || 1));
-    [...dyAnims, ...dxAnims].forEach((a) => a.setAttribute('dur', `${dur}s`));
+    anims.forEach((anim) => anim.setAttribute('dur', `${dur}s`));
 
     const disp = svg.querySelector('feDisplacementMap');
     if (disp) disp.setAttribute('scale', String(30 * (chaos || 1)));
@@ -97,29 +97,29 @@ const ElectricBorder: React.FC<ElectricBorderProps> = ({
     }
 
     requestAnimationFrame(() => {
-      [...dyAnims, ...dxAnims].forEach((a: any) => {
-        if (typeof a.beginElement === 'function') {
+      anims.forEach((anim) => {
+        if (typeof anim.beginElement === 'function') {
           try {
-            a.beginElement();
+            anim.beginElement();
           } catch {
             // ignore
           }
         }
       });
     });
-  };
+  }, [chaos, filterId, speed]);
 
   useEffect(() => {
     updateAnim();
-  }, [speed, chaos]);
+  }, [updateAnim]);
 
   useLayoutEffect(() => {
-    if (!rootRef.current) return;
+    if (!rootRef.current || typeof ResizeObserver === 'undefined') return;
     const ro = new ResizeObserver(() => updateAnim());
     ro.observe(rootRef.current);
     updateAnim();
     return () => ro.disconnect();
-  }, []);
+  }, [updateAnim]);
 
   const inheritRadius: CSSProperties = {
     borderRadius: style?.borderRadius ?? 'inherit',
@@ -160,7 +160,7 @@ const ElectricBorder: React.FC<ElectricBorderProps> = ({
   };
 
   return (
-    <div ref={rootRef} className={`relative isolate ${className ?? ''}`} style={style}>
+    <div ref={rootRef} className={`relative isolate ${className}`} style={style}>
       <svg
         ref={svgRef}
         className="pointer-events-none fixed -left-[10000px] -top-[10000px] h-[10px] w-[10px] opacity-[0.001]"
