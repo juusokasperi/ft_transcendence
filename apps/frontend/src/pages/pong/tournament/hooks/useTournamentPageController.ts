@@ -19,6 +19,9 @@ import type {
 } from '../state/types';
 import { MAX_VISIBLE_TOURNAMENTS, RECENT_TOURNAMENT_WINDOW_MS, TOURNAMENT_SIZE } from '../config';
 import { useMatchOverEvent } from '../../shared/hooks/useMatchOverEvent';
+import { sanitizeAliasInput } from '../../../../utils/alias';
+
+const TOURNAMENT_NAME_MAX_LENGTH = 20;
 
 export type MatchPhase = 'idle' | 'awaiting_start' | 'starting' | 'playing';
 
@@ -139,14 +142,20 @@ export function useTournamentPageController(
   const [matchPhase, setMatchPhase] = useState<MatchPhase>('idle');
   const [localCountdownSeconds, setLocalCountdownSeconds] = useState<number | null>(null);
   const [handoff, setHandoff] = useState<ActiveHandoff | null>(null);
-  const [aliasInput, setAliasInput] = useState('');
-  const [tournamentName, setTournamentName] = useState('');
+  const [aliasInput, setAliasInputState] = useState('');
+  const [tournamentName, setTournamentNameState] = useState('');
+  const setAliasInput = useCallback((value: string) => {
+    setAliasInputState(sanitizeAliasInput(value));
+  }, []);
+  const setTournamentName = useCallback((value: string) => {
+    setTournamentNameState(value.slice(0, TOURNAMENT_NAME_MAX_LENGTH));
+  }, []);
   const rejoinTimerRef = useRef<number | null>(null);
   const refreshTimerRef = useRef<number | null>(null);
   const teardownInProgressRef = useRef(false);
 
   useEffect(() => {
-    setAliasInput(user?.username ?? '');
+    setAliasInputState(sanitizeAliasInput(user?.username ?? ''));
   }, [user?.username]);
 
   useEffect(() => {

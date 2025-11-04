@@ -70,7 +70,8 @@ const TwoFactorSettings: React.FC<TwoFactorSettingsProps> = ({ axios, user, setU
   };
 
   const confirmSetup = async () => {
-    if (!verificationCode.trim()) {
+    const code = verificationCode.trim();
+    if (code.length !== 6) {
       enqueueSnackbar({
         message: 'Please enter the code from your authenticator app.',
         variant: 'error',
@@ -205,16 +206,22 @@ const TwoFactorSettings: React.FC<TwoFactorSettingsProps> = ({ axios, user, setU
                 id="setup-code"
                 type="text"
                 inputMode="numeric"
+                maxLength={6}
                 autoComplete="one-time-code"
                 className="w-full rounded border border-gray-300 px-3 py-2"
                 value={verificationCode}
-                onChange={(event) => setVerificationCode(event.target.value)}
+                onChange={(event) =>
+                  setVerificationCode(event.target.value.replace(/\D/g, '').slice(0, 6))
+                }
               />
+              {verificationCode && verificationCode.length < 6 && (
+                <p className="mt-2 text-sm text-rose-500">Enter the full 6-digit code.</p>
+              )}
               <div className="flex gap-2">
                 <Button
                   type="button"
                   onClick={confirmSetup}
-                  disabled={isConfirming}
+                  disabled={isConfirming || verificationCode.length !== 6}
                   className="flex-1"
                 >
                   {isConfirming ? 'Confirming…' : 'Confirm & enable'}

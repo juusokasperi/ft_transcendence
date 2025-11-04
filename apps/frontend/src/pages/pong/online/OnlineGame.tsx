@@ -1,6 +1,7 @@
 import React, { useCallback, useMemo, useReducer, useRef, useState, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useAppContext } from '../../../context/AppContext';
+import Button from '../../../components/Button';
 import { useSnackbar } from '../../../context/SnackbarContext';
 import PlayingView from '../shared/components/PlayingView';
 
@@ -25,13 +26,14 @@ import PageSection from '../shared/components/PageSection';
 const OnlineGame: React.FC = () => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const [state, dispatch] = useReducer(reducer, initialState);
-  const { axios, navigate } = useAppContext();
+  const { axios, navigate, user, userReady } = useAppContext();
   const { enqueueSnackbar } = useSnackbar();
   const location = useLocation();
 
   const [connectKey, setConnectKey] = useState(0);
   const queueElapsed = useQueueTimer(state.status);
-  const matchmakingEnabled = state.status !== 'starting' && state.status !== 'playing';
+  const matchmakingEnabled =
+    userReady && Boolean(user) && state.status !== 'starting' && state.status !== 'playing';
 
   const lastTimestamp = useRef(location.state?.timestamp);
   useEffect(() => {
@@ -95,8 +97,8 @@ const OnlineGame: React.FC = () => {
           await axios.post('/api/auth/refresh');
           setConnectKey((key) => key + 1);
           return;
-        } catch (error) {
-          console.error('[OnlineGame] Failed to refresh auth token', error);
+        } catch (err) {
+          console.error('[OnlineGame] Failed to refresh auth token', err);
         }
       }
 
@@ -125,7 +127,7 @@ const OnlineGame: React.FC = () => {
     delayMs: 2500,
   });
 
-  const matchActive = !matchmakingEnabled;
+  const matchActive = state.status === 'starting' || state.status === 'playing';
 
   const { destroy: destroyGame } = useGameBootstrap({
     canvasRef,
@@ -172,6 +174,28 @@ const OnlineGame: React.FC = () => {
     dispatch({ type: 'matchDeclined' });
     declineMatch(state.matchId);
   }, [declineMatch, dispatch, state.matchId]);
+
+  if (userReady && !user) {
+    return (
+      <PageContainer>
+        <PageSection>
+          <div className="flex justify-center">
+            <SurfaceCard className="w-full max-w-xl space-y-4 p-6 text-center shadow-2xl">
+              <p className="text-base text-white">
+                You need to be signed in before you can join online matchmaking.
+              </p>
+              <p className="text-sm text-white/60">
+                Log in to enter the queue, challenge opponents, and track your results.
+              </p>
+              <Button variant="primary" onClick={() => navigate('/login')}>
+                Go to login
+              </Button>
+            </SurfaceCard>
+          </div>
+        </PageSection>
+      </PageContainer>
+    );
+  }
 
   if (state.status === 'starting' || state.status === 'playing') {
     return <PlayingView canvasRef={canvasRef} onQuit={handleQuit} />;
