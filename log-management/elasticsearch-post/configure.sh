@@ -60,13 +60,41 @@ curl -s -u ${ELASTIC_USER}:${ELASTIC_PASSWORD} \
 # Misc. config
 #-----------------------------------------------------------------------------
 
-# Set password for admin user 'elastic'
-echo "Setting kibana_system password";
+# Special user needed for Kibana
+echo "Setting kibana_system password"
 curl -s -X POST \
-	--cacert /usr/share/elk/config/certs/ca/ca.crt \
-	-u "elastic:${ELASTIC_PASSWORD}" \
-	-H "Content-Type: application/json" \
-	${ES_URL}/_security/user/kibana_system/_password \
-	-d "{\"password\":\"${KIBANA_PASSWORD}\"}" 
+  --cacert /usr/share/elk/config/certs/ca/ca.crt \
+  -u "elastic:${ELASTIC_PASSWORD}" \
+  -H "Content-Type: application/json" \
+  ${ES_URL}/_security/user/kibana_system/_password \
+  -d "{\"password\":\"${KIBANA_PASSWORD}\"}"
+
+echo ""
+echo "Creating developer user with read/write access"
+curl -s -X POST \
+  --cacert /usr/share/elk/config/certs/ca/ca.crt \
+  -u "elastic:${ELASTIC_PASSWORD}" \
+  -H "Content-Type: application/json" \
+  ${ES_URL}/_security/user/developer \
+  -d '{
+    "password": "'"${DEVELOPER_PASSWORD:-changeme}"'",
+    "roles": ["editor", "kibana_admin"],
+    "full_name": "Developer User",
+    "email": "developer@example.com"
+  }'
+
+echo ""
+echo "Creating analyst user with read-only access"
+curl -s -X POST \
+  --cacert /usr/share/elk/config/certs/ca/ca.crt \
+  -u "elastic:${ELASTIC_PASSWORD}" \
+  -H "Content-Type: application/json" \
+  ${ES_URL}/_security/user/analyst \
+  -d '{
+    "password": "'"${ANALYST_PASSWORD:-changeme}"'",
+    "roles": ["viewer", "monitoring_user"],
+    "full_name": "Analyst User",
+    "email": "analyst@example.com"
+  }'
 
 echo "done configuring elasticsearch"

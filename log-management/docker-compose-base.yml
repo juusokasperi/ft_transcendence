@@ -93,6 +93,8 @@ services:
       - ELASTIC_USER=${ELASTIC_USER:-elastic}
       - ELASTIC_PASSWORD=${ELASTIC_PASSWORD}
       - KIBANA_PASSWORD=${KIBANA_PASSWORD}
+      - DEVELOPER_PASSWORD=${ES_DEVELOPER_PASS:-changeme}
+      - ANALYST_PASSWORD=${ES_ANALYST_PASS:-changeme}
     networks:
       - prod-private
     depends_on:
