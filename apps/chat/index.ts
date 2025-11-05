@@ -172,8 +172,6 @@ function handleConnection(socket: WebSocket, _request: ChatRequest) {
           {
             type: 'tournamentMsg',
             message: data.message,
-            matchInfo: data.matchInfo ?? null,
-            countdown: data.countdown ?? null,
           },
           client.channel,
         );

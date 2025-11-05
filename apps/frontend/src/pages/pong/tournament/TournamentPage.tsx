@@ -29,6 +29,7 @@ function ChatToggleButton({ open, setOpen }: { open: boolean; setOpen: (v: boole
     </button>
   );
 }
+
 const TournamentPage: React.FC<TournamentPageProps> = ({ onBack, focusTournamentId = null }) => {
   const {
     user,
@@ -62,6 +63,9 @@ const TournamentPage: React.FC<TournamentPageProps> = ({ onBack, focusTournament
     currentParticipantId,
   } = useTournamentPageController({ focusTournamentId });
 
+  const firstPlayer = pendingMatch?.participants?.at(0)?.alias;
+  const secondPlayer = pendingMatch?.participants?.at(1)?.alias;
+  const stage = pendingMatch?.stage;
   const [chatOpen, setChatOpen] = useState(false);
   const currentUserUuid = user?.uuid ?? null;
   const hasActiveTournament = activeTournamentId !== null;
@@ -70,11 +74,9 @@ const TournamentPage: React.FC<TournamentPageProps> = ({ onBack, focusTournament
     ? 'grid gap-6'
     : 'grid gap-6 lg:grid-cols-[1.1fr_0.9fr]';
 
-    useEffect(() => {
-    const timer = setTimeout(() => setChatOpen(true), 300); // small delay = smooth transition
-    return () => clearTimeout(timer);
+  useEffect(() => {
+    setChatOpen(true);
   }, []);
-
   if (userReady && !user) {
     return (
       <PageContainer>
@@ -151,12 +153,20 @@ const TournamentPage: React.FC<TournamentPageProps> = ({ onBack, focusTournament
           />
         )}
 
-          {user &&  !chatOpen && <ChatToggleButton open={chatOpen} setOpen={setChatOpen} />}
+        {user && !chatOpen && <ChatToggleButton open={chatOpen} setOpen={setChatOpen} />}
 
-          {/* Keep Chat mounted to avoid StrictMode remount flicker */}
-          {user && <Chat onClose={() => setChatOpen(false)}
+        {/* Keep Chat mounted to avoid StrictMode remount flicker */}
+        {user && (
+        <Chat
+          onClose={() => setChatOpen(false)}
           channel={activeTournamentId ? `Tournaments-${activeTournamentId}` : 'Pong Tournaments'}
-          isOpen={chatOpen} />}
+          isOpen={chatOpen}
+          firstPlayer={firstPlayer}
+          secondPlayer={secondPlayer}
+          stage ={stage}
+        />
+      )}
+
       </PageSection>
     </PageContainer>
   );
