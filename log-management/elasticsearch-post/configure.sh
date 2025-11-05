@@ -18,8 +18,31 @@ curl -s -u ${ELASTIC_USER}:${ELASTIC_PASSWORD} \
       "hot": {
         "actions": {
           "rollover": {
-            "max_primary_shard_size": "50GB",
+            "max_primary_shard_size": "5GB",
             "max_age": "30d"
+          },
+          "set_priority": {
+            "priority": 100
+          }
+        }
+      },
+      "warm": {
+        "min_age": "30d",
+        "actions": {
+          "set_priority": {
+            "priority": 50
+          },
+          "forcemerge": {
+            "max_num_segments": 1
+          },
+          "readonly": {}
+        }
+      },
+      "cold": {
+        "min_age": "60d",
+        "actions": {
+          "set_priority": {
+            "priority": 0
           }
         }
       },
