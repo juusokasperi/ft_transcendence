@@ -1,6 +1,6 @@
 import Fastify from 'fastify';
 import websocket from '@fastify/websocket';
-import type { FastifyRequest } from 'fastify';
+import type { FastifyReply, FastifyRequest } from 'fastify';
 import type { WebSocket, RawData } from 'ws';
 import { v4 as uuid } from 'uuid';
 import { PORT, REDIS_URL } from './utils/config.ts';
@@ -31,6 +31,13 @@ import Redis from 'ioredis';
 import { handleAdmitConfirmed } from './utils/pendingHandoffs.ts';
 import { registerMetrics } from '@utils/metrics';
 import { log, createFastifyLoggerConfig } from '@utils/logger';
+import {
+  inviteRoute,
+  handleInviteLobbyJoin,
+  isInLobby,
+  clearLobbiesWithClient,
+  clearInviteLobbies,
+} from './utils/invites.ts';
 
 const redisSub = new Redis(REDIS_URL);
 const app = Fastify({
@@ -94,6 +101,10 @@ await app.register(websocket);
 
 const clients = new Map<string, ClientInfo>();
 const pendingMatches = new Map<string, PendingMatch>();
+
+// Route for creating invite match lobby
+await app.register(inviteRoute, { prefix: '/invite-match' });
+
 const queueTicker = setInterval(() => {
   tryMatchQueue(pendingMatches);
 }, 500);
@@ -125,6 +136,12 @@ async function handleConnection(socket: WebSocket, req: FastifyRequest) {
   clients.set(id, client);
 
   socket.send(JSON.stringify({ type: 'CONNECTED', clientId: id }));
+
+  if (await isInLobby(client)) {
+    await handleInviteLobbyJoin(client);
+    return;
+  }
+
   void restoreTournamentMembership(client, clients);
   // broadcastLobbies(client, lobbies, clients); Maybe for tournament system..
   socket.on('message', (raw: RawData) => {
@@ -173,6 +190,9 @@ async function handleConnection(socket: WebSocket, req: FastifyRequest) {
 
   socket.on('close', () => {
     log('Client disconnected', { id });
+
+    clearLobbiesWithClient(client);
+
     handleClientDisconnectFromTournament(client, clients);
     for (const [matchId, match] of pendingMatches) {
       if (match.a.id === id || match.b.id === id) {
@@ -203,6 +223,9 @@ app.addHook('onClose', async () => {
     clearTimeout(match.timer);
   });
   pendingMatches.clear();
+
+  clearInviteLobbies();
+
   try {
     await redisSub.quit();
   } catch (err) {

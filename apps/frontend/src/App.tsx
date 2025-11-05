@@ -71,10 +71,14 @@ function App() {
       <SnackbarProvider>
         <div>
           {/* Floating toggle so user can open/close chat — only show when chat is CLOSED */}
-          {user && !isTournamentPage && !chatOpen && <ChatToggleButton open={chatOpen} setOpen={setChatOpen} />}
+          {user && !isTournamentPage && !chatOpen && (
+            <ChatToggleButton open={chatOpen} setOpen={setChatOpen} />
+          )}
 
           {/* Keep Chat mounted to avoid StrictMode remount flicker */}
-          {user && !isTournamentPage && <Chat onClose={() => setChatOpen(false)} channel={channel} isOpen={chatOpen} />}
+          {user && !isTournamentPage && (
+            <Chat onClose={() => setChatOpen(false)} channel={channel} isOpen={chatOpen} />
+          )}
           {/* Routes */}
           <Routes>
             <Route path={'/'} element={<Home />} />

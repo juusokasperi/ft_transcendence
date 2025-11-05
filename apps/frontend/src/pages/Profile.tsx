@@ -14,6 +14,7 @@ import {
 } from '../utils/validation';
 import ConfirmDialog from '../components/ConfirmDialog';
 import { useSnackbar } from '../context/SnackbarContext';
+import { Spinner } from '@ft/spinner';
 
 const MAX_USERNAME_LENGTH = 24;
 const MAX_EMAIL_LENGTH = 254;
@@ -75,6 +76,50 @@ const Profile: React.FC = () => {
     const url = resolveAvatarUrl(user?.avatar, axios.defaults.baseURL);
     setImagePreview(url);
   }, [user?.avatar, axios.defaults.baseURL]);
+
+  // Refresh the current user data when opening the profile to ensure stats (wins/losses)
+  // are up-to-date without requiring a full page refresh.
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        const res = await axios.get('/api/users/me');
+        if (!mounted) return;
+        const data = res.data ?? {};
+        setUser((prev) =>
+          prev
+            ? {
+                ...prev,
+                username: data.username ?? prev.username,
+                uuid: data.uuid ?? prev.uuid,
+                avatar: data.avatar ?? prev.avatar,
+                id: Number(data.id ?? prev.id ?? 0),
+                email: data.email ?? prev.email ?? '',
+                wins: Number(data.wins ?? prev.wins ?? 0),
+                losses: Number(data.losses ?? prev.losses ?? 0),
+                createdAt: data.createdAt ?? prev.createdAt ?? '',
+                tfaEnabled: Boolean(data.tfa ?? data.tfaEnabled ?? prev.tfaEnabled ?? false),
+              }
+            : {
+                username: String(data.username ?? ''),
+                uuid: String(data.uuid ?? ''),
+                avatar: (data.avatar as string | null) ?? null,
+                id: Number(data.id ?? 0),
+                email: String(data.email ?? ''),
+                wins: Number(data.wins ?? 0),
+                losses: Number(data.losses ?? 0),
+                createdAt: String(data.createdAt ?? ''),
+                tfaEnabled: Boolean(data.tfa ?? data.tfaEnabled ?? false),
+              },
+        );
+      } catch {
+        /* ignore refresh errors */
+      }
+    })();
+    return () => {
+      mounted = false;
+    };
+  }, [axios, setUser]);
 
   // Handle image selection
   const handleImageChange = async (e: ChangeEvent<HTMLInputElement>) => {
@@ -443,7 +488,12 @@ const Profile: React.FC = () => {
               </div>
               <div className="flex flex-col items-center gap-1 text-center">
                 <p className="text-lg font-semibold">{user?.username}</p>
-                <p className="text-xs uppercase tracking-[0.3em] text-slate-400">{user?.email}</p>
+                <p
+                  className="max-w-[260px] truncate text-center text-xs uppercase tracking-[0.3em] text-slate-400"
+                  title={user?.email ?? ''}
+                >
+                  {user?.email}
+                </p>
               </div>
               {isEditing && (
                 <input
@@ -549,7 +599,14 @@ const Profile: React.FC = () => {
                     variant="success"
                     className="flex-1 px-6 py-2 text-sm"
                   >
-                    {loading ? 'Updating…' : 'Save changes'}
+                    {loading ? (
+                      <span className="inline-flex items-center gap-2">
+                        <Spinner size={18} color="#FFFFFF" aria-label="Saving profile changes" />
+                        <span>Saving</span>
+                      </span>
+                    ) : (
+                      'Save changes'
+                    )}
                   </Button>
 
                   <Button
@@ -575,7 +632,16 @@ const Profile: React.FC = () => {
         open={deleteDialogOpen}
         title="Delete account?"
         description="We will email you a confirmation link. This action cannot be reversed once complete."
-        confirmLabel={isDeleting ? 'Sending…' : 'Yes, delete'}
+        confirmLabel={
+          isDeleting ? (
+            <span className="inline-flex items-center gap-2">
+              <Spinner size={18} color="#FFFFFF" aria-label="Sending delete confirmation" />
+              <span>Sending</span>
+            </span>
+          ) : (
+            'Yes, delete'
+          )
+        }
         cancelLabel="Keep account"
         confirmDisabled={isDeleting}
         tone="danger"

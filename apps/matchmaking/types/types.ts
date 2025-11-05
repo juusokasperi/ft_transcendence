@@ -23,4 +23,14 @@ export interface PendingMatch {
   timer: NodeJS.Timeout;
 }
 
+export interface InviteLobby {
+  lobbyId: string;
+  player1Uuid: string;
+  player2Uuid: string;
+  player1Client?: ClientInfo;
+  player2Client?: ClientInfo;
+  createdAt: number;
+  timer?: NodeJS.Timeout;
+}
+
 export type MatchMode = 'ranked' | 'tournament' | 'invite';

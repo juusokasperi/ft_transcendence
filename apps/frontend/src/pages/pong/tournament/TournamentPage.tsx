@@ -84,11 +84,18 @@ const TournamentPage: React.FC<TournamentPageProps> = ({ onBack, focusTournament
           <h1 id="page-title" className="sr-only">
             Ping Pong Tournaments
           </h1>
-          <div className="text-center text-white">
-            <p className="mb-4 text-xl">Log in to join tournaments.</p>
-            <Button variant="primary" onClick={() => navigate('/login')}>
-              Go to login
-            </Button>
+          <div className="flex justify-center">
+            <SurfaceCard className="w-full max-w-xl space-y-4 p-6 text-center shadow-2xl">
+              <p className="text-base text-white">
+                You need to be signed in before you can browse or join tournaments.
+              </p>
+              <p className="text-sm text-white/60">
+                Log in to enter brackets, follow match progress, and receive directed invites.
+              </p>
+              <Button variant="primary" onClick={() => navigate('/login')}>
+                Go to login
+              </Button>
+            </SurfaceCard>
           </div>
         </PageSection>
       </PageContainer>
@@ -157,16 +164,15 @@ const TournamentPage: React.FC<TournamentPageProps> = ({ onBack, focusTournament
 
         {/* Keep Chat mounted to avoid StrictMode remount flicker */}
         {user && (
-        <Chat
-          onClose={() => setChatOpen(false)}
-          channel={activeTournamentId ? `Tournaments-${activeTournamentId}` : 'Pong Tournaments'}
-          isOpen={chatOpen}
-          firstPlayer={firstPlayer}
-          secondPlayer={secondPlayer}
-          stage ={stage}
-        />
-      )}
-
+          <Chat
+            onClose={() => setChatOpen(false)}
+            channel={activeTournamentId ? `Tournaments-${activeTournamentId}` : 'Pong Tournaments'}
+            isOpen={chatOpen}
+            firstPlayer={firstPlayer}
+            secondPlayer={secondPlayer}
+            stage={stage}
+          />
+        )}
       </PageSection>
     </PageContainer>
   );

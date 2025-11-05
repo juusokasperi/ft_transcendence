@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef } from 'react';
 import type { MatchmakingMessage } from '@pong/shared/protocol/net';
 import { createMatchmakingClient } from '../../../../services/matchmaking';
 import type { OnlineAction } from '../state/machine';
+import { sanitizeAliasInput } from '../../../../utils/alias';
 
 type Handlers = {
   dispatch: React.Dispatch<OnlineAction>;
@@ -172,8 +173,9 @@ export function useMatchmakingClient({
   }, [connectKey, enabled]);
 
   const joinQueue = useCallback((alias?: string) => {
-    const trimmed = alias?.trim() || undefined;
-    pendingJoinRef.current = { alias: trimmed };
+    const normalized = sanitizeAliasInput(alias ?? '');
+    const finalAlias = normalized.length ? normalized : undefined;
+    pendingJoinRef.current = { alias: finalAlias };
 
     if (!enabledRef.current) {
       requestReconnectRef.current();
@@ -194,7 +196,7 @@ export function useMatchmakingClient({
       return;
     }
 
-    client.joinQueue(trimmed);
+    client.joinQueue(finalAlias);
   }, []);
 
   const leaveQueue = useCallback(() => {

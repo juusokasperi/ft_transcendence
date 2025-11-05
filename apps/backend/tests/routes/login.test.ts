@@ -24,6 +24,7 @@ vi.mock('../../utils/config.ts', () => ({
 const usersMock = vi.hoisted(() => ({
   getUserByEmail: vi.fn(),
   updateLastSeen: vi.fn(),
+  getUserStats: vi.fn(),
 }));
 vi.mock('../../db/queries/users.ts', () => usersMock);
 
@@ -66,8 +67,21 @@ describe('POST /api/login', () => {
       username: 'alice',
       passwordHash: await bcrypt.hash('StrongPass123!', 10),
       avatar: null,
+      email: 'alice@example.com',
+      createdAt: '2023-12-25T12:00:00.000Z',
       tfa: false,
       tfaSecret: null,
+    });
+    usersMock.getUserStats.mockReturnValue({
+      username: 'alice',
+      uuid: USER_UUID,
+      avatar: null,
+      ranking: 0,
+      createdAt: '2023-12-25T12:00:00.000Z',
+      wins: 9,
+      losses: 4,
+      totalMatches: 13,
+      online: false,
     });
     await app.ready();
   });
@@ -88,7 +102,16 @@ describe('POST /api/login', () => {
     const tokenCookie = parseSetCookie(res.headers['set-cookie'], ACCESS_COOKIE);
     expect(tokenCookie).toBeTruthy();
     expect(res.json()).toEqual({
-      user: { username: 'alice', uuid: USER_UUID, avatar: null, tfa: false },
+      user: {
+        username: 'alice',
+        uuid: USER_UUID,
+        avatar: null,
+        email: 'alice@example.com',
+        tfa: false,
+        wins: 9,
+        losses: 4,
+        createdAt: '2023-12-25T12:00:00.000Z',
+      },
     });
   });
 });

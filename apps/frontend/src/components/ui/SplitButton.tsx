@@ -21,7 +21,7 @@ export default function SplitButton({ targetUser, isBlocked, onAction }: SplitBu
 
   const options = isBlocked
     ? ['Unblock user', 'View profile']
-    : ['Send private message', 'Block user', 'Invite to game', 'View profile'];
+    : ['Send private message', 'Block user', 'Invite to 1v1', 'View profile'];
 
   const handleMenuItemClick = (
     event: React.MouseEvent<HTMLLIElement, MouseEvent>,

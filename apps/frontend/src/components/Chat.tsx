@@ -32,8 +32,8 @@ type ChatMessage = {
   to?: string;
   message: string;
   system?: boolean;
-  type?: string; // "chat" | "privateMessage" | "dm" | "tournamentMsg" | undefined
-
+  type?: string; // "chat" | "privateMessage" | "dm" | undefined
+  inviteId?: string;
 };
 
 type UserItem = {
@@ -42,7 +42,6 @@ type UserItem = {
   isBlocked?: boolean;
 };
 
-
 type ChatProps = {
   onClose: () => void;
   username?: string;
@@ -50,9 +49,9 @@ type ChatProps = {
   isOpen?: boolean;
 
   // tournament data passed from TournamentPage
-  firstPlayer?: string | null,
-  secondPlayer?: string | null,
-  stage?: string | null,
+  firstPlayer?: string | null;
+  secondPlayer?: string | null;
+  stage?: string | null;
 };
 
 export default function Chat({
@@ -60,9 +59,9 @@ export default function Chat({
   username = 'Player',
   channel,
   isOpen = true,
-  firstPlayer =  null,
-  secondPlayer =  null,
-  stage =  null,
+  firstPlayer = null,
+  secondPlayer = null,
+  stage = null,
 }: ChatProps) {
   const { user, navigate, axios: authAxios } = useAppContext();
   const chatUsername = user?.username || username;
@@ -74,6 +73,7 @@ export default function Chat({
   const [blocked, setBlocked] = useState<Set<string>>(new Set());
   const sentTournamentMsgRef = useRef(false);
 
+  const [pendingInvites, setPendingInvites] = useState<Map<string, string>>(new Map());
 
   const wsRef = useRef<WebSocket | null>(null);
   const scrollRef = useRef<HTMLDivElement | null>(null);
@@ -113,6 +113,7 @@ export default function Chat({
       setBlocked(new Set<string>());
       setSentCount(0);
       setCooldown(false);
+      setPendingInvites(new Map());
     }
   }, [isOpen]);
 
@@ -171,17 +172,17 @@ export default function Chat({
       ws.send(JSON.stringify({ type: 'joinChannel', channel }));
       if (!sentTournamentMsgRef.current && firstPlayer && secondPlayer && stage) {
         console.log('Sending tournamentMsg for match start');
-        setTimeout(() => { 
-          ws.send(JSON.stringify({
-            type: 'tournamentMsg',
-            message: `Match starting: ${firstPlayer} vs ${secondPlayer} (Stage: ${stage})`,
-          }));
-          sentTournamentMsgRef.current = true; 
+        setTimeout(() => {
+          ws.send(
+            JSON.stringify({
+              type: 'tournamentMsg',
+              message: `Match starting: ${firstPlayer} vs ${secondPlayer} (Stage: ${stage})`,
+            }),
+          );
+          sentTournamentMsgRef.current = true;
         }, 5000);
       }
     };
-    
-    
 
     ws.onmessage = (ev) => {
       let data: any;
@@ -218,11 +219,17 @@ export default function Chat({
       }
 
       if (data.type === 'userJoined') {
-        setMessages((prev) => [...prev, { system: true, message: `✅ ${data.username} joined ${channel}` }]);
+        setMessages((prev) => [
+          ...prev,
+          { system: true, message: `${data.username} joined ${channel}` },
+        ]);
         return;
       }
       if (data.type === 'userLeft') {
-        setMessages((prev) => [...prev, { system: true, message: `❌ ${data.username} left ${channel}` }]);
+        setMessages((prev) => [
+          ...prev,
+          { system: true, message: `${data.username} left ${channel}` },
+        ]);
         return;
       }
 
@@ -232,8 +239,10 @@ export default function Chat({
           copy.add(data.username);
           return copy;
         });
-        setUsers((prev) => prev.map((u) => (u.username === data.username ? { ...u, isBlocked: true } : u)));
-        setMessages((prev) => [...prev, { system: true, message: `🚫 You blocked ${data.username}` }]);
+        setUsers((prev) =>
+          prev.map((u) => (u.username === data.username ? { ...u, isBlocked: true } : u)),
+        );
+        setMessages((prev) => [...prev, { system: true, message: `You blocked ${data.username}` }]);
         return;
       }
       if (data.type === 'userUnblocked') {
@@ -242,8 +251,13 @@ export default function Chat({
           copy.delete(data.username);
           return copy;
         });
-        setUsers((prev) => prev.map((u) => (u.username === data.username ? { ...u, isBlocked: false } : u)));
-        setMessages((prev) => [...prev, { system: true, message: `✅ You unblocked ${data.username}` }]);
+        setUsers((prev) =>
+          prev.map((u) => (u.username === data.username ? { ...u, isBlocked: false } : u)),
+        );
+        setMessages((prev) => [
+          ...prev,
+          { system: true, message: `You unblocked ${data.username}` },
+        ]);
         return;
       }
 
@@ -252,26 +266,82 @@ export default function Chat({
         const norm = (s: string) => s.replace(/^🏓\s*/, '').trim();
 
         setMessages((prev) => {
-        const messageExists = prev.some((msg) => norm(msg.message) === norm(data.message));
-        if (messageExists) return prev;
+          const messageExists = prev.some((msg) => norm(msg.message) === norm(data.message));
+          if (messageExists) return prev;
 
-        const payload: ChatMessage = {
-          system: true,
-          message: `🏓 ${data.message}`,
-          type: 'tournamentMsg',
-        };
+          const payload: ChatMessage = {
+            system: true,
+            message: `🏓 ${data.message}`,
+            type: 'tournamentMsg',
+          };
 
-        return [...prev, payload];
+          return [...prev, payload];
         });
         return;
       }
 
       if (data.type === 'inviteGame') {
-        setMessages((prev) => [...prev, { system: true, message: `🎮 Game invite from ${data.from}` }]);
+        setPendingInvites((prev) => new Map(prev).set(data.inviteId, data.from));
+        setMessages((prev) => [
+          ...prev,
+          { system: true, message: `Game invite from ${data.from}`, inviteId: data.inviteId },
+        ]);
         return;
       }
+
+      if (data.type === 'inviteSent') {
+        setMessages((prev) => [...prev, { system: true, message: `Invite sent to ${data.to}` }]);
+        return;
+      }
+
+      if (data.type === 'inviteAccepted') {
+        setMessages((prev) => [
+          ...prev,
+          { system: true, message: `Invite accepted. Joining game.` },
+        ]);
+        setTimeout(() => {
+          // Use state with a timestamp to force re-render if already on the page
+          navigate('/pong/online', { state: { timestamp: Date.now() } });
+          onClose();
+        }, 500);
+        return;
+      }
+
+      if (data.type === 'inviteDeclined') {
+        if (data.to === chatUsername) {
+          setMessages((prev) => [
+            ...prev,
+            { system: true, message: `You declined ${data.from}'s invitation.` },
+          ]);
+        } else {
+          setMessages((prev) => [
+            ...prev,
+            { system: true, message: `${data.to} declined your invitation.` },
+          ]);
+        }
+      }
+
+      if (data.type === 'inviteExpired') {
+        setMessages((prev) => [
+          ...prev,
+          { system: true, message: `Invite with ${data.username} expired` },
+        ]);
+        return;
+      }
+
+      if (data.type === 'inviteCancelled') {
+        setMessages((prev) => [
+          ...prev,
+          { system: true, message: `${data.username} left the chat, invite cancelled` },
+        ]);
+        return;
+      }
+
       if (data.type === 'profile') {
-        setMessages((prev) => [...prev, { system: true, message: `👤 Profile: ${data.username} (id: ${data.userId})` }]);
+        setMessages((prev) => [
+          ...prev,
+          { system: true, message: `Profile: ${data.username} (id: ${data.userId})` },
+        ]);
         return;
       }
       if (data.type === 'error') {
@@ -283,10 +353,11 @@ export default function Chat({
     };
 
     return () => {
-      try { ws.close(); } catch {}
+      try {
+        ws.close();
+      } catch {}
       wsRef.current = null;
-      sentTournamentMsgRef.current = false; 
-
+      sentTournamentMsgRef.current = false;
     };
   }, [channel, chatUsername, isOpen, firstPlayer, secondPlayer, stage]);
 
@@ -317,7 +388,11 @@ export default function Chat({
     if (!text) return;
 
     if (!tryConsumeSendSlot()) {
-      setMessages((prev) => [...prev, { system: true, message: "⛔ Slow down — you're sending messages too fast. Wait 2s." }]);
+      // optionally show a quick system message or toast
+      setMessages((prev) => [
+        ...prev,
+        { system: true, message: "Slow down — you're sending messages too fast. Wait 2s." },
+      ]);
       return;
     }
 
@@ -329,6 +404,28 @@ export default function Chat({
     }
 
     setInput('');
+  };
+
+  const handleAcceptInvite = (inviteId: string) => {
+    const ws = wsRef.current;
+    if (!ws || ws.readyState !== WebSocket.OPEN) return;
+    ws.send(JSON.stringify({ type: 'acceptInvite', inviteId }));
+    setPendingInvites((prev) => {
+      const copy = new Map(prev);
+      copy.delete(inviteId);
+      return copy;
+    });
+  };
+
+  const handleDeclineInvite = (inviteId: string) => {
+    const ws = wsRef.current;
+    if (!ws || ws.readyState !== WebSocket.OPEN) return;
+    ws.send(JSON.stringify({ type: 'declineInvite', inviteId }));
+    setPendingInvites((prev) => {
+      const copy = new Map(prev);
+      copy.delete(inviteId);
+      return copy;
+    });
   };
 
   const handleAction = async (action: string, targetUser: string) => {
@@ -345,18 +442,23 @@ export default function Chat({
       case 'Unblock user':
         ws.send(JSON.stringify({ type: 'unblockUser', username: targetUser }));
         break;
-      case 'Invite to game':
-        setMessages((prev) => [...prev, { system: true, message: `🎮 Invite sent to ${targetUser}` }]);
+      case 'Invite to 1v1':
+        ws.send(JSON.stringify({ type: 'inviteUser', username: targetUser }));
         break;
       case 'View profile': {
         const uid = await fetchUserUuidByUsername(authAxios, targetUser);
-        if (uid) navigate(`/users/${uid}`);
-        else setMessages((prev) => [...prev, { system: true, message: `⚠️ Invalid or missing profile for ${targetUser}` }]);
+        if (uid) {
+          navigate(`/users/${uid}`);
+        } else {
+          setMessages((prev) => [
+            ...prev,
+            { system: true, message: `Invalid or missing profile for ${targetUser}` },
+          ]);
+        }
         break;
       }
     }
   };
-
 
   // ---------- UI render ----------
   const panelStateCls = isOpen
@@ -370,7 +472,7 @@ export default function Chat({
       aria-label={`Live Chat (${channel})`}
       aria-hidden={!isOpen}
       data-state={isOpen ? 'open' : 'closed'}
-      className={`fixed inset-x-3 bottom-3 z-50 flex h-[85vh] max-h-[calc(100vh-1.5rem)] flex-col overflow-hidden rounded-2xl border border-white/20 text-white shadow-2xl backdrop-blur-md transition duration-200 ease-out sm:inset-auto sm:bottom-6 sm:left-auto sm:right-6 sm:h-[40rem] sm:w-[36rem] ${panelStateCls} bg-gray-900/20 border-white/10`}
+      className={`fixed inset-x-3 bottom-3 z-50 flex h-[85vh] max-h-[calc(100vh-1.5rem)] flex-col overflow-hidden rounded-2xl border border-white/20 text-white shadow-2xl backdrop-blur-md transition duration-200 ease-out sm:inset-auto sm:bottom-6 sm:left-auto sm:right-6 sm:h-[40rem] sm:w-[36rem] ${panelStateCls} border-white/10 bg-gray-900/20`}
     >
       {/* Header */}
       <div className="flex items-center justify-between border-b border-white/20 px-3 py-2">
@@ -386,6 +488,27 @@ export default function Chat({
         <div ref={scrollRef} className="min-h-0 flex-1 space-y-2 overflow-y-auto p-3 text-sm">
           {messages.map((msg, idx) => {
             if (msg.system) {
+              if (msg.inviteId && pendingInvites.has(msg.inviteId)) {
+                return (
+                  <div key={idx} className="rounded bg-blue-900/40 p-2">
+                    <div className="italic text-blue-200">{msg.message}</div>
+                    <div className="mt-2 flex gap-2">
+                      <button
+                        onClick={() => handleAcceptInvite(msg.inviteId!)}
+                        className="rounded bg-green-600 px-3 py-1 text-xs font-semibold hover:bg-green-500"
+                      >
+                        Accept
+                      </button>
+                      <button
+                        onClick={() => handleDeclineInvite(msg.inviteId!)}
+                        className="rounded bg-red-600 px-3 py-1 text-xs font-semibold hover:bg-red-500"
+                      >
+                        Decline
+                      </button>
+                    </div>
+                  </div>
+                );
+              }
               return (
                 <div key={idx} className="italic text-gray-400">
                   {msg.message}
@@ -398,11 +521,16 @@ export default function Chat({
             const isMe = msg.from === chatUsername;
             const isPrivate = msg.type === 'privateMessage' || msg.type === 'dm';
             const containerClass = isPrivate
-              ? isMe ? 'bg-purple-700/60 text-purple-100' : 'bg-pink-700/60 text-pink-100'
+              ? isMe
+                ? 'bg-purple-700/60 text-purple-100'
+                : 'bg-pink-700/60 text-pink-100'
               : 'bg-white/10 text-white/90';
 
             return (
-              <div key={idx} className={`flex items-center justify-between rounded px-2 py-1 ${containerClass}`}>
+              <div
+                key={idx}
+                className={`flex items-center justify-between rounded px-2 py-1 ${containerClass}`}
+              >
                 <div>
                   <span className="font-semibold">{msg.from}</span>
                   <span className="ml-2">{msg.message}</span>
@@ -410,7 +538,11 @@ export default function Chat({
                 </div>
 
                 {msg.from && msg.from !== chatUsername && !isPrivate && (
-                  <SplitButton targetUser={msg.from} isBlocked={blocked.has(msg.from)} onAction={handleAction} />
+                  <SplitButton
+                    targetUser={msg.from}
+                    isBlocked={blocked.has(msg.from)}
+                    onAction={handleAction}
+                  />
                 )}
               </div>
             );
@@ -424,7 +556,11 @@ export default function Chat({
             <div
               key={u.username}
               className={`flex items-center justify-between gap-2 px-2 py-1 ${
-                u.isBlocked ? 'text-red-400' : u.username === chatUsername ? 'text-green-400' : 'text-white/90'
+                u.isBlocked
+                  ? 'text-red-400'
+                  : u.username === chatUsername
+                    ? 'text-green-400'
+                    : 'text-white/90'
               }`}
             >
               <span className="truncate">
@@ -432,7 +568,11 @@ export default function Chat({
                 {u.username === chatUsername ? ' (you)' : ''}
               </span>
               {u.username !== chatUsername && (
-                <SplitButton targetUser={u.username} isBlocked={!!u.isBlocked} onAction={handleAction} />
+                <SplitButton
+                  targetUser={u.username}
+                  isBlocked={!!u.isBlocked}
+                  onAction={handleAction}
+                />
               )}
             </div>
           ))}
@@ -444,7 +584,12 @@ export default function Chat({
         {dmTarget && (
           <div className="mr-2 flex items-center gap-2 rounded bg-purple-900/40 px-2 py-1 text-xs text-purple-200">
             To {dmTarget}
-            <button onClick={() => setDmTarget(null)} className="ml-1 text-gray-400 hover:text-white">✕</button>
+            <button
+              onClick={() => setDmTarget(null)}
+              className="ml-1 text-gray-400 hover:text-white"
+            >
+              ✕
+            </button>
           </div>
         )}
 

@@ -5,6 +5,7 @@ import type { User } from '../types';
 import Button from './Button';
 import { useSnackbar } from '../context/SnackbarContext';
 import ConfirmDialog from './ConfirmDialog';
+import { Spinner } from '@ft/spinner';
 
 interface TwoFactorSettingsProps {
   axios: AxiosInstance;
@@ -70,7 +71,8 @@ const TwoFactorSettings: React.FC<TwoFactorSettingsProps> = ({ axios, user, setU
   };
 
   const confirmSetup = async () => {
-    if (!verificationCode.trim()) {
+    const code = verificationCode.trim();
+    if (code.length !== 6) {
       enqueueSnackbar({
         message: 'Please enter the code from your authenticator app.',
         variant: 'error',
@@ -140,6 +142,13 @@ const TwoFactorSettings: React.FC<TwoFactorSettingsProps> = ({ axios, user, setU
     }
   };
 
+  const renderButtonSpinner = (label: string) => (
+    <span className="inline-flex items-center gap-2">
+      <Spinner size={18} color="#FFFFFF" aria-label={label} />
+      <span>{label}</span>
+    </span>
+  );
+
   return (
     <div className="rounded border border-gray-200 p-6 shadow-sm">
       <div className="grid grid-cols-[1fr_auto] items-start gap-4">
@@ -163,7 +172,7 @@ const TwoFactorSettings: React.FC<TwoFactorSettingsProps> = ({ axios, user, setU
       <div className="mt-4 space-y-4">
         {!enabled && !setupData && (
           <Button type="button" onClick={startSetup} disabled={isLoading}>
-            {isLoading ? 'Preparing…' : 'Enable 2FA'}
+            {isLoading ? renderButtonSpinner('Preparing setup') : 'Enable 2FA'}
           </Button>
         )}
 
@@ -205,19 +214,25 @@ const TwoFactorSettings: React.FC<TwoFactorSettingsProps> = ({ axios, user, setU
                 id="setup-code"
                 type="text"
                 inputMode="numeric"
+                maxLength={6}
                 autoComplete="one-time-code"
                 className="w-full rounded border border-gray-300 px-3 py-2"
                 value={verificationCode}
-                onChange={(event) => setVerificationCode(event.target.value)}
+                onChange={(event) =>
+                  setVerificationCode(event.target.value.replace(/\D/g, '').slice(0, 6))
+                }
               />
+              {verificationCode && verificationCode.length < 6 && (
+                <p className="mt-2 text-sm text-rose-500">Enter the full 6-digit code.</p>
+              )}
               <div className="flex gap-2">
                 <Button
                   type="button"
                   onClick={confirmSetup}
-                  disabled={isConfirming}
+                  disabled={isConfirming || verificationCode.length !== 6}
                   className="flex-1"
                 >
-                  {isConfirming ? 'Confirming…' : 'Confirm & enable'}
+                  {isConfirming ? renderButtonSpinner('Confirming code') : 'Confirm & enable'}
                 </Button>
                 <Button
                   type="button"
@@ -239,7 +254,7 @@ const TwoFactorSettings: React.FC<TwoFactorSettingsProps> = ({ axios, user, setU
         open={confirmDisableOpen}
         title="Disable two-factor authentication?"
         description="You will lose the extra security provided by verification codes."
-        confirmLabel={isLoading ? 'Disabling…' : 'Disable 2FA'}
+        confirmLabel={isLoading ? renderButtonSpinner('Disabling 2FA') : 'Disable 2FA'}
         cancelLabel="Keep 2FA"
         confirmDisabled={isLoading}
         tone="danger"

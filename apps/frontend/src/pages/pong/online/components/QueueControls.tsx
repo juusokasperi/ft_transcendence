@@ -2,6 +2,12 @@ import React, { useState } from 'react';
 import Button from '../../../../components/Button';
 import type { Status } from '../state/types';
 import { formatSeconds } from '../utils/format';
+import { InlineSpinner } from '@ft/spinner';
+import {
+  ALIAS_MAX_LENGTH,
+  aliasInputAllowedRegex,
+  sanitizeAliasInput,
+} from '../../../../utils/alias';
 
 type QueueControlsProps = {
   status: Status;
@@ -23,11 +29,15 @@ const QueueControls: React.FC<QueueControlsProps> = ({
   if (status === 'in_queue') {
     return (
       <div className="space-y-3">
-        <p className="text-white/70">
-          Looking for an opponent…{' '}
-          <span className="ml-2 font-mono text-sm text-white/50">
-            ({formatSeconds(queueElapsed)})
-          </span>
+        <p className="flex items-center gap-2 text-white/70">
+          <InlineSpinner
+            size={16}
+            color="#A855F7"
+            label="Looking for an opponent"
+            className="text-white/70"
+            labelClassName="text-white/70"
+          />
+          <span className="font-mono text-sm text-white/50">({formatSeconds(queueElapsed)})</span>
         </p>
         <Button type="button" variant="secondary" fullWidth onClick={onLeave} disabled={disabled}>
           Leave Queue
@@ -49,10 +59,21 @@ const QueueControls: React.FC<QueueControlsProps> = ({
     >
       <input
         value={alias}
-        onChange={(event) => setAlias(event.target.value)}
+        onChange={(event) => setAlias(sanitizeAliasInput(event.target.value))}
         placeholder="Your alias (optional)"
         className="w-full rounded-full border border-white/10 bg-black/50 px-4 py-2 text-sm text-white placeholder:text-white/40 focus:border-indigo-400 focus:outline-none"
         disabled={disabled}
+        maxLength={ALIAS_MAX_LENGTH}
+        onBeforeInput={(event) => {
+          const nativeEvent = event.nativeEvent as InputEvent;
+          if (
+            nativeEvent.inputType === 'insertText' &&
+            nativeEvent.data &&
+            !aliasInputAllowedRegex.test(nativeEvent.data)
+          ) {
+            event.preventDefault();
+          }
+        }}
       />
       <Button type="submit" variant="primary" fullWidth disabled={disabled}>
         Find a Match

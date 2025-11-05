@@ -4,7 +4,7 @@ interface ConfirmDialogProps {
   open: boolean;
   title: string;
   description?: string;
-  confirmLabel?: string;
+  confirmLabel?: React.ReactNode;
   cancelLabel?: string;
   confirmDisabled?: boolean;
   tone?: 'default' | 'danger';
