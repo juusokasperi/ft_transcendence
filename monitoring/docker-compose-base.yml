@@ -43,6 +43,10 @@ services:
     depends_on:
       prometheus-pre:
         condition: service_completed_successfully
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.retention.time=30d'
+      - '--storage.tsdb.retention.size=1GB'
     volumes:
       - prometheus-config:/etc/prometheus:ro
     networks:
