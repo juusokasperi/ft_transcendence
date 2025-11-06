@@ -103,7 +103,7 @@ groups:
        description: "Node.js service {{ \$labels.job }} on {{ \$labels.instance }} has been down for more than 2 minutes"
 
    - alert: HighMemoryUsage
-     expr: (process_resident_memory_bytes / node_memory_MemTotal_bytes) * 100 > 80
+     expr: (process_resident_memory_bytes / nodejs_external_memory_bytes) * 100 > 80
      for: 5m
      labels:
        severity: warning
