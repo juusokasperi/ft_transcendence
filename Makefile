@@ -82,7 +82,7 @@ endef
 # ========================
 #  Orchestration
 # ========================
-.PHONY: all up detached prod prod-detached elk elk-detached down clean nuke check-leftovers fclean re stop restart restart-elk restart-% builder-init builder-use builder-prune builder-rm check-leftovers-global overview-docker
+.PHONY: all up detached prod prod-detached elk elk-detached down clean nuke check-leftovers fclean re stop restart restart-prod restart-% builder-init builder-use builder-prune builder-rm check-leftovers-global overview-docker
 all: up
 
 up:
@@ -232,14 +232,12 @@ clean:
 fclean:
 	@echo ">> FCLEAN: clean + prune build cache + remove builder"
 	-$(MAKE) clean
-	@echo ">> Removing images referenced by dev compose (default profile)"
-	- docker compose -p $(NAME) $(ROOT_COMPOSE) $(ENV_ROOT) config --images | sort -u | xargs -r docker image rm -f
-	@echo ">> Removing images referenced by dev compose (elk profile)"
-	- docker compose -p $(NAME) $(ROOT_COMPOSE) $(ENV_ROOT) --profile elk config --images | sort -u | xargs -r docker image rm -f
-	@echo ">> Removing images referenced by dev compose (monitoring profile)"
-	- docker compose -p $(NAME) $(ROOT_COMPOSE) ${MON_DEV_COMPOSE} $(ENV_ROOT) config --images | sort -u | xargs -r docker image rm -f
+	@echo ">> Removing images referenced by dev compose"
+	- docker compose -p $(NAME) $(ROOT_COMPOSE) ${MON_DEV_COMPOSE} ${LOG_DEV_COMPOSE} \
+		$(ENV_ROOT) config --images | sort -u | xargs -r docker image rm -f
 	@echo ">> Removing images referenced by prod compose"
-	- docker compose -p $(NAME_PROD) $(PROD_COMPOSE) ${MON_PROD_COMPOSE} $(ENV_ROOT) config --images | sort -u | xargs -r docker image rm -f
+	- docker compose -p $(NAME_PROD) $(PROD_COMPOSE) ${MON_PROD_COMPOSE} ${LOG_PROD_COMPOSE} \
+		$(ENV_ROOT) config --images | sort -u | xargs -r docker image rm -f
 	@echo ">> Pruning build cache for builder '$(BUILDER)'"
 	-$(MAKE) builder-prune
 	@echo ">> Removing builder '$(BUILDER)'"
@@ -262,17 +260,20 @@ restart:
 	@echo ">> Restarting services in default stack"
 	docker compose -p $(NAME) $(ROOT_COMPOSE) $(ENV_ROOT) restart
 
-restart-elk:
+restart-prod:
 	$(ensure_env)
-	@echo ">> Restarting services in profile 'elk'"
-	docker compose -p $(NAME) --profile elk restart
+	@echo ">> Restarting prod stack"
+	docker compose -p $(NAME_PROD) $(PROD_COMPOSE) $(ENV_ROOT) \
+		${MON_PROD_COMPOSE} \
+		${LOG_PROD_COMPOSE} \
+		restart
 
 restart-%:
 	$(ensure_env)
 	@echo ">> Restarting service '$*' (if present in any compose file)"
 	@if echo "$(SERVICES)" | grep -qw "$*"; then \
 		docker compose -p $(NAME) -f docker-compose.yml restart $* || true; \
-		docker compose -p $(NAME) -f log-management/docker-compose.yml --env-file log-management/.env restart $* || true; \
+		docker compose -p $(NAME) -f log-management/docker-compose.yml  restart $* || true; \
 	else \
 		echo "Usage: make restart-[service]"; \
 		echo "Available services: $(SERVICES)"; \
