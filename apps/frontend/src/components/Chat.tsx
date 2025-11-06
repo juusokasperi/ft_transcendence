@@ -362,7 +362,8 @@ export default function Chat({
     const ws = wsRef.current;
     if (!ws || ws.readyState !== WebSocket.OPEN) return;
 
-    const sig = firstPlayer && secondPlayer && stage ? `${firstPlayer}|${secondPlayer}|${stage}` : null;
+    const sig =
+      firstPlayer && secondPlayer && stage ? `${firstPlayer}|${secondPlayer}|${stage}` : null;
     if (!sig) return;
     if (lastTournamentSigRef.current === sig) return;
 

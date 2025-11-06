@@ -22,7 +22,6 @@ import { SnackbarProvider } from './context/SnackbarContext';
 import { useAppContext } from './context/AppContext';
 import { computeChannelFromPath } from './utils/computeChannel';
 
-
 import PongLayout from './pages/pong/PongLayout';
 const ModePicker = lazy(() => import('./pages/pong/ModePicker'));
 const LocalGame = lazy(() => import('./pages/pong/local/LocalGame'));
