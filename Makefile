@@ -290,14 +290,10 @@ restart-prod:
 
 restart-%:
 	$(ensure_env)
-	@echo ">> Restarting service '$*' (if present in any compose file)"
-	@if echo "$(SERVICES)" | grep -qw "$*"; then \
-		docker compose -p $(NAME) -f docker-compose.yml restart $* || true; \
-		docker compose -p $(NAME) -f log-management/docker-compose.yml  restart $* || true; \
-	else \
-		echo "Usage: make restart-[service]"; \
-		echo "Available services: $(SERVICES)"; \
-	fi
+	@echo ">> Restarting service '$*' across all compose configurations"
+	@docker compose -p $(NAME) $(ROOT_COMPOSE) $(ENV_ROOT) ${MON_DEV_COMPOSE} ${LOG_DEV_COMPOSE} restart $* 2>/dev/null || \
+	docker compose -p $(NAME_PROD) $(PROD_COMPOSE) $(ENV_ROOT) ${MON_PROD_COMPOSE} ${LOG_PROD_COMPOSE} restart $* 2>/dev/null || \
+	(echo ">> Error: Service '$*' not found or not running. Use 'make ps' to see available services." && exit 1)
 
 # ========================
 #  Buildx helpers
