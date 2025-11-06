@@ -82,7 +82,7 @@ endef
 # ========================
 #  Orchestration
 # ========================
-.PHONY: all up detached prod prod-detached elk elk-detached down clean nuke check-leftovers fclean re stop restart restart-prod restart-% builder-init builder-use builder-prune builder-rm check-leftovers-global overview-docker
+.PHONY: all up detached prod prod-detached elk elk-detached mon mon-detached dev-full dev-full-detached down clean nuke check-leftovers fclean re stop restart restart-prod restart-% builder-init builder-use builder-prune builder-rm check-leftovers-global overview-docker
 all: up
 
 up:
@@ -154,6 +154,26 @@ mon-detached:
 	$(ensure_builder)
 	docker compose -p $(NAME) $(ENV_ROOT) $(ROOT_COMPOSE) \
 		${MON_DEV_COMPOSE} \
+		up --build -d
+
+dev-full:
+	$(ensure_dirs)
+	$(ensure_env)
+	$(ensure_builder)
+	@echo ">> Starting dev stack with monitoring + ELK (attached)"
+	docker compose -p $(NAME) $(ROOT_COMPOSE) $(ENV_ROOT) \
+		${MON_DEV_COMPOSE} \
+		${LOG_DEV_COMPOSE} \
+		up --build
+
+dev-full-detached:
+	$(ensure_dirs)
+	$(ensure_env)
+	$(ensure_builder)
+	@echo ">> Starting dev stack with monitoring + ELK (detached)"
+	docker compose -p $(NAME) $(ROOT_COMPOSE) $(ENV_ROOT) \
+		${MON_DEV_COMPOSE} \
+		${LOG_DEV_COMPOSE} \
 		up --build -d
 
 down:
@@ -343,25 +363,35 @@ overview-docker:
 .PHONY: help
 help:
 	@echo "Usage:"
-	@echo "  make / make up            # Build & start default stack [uses Buildx '$(BUILDER)']"
-	@echo "  make prod                 # Build & start prod stack [uses Buildx '$(BUILDER)']"
-	@echo "  make detached-prod        # Build & start prod stack but detached"
-	@echo "  make detached             # Same as 'up', but detached (-d)"
-	@echo "  make elk                  # Start compose profile 'elk' (attached)"
-	@echo "  make elk-detached         # Start compose profile 'elk' (detached)"
-	@echo "  make down                 # Stop & remove default stack (+volumes, local images, orphans)"
-	@echo "  make down-elk             # Stop & remove profile 'elk' (+volumes, local images, orphans)"
-	@echo "  make clean                # Project-scoped cleanup (containers, networks, volumes, images, package store, app data)"
-	@echo "  make fclean               # 'clean' + prune builder cache + remove builder"
-	@echo "  make re                   # fclean + up"
-	@echo "  make nuke CONFIRM=1       # GLOBAL prune of ALL UNUSED Docker data (+builder cache)"
-	@echo "  overview-docker           # Show ALL Docker resources on this machine"
 	@echo ""
-	@echo "Build cache (Option A - per-project builder):"
-	@echo "  make builder-init         # Create/select the per-project buildx builder"
-	@echo "  make builder-use          # Select it explicitly (current shell/session)"
-	@echo "  make builder-prune        # Prune ONLY this builder's cache"
-	@echo "  make builder-rm           # Remove the builder & its cache"
+	@echo "Development mode (pick and choose):"
+	@echo "  make / make up                       # Dev only"
+	@echo "  make detached                        # Dev only (detached)"
+	@echo "  make mon                             # Dev + Monitoring (Prometheus/Grafana)"
+	@echo "  make mon-detached                    # Dev + Monitoring (detached)"
+	@echo "  make elk                             # Dev + ELK (Elasticsearch/Kibana/Logstash)"
+	@echo "  make elk-detached                    # Dev + ELK (detached)"
+	@echo "  make dev-full                        # Dev + Monitoring + ELK"
+	@echo "  make dev-full-detached               # Dev + Monitoring + ELK (detached)"
+	@echo ""
+	@echo "Production mode (always with monitoring + ELK):"
+	@echo "  make prod                            # Prod + Monitoring + ELK"
+	@echo "  make prod-detached                   # Prod + Monitoring + ELK (detached)"
+	@echo ""
+	@echo "Cleanup:"
+	@echo "  make down                            # Stop & remove all stacks (volumes, local images, orphans)"
+	@echo "  make down-soft                       # Stop & remove containers (keep volumes/images)"
+	@echo "  make clean                           # Project-scoped cleanup (containers, networks, volumes, images, artifacts)"
+	@echo "  make fclean                          # clean + prune builder cache + remove builder"
+	@echo "  make re                              # fclean + up"
+	@echo "  make nuke CONFIRM=1                  # GLOBAL prune of ALL UNUSED Docker data (+builder cache)"
+	@echo "  make overview-docker                 # Show ALL Docker resources on this machine"
+	@echo ""
+	@echo "Build cache (per-project builder):"
+	@echo "  make builder-init                    # Create/select the per-project buildx builder"
+	@echo "  make builder-use                     # Select it explicitly (current shell/session)"
+	@echo "  make builder-prune                   # Prune ONLY this builder's cache"
+	@echo "  make builder-rm                      # Remove the builder & its cache"
 	@echo ""
 	@echo "Utilities:"
 	@echo "  make ps                   # Show containers (status)"
