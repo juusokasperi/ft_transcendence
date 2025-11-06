@@ -185,8 +185,6 @@ services:
       # Listens for GELF input here. The GELF driver can only send to host IPs,
       # not into containers => this port needs to be exposed
       - '12201:12201/udp'
-      # Logstash monitoring API
-      - '9600:9600'
     networks:
       - prod-private
       - prod-public

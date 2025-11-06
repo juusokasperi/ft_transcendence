@@ -18,6 +18,12 @@ networks:
   devnet:
     driver: bridge
 
+# YAML anchor
+x-logstash-logging: &logstash-logging
+  driver: gelf
+  options:
+    gelf-address: udp://localhost:12201
+
 services:
   # 1) Install deps ONCE for the whole repo (root lockfile)
   deps:
@@ -72,10 +78,7 @@ services:
       - frontend_node_modules:/work/apps/frontend/node_modules
       - render_node_modules:/work/packages/pong/render/node_modules:ro
     networks: [devnet]
-    logging: # needed for logstash (ELK stack)
-      driver: gelf
-      options:
-        gelf-address: udp://localhost:12201
+    logging: *logstash-logging
 
   # 3) Backend (Fastify + tsx watch)
   backend:
@@ -105,10 +108,7 @@ services:
       - ./apps/backend/data/sqlite:/data
       - ./apps/backend/data/sqlite/uploads:/data/uploads
     networks: [devnet]
-    logging: # needed for logstash (ELK stack)
-      driver: gelf
-      options:
-        gelf-address: udp://localhost:12201
+    logging: *logstash-logging
 
   # 4) Nginx (single-origin dev, optional but convenient)
   nginx:
@@ -121,10 +121,7 @@ services:
     volumes:
       - ./nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
     networks: [devnet]
-    logging: # needed for logstash (ELK stack)
-      driver: gelf
-      options:
-        gelf-address: udp://localhost:12201
+    logging: *logstash-logging
 
   # 5) Matchmaking service (WebSocket server)
   matchmaking-service:
@@ -148,10 +145,7 @@ services:
       allocator:
         condition: service_started
     networks: [devnet]
-    logging: # needed for logstash (ELK stack)
-      driver: gelf
-      options:
-        gelf-address: udp://localhost:12201
+    logging: *logstash-logging
 
   # 6a) Game server (WebSocket server)
   game-server: &game-server-template
@@ -173,10 +167,7 @@ services:
       deps:
         condition: service_completed_successfully
     networks: [devnet]
-    logging: # needed for logstash (ELK stack)
-      driver: gelf
-      options:
-        gelf-address: udp://localhost:12201
+    logging: *logstash-logging
 
   # 6b) Game server 2 (uses same template)
   game-server-2:
@@ -202,10 +193,7 @@ services:
       deps:
         condition: service_completed_successfully
     networks: [devnet]
-    logging: # needed for logstash (ELK stack)
-      driver: gelf
-      options:
-        gelf-address: udp://localhost:12201
+    logging: *logstash-logging
 
   # 8) Allocator service (HTTP server)
   allocator:
@@ -230,10 +218,7 @@ services:
       redis:
         condition: service_started
     networks: [devnet]
-    logging: # needed for logstash (ELK stack)
-      driver: gelf
-      options:
-        gelf-address: udp://localhost:12201
+    logging: *logstash-logging
 
   # 9) Redis
   redis:
@@ -243,10 +228,7 @@ services:
     networks: [devnet]
     volumes:
       - redis_data:/data
-    logging: # needed for logstash (ELK stack)
-      driver: gelf
-      options:
-        gelf-address: udp://localhost:12201
+    logging: *logstash-logging
 
   # 10) Scorer service (Updating Redis for game server load)
   scorer:
@@ -275,12 +257,9 @@ services:
       game-server-2:
         condition: service_started
     networks: [devnet]
-    logging: # needed for logstash (ELK stack)
-      driver: gelf
-      options:
-        gelf-address: udp://localhost:12201
     ports:
       - "4008:4008"
+    logging: *logstash-logging
 
   # 11) Game Gateway
   game-gateway:
@@ -306,7 +285,4 @@ services:
     networks: [devnet]
     ports:
       - "55550:55550"
-    logging: # needed for logstash (ELK stack)
-      driver: gelf
-      options:
-        gelf-address: udp://localhost:12201
+    logging: *logstash-logging
