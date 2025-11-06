@@ -202,7 +202,7 @@ services:
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 5s
-      retries: 10
+      retries: 100
     volumes:
       - redis_data:/data
     networks:
@@ -261,7 +261,3 @@ services:
       redis:
         condition: service_healthy
     logging: *logstash-logging
-
-include:
-  # stuff in this file will only run with `--profile elk`
-  - log-management/docker-compose-prod.yml

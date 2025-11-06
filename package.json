@@ -22,7 +22,10 @@
     "migrate": "pnpm -F @app/api migrate",
     "test": "pnpm -r --if-present test",
     "typecheck": "pnpm -r --if-present typecheck",
-    "check-env": "node scripts/check-env.mjs"
+    "check-env": "node scripts/check-env.mjs",
+    "check-versions": "syncpack list-mismatches --config .config/syncpackrc.json",
+    "fix-versions": "syncpack fix-mismatches --config .config/syncpackrc.json",
+    "check-deps": "pnpm depcruise --config .config/dependency-cruiser.js --output-type err-long ."
   },
   "repository": {
     "type": "git",
@@ -46,6 +49,7 @@
     "prettier": "^3.6.2",
     "prettier-plugin-tailwindcss": "^0.6.14",
     "rimraf": "^6.0.1",
+    "syncpack": "^13.0.4",
     "ts-morph": "^27.0.0",
     "ts-node": "^10.9.2",
     "tsconfig-paths": "^4.2.0",
