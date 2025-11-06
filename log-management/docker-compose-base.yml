@@ -1,4 +1,9 @@
-name: ft-transcendence-dev
+networks:
+  prod-private:
+    driver: bridge
+    internal: true
+  prod-public:
+    driver: bridge
 
 volumes:
   elk_certs:
@@ -13,45 +18,39 @@ volumes:
 services:
 
   elastic_cert_setup:
-    profiles:
-      - elk
     build:
-      context: ./elastic_cert_setup/
+      context: ./log-management/elastic_cert_setup/
       args:
-        STACK_VERSION: ${STACK_VERSION:-9.1.5}
-      labels:
-        - project=transcendence
+        STACK_VERSION: ${ES_STACK_VERSION:-9.1.5}
     volumes:
       - elk_certs:/usr/share/elasticsearch/config/certs
     user: '0'
-    env_file:
-      - ./.env
+    environment:
+      - ELASTIC_PASSWORD=${ELASTIC_PASSWORD}
+      - KIBANA_PASSWORD=${KIBANA_PASSWORD}
     healthcheck:
       test: ['CMD-SHELL', '[ -f config/certs/elasticsearch/elasticsearch.crt ]']
       interval: 1s
       timeout: 5s
       retries: 120
     networks:
-      - devnet
+      - prod-private
 
   elasticsearch:
-    profiles:
-      - elk
     build:
-      context: ./elasticsearch/
+      context: ./log-management/elasticsearch/
       args:
-        STACK_VERSION: ${STACK_VERSION:-9.1.5}
+        STACK_VERSION: ${ES_STACK_VERSION:-9.1.5}
     labels:
       co.elastic.logs/module: elasticsearch
+    restart: unless-stopped
     volumes:
       - elk_certs:/usr/share/elasticsearch/config/certs
       - elasticsearch_data:/usr/share/elasticsearch/data
-    ports:
-      - ${ES_PORT}:9200
-    env_file:
-      - ./.env
     environment:
-      - ES_JAVA_OPTS=-Xms512m -Xmx512m
+      - ELASTIC_USER=${ELASTIC_USER}
+      - ELASTIC_PASSWORD=${ELASTIC_PASSWORD}
+      - ES_JAVA_OPTS=-Xms512m -Xmx512m -XX:MaxDirectMemorySize=256M
       - discovery.type=single-node
       - bootstrap.memory_lock=true
       - xpack.security.enabled=true
@@ -64,12 +63,8 @@ services:
       - xpack.security.transport.ssl.certificate=certs/elasticsearch/elasticsearch.crt
       - xpack.security.transport.ssl.certificate_authorities=certs/ca/ca.crt
       - xpack.security.transport.ssl.verification_mode=certificate
-      - xpack.license.self_generated.type=${LICENSE}
-    mem_limit: ${ES_MEM_LIMIT}
-    ulimits:
-      memlock:
-        soft: -1
-        hard: -1
+      - xpack.license.self_generated.type=${ES_LICENSE:-basic}
+    mem_limit: 1536m
     healthcheck:
       test:
         - CMD-SHELL
@@ -85,106 +80,103 @@ services:
       elastic_cert_setup:
         condition: service_completed_successfully
     networks:
-      - devnet
+      - prod-private
 
   # configures policies using the API
   elasticsearch-post:
-    profiles:
-      - elk
     build:
-      context: ./elasticsearch-post/
+      context: ./log-management/elasticsearch-post/
     volumes:
       - elk_certs:/usr/share/elk/config/certs
-    env_file:
-      - ./.env
     environment:
       - ES_URL=https://elasticsearch:${ES_PORT:-9200}
       - ELASTIC_USER=${ELASTIC_USER:-elastic}
+      - ELASTIC_PASSWORD=${ELASTIC_PASSWORD}
+      - KIBANA_PASSWORD=${KIBANA_PASSWORD}
     networks:
-      - devnet
+      - prod-private
     depends_on:
       elasticsearch:
         condition: service_healthy
 
   kibana:
-    profiles:
-      - elk
     build:
-      context: ./kibana/
+      context: ./log-management/kibana/
       args:
-        STACK_VERSION: ${STACK_VERSION:-9.1.5}
+        STACK_VERSION: ${ES_STACK_VERSION:-9.1.5}
+    restart: unless-stopped
     depends_on:
       elasticsearch:
         condition: service_healthy
-      elastic_cert_setup:
-        condition: service_completed_successfully
     labels:
       co.elastic.logs/module: kibana
     volumes:
       - elk_certs:/usr/share/kibana/config/certs
       - kibana_data:/usr/share/kibana/data
-    ports:
-      - ${KIBANA_PORT}:5601
-    env_file:
-      - ./.env
     environment:
       - SERVERNAME=kibana
-      - ELASTICSEARCH_HOSTS=https://elasticsearch:9200
+      - ELASTICSEARCH_HOSTS=https://elasticsearch:${ES_PORT:-9200}
       - ELASTICSEARCH_USERNAME=kibana_system
       - ELASTICSEARCH_PASSWORD=${KIBANA_PASSWORD}
-      - ELASTICSEARCH_SSL_CERTIFICATEAUTHORITIES=config/certs/ca/ca.crt
-      - XPACK_SECURITY_ENCRYPTIONKEY=${ENCRYPTION_KEY}
-      - XPACK_ENCRYPTEDSAVEDOBJECTS_ENCRYPTIONKEY=${ENCRYPTION_KEY}
-      - XPACK_REPORTING_ENCRYPTIONKEY=${ENCRYPTION_KEY}
-    mem_limit: ${KB_MEM_LIMIT}
+      - ELASTICSEARCH_SSL_CERTIFICATEAUTHORITIES=/usr/share/kibana/config/certs/ca/ca.crt
+      - XPACK_SECURITY_ENCRYPTIONKEY=${ES_ENCRYPTION_KEY}
+      - XPACK_ENCRYPTEDSAVEDOBJECTS_ENCRYPTIONKEY=${ES_ENCRYPTION_KEY}
+      - XPACK_REPORTING_ENCRYPTIONKEY=${ES_ENCRYPTION_KEY}
+      - SERVER_BASEPATH=/kibana
+      - SERVER_PUBLICBASEURL=${FRONTEND_URL}/kibana
+      - SERVER_REWRITEBASEPATH=false
+    mem_limit: 1024m
     healthcheck:
-      test: ['CMD-SHELL', "curl -s -I http://localhost:5601 | grep -q 'HTTP/1.1 302 Found'"]
+      test:
+       - CMD-SHELL
+       - |
+         curl -s http://localhost:${KIBANA_PORT}/api/status | \
+         grep -q '\"level\":\"available\"'
       interval: 10s
       timeout: 10s
       retries: 120
     networks:
-      - devnet
+      - prod-private
+      - prod-public
 
   kibana-post:
-    profiles:
-      - elk
     build:
-      context: ./kibana-post/
-    env_file:
-      - ./.env
+      context: ./log-management/kibana-post/
     environment:
       - KIBANA_URL=http://kibana:${KIBANA_PORT:-5601}
       - ELASTIC_USER=${ELASTIC_USER:-elastic}
+      - ELASTIC_PASSWORD=${ELASTIC_PASSWORD}
     networks:
-      - devnet
+      - prod-private
     depends_on:
       kibana:
         condition: service_healthy
 
   logstash:
-    profiles:
-      - elk
     build:
-      context: ./logstash/
+      context: ./log-management/logstash/
       args:
-        STACK_VERSION: ${STACK_VERSION:-9.1.5}
+        STACK_VERSION: ${ES_STACK_VERSION:-9.1.5}
     labels:
       co.elastic.logs/module: logstash
+    restart: unless-stopped
     volumes:
       - elk_certs:/usr/share/logstash/certs
       - logstash_data:/usr/share/logstash/data
-    env_file:
-      - ./.env
     environment:
+      - ELASTIC_USER=${ELASTIC_USER}
+      - ELASTIC_PASSWORD=${ELASTIC_PASSWORD}
+      - LS_JAVA_OPTS=-Xms512m -Xmx512m -XX:MaxDirectMemorySize=256M
       - xpack.monitoring.enabled=false
       - ELASTIC_HOSTS=https://elasticsearch:${ES_PORT:-9200}
       - ELASTIC_USER=${ELASTIC_USER:-elastic}
-    mem_limit: ${KB_MEM_LIMIT}
+      - ELASTIC_PASSWORD=${ELASTIC_PASSWORD}
+    mem_limit: 1024m
     healthcheck:
       test: ["CMD-SHELL", "curl -fs http://localhost:9600/_node/stats || exit 1"]
       interval: 10s
       timeout: 5s
-      retries: 15
+      retries: 150
       start_period: 10s
     ports:
       # Listens for GELF input here. The GELF driver can only send to host IPs,
@@ -193,4 +185,5 @@ services:
       # Logstash monitoring API
       - '9600:9600'
     networks:
-      - devnet
+      - prod-private
+      - prod-public

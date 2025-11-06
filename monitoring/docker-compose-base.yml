@@ -2,11 +2,15 @@ networks:
   prod-private:
     driver: bridge
     internal: true
+  prod-public:
+    driver: bridge
 
 volumes:
   grafana-storage:
     driver: local
   prometheus-config:
+    driver: local
+  alertmanager-config:
     driver: local
 
 services:
@@ -23,8 +27,14 @@ services:
       - CHAT_PORT=${CHAT_PORT}
       - GAME_SERVER_HTTP=${GAME_SERVER_HTTP}
       - GAME_SERVER_PORT=${GAME_SERVER_PORT}
+      - MAIL_HOST=${MAIL_HOST}
+      - MAIL_FROM_RAW=${MAIL_FROM_RAW}
+      - MAIL_USER=${MAIL_USER}
+      - MAIL_PASS=${MAIL_PASS}
+      - ALERT_MAIL_TO=${ALERT_MAIL_TO:-test@example.com}
     volumes:
       - prometheus-config:/etc/prometheus
+      - alertmanager-config:/etc/alertmanager
     restart: no
 
   prometheus:
@@ -37,6 +47,18 @@ services:
       - prometheus-config:/etc/prometheus:ro
     networks:
       - prod-private
+
+  alertmanager:
+    image: prom/alertmanager
+    restart: unless-stopped
+    depends_on:
+      prometheus-pre:
+        condition: service_completed_successfully
+    volumes:
+      - alertmanager-config:/etc/alertmanager:ro
+    networks:
+      - prod-private
+      - prod-public
 
   nginx-exporter:
     image: nginx/nginx-prometheus-exporter:latest
@@ -54,7 +76,7 @@ services:
     environment:
       - GF_SECURITY_ADMIN_USER=${GRAFANA_ADMIN_USER}
       - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASS}
-      - GF_SERVER_ROOT_URL=https://localhost:${NGINX_HTTPS_PORT}/grafana/
+      - GF_SERVER_ROOT_URL=${FRONTEND_URL}/grafana/
       - GF_SERVER_SERVE_FROM_SUB_PATH=true
       - GF_SECURITY_ALLOW_EMBEDDING=true
       - GF_SERVER_ENABLE_GZIP=true
@@ -71,7 +93,7 @@ services:
           | grep -q '"database": "ok"'
       interval: 5s
       timeout: 5s
-      retries: 10
+      retries: 100
     networks:
       - prod-private
 
@@ -97,6 +119,7 @@ services:
   cadvisor:
     image: gcr.io/cadvisor/cadvisor:v0.52.0
     restart: unless-stopped
+    privileged: true
     command:
       - '--disable_metrics=cpu_topology,disk,network,memory,memory_numa,tcp,udp,percpu,sched,process,hugetlb,referenced_memory,resctrl,cpuset,advtcp'
       - '--docker_only=true'
