@@ -157,7 +157,7 @@ services:
       args:
         PNPM_VERSION: ${PNPM_VERSION:-9.12.3}
         SERVICE_NAME: chat-service
-        SERVICE_DIR: chat-service
+        SERVICE_DIR: chat
     image: ft-transcendence-chat-service-prod:latest
     init: true
     restart: unless-stopped
