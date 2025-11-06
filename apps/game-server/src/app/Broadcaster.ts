@@ -75,25 +75,24 @@ export class Broadcaster {
     });
   }
 
-  broadcastSnapshot(session: MatchSession): void {
+  broadcastFrame(session: MatchSession): void {
     const { model } = session;
-    const payload = {
-      type: 'snapshot' as const,
-      state: model.state,
-      events: model.lastEvents,
-      match: model.lastSnapshot,
-    };
-    forEachSeat(session, (_seat, player) => {
-      safeSend(player.socket, payload, this.logger);
-    });
-  }
 
-  broadcastOpponentAxis(session: MatchSession): void {
     const p1 = session.players.get('P1');
     const p2 = session.players.get('P2');
 
-    safeSend(p1?.socket, { type: 'opponentAxis', axis: p2?.axis ?? 0 }, this.logger);
-    safeSend(p2?.socket, { type: 'opponentAxis', axis: p1?.axis ?? 0 }, this.logger);
+    forEachSeat(session, (_seat, player) => {
+      const axis = player.seat === 'P1' ? (p2?.axis ?? 0) : (p1?.axis ?? 0);
+      const payload = {
+        type: 'FRAME' as const,
+        state: model.state,
+        events: model.lastEvents,
+        match: model.lastSnapshot,
+        axis,
+      };
+
+      safeSend(player.socket, payload, this.logger);
+    });
   }
 
   notifyMatchEnd(

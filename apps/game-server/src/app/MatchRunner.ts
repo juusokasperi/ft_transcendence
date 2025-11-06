@@ -130,8 +130,7 @@ export class MatchRunner {
 
     model.applyStep(result);
 
-    this.broadcaster.broadcastSnapshot(session);
-    this.broadcaster.broadcastOpponentAxis(session);
+    this.broadcaster.broadcastFrame(session);
 
     const matchOverEvent = result.events.matchOver as MatchOverEvent;
     if (matchOverEvent && !model.resultSubmitted && !model.resultSubmitting) {
