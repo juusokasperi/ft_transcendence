@@ -16,40 +16,13 @@ import ResetPassword from './pages/ResetPassword';
 import PublicUser from './pages/PublicUser';
 
 import Chat from './components/Chat';
+import ChatToggleButton from './components/chat/ChatToggleButton';
 import { SidebarProvider } from './context/SidebarContext';
 import { SnackbarProvider } from './context/SnackbarContext';
 import { useAppContext } from './context/AppContext';
+import { computeChannelFromPath } from './utils/computeChannel';
 
-/**
- * Map pathname to chat channel.
- * Important: /profile* always maps to 'lobby' (per your request).
- */
-function computeChannelFromPath(pathname: string) {
-  // Home
-  if (pathname === '/') return 'Lobby';
 
-  // Force logged-in profile pages to use lobby channel
-  if (pathname.startsWith('/profile')) return 'Lobby';
-
-  // Pong area
-  if (pathname.startsWith('/pong/tournaments')) return 'Tournaments';
-  if (pathname.startsWith('/pong/online')) return 'Online 1v1';
-
-  return 'Lobby';
-}
-
-function ChatToggleButton({ open, setOpen }: { open: boolean; setOpen: (v: boolean) => void }) {
-  return (
-    <button
-      onClick={() => setOpen(!open)}
-      aria-label="Toggle chat"
-      className="z-60 fixed bottom-6 right-6 flex h-12 w-12 items-center justify-center rounded-full bg-indigo-600/90 text-white shadow-lg hover:bg-indigo-500"
-      title={open ? 'Close chat' : 'Open chat'}
-    >
-      💬
-    </button>
-  );
-}
 import PongLayout from './pages/pong/PongLayout';
 const ModePicker = lazy(() => import('./pages/pong/ModePicker'));
 const LocalGame = lazy(() => import('./pages/pong/local/LocalGame'));

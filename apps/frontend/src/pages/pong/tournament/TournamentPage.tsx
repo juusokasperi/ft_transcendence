@@ -11,24 +11,14 @@ import { useTournamentPageController } from './hooks/useTournamentPageController
 import PageContainer from '../shared/components/PageContainer';
 import PageSection from '../shared/components/PageSection';
 import Chat from 'apps/frontend/src/components/Chat';
+import ChatToggleButton from 'apps/frontend/src/components/chat/ChatToggleButton';
 
 type TournamentPageProps = {
   onBack?: () => void;
   focusTournamentId?: number | null;
 };
 
-function ChatToggleButton({ open, setOpen }: { open: boolean; setOpen: (v: boolean) => void }) {
-  return (
-    <button
-      onClick={() => setOpen(!open)}
-      aria-label="Toggle chat"
-      className="z-60 fixed bottom-6 right-6 flex h-12 w-12 items-center justify-center rounded-full bg-indigo-600/90 text-white shadow-lg hover:bg-indigo-500"
-      title={open ? 'Close chat' : 'Open chat'}
-    >
-      💬
-    </button>
-  );
-}
+// Moved ChatToggleButton to a shared component for reuse
 
 const TournamentPage: React.FC<TournamentPageProps> = ({ onBack, focusTournamentId = null }) => {
   const {

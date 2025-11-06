@@ -71,7 +71,8 @@ export default function Chat({
   const [input, setInput] = useState('');
   const [dmTarget, setDmTarget] = useState<string | null>(null);
   const [blocked, setBlocked] = useState<Set<string>>(new Set());
-  const sentTournamentMsgRef = useRef(false);
+  // Track last tournament announce we broadcasted to avoid duplicates
+  const lastTournamentSigRef = useRef<string | null>(null);
 
   const [pendingInvites, setPendingInvites] = useState<Map<string, string>>(new Map());
 
@@ -80,6 +81,7 @@ export default function Chat({
   const containerRef = useRef<HTMLDivElement | null>(null);
   const wasOpenRef = useRef(isOpen);
   const cooldownTimeoutRef = useRef<number | null>(null);
+  const tournamentTimerRef = useRef<number | null>(null);
 
   // rate limiter state (same behaviour you had)
   const [sentCount, setSentCount] = useState(0);
@@ -106,6 +108,10 @@ export default function Chat({
         clearTimeout(cooldownTimeoutRef.current);
         cooldownTimeoutRef.current = null;
       }
+      if (tournamentTimerRef.current) {
+        clearTimeout(tournamentTimerRef.current);
+        tournamentTimerRef.current = null;
+      }
       setMessages([]);
       setUsers([]);
       setInput('');
@@ -114,6 +120,7 @@ export default function Chat({
       setSentCount(0);
       setCooldown(false);
       setPendingInvites(new Map());
+      lastTournamentSigRef.current = null;
     }
   }, [isOpen]);
 
@@ -161,6 +168,7 @@ export default function Chat({
   };
 
   // ---------- websocket connect & handlers ----------
+  // Dedicated WebSocket connection lifecycle (stable; does not depend on match props)
   useEffect(() => {
     if (!isOpen) return;
 
@@ -170,18 +178,6 @@ export default function Chat({
     ws.onopen = () => {
       ws.send(JSON.stringify({ type: 'setName', username: chatUsername }));
       ws.send(JSON.stringify({ type: 'joinChannel', channel }));
-      if (!sentTournamentMsgRef.current && firstPlayer && secondPlayer && stage) {
-        console.log('Sending tournamentMsg for match start');
-        setTimeout(() => {
-          ws.send(
-            JSON.stringify({
-              type: 'tournamentMsg',
-              message: `Match starting: ${firstPlayer} vs ${secondPlayer} (Stage: ${stage})`,
-            }),
-          );
-          sentTournamentMsgRef.current = true;
-        }, 5000);
-      }
     };
 
     ws.onmessage = (ev) => {
@@ -357,9 +353,37 @@ export default function Chat({
         ws.close();
       } catch {}
       wsRef.current = null;
-      sentTournamentMsgRef.current = false;
     };
-  }, [channel, chatUsername, isOpen, firstPlayer, secondPlayer, stage]);
+  }, [channel, chatUsername, isOpen]);
+
+  // Announce tournament match start when match participants/stage change
+  useEffect(() => {
+    if (!isOpen) return;
+    const ws = wsRef.current;
+    if (!ws || ws.readyState !== WebSocket.OPEN) return;
+
+    const sig = firstPlayer && secondPlayer && stage ? `${firstPlayer}|${secondPlayer}|${stage}` : null;
+    if (!sig) return;
+    if (lastTournamentSigRef.current === sig) return;
+
+    if (tournamentTimerRef.current) {
+      clearTimeout(tournamentTimerRef.current);
+      tournamentTimerRef.current = null;
+    }
+    tournamentTimerRef.current = window.setTimeout(() => {
+      // double-check socket still the same and open
+      if (wsRef.current === ws && ws.readyState === WebSocket.OPEN) {
+        ws.send(
+          JSON.stringify({
+            type: 'tournamentMsg',
+            message: `Match starting: ${firstPlayer} vs ${secondPlayer} (Stage: ${stage})`,
+          }),
+        );
+        lastTournamentSigRef.current = sig;
+      }
+      tournamentTimerRef.current = null;
+    }, 5000);
+  }, [isOpen, firstPlayer, secondPlayer, stage]);
 
   // autoscroll
   useEffect(() => {
