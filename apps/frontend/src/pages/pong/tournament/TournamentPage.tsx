@@ -46,6 +46,7 @@ const TournamentPage: React.FC<TournamentPageProps> = ({ onBack, focusTournament
     handleQuitMatch,
     isDetailView,
     headerRefreshHandler,
+    headerLoading,
     currentParticipantId,
   } = useTournamentPageController({ focusTournamentId });
 
@@ -94,7 +95,7 @@ const TournamentPage: React.FC<TournamentPageProps> = ({ onBack, focusTournament
             displayTournamentId={activeTournamentId}
             displayTournamentName={activeTournamentName}
             connectionReady={connectionReady}
-            loading={loadingTournaments}
+            loading={headerLoading}
             onRefresh={headerRefreshHandler}
             onLeaveTournament={isDetailView ? handleLeaveTournamentClick : undefined}
           />
