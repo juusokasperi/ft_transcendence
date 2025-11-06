@@ -65,9 +65,11 @@ RULE_FILE="/etc/prometheus/rules.yml"
 
 cat > "$RULE_FILE" <<EOF
 groups:
- - name: Count greater than 1
+
+ # Test alert
+ - name: Count greater than 0
    rules:
-   - alert: CountGreaterThan1
+   - alert: CountGreaterThan0
      expr: nginx_connections_active > 0
      for: 1s
 
@@ -146,7 +148,7 @@ route:
 receivers:
   - name: combined
     webhook_configs:
-      - url: 'https://webhook.site/2f52e7a4-5d42-41ef-8774-70624d50d770'
+      - url: "${ALERT_WEBHOOK_URL}"
         send_resolved: false
     email_configs:
       - to: "${ALERT_MAIL_TO}"

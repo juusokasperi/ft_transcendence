@@ -32,6 +32,7 @@ services:
       - MAIL_USER=${MAIL_USER}
       - MAIL_PASS=${MAIL_PASS}
       - ALERT_MAIL_TO=${ALERT_MAIL_TO:-test@example.com}
+      - ALERT_WEBHOOK_URL=${ALERT_WEBHOOK_URL}
     volumes:
       - prometheus-config:/etc/prometheus
       - alertmanager-config:/etc/alertmanager

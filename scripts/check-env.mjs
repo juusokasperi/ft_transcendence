@@ -75,6 +75,7 @@ const REQUIRED_VARS = [
   'ALERT_MAIL_TO',
   'ES_LICENSE',
   'ES_STACK_VERSION',
+  'ALERT_WEBHOOK_URL',
 ];
 
 const help =
