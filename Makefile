@@ -82,7 +82,7 @@ endef
 # ========================
 #  Orchestration
 # ========================
-.PHONY: all up detached prod prod-detached elk elk-detached mon mon-detached dev-full dev-full-detached down clean nuke check-leftovers fclean re stop restart restart-prod restart-% builder-init builder-use builder-prune builder-rm check-leftovers-global overview-docker
+.PHONY: all up detached prod prod-detached elk elk-detached mon mon-detached dev-full dev-full-detached down clean nuke check-leftovers fclean re stop restart restart-% builder-init builder-use builder-prune builder-rm check-leftovers-global overview-docker
 all: up
 
 up:
@@ -277,23 +277,45 @@ stop:
 
 restart:
 	$(ensure_env)
-	@echo ">> Restarting services in default stack"
-	docker compose -p $(NAME) $(ROOT_COMPOSE) $(ENV_ROOT) restart
-
-restart-prod:
-	$(ensure_env)
-	@echo ">> Restarting prod stack"
-	docker compose -p $(NAME_PROD) $(PROD_COMPOSE) $(ENV_ROOT) \
-		${MON_PROD_COMPOSE} \
-		${LOG_PROD_COMPOSE} \
-		restart
+	@echo ">> Detecting and restarting currently running services"
+	@if docker ps --filter "label=com.docker.compose.project=$(NAME_PROD)" --format '{{.Names}}' | head -n1 | grep -q .; then \
+		echo ">> Detected prod stack - restarting all services"; \
+		docker compose -p $(NAME_PROD) $(PROD_COMPOSE) $(ENV_ROOT) \
+			${MON_PROD_COMPOSE} \
+			${LOG_PROD_COMPOSE} \
+			restart; \
+	elif docker ps --filter "label=com.docker.compose.project=$(NAME)" --format '{{.Names}}' | head -n1 | grep -q .; then \
+		echo ">> Detected dev stack - restarting all services"; \
+		docker compose -p $(NAME) $(ROOT_COMPOSE) $(ENV_ROOT) \
+			${MON_DEV_COMPOSE} \
+			${LOG_DEV_COMPOSE} \
+			restart; \
+	else \
+		echo ">> Error: No running services detected in either dev or prod stacks"; \
+		echo ">> Use 'make ps' to check container status"; \
+		exit 1; \
+	fi
 
 restart-%:
 	$(ensure_env)
-	@echo ">> Restarting service '$*' across all compose configurations"
-	@docker compose -p $(NAME) $(ROOT_COMPOSE) $(ENV_ROOT) ${MON_DEV_COMPOSE} ${LOG_DEV_COMPOSE} restart $* 2>/dev/null || \
-	docker compose -p $(NAME_PROD) $(PROD_COMPOSE) $(ENV_ROOT) ${MON_PROD_COMPOSE} ${LOG_PROD_COMPOSE} restart $* 2>/dev/null || \
-	(echo ">> Error: Service '$*' not found or not running. Use 'make ps' to see available services." && exit 1)
+	@echo ">> Detecting stack and restarting service '$*'"
+	@if docker ps --filter "label=com.docker.compose.project=$(NAME_PROD)" --filter "label=com.docker.compose.service=$*" --format '{{.Names}}' | head -n1 | grep -q .; then \
+		echo ">> Found '$*' in prod stack - restarting"; \
+		docker compose -p $(NAME_PROD) $(PROD_COMPOSE) $(ENV_ROOT) \
+			${MON_PROD_COMPOSE} \
+			${LOG_PROD_COMPOSE} \
+			restart $*; \
+	elif docker ps --filter "label=com.docker.compose.project=$(NAME)" --filter "label=com.docker.compose.service=$*" --format '{{.Names}}' | head -n1 | grep -q .; then \
+		echo ">> Found '$*' in dev stack - restarting"; \
+		docker compose -p $(NAME) $(ROOT_COMPOSE) $(ENV_ROOT) \
+			${MON_DEV_COMPOSE} \
+			${LOG_DEV_COMPOSE} \
+			restart $*; \
+	else \
+		echo ">> Error: Service '$*' not found or not running in either stack"; \
+		echo ">> Use 'make ps' to see available services"; \
+		exit 1; \
+	fi
 
 # ========================
 #  Buildx helpers
@@ -394,9 +416,8 @@ help:
 	@echo "  make logs-[service]       # Follow logs for a service"
 	@echo "  make sh-[service]         # Open /bin/sh in a service"
 	@echo "  make bash-[service]       # Open bash (fallback: sh) in a service"
-	@echo "  make restart              # Restart services in default stack"
-	@echo "  make restart-elk          # Restart services in profile 'elk'"
-	@echo "  make restart-[service]    # Restart a single service by name"
+	@echo "  make restart              # Restart all services in currently running stack (auto-detects dev/prod)"
+	@echo "  make restart-[service]    # Restart a single service by name (auto-detects stack)"
 	@echo "  make stop                 # Stop all containers in this compose project"
 	@echo ""
 	@echo "Repo tasks (via deps container):"
