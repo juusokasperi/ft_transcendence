@@ -52,6 +52,7 @@ services:
       - allocator_node_modules:/work/apps/allocator/node_modules
       - game_gateway_node_modules:/work/apps/game-gateway/node_modules
       - scorer_node_modules:/work/apps/scorer/node_modules
+      - chat_node_modules:/work/apps/chat/node_modules
     networks: [devnet]
 
   # 2) Frontend (Vite dev server)
