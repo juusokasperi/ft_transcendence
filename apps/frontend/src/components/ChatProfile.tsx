@@ -25,7 +25,7 @@ const ChatProfile: React.FC<Props> = ({ profileData, loading, onClose, onOpenFul
   const id = (profileData?.uuid ?? profileData?.userId) as string | undefined;
 
   return (
-    <div className="absolute top-14 right-4 z-50 w-80 max-w-[90%] rounded-2xl border border-white/10 bg-slate-900/90 p-4 shadow-2xl">
+    <div className="absolute right-4 top-14 z-50 w-80 max-w-[90%] rounded-2xl border border-white/10 bg-slate-900/90 p-4 shadow-2xl">
       <div className="flex items-start justify-between">
         <div className="flex items-center gap-3">
           <img
@@ -53,7 +53,9 @@ const ChatProfile: React.FC<Props> = ({ profileData, loading, onClose, onOpenFul
         </div>
         <div>
           <div className="text-xs text-slate-400">Rating</div>
-          <div className="font-semibold text-white">{profileData?.rating ?? profileData?.ranking ?? '-'}</div>
+          <div className="font-semibold text-white">
+            {profileData?.rating ?? profileData?.ranking ?? '-'}
+          </div>
         </div>
         <div>
           <div className="text-xs text-slate-400">Win rate</div>

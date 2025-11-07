@@ -146,7 +146,7 @@ const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
             <button
               type="button"
               onClick={onCancel}
-              className="inline-flex items-center justify-center rounded-full border border-white/20 px-5 py-2 text-sm font-semibold text-slate-200 transition hover:border-white/30 hover:text-white cursor-pointer"
+              className="inline-flex cursor-pointer items-center justify-center rounded-full border border-white/20 px-5 py-2 text-sm font-semibold text-slate-200 transition hover:border-white/30 hover:text-white"
             >
               {cancelLabel}
             </button>
