@@ -5,6 +5,7 @@ import { useLocation } from 'react-router-dom';
 import ConfirmDialog from './ConfirmDialog';
 import ChatProfile from './ChatProfile';
 import SplitButton from './ui/SplitButton';
+import Button from './Button';
 import type { AxiosInstance } from 'axios';
 import { wsUrl } from '../utils/url';
 
@@ -581,21 +582,24 @@ export default function Chat({
             if (msg.system) {
               if (msg.inviteId && pendingInvites.has(msg.inviteId)) {
                 return (
-                  <div key={idx} className="rounded bg-blue-900/40 p-2">
+                  <div key={idx} className="rounded bg-blue-900/10 p-2">
                     <div className="italic text-blue-200">{msg.message}</div>
                     <div className="mt-2 flex gap-2">
-                      <button
+                      <Button
+                        size="sm"
+                        className="text-xs"
                         onClick={() => handleAcceptInvite(msg.inviteId!)}
-                        className="rounded bg-green-600 px-3 py-1 text-xs font-semibold hover:bg-green-500"
                       >
                         Accept
-                      </button>
-                      <button
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="text-xs"
                         onClick={() => handleDeclineInvite(msg.inviteId!)}
-                        className="rounded bg-red-600 px-3 py-1 text-xs font-semibold hover:bg-red-500"
                       >
                         Decline
-                      </button>
+                      </Button>
                     </div>
                   </div>
                 );

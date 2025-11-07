@@ -41,15 +41,7 @@ const ChatProfile: React.FC<Props> = ({ profileData, loading, onClose, onOpenFul
             </div>
           </div>
         </div>
-        <button
-          onClick={onClose}
-          className="text-gray-400 hover:text-white"
-          aria-label="Close profile"
-        >
-          ✕
-        </button>
       </div>
-
       <div className="mt-3 grid grid-cols-2 gap-2 text-sm text-slate-300">
         <div>
           <div className="text-xs text-slate-400">Wins</div>
