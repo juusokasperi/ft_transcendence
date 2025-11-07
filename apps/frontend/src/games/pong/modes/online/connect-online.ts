@@ -151,6 +151,9 @@ export async function connectOnline(cfg: ConnectConfig): Promise<OnlineClient> {
             console.log('[OnlineGame] Match ended:', data.reason, data.winner);
             matchEndListeners.forEach((cb) => cb(data.reason, data.winner, data.summary ?? null));
             break;
+          case 'RESUME_TOKEN':
+            console.log('[OnlineGame] Resume token received', data.token);
+            break;
           default:
             console.warn('[OnlineGame] Unknown message type:', data.type);
             break;
