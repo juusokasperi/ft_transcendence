@@ -105,13 +105,13 @@ groups:
        description: "Node.js service {{ \$labels.job }} on {{ \$labels.instance }} has been down for more than 2 minutes"
 
    - alert: HighMemoryUsage
-     expr: (process_resident_memory_bytes / nodejs_external_memory_bytes) * 100 > 80
+     expr: process_resident_memory_bytes > 500000000
      for: 5m
      labels:
        severity: warning
      annotations:
        summary: "High memory usage detected"
-       description: "Memory usage is above 80% on {{ \$labels.instance }} (current: {{ \$value | humanize }}%)"
+       description: "Memory usage is high on {{ \$labels.instance }} (current: {{ \$value | humanize }}%)"
 
    - alert: HighCPUUsage
      expr: rate(process_cpu_seconds_total[5m]) * 100 > 80
