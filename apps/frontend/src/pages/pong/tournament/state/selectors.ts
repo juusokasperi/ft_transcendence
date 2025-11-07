@@ -41,3 +41,11 @@ export function selectCountdownStatusAndSeconds(state: TournamentState): {
   return { status, seconds };
 }
 
+export function selectCurrentParticipantId(
+  state: TournamentState,
+  userUuid: string | null,
+): number | null {
+  if (!userUuid) return null;
+  const entry = state.participants.find((p) => p.userUuid === userUuid);
+  return entry?.participantId ?? null;
+}
