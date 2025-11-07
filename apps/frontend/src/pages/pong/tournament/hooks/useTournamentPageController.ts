@@ -14,9 +14,7 @@ import type {
   ReadyMatch,
   TournamentSummary,
 } from '../state/types';
-import {
-  type MatchPhase
-} from '../domain/countdown';
+import { type MatchPhase } from '../domain/countdown';
 import { MAX_VISIBLE_TOURNAMENTS, RECENT_TOURNAMENT_WINDOW_MS, TOURNAMENT_SIZE } from '../config';
 import { routeMessage } from '../net/router';
 import type { MessageCtx } from '../domain/handlers/types';
@@ -119,16 +117,15 @@ export function useTournamentPageController(
     onError: listError,
     dispatch,
   });
-  const { refreshTournamentState, setActiveTournamentId, refreshing } =
-    useActiveTournament({
-      axios,
-      userReady,
-      focusTournamentId,
-      debugLog,
-      onError: (msg) => enqueueSnackbar({ message: msg, variant: 'error' }),
-      getActiveTournamentId: useCallback(() => storeRef.current.activeTournamentId, []),
-      dispatch,
-    });
+  const { refreshTournamentState, setActiveTournamentId, refreshing } = useActiveTournament({
+    axios,
+    userReady,
+    focusTournamentId,
+    debugLog,
+    onError: (msg) => enqueueSnackbar({ message: msg, variant: 'error' }),
+    getActiveTournamentId: useCallback(() => storeRef.current.activeTournamentId, []),
+    dispatch,
+  });
   const availableTournaments = store.availableTournaments;
   const connectionReady = store.connectionReady;
   const latestReadyMatches = store.latestReadyMatches;
