@@ -4,7 +4,7 @@ import type { Duplex } from 'stream';
 import createProxyServer from 'http-proxy';
 import Redis from 'ioredis';
 import { REDIS_URL, PORT } from './config';
-import { verifyJoinToken, verifyResumeToken } from '@pong/shared/auth/tokenSign.ts';
+import { verifyJoinToken, verifyResumeToken } from '@pong/shared/auth/tokenSign';
 import { registerMetrics } from '@utils/metrics';
 import { createFastifyLoggerConfig } from '@utils/logger';
 
