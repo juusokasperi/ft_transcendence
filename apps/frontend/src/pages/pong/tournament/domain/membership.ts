@@ -11,8 +11,10 @@ export function isMember(
   tournamentStatus: string,
 ): boolean {
   if (!userUuid) return false;
-  if (tournamentStatus === 'completed') return false;
-  return participants.some((p) => p.userUuid === userUuid);
+  // Keep membership even after completion so users can view final results
+  // and decide when to leave the tournament. However, treat explicit
+  // forfeits as leaving the tournament.
+  return participants.some((p) => p.userUuid === userUuid && p.status !== 'forfeited');
 }
 
 /**
@@ -38,4 +40,3 @@ export function computeNextRoute(
   }
   return null;
 }
-
