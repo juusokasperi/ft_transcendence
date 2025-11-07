@@ -15,9 +15,7 @@ import type {
   TournamentSummary,
 } from '../state/types';
 import {
-  createCountdownSnapshot,
-  nextMatchPhaseForCountdown,
-  type MatchPhase,
+  type MatchPhase
 } from '../domain/countdown';
 import { MAX_VISIBLE_TOURNAMENTS, RECENT_TOURNAMENT_WINDOW_MS, TOURNAMENT_SIZE } from '../config';
 import { routeMessage } from '../net/router';
@@ -121,7 +119,7 @@ export function useTournamentPageController(
     onError: listError,
     dispatch,
   });
-  const { refreshTournamentState, setActiveTournamentId, resetActiveTournamentState, refreshing } =
+  const { refreshTournamentState, setActiveTournamentId, refreshing } =
     useActiveTournament({
       axios,
       userReady,

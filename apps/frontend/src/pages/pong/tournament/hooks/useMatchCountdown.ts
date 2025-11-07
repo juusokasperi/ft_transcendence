@@ -32,7 +32,7 @@ export function useMatchCountdown({ pendingMatch, matchCountdowns }: Options) {
       setLocalSeconds(remaining);
     };
     update();
-    const timer = window.setInterval(update, 1000);
+    const timer = window.setInterval(update, 300);
     return () => window.clearInterval(timer);
   }, [pendingCountdown]);
 
