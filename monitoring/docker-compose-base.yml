@@ -39,7 +39,7 @@ services:
     restart: no
 
   prometheus:
-    image: prom/prometheus:main
+    image: prom/prometheus:v3.7.3
     restart: unless-stopped
     depends_on:
       prometheus-pre:
@@ -54,7 +54,7 @@ services:
       - prod-private
 
   alertmanager:
-    image: prom/alertmanager:main
+    image: prom/alertmanager:v0.29.0
     restart: unless-stopped
     depends_on:
       prometheus-pre:
@@ -66,7 +66,7 @@ services:
       - prod-public
 
   nginx-exporter:
-    image: nginx/nginx-prometheus-exporter:1.5
+    image: nginx/nginx-prometheus-exporter:1.5.0
     depends_on:
       nginx:
         condition: service_started
@@ -76,7 +76,7 @@ services:
       - prod-private
 
   grafana:
-    image: grafana/grafana:main
+    image: grafana/grafana:12.2.1
     restart: unless-stopped
     environment:
       - GF_SECURITY_ADMIN_USER=${GRAFANA_ADMIN_USER}
