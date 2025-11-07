@@ -234,14 +234,14 @@ export default function Chat({
       if (data.type === 'userJoined') {
         setMessages((prev) => [
           ...prev,
-          { system: true, message: `${data.username} joined ${channel}` },
+          { system: true, message: `${data.username} joined the chat  ${channel}` },
         ]);
         return;
       }
       if (data.type === 'userLeft') {
         setMessages((prev) => [
           ...prev,
-          { system: true, message: `${data.username} left ${channel}` },
+          { system: true, message: `${data.username} left the chat ${channel}` },
         ]);
         return;
       }
