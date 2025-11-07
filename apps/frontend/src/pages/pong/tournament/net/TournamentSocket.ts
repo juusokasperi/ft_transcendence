@@ -1,5 +1,5 @@
 import { createMatchmakingClient } from '../../../../services/matchmaking';
-import type { MatchmakingMessage, TournamentSize } from '@pong/shared/protocol/net';
+import type { MatchmakingMessage, TournamentSize } from './messageTypes';
 
 type Handlers = {
   onOpen?(): void;
@@ -37,4 +37,3 @@ export class TournamentSocket {
     this.client?.leaveTournament(id);
   }
 }
-

@@ -1,8 +1,9 @@
 import type { MessageCtx } from './types';
+import type { TournamentMatchCountdownMessage } from '../../net/messageTypes';
 import { createCountdownSnapshot, nextMatchPhaseForCountdown } from '../countdown';
 
 export function onCountdown(
-  payload: import('@pong/shared/protocol/net').TournamentMatchCountdownMessage,
+  payload: TournamentMatchCountdownMessage,
   ctx: MessageCtx,
 ) {
   if (ctx.getActiveTournamentId() !== payload.tournamentId) return;
@@ -19,4 +20,3 @@ export function onCountdown(
     ctx.setMatchPhase(next);
   }
 }
-

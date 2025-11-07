@@ -1,7 +1,8 @@
 import type { MessageCtx } from './types';
+import type { HandoffMessage } from '../../net/messageTypes';
 
 export function onHandoff(
-  msg: import('@pong/shared/protocol/net').HandoffMessage,
+  msg: HandoffMessage,
   ctx: MessageCtx,
 ) {
   const currentTournamentId = ctx.getActiveTournamentId();
@@ -22,4 +23,3 @@ export function onHandoff(
     side: msg.side,
   });
 }
-

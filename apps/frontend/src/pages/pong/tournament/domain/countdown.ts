@@ -1,4 +1,4 @@
-import type { TournamentMatchCountdownMessage } from '@pong/shared/protocol/net';
+import type { TournamentMatchCountdownMessage } from '../net/messageTypes';
 import type { CountdownSnapshot } from '../state/types';
 
 export type MatchPhase = 'idle' | 'awaiting_start' | 'starting' | 'playing';
@@ -30,4 +30,3 @@ export function nextMatchPhaseForCountdown(
   }
   return currentPhase === 'starting' || currentPhase === 'playing' ? currentPhase : 'awaiting_start';
 }
-

@@ -1,7 +1,8 @@
 import type { MessageCtx } from './types';
+import type { HandoffTimeoutMessage } from '../../net/messageTypes';
 
 export function onHandoffTimeout(
-  msg: import('@pong/shared/protocol/net').HandoffTimeoutMessage,
+  msg: HandoffTimeoutMessage,
   ctx: MessageCtx,
 ) {
   const previousMatchId = ctx.pendingMatchGet()?.tournamentMatchId;
@@ -10,4 +11,3 @@ export function onHandoffTimeout(
   ctx.pendingMatchSet(null);
   if (typeof previousMatchId === 'number') ctx.clearCountdown(previousMatchId);
 }
-

@@ -6,7 +6,7 @@ import type {
   HandoffMessage,
   HandoffTimeoutMessage,
   MatchmakingMessage,
-} from '@pong/shared/protocol/net';
+} from '../../net/messageTypes';
 import type {
   ActiveHandoff,
   CountdownSnapshot,

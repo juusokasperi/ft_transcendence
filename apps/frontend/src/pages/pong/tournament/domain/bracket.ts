@@ -1,4 +1,4 @@
-import type { TournamentMatchState } from '@pong/shared/protocol/net';
+import type { TournamentMatchState } from '../net/messageTypes';
 
 type ParticipantPayload = {
   id: number;
@@ -55,4 +55,3 @@ export function inflateMatches(
     } satisfies TournamentMatchState;
   });
 }
-

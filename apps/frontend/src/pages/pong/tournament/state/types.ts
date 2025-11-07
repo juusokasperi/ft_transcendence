@@ -2,7 +2,7 @@ import type {
   TournamentMatchCountdownStatus,
   TournamentMatchesReadyMessage,
   TournamentMatchState,
-} from '@pong/shared/protocol/net';
+} from '../net/messageTypes';
 
 export type TournamentSummary = {
   id: number;

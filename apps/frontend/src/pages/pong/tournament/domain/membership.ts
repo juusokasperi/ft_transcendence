@@ -1,4 +1,4 @@
-import type { TournamentParticipantState } from '@pong/shared/protocol/net';
+import type { TournamentParticipantState } from '../net/messageTypes';
 
 export type MembershipInfo = {
   member: boolean;

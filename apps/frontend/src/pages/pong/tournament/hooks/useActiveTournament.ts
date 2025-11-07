@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { AxiosInstance } from 'axios';
-import type { TournamentMatchState } from '@pong/shared/protocol/net';
+import type { TournamentMatchState } from '../net/messageTypes';
 import type { TournamentSummary } from '../state/types';
 
 type Options = {

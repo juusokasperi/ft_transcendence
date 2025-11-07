@@ -1,5 +1,5 @@
 import React from 'react';
-import type { TournamentParticipantState } from '@pong/shared/protocol/net';
+import type { TournamentParticipantState } from '../net/messageTypes';
 import SurfaceCard from '../../shared/components/SurfaceCard';
 import { participantStatusLabel } from '../utils/utils';
 import { InlineSpinner } from '@ft/spinner';

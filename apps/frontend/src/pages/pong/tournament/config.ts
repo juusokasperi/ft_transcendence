@@ -1,4 +1,4 @@
-import type { TournamentSize } from '@pong/shared/protocol/net';
+import type { TournamentSize } from './net/messageTypes';
 
 type EnvSource = Record<string, string | undefined>;
 

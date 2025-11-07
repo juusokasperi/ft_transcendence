@@ -1,7 +1,4 @@
-import type {
-  TournamentMatchState,
-  TournamentParticipantState,
-} from '@pong/shared/protocol/net';
+import type { TournamentMatchState, TournamentParticipantState } from '../net/messageTypes';
 import type {
   CountdownSnapshot,
   ReadyMatch,

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef } from 'react';
 import { TournamentSocket } from '../net/TournamentSocket';
-import type { MatchmakingMessage } from '@pong/shared/protocol/net';
+import type { MatchmakingMessage } from '../net/messageTypes';
 import {
   computeDelayWithCooldown,
   DEFAULT_RECONNECT_DELAY,
