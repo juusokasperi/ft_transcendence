@@ -3,7 +3,7 @@ import websocket from '@fastify/websocket';
 import type { WebSocket, RawData } from 'ws';
 import type { Redis } from 'ioredis';
 import type { AppConfig } from '../../app/Config.ts';
-import type { RoomRegistry, MatchSession } from '../../app/RoomRegistry.ts';
+import type { RoomRegistry, MatchSession, PlayerConnectionState } from '../../app/RoomRegistry.ts';
 import type { Broadcaster } from '../../app/Broadcaster.ts';
 import type { MatchRunner } from '../../app/MatchRunner.ts';
 import type { ReconnectManager } from '../../app/ReconnectManager.ts';
@@ -217,7 +217,7 @@ export class WSServer {
     }
 
     const playerEntry = [...session.players.entries()].find(
-      ([, state]) => state.playerIdentifier === claims.playerIdentifier,
+      ([, state]) => state.playerIdentifier === claims.sub,
     );
     if (!playerEntry) {
       connection.close(CLOSE_CODES.PLAYER_NOT_AUTHORIZED, 'player-not-found');
