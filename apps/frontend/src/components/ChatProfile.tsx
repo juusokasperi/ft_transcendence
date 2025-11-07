@@ -1,5 +1,6 @@
 import React from 'react';
 import { resolveAvatarUrl } from '../utils/avatarUrl';
+import Button from './Button';
 
 type ProfileData = {
   avatar?: string | null;
@@ -77,15 +78,12 @@ const ChatProfile: React.FC<Props> = ({ profileData, loading, onClose, onOpenFul
       </div>
 
       <div className="mt-3 flex gap-2">
-        <button
-          onClick={() => id && onOpenFullProfile(String(id))}
-          className="flex-1 rounded bg-indigo-600 px-3 py-1 text-sm font-semibold"
-        >
+        <Button size="sm" className="flex-1" onClick={() => id && onOpenFullProfile(String(id))}>
           Open full profile
-        </button>
-        <button onClick={onClose} className="rounded border border-white/10 px-3 py-1 text-sm">
+        </Button>
+        <Button variant="outline" size="sm" onClick={onClose}>
           Close
-        </button>
+        </Button>
       </div>
 
       {loading && <div className="mt-2 text-sm text-slate-400">Loading...</div>}
