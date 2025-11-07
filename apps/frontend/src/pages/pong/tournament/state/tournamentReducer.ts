@@ -1,9 +1,5 @@
 import type { TournamentMatchState, TournamentParticipantState } from '../net/messageTypes';
-import type {
-  CountdownSnapshot,
-  ReadyMatch,
-  TournamentSummary,
-} from './types';
+import type { CountdownSnapshot, ReadyMatch, TournamentSummary } from './types';
 import type { MatchPhase } from '../domain/countdown';
 
 export type TournamentState = {

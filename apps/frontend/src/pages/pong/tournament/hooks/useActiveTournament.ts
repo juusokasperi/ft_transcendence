@@ -10,16 +10,33 @@ type Options = {
   debugLog: (e: string, p?: Record<string, unknown>) => void;
   onError: (msg: string) => void;
   getActiveTournamentId: () => number | null;
-  dispatch: (action:
-    | { type: 'setActiveTournamentId'; payload: number | null }
-    | { type: 'resetActiveTournamentState' }
-    | { type: 'setActiveTournament'; payload: { id: number | null; name: string | null; status: string; maxParticipants: number | null } }
-    | { type: 'setParticipants'; payload: any[] }
-    | { type: 'setBracket'; payload: TournamentMatchState[] }
+  dispatch: (
+    action:
+      | { type: 'setActiveTournamentId'; payload: number | null }
+      | { type: 'resetActiveTournamentState' }
+      | {
+          type: 'setActiveTournament';
+          payload: {
+            id: number | null;
+            name: string | null;
+            status: string;
+            maxParticipants: number | null;
+          };
+        }
+      | { type: 'setParticipants'; payload: any[] }
+      | { type: 'setBracket'; payload: TournamentMatchState[] },
   ) => void;
 };
 
-export function useActiveTournament({ axios, userReady, focusTournamentId, debugLog, onError, getActiveTournamentId, dispatch }: Options) {
+export function useActiveTournament({
+  axios,
+  userReady,
+  focusTournamentId,
+  debugLog,
+  onError,
+  getActiveTournamentId,
+  dispatch,
+}: Options) {
   const focusStateRef = useRef<number | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const getActiveIdRef = useRef(getActiveTournamentId);
@@ -100,7 +117,8 @@ export function useActiveTournament({ axios, userReady, focusTournamentId, debug
 
   return {
     refreshTournamentState,
-    setActiveTournamentId: (id: number | null) => dispatch({ type: 'setActiveTournamentId', payload: id }),
+    setActiveTournamentId: (id: number | null) =>
+      dispatch({ type: 'setActiveTournamentId', payload: id }),
     resetActiveTournamentState,
     refreshing,
   } as const;

@@ -39,4 +39,3 @@ const AliasInput: React.FC<AliasInputProps> = ({
 };
 
 export default AliasInput;
-

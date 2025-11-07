@@ -1,10 +1,7 @@
 import type { MessageCtx } from './types';
 import type { HandoffMessage } from '../../net/messageTypes';
 
-export function onHandoff(
-  msg: HandoffMessage,
-  ctx: MessageCtx,
-) {
+export function onHandoff(msg: HandoffMessage, ctx: MessageCtx) {
   const currentTournamentId = ctx.getActiveTournamentId();
   if (!msg.tournament || msg.tournament.tournamentId !== currentTournamentId) return;
 

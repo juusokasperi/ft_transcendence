@@ -39,18 +39,12 @@ export async function getTournaments(axios: AxiosInstance): Promise<TournamentSu
   return Array.isArray(data) ? (data as TournamentSummary[]) : [];
 }
 
-export async function getTournament(
-  axios: AxiosInstance,
-  id: number,
-): Promise<TournamentMeta> {
+export async function getTournament(axios: AxiosInstance, id: number): Promise<TournamentMeta> {
   const { data } = await axios.get(`/api/tournaments/${id}`);
   return data as TournamentMeta;
 }
 
-export async function getParticipants(
-  axios: AxiosInstance,
-  id: number,
-): Promise<ParticipantRow[]> {
+export async function getParticipants(axios: AxiosInstance, id: number): Promise<ParticipantRow[]> {
   const { data } = await axios.get(`/api/tournaments/${id}/participants`);
   return data as ParticipantRow[];
 }
@@ -65,9 +59,7 @@ export async function getPlayers(
   tournamentId: number,
   matchId: number,
 ): Promise<MatchPlayerRow[]> {
-  const { data } = await axios.get(
-    `/api/tournaments/${tournamentId}/matches/${matchId}/players`,
-  );
+  const { data } = await axios.get(`/api/tournaments/${tournamentId}/matches/${matchId}/players`);
   return data as MatchPlayerRow[];
 }
 

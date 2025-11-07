@@ -1,10 +1,7 @@
 import type { MessageCtx } from './types';
 import type { TournamentMatchesReadyMessage } from '../../net/messageTypes';
 
-export function onMatchesReady(
-  msg: TournamentMatchesReadyMessage,
-  ctx: MessageCtx,
-) {
+export function onMatchesReady(msg: TournamentMatchesReadyMessage, ctx: MessageCtx) {
   ctx.setLatestReadyMatches(msg.matches);
   // Refresh tournament snapshot to include updated bracket/participants
   void ctx.refreshTournamentState();

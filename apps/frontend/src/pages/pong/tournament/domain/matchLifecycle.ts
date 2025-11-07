@@ -13,4 +13,3 @@ export function phaseAfterHandoff(_current: MatchPhase): MatchPhase {
 export function resolveRefreshDelayOnMatchEnd(reason: string): number {
   return reason === 'completed' ? 2500 : 1500;
 }
-

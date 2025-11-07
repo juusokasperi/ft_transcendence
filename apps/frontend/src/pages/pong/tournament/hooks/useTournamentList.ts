@@ -11,7 +11,13 @@ type Options = {
   dispatch: (action: { type: 'setAvailableTournaments'; payload: TournamentSummary[] }) => void;
 };
 
-export function useTournamentList({ axios, userReady, getCurrentTournamentId, onError, dispatch }: Options) {
+export function useTournamentList({
+  axios,
+  userReady,
+  getCurrentTournamentId,
+  onError,
+  dispatch,
+}: Options) {
   const [loadingTournaments, setLoadingTournaments] = useState(false);
   const onErrorRef = useRef(onError);
   useEffect(() => {

@@ -4,4 +4,3 @@ export type {
   TournamentMatchState,
   TournamentParticipantState,
 } from '@pong/shared/protocol/net';
-

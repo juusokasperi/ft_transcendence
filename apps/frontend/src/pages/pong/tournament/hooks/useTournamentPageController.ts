@@ -8,7 +8,12 @@ import type {
 } from '../net/messageTypes';
 import { useSnackbar } from '../../../../context/SnackbarContext';
 import { useAppContext } from '../../../../context/AppContext';
-import type { ActiveHandoff, CountdownSnapshot, ReadyMatch, TournamentSummary } from '../state/types';
+import type {
+  ActiveHandoff,
+  CountdownSnapshot,
+  ReadyMatch,
+  TournamentSummary,
+} from '../state/types';
 import {
   createCountdownSnapshot,
   nextMatchPhaseForCountdown,
@@ -23,7 +28,11 @@ import { useMatchLifecycle } from './useMatchLifecycle';
 import { useTournamentList } from './useTournamentList';
 import { sanitizeAliasInput } from '../../../../utils/alias';
 import { tournamentReducer, initialTournamentState } from '../state/tournamentReducer';
-import { selectMatchesByStage, selectSortedParticipants, selectCurrentParticipantId } from '../state/selectors';
+import {
+  selectMatchesByStage,
+  selectSortedParticipants,
+  selectCurrentParticipantId,
+} from '../state/selectors';
 import { useActiveTournament } from './useActiveTournament';
 
 const TOURNAMENT_NAME_MAX_LENGTH = 20;
@@ -105,11 +114,7 @@ export function useTournamentPageController(
     [enqueueSnackbar],
   );
 
-  const {
-    loadingTournaments,
-    loadTournaments,
-    filterTournamentsForDisplay,
-  } = useTournamentList({
+  const { loadingTournaments, loadTournaments, filterTournamentsForDisplay } = useTournamentList({
     axios,
     userReady,
     getCurrentTournamentId: getCurrentTournamentIdForList,
@@ -138,7 +143,7 @@ export function useTournamentPageController(
   const activeTournamentName = store.activeTournamentName;
   const tournamentStatus = store.tournamentStatus;
   const maxParticipants = store.maxParticipants;
-  const headerLoading = (store.activeTournamentId !== null) ? refreshing : loadingTournaments;
+  const headerLoading = store.activeTournamentId !== null ? refreshing : loadingTournaments;
   const [handoff, setHandoff] = useState<ActiveHandoff | null>(null);
   const [aliasInput, setAliasInputState] = useState('');
   const [tournamentName, setTournamentNameState] = useState('');
@@ -229,8 +234,7 @@ export function useTournamentPageController(
         resetActiveTournamentState: () => resetLocalActiveTournamentState(),
         setParticipants: (list) => dispatch({ type: 'setParticipants', payload: list }),
         setBracket: (list) => dispatch({ type: 'setBracket', payload: list }),
-        setLatestReadyMatches: (list) =>
-          dispatch({ type: 'setLatestReadyMatches', payload: list }),
+        setLatestReadyMatches: (list) => dispatch({ type: 'setLatestReadyMatches', payload: list }),
         setMatchCountdowns: (updater) => {
           const next = updater(storeRef.current.matchCountdowns);
           dispatch({ type: 'setMatchCountdowns', payload: next });
@@ -269,14 +273,14 @@ export function useTournamentPageController(
   const getCurrentTournamentId = useCallback(() => activeTournamentIdRef.current, []);
 
   const { createTournament, joinTournament, leaveTournament } = useTournamentConnection({
-      userReady,
-      userUuid: user?.uuid ?? null,
-      onMessage: handleMessage,
-      onSnackbar: enqueueSnackbar,
-      debug: debugLog,
-      getActiveTournamentId: getCurrentTournamentId,
-      setConnectionReady: (ready) => dispatch({ type: 'setConnectionReady', payload: ready }),
-    });
+    userReady,
+    userUuid: user?.uuid ?? null,
+    onMessage: handleMessage,
+    onSnackbar: enqueueSnackbar,
+    debug: debugLog,
+    getActiveTournamentId: getCurrentTournamentId,
+    setConnectionReady: (ready) => dispatch({ type: 'setConnectionReady', payload: ready }),
+  });
 
   const handleCreateTournamentClick = useCallback(() => {
     createTournament(TOURNAMENT_SIZE, tournamentName, aliasInput);

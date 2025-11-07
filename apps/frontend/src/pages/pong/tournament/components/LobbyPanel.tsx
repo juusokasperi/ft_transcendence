@@ -90,7 +90,7 @@ const TournamentLobbyPanel: React.FC<TournamentLobbyPanelProps> = ({
                     </div>
                   </div>
                   {canJoin && (
-                  <div className="flex flex-col gap-2 md:flex-row md:items-center">
+                    <div className="flex flex-col gap-2 md:flex-row md:items-center">
                       <AliasInput
                         value={aliasInput}
                         onChange={onAliasInputChange}

@@ -11,7 +11,10 @@ type Options = {
   userReady: boolean;
   userUuid: string | null;
   onMessage: (msg: MatchmakingMessage) => void;
-  onSnackbar: (opts: { message: string; variant: 'error' | 'warning' | 'info' | 'success' }) => void;
+  onSnackbar: (opts: {
+    message: string;
+    variant: 'error' | 'warning' | 'info' | 'success';
+  }) => void;
   debug?(event: string, payload?: Record<string, unknown>): void;
   getActiveTournamentId: () => number | null;
   setConnectionReady: (ready: boolean) => void;
@@ -35,10 +38,7 @@ export function useTournamentConnection({
   const backoffDelayRef = useRef(DEFAULT_RECONNECT_DELAY);
   const lastDisconnectRef = useRef<number | null>(null);
 
-  const debugLog = useCallback(
-    (e: string, p?: Record<string, unknown>) => debug?.(e, p),
-    [debug],
-  );
+  const debugLog = useCallback((e: string, p?: Record<string, unknown>) => debug?.(e, p), [debug]);
 
   // Keep unstable callbacks in refs to avoid effect restart loops
   const onMessageRef = useRef(onMessage);
@@ -109,7 +109,10 @@ export function useTournamentConnection({
             connectionStateRef.current = 'idle';
             lastDisconnectRef.current = Date.now();
             setConnectionReady(false);
-            if (!connectionErrorShownRef.current && backoffDelayRef.current > DEFAULT_RECONNECT_DELAY) {
+            if (
+              !connectionErrorShownRef.current &&
+              backoffDelayRef.current > DEFAULT_RECONNECT_DELAY
+            ) {
               onSnackbar({ message: 'Tournament connection error. Retrying…', variant: 'error' });
               connectionErrorShownRef.current = true;
             }
@@ -129,8 +132,15 @@ export function useTournamentConnection({
               reason: event.reason,
               abnormal,
             });
-            if (abnormal && !connectionErrorShownRef.current && hadSuccessfulConnectionRef.current) {
-              onSnackbar({ message: 'Tournament connection lost. Reconnecting…', variant: 'warning' });
+            if (
+              abnormal &&
+              !connectionErrorShownRef.current &&
+              hadSuccessfulConnectionRef.current
+            ) {
+              onSnackbar({
+                message: 'Tournament connection lost. Reconnecting…',
+                variant: 'warning',
+              });
               connectionErrorShownRef.current = true;
               debugLog?.('connection:error-snackbar-shown');
             }

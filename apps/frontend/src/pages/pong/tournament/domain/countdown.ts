@@ -26,7 +26,11 @@ export function nextMatchPhaseForCountdown(
     return currentPhase === 'playing' ? 'playing' : 'starting';
   }
   if (payload.status === 'cancelled') {
-    return currentPhase === 'starting' || currentPhase === 'playing' ? currentPhase : 'awaiting_start';
+    return currentPhase === 'starting' || currentPhase === 'playing'
+      ? currentPhase
+      : 'awaiting_start';
   }
-  return currentPhase === 'starting' || currentPhase === 'playing' ? currentPhase : 'awaiting_start';
+  return currentPhase === 'starting' || currentPhase === 'playing'
+    ? currentPhase
+    : 'awaiting_start';
 }

@@ -82,9 +82,7 @@ describe('handlers', () => {
         matches: [
           {
             tournamentMatchId: 2,
-            participants: [
-              { userUuid, participantId: 10, alias: 'a', seed: 1, status: 'pending' },
-            ],
+            participants: [{ userUuid, participantId: 10, alias: 'a', seed: 1, status: 'pending' }],
           },
         ],
       } as any,
@@ -104,7 +102,7 @@ describe('handlers', () => {
     const ctx = baseCtx({
       getActiveTournamentId: () => 1,
       setMatchCountdowns: setMap as any,
-      pendingMatchGet: () => ({ tournamentMatchId: 42 } as any),
+      pendingMatchGet: () => ({ tournamentMatchId: 42 }) as any,
       getMatchPhase: () => 'awaiting_start',
       setMatchPhase: setPhase as any,
     });

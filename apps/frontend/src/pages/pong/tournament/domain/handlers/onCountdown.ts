@@ -2,10 +2,7 @@ import type { MessageCtx } from './types';
 import type { TournamentMatchCountdownMessage } from '../../net/messageTypes';
 import { createCountdownSnapshot, nextMatchPhaseForCountdown } from '../countdown';
 
-export function onCountdown(
-  payload: TournamentMatchCountdownMessage,
-  ctx: MessageCtx,
-) {
+export function onCountdown(payload: TournamentMatchCountdownMessage, ctx: MessageCtx) {
   if (ctx.getActiveTournamentId() !== payload.tournamentId) return;
 
   ctx.setMatchCountdowns((prev) => {

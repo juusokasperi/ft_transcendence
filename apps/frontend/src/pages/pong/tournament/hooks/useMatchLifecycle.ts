@@ -12,7 +12,10 @@ type Options = {
   canvasRef: RefObject<HTMLCanvasElement | null>;
   refreshTournamentState: () => void | Promise<void>;
   debugLog: (e: string, p?: Record<string, unknown>) => void;
-  enqueueSnackbar: (opts: { message: string; variant: 'error' | 'warning' | 'info' | 'success' }) => void;
+  enqueueSnackbar: (opts: {
+    message: string;
+    variant: 'error' | 'warning' | 'info' | 'success';
+  }) => void;
 };
 
 export function useMatchLifecycle({
@@ -110,7 +113,15 @@ export function useMatchLifecycle({
     return () => {
       cancelled = true;
     };
-  }, [canvasRef, debugLog, enqueueSnackbar, handoff, matchPhase, performMatchTeardown, setMatchPhase]);
+  }, [
+    canvasRef,
+    debugLog,
+    enqueueSnackbar,
+    handoff,
+    matchPhase,
+    performMatchTeardown,
+    setMatchPhase,
+  ]);
 
   useEffect(
     () => () => {
@@ -160,4 +171,3 @@ export function useMatchLifecycle({
 
   return { handleQuitMatch } as const;
 }
-

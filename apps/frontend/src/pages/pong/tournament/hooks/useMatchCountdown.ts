@@ -25,7 +25,10 @@ export function useMatchCountdown({ pendingMatch, matchCountdowns }: Options) {
     }
 
     const update = () => {
-      const remaining = Math.max(0, Math.ceil((pendingCountdown.targetStartEpochMs - Date.now()) / 1000));
+      const remaining = Math.max(
+        0,
+        Math.ceil((pendingCountdown.targetStartEpochMs - Date.now()) / 1000),
+      );
       setLocalSeconds(remaining);
     };
     update();
@@ -34,9 +37,10 @@ export function useMatchCountdown({ pendingMatch, matchCountdowns }: Options) {
   }, [pendingCountdown]);
 
   const countdownStatus = pendingCountdown?.status ?? null;
-  const countdownSecondsDisplay = pendingCountdown?.status === 'running'
-    ? (localSeconds ?? pendingCountdown?.secondsRemaining ?? null)
-    : (pendingCountdown?.secondsRemaining ?? null);
+  const countdownSecondsDisplay =
+    pendingCountdown?.status === 'running'
+      ? (localSeconds ?? pendingCountdown?.secondsRemaining ?? null)
+      : (pendingCountdown?.secondsRemaining ?? null);
 
   return { countdownStatus, countdownSecondsDisplay } as const;
 }

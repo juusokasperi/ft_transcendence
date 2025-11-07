@@ -45,7 +45,9 @@ export type MessageCtx = {
 
   // Matches ready / countdown / phases
   setLatestReadyMatches(list: ReadyMatch[]): void;
-  setMatchCountdowns(updater: (prev: Map<number, CountdownSnapshot>) => Map<number, CountdownSnapshot>): void;
+  setMatchCountdowns(
+    updater: (prev: Map<number, CountdownSnapshot>) => Map<number, CountdownSnapshot>,
+  ): void;
   setMatchPhase(phase: MatchPhase): void;
   getMatchPhase(): MatchPhase;
   pendingMatchGet(): ReadyMatch | null;
