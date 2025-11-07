@@ -1,6 +1,9 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { X } from 'lucide-react';
 import { useAppContext } from '../context/AppContext';
+import { useLocation } from 'react-router-dom';
+import ConfirmDialog from './ConfirmDialog';
+import ChatProfile from './ChatProfile';
 import SplitButton from './ui/SplitButton';
 import type { AxiosInstance } from 'axios';
 import { wsUrl } from '../utils/url';
@@ -64,6 +67,7 @@ export default function Chat({
   stage = null,
 }: ChatProps) {
   const { user, navigate, axios: authAxios } = useAppContext();
+  const location = useLocation();
   const chatUsername = user?.username || username;
 
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -71,6 +75,12 @@ export default function Chat({
   const [input, setInput] = useState('');
   const [dmTarget, setDmTarget] = useState<string | null>(null);
   const [blocked, setBlocked] = useState<Set<string>>(new Set());
+  // profile card state
+  const [profileLoading, setProfileLoading] = useState(false);
+  const [profileData, setProfileData] = useState<any | null>(null);
+  const [profileOpen, setProfileOpen] = useState(false);
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+  const [pendingNavId, setPendingNavId] = useState<string | null>(null);
   // Track last tournament announce we broadcasted to avoid duplicates
   const lastTournamentSigRef = useRef<string | null>(null);
 
@@ -121,6 +131,12 @@ export default function Chat({
       setCooldown(false);
       setPendingInvites(new Map());
       lastTournamentSigRef.current = null;
+      // close profile card when chat closes
+      setProfileOpen(false);
+      setProfileData(null);
+      setProfileLoading(false);
+      setShowConfirmDialog(false);
+      setPendingNavId(null);
     }
   }, [isOpen]);
 
@@ -471,18 +487,55 @@ export default function Chat({
         ws.send(JSON.stringify({ type: 'inviteUser', username: targetUser }));
         break;
       case 'View profile': {
-        const uid = await fetchUserUuidByUsername(authAxios, targetUser);
-        if (uid) {
-          navigate(`/users/${uid}`);
-        } else {
-          setMessages((prev) => [
-            ...prev,
-            { system: true, message: `Invalid or missing profile for ${targetUser}` },
-          ]);
-        }
+        // instead of navigating, fetch and show an inline profile card
+        (async () => {
+          setProfileLoading(true);
+          setProfileOpen(true);
+          try {
+            const uid = await fetchUserUuidByUsername(authAxios, targetUser);
+            if (!uid) {
+              setMessages((prev) => [
+                ...prev,
+                { system: true, message: `Invalid or missing profile for ${targetUser}` },
+              ]);
+              setProfileData(null);
+              setProfileLoading(false);
+              return;
+            }
+
+            const res = await authAxios.get(`/api/users/${uid}`);
+            setProfileData(res.data ?? null);
+          } catch (err) {
+            console.error('Error fetching profile:', err);
+            setMessages((prev) => [
+              ...prev,
+              { system: true, message: `Failed to load profile for ${targetUser}` },
+            ]);
+            setProfileData(null);
+          } finally {
+            setProfileLoading(false);
+          }
+        })();
         break;
       }
     }
+  };
+
+  const handleOpenFullProfile = (id: string) => {
+    if (!id) return;
+    const path = location.pathname || '';
+    const inOnline = path.startsWith('/pong/online');
+    const inTournament = path.startsWith('/pong/tournaments');
+
+    if (inOnline || inTournament) {
+      setPendingNavId(id);
+      setShowConfirmDialog(true);
+      return;
+    }
+
+    navigate(`/users/${id}`);
+    setProfileOpen(false);
+    onClose();
   };
 
   // ---------- UI render ----------
@@ -506,6 +559,19 @@ export default function Chat({
           <X size={18} />
         </button>
       </div>
+
+      {profileOpen && (
+        <ChatProfile
+          profileData={profileData}
+          loading={profileLoading}
+          onClose={() => {
+            setProfileOpen(false);
+            setProfileData(null);
+            setProfileLoading(false);
+          }}
+          onOpenFullProfile={(id) => handleOpenFullProfile(id)}
+        />
+      )}
 
       {/* Body */}
       <div className="flex min-h-0 flex-1 flex-col sm:flex-row">
@@ -642,6 +708,28 @@ export default function Chat({
           You're sending messages too fast — please wait a moment.
         </div>
       )}
+
+      <ConfirmDialog
+        open={showConfirmDialog}
+        title="Leave current session?"
+        description="You are currently in a live game or tournament session — opening the full profile will navigate away and you may lose progress. Continue?"
+        confirmLabel="Continue"
+        cancelLabel="Stay"
+        tone="danger"
+        onConfirm={() => {
+          if (pendingNavId) {
+            navigate(`/users/${pendingNavId}`);
+            setProfileOpen(false);
+            onClose();
+          }
+          setShowConfirmDialog(false);
+          setPendingNavId(null);
+        }}
+        onCancel={() => {
+          setShowConfirmDialog(false);
+          setPendingNavId(null);
+        }}
+      />
     </div>
   );
 }
