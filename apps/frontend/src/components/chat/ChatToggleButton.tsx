@@ -11,7 +11,7 @@ export default function ChatToggleButton({ open, setOpen }: ChatToggleButtonProp
     <button
       onClick={() => setOpen(!open)}
       aria-label="Toggle chat"
-      className="fixed bottom-6 right-6 z-[60] flex h-16 w-16 items-center justify-center rounded-full bg-indigo-600/20 text-white/80 shadow-lg hover:bg-indigo-500 hover:text-white"
+      className="fixed bottom-6 right-6 z-[60] flex h-16 w-16 items-center justify-center rounded-full bg-indigo-600/10 text-white/80 shadow-lg hover:bg-indigo-600/30 hover:text-white cursor-pointer"
       title={open ? 'Close chat' : 'Open chat'}
     >
       <MessageCircleMore

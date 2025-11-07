@@ -152,7 +152,7 @@ const Navbar = () => {
               <button
                 type="button"
                 onClick={async () => await logout()}
-                className="inline-flex items-center justify-center rounded-full bg-gradient-to-r from-rose-500 to-red-500 px-4 py-2 text-sm font-semibold text-white shadow-sm shadow-rose-900/40 transition hover:from-rose-400 hover:to-red-400"
+                className="inline-flex items-center justify-center rounded-full bg-gradient-to-r from-rose-500 to-red-500 px-4 py-2 text-sm font-semibold text-white shadow-sm shadow-rose-900/40 transition hover:from-rose-400 hover:to-red-400 cursor-pointer"
               >
                 Log out
               </button>
