@@ -2,12 +2,10 @@ import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from 'r
 import type { RefObject } from 'react';
 import { useLocation } from 'react-router-dom';
 import type {
-  HandoffTimeoutMessage,
   MatchmakingMessage,
-  TournamentMatchCountdownMessage,
   TournamentMatchState,
   TournamentParticipantState,
-} from '@pong/shared/protocol/net';
+} from '../net/messageTypes';
 import { useSnackbar } from '../../../../context/SnackbarContext';
 import { useAppContext } from '../../../../context/AppContext';
 import type { ActiveHandoff, CountdownSnapshot, ReadyMatch, TournamentSummary } from '../state/types';
@@ -25,7 +23,7 @@ import { useMatchLifecycle } from './useMatchLifecycle';
 import { useTournamentList } from './useTournamentList';
 import { sanitizeAliasInput } from '../../../../utils/alias';
 import { tournamentReducer, initialTournamentState } from '../state/tournamentReducer';
-import { selectMatchesByStage, selectSortedParticipants } from '../state/selectors';
+import { selectMatchesByStage, selectSortedParticipants, selectCurrentParticipantId } from '../state/selectors';
 import { useActiveTournament } from './useActiveTournament';
 
 const TOURNAMENT_NAME_MAX_LENGTH = 20;
@@ -96,10 +94,7 @@ export function useTournamentPageController(
   const pendingMatchRef = useRef<ReadyMatch | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   // connection internals are managed in useTournamentConnection
-  const membershipRef = useRef<{ member: boolean; tournamentId: number | null }>({
-    member: false,
-    tournamentId: null,
-  });
+  // membership bookkeeping via onLobbyUpdated + reducer; no separate ref needed
   const locationRef = useRef(location.pathname);
 
   // connectionReady is provided by useTournamentConnection below
@@ -304,7 +299,6 @@ export function useTournamentPageController(
     if (activeTournamentId === null) return;
     const tournamentId = activeTournamentId;
     leaveTournament(String(tournamentId));
-    membershipRef.current = { member: false, tournamentId: null };
     setActiveTournamentId(null);
     resetLocalActiveTournamentState();
     if (locationRef.current === `/pong/tournaments/${tournamentId}`) {
@@ -323,10 +317,9 @@ export function useTournamentPageController(
   }, [participants, bracket]);
 
   const currentParticipantId = useMemo(() => {
-    if (!user?.uuid) return null;
-    const entry = participants.find((participant) => participant.userUuid === user.uuid);
-    return entry?.participantId ?? null;
-  }, [participants, user?.uuid]);
+    const stateForSelectors = { ...initialTournamentState, participants, bracket };
+    return selectCurrentParticipantId(stateForSelectors, user?.uuid ?? null);
+  }, [participants, bracket, user?.uuid]);
 
   const matchesByStage = useMemo(() => {
     const stateForSelectors = { ...initialTournamentState, participants, bracket };
