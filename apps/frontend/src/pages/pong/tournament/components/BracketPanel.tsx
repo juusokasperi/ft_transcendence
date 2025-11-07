@@ -1,5 +1,5 @@
 import React from 'react';
-import type { TournamentMatchState } from '../../net/messageTypes';
+import type { TournamentMatchState } from '../net/messageTypes';
 import SurfaceCard from '../../shared/components/SurfaceCard';
 import { participantStatusLabel, stageLabel } from '../utils/utils';
 
