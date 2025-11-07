@@ -8,7 +8,9 @@ import type { Broadcaster } from '../../app/Broadcaster.ts';
 import type { MatchRunner } from '../../app/MatchRunner.ts';
 import type { ReconnectManager } from '../../app/ReconnectManager.ts';
 import { AuthService } from '../../app/AuthService.ts';
+import type { ResumeTokenService } from '../../app/ResumeTokenService.ts';
 import type { FastifyBaseLogger } from '@utils/logger';
+import { reconnectGraceMs } from '../../domain/Policies.ts';
 
 // TODO: Replace with import from AuthService when VerifiedJoinTokenClaims is exported there.
 // import type { VerifiedJoinTokenClaims } from '../../app/AuthService.ts';
@@ -33,6 +35,7 @@ export class WSServer {
   readonly registry: RoomRegistry;
   private readonly broadcaster: Broadcaster;
   private readonly runner: MatchRunner;
+  private readonly resumeTokens: ResumeTokenService;
   private readonly reconnects: ReconnectManager;
   private readonly auth: AuthService;
   private readonly redis: Redis;
@@ -44,6 +47,7 @@ export class WSServer {
     registry: RoomRegistry;
     broadcaster: Broadcaster;
     runner: MatchRunner;
+    resumeTokens: ResumeTokenService;
     reconnects: ReconnectManager;
     redis: Redis;
     logger: FastifyBaseLogger;
@@ -53,6 +57,7 @@ export class WSServer {
     this.registry = args.registry;
     this.broadcaster = args.broadcaster;
     this.runner = args.runner;
+    this.resumeTokens = args.resumeTokens;
     this.reconnects = args.reconnects;
     this.redis = args.redis;
     this.logger = args.logger;
@@ -72,6 +77,87 @@ export class WSServer {
       host: '0.0.0.0',
     });
     this.logger.info({ port: this.config.wsPort }, '[WSServer] Listening');
+  }
+
+  private parseProtocols(headers: Record<string, unknown>): string[] {
+    const raw = headers['sec-websocket-protocol'];
+    if (typeof raw !== 'string') return [];
+    return raw
+      .split(',')
+      .map((p) => p.trim())
+      .filter(Boolean);
+  }
+
+  private extractProtocolToken(protocols: string[], tag: string): string | undefined {
+    const idx = protocols.findIndex((p) => p.toLowerCase() === tag);
+    return idx === -1 ? undefined : protocols[idx + 1];
+  }
+
+  private clearResumeInterval(player: PlayerConnectionState): void {
+    if (player.resumeInterval) {
+      clearInterval(player.resumeInterval);
+      delete player.resumeInterval;
+    }
+  }
+
+  private async bindPlayerConnection(
+    session: MatchSession,
+    seat: 'P1' | 'P2',
+    player: PlayerConnectionState,
+    connection: WebSocket,
+  ) {
+    if (
+      player.socket &&
+      player.socket !== connection &&
+      player.socket.readyState === player.socket.OPEN
+    ) {
+      this.logger.warn('[WSServer] Closing player socket');
+      player.socket.close(4403, 'replaced-by-resume');
+    }
+    player.socket = connection;
+    this.logger.debug('[WSServer] Attempt: Bind player connection');
+
+    const graceMs = reconnectGraceMs(Boolean(session.reservation.tournament), this.config);
+    const rotate = async () => {
+      const { resumeToken } = await this.resumeTokens.issue({
+        roomIdentifier: session.reservation.roomIdentifier,
+        playerIdentifier: player.playerIdentifier,
+        sessionIdentifier: session.model.id,
+        ttlMs: graceMs,
+      });
+      this.broadcaster.broadcastResumeToken(session, seat, resumeToken);
+    };
+
+    this.logger.debug('[WSServer] Attempt: set resume interval');
+    this.clearResumeInterval(player);
+    try {
+      await rotate();
+    } catch (err) {
+      this.logger.error(
+        { err, seat, player: player.playerIdentifier },
+        '[WSServer] Failed to rotate resume token',
+      );
+      connection.close(CLOSE_CODES.SERVER_ERROR, 'resume-token-error');
+      return;
+    }
+
+    player.resumeInterval = setInterval(() => {
+      void rotate().catch((err) =>
+        this.logger.error(
+          { err, seat, player: player.playerIdentifier },
+          '[WSServer] Resume rotation failure',
+        ),
+      );
+    }, 15_000);
+    this.logger.info('[WSServer] Resume interval set');
+    connection.on('message', (raw) =>
+      this.handleMessage(session.reservation.roomIdentifier, seat, raw),
+    );
+    connection.on('close', () => {
+      this.clearResumeInterval(player);
+      this.handleClose(session.reservation.roomIdentifier, seat);
+    });
+    this.logger.info('[WSServer] Player connection binded');
   }
 
   private registerRoutes(): void {
@@ -97,13 +183,58 @@ export class WSServer {
       connection.close(CLOSE_CODES.ROOM_NOT_FOUND, 'room-not-found');
       return;
     }
+    const protocols = this.parseProtocols(headers);
+    const resumeToken = this.extractProtocolToken(protocols, 'resume');
+    if (resumeToken) {
+      await this.handleResumeConnection(connection, roomIdentifier, resumeToken);
+      return;
+    }
 
-    const joinToken = this.extractJoinToken(headers);
+    const joinToken = this.extractProtocolToken(protocols, 'bearer');
     if (!joinToken) {
       connection.close(CLOSE_CODES.MISSING_TOKEN, 'missing-token');
       return;
     }
 
+    await this.handleJoinConnection(connection, roomIdentifier, joinToken);
+  }
+
+  private async handleResumeConnection(
+    connection: WebSocket,
+    roomIdentifier: string,
+    resumeToken: string,
+  ): Promise<void> {
+    const claims = await this.resumeTokens.consume(resumeToken);
+    if (!claims) {
+      connection.close(CLOSE_CODES.INVALID_TOKEN, 'invalid-resume-token');
+      return;
+    }
+
+    const session = this.registry.getSession(claims.roomIdentifier);
+    if (!session || session.model.id !== claims.sessionIdentifier) {
+      connection.close(CLOSE_CODES.ROOM_NOT_FOUND, 'session-not-found');
+      return;
+    }
+
+    const playerEntry = [...session.players.entries()].find(
+      ([, state]) => state.playerIdentifier === claims.playerIdentifier,
+    );
+    if (!playerEntry) {
+      connection.close(CLOSE_CODES.PLAYER_NOT_AUTHORIZED, 'player-not-found');
+      return;
+    }
+
+    const [seat, player] = playerEntry;
+    await this.bindPlayerConnection(session, seat, player, connection);
+    this.reconnects.onReconnect(session, seat);
+    this.broadcaster.broadcastRoomState(session);
+  }
+
+  private async handleJoinConnection(
+    connection: WebSocket,
+    roomIdentifier: string,
+    joinToken: string,
+  ): Promise<void> {
     let claims: JoinClaims;
     try {
       claims = this.auth.verifyJoinToken(joinToken, roomIdentifier);
@@ -166,34 +297,14 @@ export class WSServer {
       );
 
       this.broadcaster.broadcastRoomState(session);
-      if (session.model.disconnectGrace?.seat === player.seat) {
-        this.reconnects.onReconnect(session, player.seat);
-      }
 
-      connection.on('message', (raw) => {
-        this.handleMessage(roomIdentifier, player.seat, raw);
-      });
-
-      connection.on('close', () => {
-        this.handleClose(roomIdentifier, player.seat);
-      });
+      await this.bindPlayerConnection(session, player.seat, player, connection);
 
       this.afterPlayerJoin(session);
     } catch (err) {
       const code = this.resolveCloseCode(err);
       connection.close(code, err instanceof Error ? err.message : 'unknown-error');
     }
-  }
-
-  private extractJoinToken(headers: Record<string, unknown>): string | undefined {
-    const protocolHeader = headers['sec-websocket-protocol'];
-    if (typeof protocolHeader !== 'string') return undefined;
-    const requested = protocolHeader
-      .split(',')
-      .map((p) => p.trim())
-      .filter(Boolean);
-    const bearerIndex = requested.findIndex((p) => p.toLowerCase() === 'bearer');
-    return bearerIndex !== -1 ? requested[bearerIndex + 1] : undefined;
   }
 
   private handleMessage(roomIdentifier: string, seat: 'P1' | 'P2', raw: RawData): void {
