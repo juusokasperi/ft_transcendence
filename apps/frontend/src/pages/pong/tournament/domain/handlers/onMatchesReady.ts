@@ -1,15 +1,16 @@
 import type { MessageCtx } from './types';
+import type { TournamentMatchesReadyMessage } from '../../net/messageTypes';
 
 export function onMatchesReady(
-  msg: { type: 'TOURNAMENT_MATCHES_READY'; matches: any[] },
+  msg: TournamentMatchesReadyMessage,
   ctx: MessageCtx,
 ) {
-  ctx.setLatestReadyMatches(msg.matches as any);
+  ctx.setLatestReadyMatches(msg.matches);
   // Refresh tournament snapshot to include updated bracket/participants
   void ctx.refreshTournamentState();
 
   // Prune countdowns to only active matches
-  const activeIds = new Set((msg.matches as any[]).map((m) => m.tournamentMatchId as number));
+  const activeIds = new Set(msg.matches.map((m) => m.tournamentMatchId));
   ctx.setMatchCountdowns((prev) => {
     const next = new Map<number, any>();
     let changed = false;
@@ -23,8 +24,8 @@ export function onMatchesReady(
   // Assign pending match for the current user
   const userUuid = ctx.userUuid;
   if (userUuid) {
-    const personal = (msg.matches as any[]).find((match) =>
-      match.participants.some((p: any) => p.userUuid === userUuid),
+    const personal = msg.matches.find((match) =>
+      match.participants.some((p) => p.userUuid === userUuid),
     );
     if (personal) {
       ctx.pendingMatchSet(personal);

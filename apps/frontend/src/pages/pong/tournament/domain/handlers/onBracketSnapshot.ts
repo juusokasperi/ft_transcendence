@@ -1,9 +1,9 @@
 import type { MessageCtx } from './types';
+import type { TournamentBracketSnapshotMessage } from '../../net/messageTypes';
 
 export function onBracketSnapshot(
-  msg: { type: 'TOURNAMENT_BRACKET_SNAPSHOT'; matches: any[] },
+  msg: TournamentBracketSnapshotMessage,
   ctx: MessageCtx,
 ) {
-  ctx.setBracket(msg.matches as any);
+  ctx.setBracket(msg.matches);
 }
-
