@@ -51,6 +51,11 @@ app.server.on('upgrade', async (req: IncomingMessage, socket: Duplex, head: Buff
   }
 
   const roomId = match[1];
+  if (!roomId) {
+    app.log.info('[Gateway] Missing room identifier');
+    socket.destroy();
+    return;
+  }
   const protocolHeader = req.headers['sec-websocket-protocol'];
 
   if (typeof protocolHeader !== 'string') {
