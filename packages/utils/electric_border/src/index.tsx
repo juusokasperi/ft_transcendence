@@ -113,7 +113,13 @@ const ElectricBorder: React.FC<ElectricBorderProps> = ({
     updateAnim();
   }, [updateAnim]);
 
-  useLayoutEffect(() => {
+  // useLayoutEffect inside libraries can warn during SSR because it runs only
+  // on the client. Use an isomorphic effect that falls back to useEffect on the
+  // server to avoid React warnings when this package is used in SSR builds.
+  const useIsomorphicLayoutEffect =
+    typeof window !== 'undefined' && typeof document !== 'undefined' ? useLayoutEffect : useEffect;
+
+  useIsomorphicLayoutEffect(() => {
     if (!rootRef.current || typeof ResizeObserver === 'undefined') return;
     const ro = new ResizeObserver(() => updateAnim());
     ro.observe(rootRef.current);
@@ -179,7 +185,7 @@ const ElectricBorder: React.FC<ElectricBorderProps> = ({
             <feTurbulence
               type="turbulence"
               baseFrequency="0.02"
-              numOctaves="10"
+              numOctaves="6"
               result="noise1"
               seed="1"
             />
@@ -196,7 +202,7 @@ const ElectricBorder: React.FC<ElectricBorderProps> = ({
             <feTurbulence
               type="turbulence"
               baseFrequency="0.02"
-              numOctaves="10"
+              numOctaves="6"
               result="noise2"
               seed="1"
             />
@@ -213,7 +219,7 @@ const ElectricBorder: React.FC<ElectricBorderProps> = ({
             <feTurbulence
               type="turbulence"
               baseFrequency="0.02"
-              numOctaves="10"
+              numOctaves="6"
               result="noise1"
               seed="2"
             />
@@ -230,7 +236,7 @@ const ElectricBorder: React.FC<ElectricBorderProps> = ({
             <feTurbulence
               type="turbulence"
               baseFrequency="0.02"
-              numOctaves="10"
+              numOctaves="6"
               result="noise2"
               seed="2"
             />
