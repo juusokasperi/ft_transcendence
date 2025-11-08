@@ -3,7 +3,7 @@ import { X } from 'lucide-react';
 import { useAppContext } from '../context/AppContext';
 import { useLocation } from 'react-router-dom';
 import ConfirmDialog from './ConfirmDialog';
-import ChatProfile from './ChatProfile';
+import ChatProfile from './chat/ChatProfile';
 import SplitButton from './ui/SplitButton';
 import Button from './Button';
 import type { AxiosInstance } from 'axios';

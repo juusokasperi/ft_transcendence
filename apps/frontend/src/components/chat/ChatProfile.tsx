@@ -1,6 +1,6 @@
 import React from 'react';
-import { resolveAvatarUrl } from '../utils/avatarUrl';
-import Button from './Button';
+import { resolveAvatarUrl } from '../../utils/avatarUrl';
+import Button from '../Button';
 
 type ProfileData = {
   avatar?: string | null;
