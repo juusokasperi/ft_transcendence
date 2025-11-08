@@ -205,7 +205,7 @@ export function ChatProvider({ channel, children }: ChatProviderProps) {
       }
 
       if (data.type === 'userJoined') {
-        addSystemMessage(`${data.username} joined the chat  ${channel}`);
+        addSystemMessage(`${data.username} joined the chat ${channel}`);
         return;
       }
 

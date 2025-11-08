@@ -86,7 +86,7 @@ const Navbar = () => {
       data-app-navbar
       role="navigation"
       aria-label="Primary"
-      className={`fixed inset-x-0 top-0 z-50 border-b border-white/10 text-white shadow-[0_10px_30px_-20px_rgba(67,56,202,0.75)] ${navBackgroundClass}`}
+      className={`fixed inset-x-0 top-0 z-[50] border-b border-white/10 text-white shadow-[0_10px_30px_-20px_rgba(67,56,202,0.75)] ${navBackgroundClass}`}
     >
       <div className="mx-auto flex w-full max-w-6xl items-center justify-between gap-6 px-4 py-5 sm:px-6 lg:px-12">
         <div className="flex items-center gap-3">
