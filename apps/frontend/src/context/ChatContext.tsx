@@ -43,6 +43,7 @@ type ChatContextValue = {
   acceptInvite: (inviteId: string) => void;
   declineInvite: (inviteId: string) => void;
   inviteAcceptedSignal: number;
+  acknowledgeInviteAcceptedSignal: () => void;
 };
 
 const ChatContext = createContext<ChatContextValue | null>(null);
@@ -54,6 +55,7 @@ type ChatProviderProps = {
 
 export function ChatProvider({ channel, children }: ChatProviderProps) {
   const { user } = useAppContext();
+  const userUuid = user?.uuid ?? null;
   const chatUsername = user?.username ?? 'Player';
 
   const wsRef = useRef<WebSocket | null>(null);
@@ -67,6 +69,9 @@ export function ChatProvider({ channel, children }: ChatProviderProps) {
   const [cooldown, setCooldown] = useState(false);
   const [sentCount, setSentCount] = useState(0);
   const [inviteAcceptedSignal, setInviteAcceptedSignal] = useState(0);
+  const acknowledgeInviteAcceptedSignal = useCallback(() => {
+    setInviteAcceptedSignal(0);
+  }, []);
 
   useEffect(() => {
     blockedRef.current = blocked;
@@ -86,10 +91,10 @@ export function ChatProvider({ channel, children }: ChatProviderProps) {
   }, [channel, resetChannelState]);
 
   useEffect(() => {
-    if (!user) {
+    if (!userUuid) {
       resetChannelState();
     }
-  }, [resetChannelState, user]);
+  }, [resetChannelState, userUuid]);
 
   useEffect(() => {
     return () => {
@@ -154,7 +159,7 @@ export function ChatProvider({ channel, children }: ChatProviderProps) {
   );
 
   useEffect(() => {
-    if (!user || !channel) return;
+    if (!userUuid || !channel) return;
 
     const ws = new WebSocket(WS_URL);
     wsRef.current = ws;
@@ -311,7 +316,7 @@ export function ChatProvider({ channel, children }: ChatProviderProps) {
         ws.close();
       } catch {}
     };
-  }, [addSystemMessage, channel, chatUsername, normalizeUsers, user]);
+  }, [addSystemMessage, channel, chatUsername, normalizeUsers, userUuid]);
 
   const sendPayload = useCallback((payload: Record<string, unknown>) => {
     const ws = wsRef.current;
@@ -384,6 +389,7 @@ export function ChatProvider({ channel, children }: ChatProviderProps) {
       acceptInvite,
       declineInvite,
       inviteAcceptedSignal,
+      acknowledgeInviteAcceptedSignal,
     }),
     [
       acceptInvite,
@@ -394,6 +400,7 @@ export function ChatProvider({ channel, children }: ChatProviderProps) {
       cooldown,
       declineInvite,
       inviteAcceptedSignal,
+      acknowledgeInviteAcceptedSignal,
       messages,
       pendingInvites,
       sendChatMessage,

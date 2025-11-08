@@ -65,6 +65,7 @@ export default function Chat({
     acceptInvite,
     declineInvite,
     inviteAcceptedSignal,
+    acknowledgeInviteAcceptedSignal,
   } = useChatContext();
   const displayChannel = activeChannel || channel;
 
@@ -161,13 +162,19 @@ export default function Chat({
   useEffect(() => {
     if (!inviteAcceptedSignal) return;
     console.debug('[ChatUI] inviteAcceptedSignal detected', { inviteAcceptedSignal });
+    let cancelled = false;
     const timer = window.setTimeout(() => {
+      if (cancelled) return;
       console.debug('[ChatUI] navigating to /pong/online after invite acceptance');
       navigate('/pong/online', { state: { timestamp: Date.now() } });
       onClose();
+      acknowledgeInviteAcceptedSignal();
     }, 500);
-    return () => window.clearTimeout(timer);
-  }, [inviteAcceptedSignal, navigate, onClose]);
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+    };
+  }, [acknowledgeInviteAcceptedSignal, inviteAcceptedSignal, navigate, onClose]);
 
   // ---------- send message helper ----------
   const sendMessage = () => {

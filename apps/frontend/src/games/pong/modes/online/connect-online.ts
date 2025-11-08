@@ -108,6 +108,22 @@ export async function connectOnline(cfg: ConnectConfig): Promise<OnlineClient> {
         }
       };
 
+      // Legacy builds emitted separate `snapshot` / `opponentAxis` messages, so normalize
+      // everything through a single helper before fanning out to listeners.
+      const fanOutFrame = (payload: {
+        state?: GameState;
+        events?: FrameEvents;
+        match?: MatchSnapshot;
+        axis?: number;
+      }) => {
+        const { state, events, match, axis } = payload;
+        if (!state) return;
+        snapshotListeners.forEach((cb) => cb(state, events ?? {}, match));
+        if (typeof axis === 'number') {
+          opponentAxisListeners.forEach((cb) => cb(axis));
+        }
+      };
+
       gameWs.addEventListener('message', (ev) => {
         let data: any;
         try {
@@ -119,8 +135,16 @@ export async function connectOnline(cfg: ConnectConfig): Promise<OnlineClient> {
 
         switch (data.type) {
           case 'FRAME':
-            snapshotListeners.forEach((cb) => cb(data.state, data.events, data.match));
-            opponentAxisListeners.forEach((cb) => cb(data.axis));
+          case 'frame':
+          case 'snapshot':
+          case 'SNAPSHOT':
+            fanOutFrame(data);
+            break;
+          case 'opponentAxis':
+          case 'OPPONENT_AXIS':
+            if (typeof data.axis === 'number') {
+              opponentAxisListeners.forEach((cb) => cb(data.axis));
+            }
             break;
           case 'ROOM_STATE':
             console.debug('[OnlineGame] Room state message', data);

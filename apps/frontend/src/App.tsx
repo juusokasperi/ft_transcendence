@@ -48,16 +48,14 @@ function App() {
     <SidebarProvider>
       <SnackbarProvider>
         <div>
-          {user && (
-            <ChatProvider channel={channel}>
-              {chatUiEnabled && (
-                <>
-                  {!chatOpen && <ChatToggleButton open={chatOpen} setOpen={setChatOpen} />}
-                  <Chat onClose={() => setChatOpen(false)} channel={channel} isOpen={chatOpen} />
-                </>
-              )}
-            </ChatProvider>
-          )}
+          <ChatProvider channel={channel}>
+            {chatUiEnabled && (
+              <>
+                {!chatOpen && <ChatToggleButton open={chatOpen} setOpen={setChatOpen} />}
+                <Chat onClose={() => setChatOpen(false)} channel={channel} isOpen={chatOpen} />
+              </>
+            )}
+          </ChatProvider>
           {/* Routes */}
           <Routes>
             <Route path={'/'} element={<Home />} />
