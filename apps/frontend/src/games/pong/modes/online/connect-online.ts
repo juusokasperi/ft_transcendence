@@ -82,6 +82,8 @@ export async function connectOnline(cfg: ConnectConfig): Promise<OnlineClient> {
     gameWs.addEventListener('open', () => {
       settled = true;
       console.log('[OnlineGame] WebSocket connection opened');
+
+      let lastSentAxis = 0;
       const snapshotListeners = new Set<
         (s: GameState, ev: FrameEvents, m?: MatchSnapshot) => void
       >();
@@ -116,10 +118,8 @@ export async function connectOnline(cfg: ConnectConfig): Promise<OnlineClient> {
         }
 
         switch (data.type) {
-          case 'snapshot':
+          case 'FRAME':
             snapshotListeners.forEach((cb) => cb(data.state, data.events, data.match));
-            break;
-          case 'opponentAxis':
             opponentAxisListeners.forEach((cb) => cb(data.axis));
             break;
           case 'ROOM_STATE':
@@ -188,9 +188,10 @@ export async function connectOnline(cfg: ConnectConfig): Promise<OnlineClient> {
           matchEndListeners.add(cb);
         },
         sendLocalAxis(axis: number) {
-          if (gameWs.readyState === WebSocket.OPEN) {
+          if (axis === lastSentAxis) return;
+          lastSentAxis = axis;
+          if (gameWs.readyState === WebSocket.OPEN)
             gameWs.send(JSON.stringify({ type: 'axis', axis }));
-          }
         },
         disconnect() {
           console.log('[OnlineGame] Disconnecting WebSocket');
