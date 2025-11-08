@@ -160,6 +160,7 @@ export function ChatProvider({ channel, children }: ChatProviderProps) {
     wsRef.current = ws;
 
     ws.onopen = () => {
+      console.debug('[ChatContext] websocket open', { channel });
       ws.send(JSON.stringify({ type: 'setName', username: chatUsername }));
       ws.send(JSON.stringify({ type: 'joinChannel', channel }));
     };
@@ -252,6 +253,7 @@ export function ChatProvider({ channel, children }: ChatProviderProps) {
       }
 
       if (data.type === 'inviteGame') {
+        console.debug('[ChatContext] inviteGame received', data);
         setPendingInvites((prev) => new Map(prev).set(data.inviteId, data.from));
         addSystemMessage(`Game invite from ${data.from}`, { inviteId: data.inviteId });
         return;
@@ -263,6 +265,7 @@ export function ChatProvider({ channel, children }: ChatProviderProps) {
       }
 
       if (data.type === 'inviteAccepted') {
+        console.debug('[ChatContext] inviteAccepted received');
         addSystemMessage(`Invite accepted. Joining game.`, { type: 'inviteAccepted' });
         setInviteAcceptedSignal(Date.now());
         return;
@@ -298,10 +301,12 @@ export function ChatProvider({ channel, children }: ChatProviderProps) {
     };
 
     ws.onclose = () => {
+      console.debug('[ChatContext] websocket closed', { channel });
       wsRef.current = null;
     };
 
     return () => {
+      console.debug('[ChatContext] cleanup closing websocket', { channel });
       try {
         ws.close();
       } catch {}
@@ -311,6 +316,7 @@ export function ChatProvider({ channel, children }: ChatProviderProps) {
   const sendPayload = useCallback((payload: Record<string, unknown>) => {
     const ws = wsRef.current;
     if (!ws || ws.readyState !== WebSocket.OPEN) return false;
+    console.debug('[ChatContext] sendPayload', payload);
     ws.send(JSON.stringify(payload));
     return true;
   }, []);

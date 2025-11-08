@@ -133,6 +133,7 @@ const OnlineGame: React.FC = () => {
   const setMatchActive = useSetMatchActivity();
 
   useEffect(() => {
+    console.debug('[OnlineGame] matchActive changed', { matchActive });
     setMatchActive(matchActive);
     return () => setMatchActive(false);
   }, [matchActive, setMatchActive]);
@@ -150,10 +151,12 @@ const OnlineGame: React.FC = () => {
   });
 
   const handleQuit = useCallback(() => {
+    console.debug('[OnlineGame] handleQuit invoked');
     destroyGame();
     dispatch({ type: 'reset' });
     reconnect();
-  }, [destroyGame, reconnect]);
+    setMatchActive(false);
+  }, [destroyGame, dispatch, reconnect, setMatchActive]);
 
   useBodyClass('pong-playing', matchActive);
   useMatchOverEvent({

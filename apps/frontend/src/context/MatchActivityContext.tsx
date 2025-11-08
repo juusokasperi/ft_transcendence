@@ -12,7 +12,10 @@ export const MatchActivityProvider: React.FC<React.PropsWithChildren> = ({ child
   const value = useMemo<MatchActivityContextValue>(
     () => ({
       active,
-      setActive,
+      setActive: (next) => {
+        console.debug('[MatchActivity] setActive', { next });
+        setActive(next);
+      },
     }),
     [active],
   );

@@ -43,7 +43,6 @@ type ChatProps = {
 
 export default function Chat({
   onClose,
-  username: _username = 'Player',
   channel,
   isOpen = true,
   firstPlayer = null,
@@ -68,7 +67,6 @@ export default function Chat({
     inviteAcceptedSignal,
   } = useChatContext();
   const displayChannel = activeChannel || channel;
-  void _username;
 
   const [input, setInput] = useState('');
   const [dmTarget, setDmTarget] = useState<string | null>(null);
@@ -162,8 +160,13 @@ export default function Chat({
 
   useEffect(() => {
     if (!inviteAcceptedSignal) return;
-    navigate('/pong/online', { state: { timestamp: Date.now() } });
-    onClose();
+    console.debug('[ChatUI] inviteAcceptedSignal detected', { inviteAcceptedSignal });
+    const timer = window.setTimeout(() => {
+      console.debug('[ChatUI] navigating to /pong/online after invite acceptance');
+      navigate('/pong/online', { state: { timestamp: Date.now() } });
+      onClose();
+    }, 500);
+    return () => window.clearTimeout(timer);
   }, [inviteAcceptedSignal, navigate, onClose]);
 
   // ---------- send message helper ----------
