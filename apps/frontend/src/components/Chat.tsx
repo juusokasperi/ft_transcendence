@@ -159,6 +159,18 @@ export default function Chat({
     el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' });
   }, [messages, isOpen]);
 
+  // Emit indicator (pending invites / DMs) so the chat toggle button can show a visual cue
+  useEffect(() => {
+    const hasPending = pendingInvites && pendingInvites.size > 0;
+    const hasDM = messages.some(
+      (m) => (m.type === 'privateMessage' || m.type === 'dm') && m.from && m.from !== chatUsername,
+    );
+    const active = hasPending || hasDM;
+    try {
+      window.dispatchEvent(new CustomEvent('chat:indicator', { detail: { active } }));
+    } catch {}
+  }, [pendingInvites, messages, chatUsername]);
+
   useEffect(() => {
     if (!inviteAcceptedSignal) return;
     //console.debug('[ChatUI] inviteAcceptedSignal detected', { inviteAcceptedSignal });
@@ -340,8 +352,8 @@ export default function Chat({
             const isPrivate = msg.type === 'privateMessage' || msg.type === 'dm';
             const containerClass = isPrivate
               ? isMe
-                ? 'bg-purple-700/60 text-purple-100'
-                : 'bg-pink-700/60 text-pink-100'
+                ? 'bg-purple-700/20 text-purple-100'
+                : 'bg-pink-700/20 text-pink-100'
               : 'bg-white/10 text-white/90';
 
             return (
