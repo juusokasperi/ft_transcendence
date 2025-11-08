@@ -161,11 +161,11 @@ export default function Chat({
 
   useEffect(() => {
     if (!inviteAcceptedSignal) return;
-    console.debug('[ChatUI] inviteAcceptedSignal detected', { inviteAcceptedSignal });
+    //console.debug('[ChatUI] inviteAcceptedSignal detected', { inviteAcceptedSignal });
     let cancelled = false;
     const timer = window.setTimeout(() => {
       if (cancelled) return;
-      console.debug('[ChatUI] navigating to /pong/online after invite acceptance');
+      //console.debug('[ChatUI] navigating to /pong/online after invite acceptance');
       navigate('/pong/online', { state: { timestamp: Date.now() } });
       onClose();
       acknowledgeInviteAcceptedSignal();

@@ -13,7 +13,7 @@ export const MatchActivityProvider: React.FC<React.PropsWithChildren> = ({ child
     () => ({
       active,
       setActive: (next) => {
-        console.debug('[MatchActivity] setActive', { next });
+        //console.debug('[MatchActivity] setActive', { next });
         setActive(next);
       },
     }),
