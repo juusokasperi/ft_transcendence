@@ -167,8 +167,6 @@ export class WSServer {
       if (player.resumeInterval === interval) {
         clearInterval(interval);
         delete player.resumeInterval;
-      } else {
-        clearInterval(interval);
       }
       this.handleClose(session.reservation.roomIdentifier, seat);
     });

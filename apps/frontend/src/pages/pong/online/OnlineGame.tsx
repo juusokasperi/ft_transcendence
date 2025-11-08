@@ -143,7 +143,7 @@ const OnlineGame: React.FC = () => {
 
   const matchActive = state.status === 'starting' || state.status === 'playing';
 
-  const { destroy: destroyGame, giveUp } = useGameBootstrap({
+  const { giveUp } = useGameBootstrap({
     canvasRef,
     active: matchActive,
     config: bootstrapConfig,

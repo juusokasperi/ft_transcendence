@@ -3,12 +3,7 @@ import type { FrameEvents, MatchSnapshot } from '@pong/shared';
 import type { OnlineMatchSummary, RoomStateMessage, StartMessage } from '@pong/shared/protocol/net';
 import type { PlayerSeat } from '@pong/render';
 import { wsUrl } from '../../../../utils/url';
-import {
-  readJwtExpSec,
-  clearResumeForRoom,
-  saveResumeTokenToSession,
-  loadResumeTokenFromSession,
-} from './resume';
+import { readJwtExpSec, clearResumeForRoom, saveResumeTokenToSession } from './resume';
 import { suppressAutoResumeFor } from './resume';
 export {
   getStoredResumeCandidate,

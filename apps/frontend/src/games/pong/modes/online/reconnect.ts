@@ -53,6 +53,10 @@ export function createReconnector({
           // Swap sockets and handlers
           const old = getWs();
           detachHandlers(old);
+          // Ensure the previous socket is closed to avoid lingering connections
+          try {
+            old.close(1000, 'replaced');
+          } catch {}
           setWs(next);
           attachHandlers(next);
           clearReconnectTimer();
@@ -70,7 +74,7 @@ export function createReconnector({
     }, delay);
   };
 
-  const onCloseAfterOpen = (evt: CloseEvent) => {
+  const onCloseAfterOpen = function (this: WebSocket, evt: CloseEvent) {
     // 4403 indicates expected replace during resume; ignore.
     if (evt.code === 4403) return;
     // Begin reconnect attempts if a resume token exists.
