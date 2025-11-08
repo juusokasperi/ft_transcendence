@@ -1,5 +1,5 @@
 // apps/frontend/src/pages/pong/local/LocalGame.tsx
-import React, { useCallback, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { BotDifficulty } from '../../../games/pong/ai/bot-controller';
 
@@ -17,6 +17,7 @@ import { useLocalMatchEnd } from './hooks/useLocalMatchEnd';
 import type { MatchSummary } from './types';
 import PageContainer from '../shared/components/PageContainer';
 import PageSection from '../shared/components/PageSection';
+import { useSetMatchActivity } from '../../../context/MatchActivityContext';
 
 const LocalGame: React.FC = () => {
   const navigate = useNavigate();
@@ -49,6 +50,7 @@ const LocalGame: React.FC = () => {
 
   const botSeat: 'P1' | 'P2' = settings.player1.controller === 'arrows' ? 'P1' : 'P2';
   const arrowSeatLabel = settings.player1.controller === 'arrows' ? 'Player 1' : 'Player 2';
+  const setMatchActive = useSetMatchActivity();
 
   useAIBot({
     enabled: aiEnabled,
@@ -75,6 +77,11 @@ const LocalGame: React.FC = () => {
 
   useKeyboardQuit(isPlaying, handleQuit);
   useBodyClass('pong-playing', isPlaying);
+
+  useEffect(() => {
+    setMatchActive(isPlaying);
+    return () => setMatchActive(false);
+  }, [isPlaying, setMatchActive]);
 
   const handleSave = useCallback(() => {
     save();

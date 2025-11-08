@@ -23,6 +23,7 @@ import { useMatchOverEvent } from '../shared/hooks/useMatchOverEvent';
 import { initialState, reducer } from './state/machine';
 import PageContainer from '../shared/components/PageContainer';
 import PageSection from '../shared/components/PageSection';
+import { useSetMatchActivity } from '../../../context/MatchActivityContext';
 
 const OnlineGame: React.FC = () => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -129,20 +130,33 @@ const OnlineGame: React.FC = () => {
   });
 
   const matchActive = state.status === 'starting' || state.status === 'playing';
+  const setMatchActive = useSetMatchActivity();
+
+  useEffect(() => {
+    //console.debug('[OnlineGame] matchActive changed', { matchActive });
+    setMatchActive(matchActive);
+    return () => setMatchActive(false);
+  }, [matchActive, setMatchActive]);
+
+  const handleMatchStarted = useCallback(() => {
+    dispatch({ type: 'startPlaying' });
+  }, [dispatch]);
 
   const { destroy: destroyGame } = useGameBootstrap({
     canvasRef,
     active: matchActive,
     config: bootstrapConfig,
-    onStarted: () => dispatch({ type: 'startPlaying' }),
+    onStarted: handleMatchStarted,
     onEnded: handleMatchEnd,
   });
 
   const handleQuit = useCallback(() => {
+    //console.debug('[OnlineGame] handleQuit invoked');
     destroyGame();
     dispatch({ type: 'reset' });
     reconnect();
-  }, [destroyGame, reconnect]);
+    setMatchActive(false);
+  }, [destroyGame, dispatch, reconnect, setMatchActive]);
 
   useBodyClass('pong-playing', matchActive);
   useMatchOverEvent({

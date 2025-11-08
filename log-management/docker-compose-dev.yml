@@ -1,0 +1,39 @@
+services:
+
+  elastic_cert_setup:
+    networks:
+      - devnet
+
+  elasticsearch:
+    ports:
+      - ${ES_PORT}:9200
+    networks:
+      - devnet
+
+  # configures policies using the API
+  elasticsearch-post:
+    networks:
+      - devnet
+
+  kibana:
+    ports:
+      - ${KIBANA_PORT}:5601
+    environment:
+      - SERVER_BASEPATH=
+      - SERVER_PUBLICBASEURL=${FRONTEND_URL}
+    networks:
+      - devnet
+
+  kibana-post:
+    networks:
+      - devnet
+
+  logstash:
+    ports:
+      # Listens for GELF input here. The GELF driver can only send to host IPs,
+      # not into containers => this port needs to be exposed
+      - '12201:12201/udp'
+      # Logstash monitoring API
+      - '9600:9600'
+    networks:
+      - devnet

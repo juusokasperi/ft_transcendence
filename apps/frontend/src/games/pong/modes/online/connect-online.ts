@@ -82,6 +82,8 @@ export async function connectOnline(cfg: ConnectConfig): Promise<OnlineClient> {
     gameWs.addEventListener('open', () => {
       settled = true;
       console.log('[OnlineGame] WebSocket connection opened');
+
+      let lastSentAxis = 0;
       const snapshotListeners = new Set<
         (s: GameState, ev: FrameEvents, m?: MatchSnapshot) => void
       >();
@@ -106,6 +108,22 @@ export async function connectOnline(cfg: ConnectConfig): Promise<OnlineClient> {
         }
       };
 
+      // Legacy builds emitted separate `snapshot` / `opponentAxis` messages, so normalize
+      // everything through a single helper before fanning out to listeners.
+      const fanOutFrame = (payload: {
+        state?: GameState;
+        events?: FrameEvents;
+        match?: MatchSnapshot;
+        axis?: number;
+      }) => {
+        const { state, events, match, axis } = payload;
+        if (!state) return;
+        snapshotListeners.forEach((cb) => cb(state, events ?? {}, match));
+        if (typeof axis === 'number') {
+          opponentAxisListeners.forEach((cb) => cb(axis));
+        }
+      };
+
       gameWs.addEventListener('message', (ev) => {
         let data: any;
         try {
@@ -116,11 +134,17 @@ export async function connectOnline(cfg: ConnectConfig): Promise<OnlineClient> {
         }
 
         switch (data.type) {
+          case 'FRAME':
+          case 'frame':
           case 'snapshot':
-            snapshotListeners.forEach((cb) => cb(data.state, data.events, data.match));
+          case 'SNAPSHOT':
+            fanOutFrame(data);
             break;
           case 'opponentAxis':
-            opponentAxisListeners.forEach((cb) => cb(data.axis));
+          case 'OPPONENT_AXIS':
+            if (typeof data.axis === 'number') {
+              opponentAxisListeners.forEach((cb) => cb(data.axis));
+            }
             break;
           case 'ROOM_STATE':
             console.debug('[OnlineGame] Room state message', data);
@@ -188,9 +212,10 @@ export async function connectOnline(cfg: ConnectConfig): Promise<OnlineClient> {
           matchEndListeners.add(cb);
         },
         sendLocalAxis(axis: number) {
-          if (gameWs.readyState === WebSocket.OPEN) {
+          if (axis === lastSentAxis) return;
+          lastSentAxis = axis;
+          if (gameWs.readyState === WebSocket.OPEN)
             gameWs.send(JSON.stringify({ type: 'axis', axis }));
-          }
         },
         disconnect() {
           console.log('[OnlineGame] Disconnecting WebSocket');
