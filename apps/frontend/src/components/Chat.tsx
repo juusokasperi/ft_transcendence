@@ -89,8 +89,14 @@ export default function Chat({
   useEffect(() => {
     const node = containerRef.current;
     if (!node) return;
-    if (isOpen) node.removeAttribute('inert');
-    else node.setAttribute('inert', '');
+    if (isOpen) {
+      node.removeAttribute('inert');
+    } else {
+      if (node.contains(document.activeElement)) {
+        (document.activeElement as HTMLElement | null)?.blur();
+      }
+      node.setAttribute('inert', '');
+    }
   }, [isOpen]);
 
   useEffect(() => {
