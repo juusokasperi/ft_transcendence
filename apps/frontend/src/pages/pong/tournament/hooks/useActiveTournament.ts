@@ -64,51 +64,59 @@ export function useActiveTournament({
     resetActiveTournamentState();
     dispatch({ type: 'setActiveTournamentId', payload: focusTournamentId });
     debugLog('focus-change', { focusTournamentId });
+    // Proactively fetch snapshot for the focused tournament to populate name/meta
+    void refreshTournamentState(focusTournamentId);
   }, [debugLog, dispatch, focusTournamentId, resetActiveTournamentState]);
 
-  const refreshTournamentState = useCallback(async () => {
-    const activeTournamentId = getActiveIdRef.current();
-    if (!activeTournamentId || !userReady) return;
-    try {
-      setRefreshing(true);
-      debugLog('refresh-tournament-state:start', { tournamentId: activeTournamentId });
-      const { getTournamentSnapshot } = await import('../api/tournamentApi');
-      const snapshot = await getTournamentSnapshot(axios, activeTournamentId);
+  const refreshTournamentState = useCallback(
+    async (forcedTournamentId?: number) => {
+      const activeTournamentId = forcedTournamentId ?? getActiveIdRef.current();
+      if (!activeTournamentId || !userReady) return;
+      try {
+        setRefreshing(true);
+        debugLog('refresh-tournament-state:start', { tournamentId: activeTournamentId });
+        const { getTournamentSnapshot } = await import('../api/tournamentApi');
+        const snapshot = await getTournamentSnapshot(axios, activeTournamentId);
 
-      dispatch({
-        type: 'setActiveTournament',
-        payload: {
-          id: activeTournamentId,
-          name: snapshot.meta.name ?? null,
-          status: snapshot.meta.status,
-          maxParticipants: snapshot.meta.maxParticipants ?? 4,
-        },
-      });
+        dispatch({
+          type: 'setActiveTournament',
+          payload: {
+            id: activeTournamentId,
+            name: snapshot.meta.name ?? null,
+            status: snapshot.meta.status,
+            maxParticipants: snapshot.meta.maxParticipants ?? 4,
+          },
+        });
 
-      dispatch({
-        type: 'setParticipants',
-        payload: snapshot.participants.map((participant) => ({
-          participantId: participant.id,
-          alias: participant.alias,
-          seed: participant.seed,
-          status: participant.status,
-          userUuid: participant.userUuid,
-        })),
-      });
+        dispatch({
+          type: 'setParticipants',
+          payload: snapshot.participants.map((participant) => ({
+            participantId: participant.id,
+            alias: participant.alias,
+            seed: participant.seed,
+            status: participant.status,
+            userUuid: participant.userUuid,
+          })),
+        });
 
-      dispatch({ type: 'setBracket', payload: snapshot.matches as TournamentMatchState[] });
-      debugLog('refresh-tournament-state:success', {
-        tournamentId: activeTournamentId,
-        participants: snapshot.participants.length,
-        matches: snapshot.matches.length,
-      });
-    } catch (error) {
-      debugLog('refresh-tournament-state:error', { tournamentId: getActiveIdRef.current(), error });
-      onErrorRef.current('Failed to refresh tournament state');
-    } finally {
-      setRefreshing(false);
-    }
-  }, [axios, debugLog, dispatch, userReady]);
+        dispatch({ type: 'setBracket', payload: snapshot.matches as TournamentMatchState[] });
+        debugLog('refresh-tournament-state:success', {
+          tournamentId: activeTournamentId,
+          participants: snapshot.participants.length,
+          matches: snapshot.matches.length,
+        });
+      } catch (error) {
+        debugLog('refresh-tournament-state:error', {
+          tournamentId: getActiveIdRef.current(),
+          error,
+        });
+        onErrorRef.current('Failed to refresh tournament state');
+      } finally {
+        setRefreshing(false);
+      }
+    },
+    [axios, debugLog, dispatch, userReady],
+  );
 
   useEffect(() => {
     if (!getActiveIdRef.current()) return;

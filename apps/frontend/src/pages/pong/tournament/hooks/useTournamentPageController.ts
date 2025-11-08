@@ -200,7 +200,8 @@ export function useTournamentPageController(
           dispatch({ type: 'setAvailableTournaments', payload: next }),
         filterTournamentsForDisplay: (list) => filterTournamentsForDisplay(list),
         loadTournaments: () => void loadTournaments(),
-        refreshTournamentState: () => void refreshTournamentState(),
+        refreshTournamentState: (tournamentId?: number) =>
+          void refreshTournamentState(tournamentId),
         setTournamentStatus: (status) => {
           const s = storeRef.current;
           dispatch({

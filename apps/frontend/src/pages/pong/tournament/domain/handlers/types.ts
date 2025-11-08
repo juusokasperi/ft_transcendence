@@ -31,7 +31,7 @@ export type MessageCtx = {
   setAvailableTournaments(next: TournamentSummary[]): void;
   filterTournamentsForDisplay(list: TournamentSummary[]): TournamentSummary[];
   loadTournaments(): void | Promise<void>;
-  refreshTournamentState(): void | Promise<void>;
+  refreshTournamentState(tournamentId?: number): void | Promise<void>;
 
   // Active tournament metadata
   setTournamentStatus(status: string): void;

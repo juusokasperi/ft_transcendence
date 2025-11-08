@@ -13,7 +13,11 @@ import {
   getTournamentMatchById,
   updateTournamentMatchStatus,
 } from '../db/queries/tournamentMatches.ts';
-import { markTournamentCompleted, updateTournamentStatus } from '../db/queries/tournaments.ts';
+import {
+  getTournamentById,
+  markTournamentCompleted,
+  updateTournamentStatus,
+} from '../db/queries/tournaments.ts';
 import type { TournamentParticipant } from '../types/types.ts';
 import { getMatchById } from '../db/queries/matches.ts';
 import { TOURNAMENT_REQUIRED_PARTICIPANTS } from '../utils/config.ts';
@@ -275,6 +279,11 @@ export function processSemifinalResult(
  * Returns the winner participant ID if auto-completion occurred, undefined otherwise.
  */
 export function checkAndAutoCompleteTournament(tournamentId: number): number | undefined {
+  // Only consider auto-completion for active tournaments
+  const tournament = getTournamentById(tournamentId);
+  if (!tournament || tournament.status !== 'active') {
+    return undefined;
+  }
   const participants = listTournamentParticipants(tournamentId);
 
   // Filter for active participants (not eliminated, forfeited, etc.)

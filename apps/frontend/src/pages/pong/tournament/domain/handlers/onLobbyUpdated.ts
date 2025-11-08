@@ -27,7 +27,10 @@ export function onLobbyUpdated(
   const member = isMember(ctx.userUuid, msg.participants, msg.status);
   const previousActiveId = ctx.getActiveTournamentId();
   if (member) {
+    const changedToThisTournament = previousActiveId !== msg.tournamentId;
     ctx.setActiveTournamentId(msg.tournamentId);
+    // Ensure we fetch full snapshot (including proper name) when joining
+    if (changedToThisTournament) void ctx.refreshTournamentState(msg.tournamentId);
   } else if (previousActiveId === msg.tournamentId) {
     ctx.setActiveTournamentId(null);
     ctx.resetActiveTournamentState();
