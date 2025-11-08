@@ -12,8 +12,8 @@ export default function ChatToggleButton({ open, setOpen }: ChatToggleButtonProp
   useEffect(() => {
     const handler = (ev: Event) => {
       try {
-        // @ts-expect-error - CustomEvent typing at runtime
-        const detail = (ev as CustomEvent).detail || {};
+        const customEvent = ev as CustomEvent<{ active?: boolean }>;
+        const detail = customEvent.detail ?? {};
         setIndicatorActive(Boolean(detail.active));
       } catch {
         setIndicatorActive(false);

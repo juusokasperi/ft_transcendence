@@ -1,6 +1,12 @@
+export type ChatSocket = {
+  send(data: string): void;
+  close(code?: number, reason?: string): void;
+  on(event: string, listener: (...args: any[]) => void | Promise<void>): void;
+};
+
 export interface Client {
   id: string;
-  socket: WebSocket;
+  socket: ChatSocket;
   username?: string;
   uuid: string;
   channel?: string;
