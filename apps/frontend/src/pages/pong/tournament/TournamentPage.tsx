@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import Button from '../../../components/Button';
 import TournamentParticipantsPanel from './components/ParticipantsPanel';
 import TournamentBracketPanel from './components/BracketPanel';
@@ -10,10 +10,6 @@ import PlayingView from '../shared/components/PlayingView';
 import { useTournamentPageController } from './hooks/useTournamentPageController';
 import PageContainer from '../shared/components/PageContainer';
 import PageSection from '../shared/components/PageSection';
-import Chat from 'apps/frontend/src/components/Chat';
-import ChatToggleButton from 'apps/frontend/src/components/chat/ChatToggleButton';
-import { ChatProvider } from 'apps/frontend/src/context/ChatContext';
-
 type TournamentPageProps = {
   onBack?: () => void;
   focusTournamentId?: number | null;
@@ -54,19 +50,12 @@ const TournamentPage: React.FC<TournamentPageProps> = ({ onBack, focusTournament
     currentParticipantId,
   } = useTournamentPageController({ focusTournamentId });
 
-  const firstPlayer = pendingMatch?.participants?.at(0)?.alias;
-  const secondPlayer = pendingMatch?.participants?.at(1)?.alias;
-  const stage = pendingMatch?.stage;
-  const [chatOpen, setChatOpen] = useState(false);
   const currentUserUuid = user?.uuid ?? null;
   const hasActiveTournament = activeTournamentId !== null;
   const shouldShowOverlay = matchPhase === 'starting' || matchPhase === 'playing';
   const overviewSectionClass = isDetailView
     ? 'grid gap-6'
     : 'grid gap-6 lg:grid-cols-[1.1fr_0.9fr]';
-  const tournamentChatChannel = activeTournamentId
-    ? `Tournaments-${activeTournamentId}`
-    : 'Pong Tournaments';
 
   if (userReady && !user) {
     return (
@@ -151,21 +140,6 @@ const TournamentPage: React.FC<TournamentPageProps> = ({ onBack, focusTournament
           />
         )}
 
-        {user && (
-          <ChatProvider channel={tournamentChatChannel}>
-            {!chatOpen && <ChatToggleButton open={chatOpen} setOpen={setChatOpen} />}
-
-            {/* Keep Chat mounted to avoid StrictMode remount flicker */}
-            <Chat
-              onClose={() => setChatOpen(false)}
-              channel={tournamentChatChannel}
-              isOpen={chatOpen}
-              firstPlayer={firstPlayer}
-              secondPlayer={secondPlayer}
-              stage={stage}
-            />
-          </ChatProvider>
-        )}
       </PageSection>
     </PageContainer>
   );

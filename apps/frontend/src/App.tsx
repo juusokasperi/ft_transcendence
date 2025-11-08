@@ -39,8 +39,7 @@ function App() {
 
   // compute channel whenever location changes
   const channel = useMemo(() => computeChannelFromPath(location.pathname), [location.pathname]);
-  const isTournamentPage = location.pathname.startsWith('/pong/tournaments');
-  const showGlobalChat = Boolean(user && !isTournamentPage && !matchActive);
+  const showGlobalChat = Boolean(user && !matchActive);
 
   useEffect(() => {
     if (!showGlobalChat && chatOpen) {
