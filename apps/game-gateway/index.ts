@@ -30,13 +30,21 @@ const extractToken = (protocols: string[], tag: string) => {
 const validateJoin = (token: string | undefined, roomId: string) => {
   if (!token) return null;
   const claims = verifyJoinToken(token);
-  return claims && claims.roomIdentifier === roomId ? claims : null;
+  if (!claims) return null;
+  if (claims.roomIdentifier !== roomId) return null;
+  // Expected issuer/audience for join tokens minted by the allocator
+  if (claims.iss !== 'mm' || claims.aud !== 'game-node') return null;
+  return claims;
 };
 
 const validateResume = (token: string | undefined, roomId: string) => {
   if (!token) return null;
   const claims = verifyResumeToken(token);
-  return claims && claims.roomIdentifier === roomId ? claims : null;
+  if (!claims) return null;
+  if (claims.roomIdentifier !== roomId) return null;
+  // Resume tokens are issued and consumed by game servers
+  if (claims.iss !== 'game-server' || claims.aud !== 'game-server') return null;
+  return claims;
 };
 
 const proxy = new createProxyServer({ ws: true });

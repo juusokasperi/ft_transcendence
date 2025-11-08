@@ -20,7 +20,11 @@ export class ResumeTokenService {
     this.logger = args.logger;
   }
 
-  async issue(params: IssueParams) {
+  /**
+   * Issues a single-use resume token and persists its jti with TTL.
+   * Fails closed (throws) if Redis persistence does not succeed.
+   */
+  async issue(params: IssueParams): Promise<{ resumeToken: string; claims: ResumeTokenClaims }> {
     const now = Math.floor(Date.now() / 1000);
     const ttlSeconds = Math.max(1, Math.ceil(params.ttlMs / 1000));
     const claims: ResumeTokenClaims = {
@@ -42,18 +46,32 @@ export class ResumeTokenService {
       ttlSeconds,
       'NX',
     );
-    if (setResult !== 'OK')
+    if (setResult !== 'OK') {
+      // Do not leak an unusable token to clients; let caller decide how to handle.
       this.logger.warn(
         { jti: claims.jti },
-        '[ResumeTokenService]: Failed to persist resume token in Redis',
+        '[ResumeTokenService] Failed to persist resume token in Redis (NX not set)',
       );
-    const payload = { resumeToken, claims };
+      throw new Error('resume-token-persist');
+    }
     return { resumeToken, claims };
   }
 
-  async consume(token: string) {
+  /**
+   * Verifies and consumes a resume token (single-use).
+   * Returns claims when valid; otherwise returns null.
+   */
+  async consume(token: string): Promise<ResumeTokenClaims | null> {
     const claims = verifyResumeToken(token);
     if (!claims) return null;
+    // Defense in depth: validate expected issuer/audience even if signing verified.
+    if (claims.iss !== 'game-server' || claims.aud !== 'game-server') {
+      this.logger.warn(
+        { jti: claims.jti, iss: claims.iss, aud: claims.aud },
+        '[ResumeTokenService] Invalid iss/aud for resume token',
+      );
+      return null;
+    }
 
     const key = `resume-token:${claims.jti}`;
     const consumed = await this.redis.del(key);

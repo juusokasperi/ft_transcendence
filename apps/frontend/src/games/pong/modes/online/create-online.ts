@@ -36,6 +36,7 @@ import { createHudCache, updateOnlineHUDIfChanged } from './hud-cache';
 import { applyOnlineSideSwap } from './swap-helpers';
 import { createDisconnectOverlayManager, showMatchEndOverlay } from './ui-overlays';
 import { connectOnline, type OnlineClient } from './connect-online';
+import { getStoredResumeCandidate, clearStoredResumeTokens } from './resume';
 import type { OnlineMatchSummary } from './types';
 
 // Render/update cadence we expect from the authoritative node.
@@ -47,6 +48,9 @@ const WAITING_EXTRA_GRACE_MS = 5000;
 interface PongInstance {
   start(): void;
   destroy(): void;
+  // Signal an intentional quit/forfeit from the local player.
+  // Should not allow resume for this room.
+  giveUp?(): void;
 }
 
 export function createOnlineApp(
@@ -147,12 +151,13 @@ export function createOnlineApp(
   const clampPaddleZ = (z: number) => Math.max(-paddleMaxZ, Math.min(paddleMaxZ, z));
 
   // --- Net state -------------------------------------------------------------------
-  let net!: OnlineClient;
+  let net: OnlineClient | null = null;
   let mySeat: PlayerSeat = 'P1';
   let latest: GameState | null = null;
   const eventQueue: FrameEvents[] = [];
   let prevPhase: GameState['phase'] | null = null;
   let didBootFX = false;
+  let isResumeMode = false;
   let didFireMatchOverEvent = false;
   let latestMatch: MatchSnapshot | undefined;
   let lastKnownBestOf = 3;
@@ -386,7 +391,35 @@ export function createOnlineApp(
     clearWaitingForOpponentTimeout();
     blockInputFor(SERVE_SELECT_TOTAL_MS + 200);
 
-    net = await connectOnline(cfg);
+    // If we have a valid stored resume token for this room, auto-resume immediately.
+    const candidate = getStoredResumeCandidate(cfg.roomIdentifier);
+    if (candidate) {
+      try {
+        isResumeMode = true;
+        net = await connectOnline(cfg, { resumeCandidate: candidate });
+      } catch (err) {
+        // Clear invalid token and attempt a normal join if possible.
+        clearStoredResumeTokens(cfg.roomIdentifier);
+        try {
+          if (cfg.joinToken) {
+            isResumeMode = false;
+            net = await connectOnline(cfg);
+          }
+        } catch {
+          // handled below
+        }
+      }
+    } else {
+      isResumeMode = false;
+      net = await connectOnline(cfg);
+    }
+    if (!net) {
+      console.warn('[OnlineGame] Unable to establish network connection');
+      try {
+        cfg.onMatchEnd?.('bootstrap_failed', undefined, null);
+      } catch {}
+      return;
+    }
     mySeat = net.mySeat;
     console.log('[OnlineGame] Connected. My seat:', mySeat);
 
@@ -394,6 +427,9 @@ export function createOnlineApp(
 
     net.onRoomState((state) => {
       console.log('[OnlineGame] Room state update:', state);
+      if (state.seat === 'P1' || state.seat === 'P2') {
+        mySeat = state.seat;
+      }
       if (state.state === 'READY' && typeof state.startAtEpochMs === 'number') {
         clearWaitingForOpponentTimeout();
         startStartCountdown(state.startAtEpochMs);
@@ -431,7 +467,15 @@ export function createOnlineApp(
       }
       if (!didBootFX) {
         didBootFX = true;
-        void runServeSelectionIntro(fx, ball.mesh, s.server, (dir) => Bounces.scheduleServe(dir));
+        // Only play the initial serve-intro when starting fresh, not resuming
+        if (!isResumeMode) {
+          void runServeSelectionIntro(fx, ball.mesh, s.server, (dir) => Bounces.scheduleServe(dir));
+        } else {
+          // Seed the mock-bounce planner so the very first in-play frames
+          // use visual bounds immediately after resume (no intro).
+          const dir = (s.ball.vx ?? 0) >= 0 ? (1 as 1) : (-1 as -1);
+          Bounces.scheduleServe(dir);
+        }
       }
       if (prevPhase && s.phase !== prevPhase) {
         const entered = detectEnteredServe(prevPhase, s.phase);
@@ -612,7 +656,7 @@ export function createOnlineApp(
 
     disposeWorld({
       loop,
-      net,
+      net: net || undefined,
       world,
       fx,
       hud,
@@ -623,5 +667,16 @@ export function createOnlineApp(
     } catch {}
   };
 
-  return { start, destroy };
+  const giveUp = () => {
+    try {
+      // Intentionally forfeit the match; server will end it.
+      net?.forfeit?.();
+    } catch {}
+    // Do not allow resume after a deliberate quit.
+    try {
+      clearStoredResumeTokens(cfg.roomIdentifier);
+    } catch {}
+  };
+
+  return { start, destroy, giveUp };
 }

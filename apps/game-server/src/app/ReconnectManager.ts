@@ -95,6 +95,14 @@ export class ReconnectManager {
       try {
         const summary = await this.reporter.report(session, { winner: winnerSide });
         this.broadcaster.notifyMatchEnd(session, 'opponent_timeout', winnerSide, summary);
+        // Close any remaining sockets to stop resume rotation and clean up.
+        try {
+          for (const p of session.players.values()) {
+            try {
+              p.socket?.close(1000, 'match-ended');
+            } catch {}
+          }
+        } catch {}
         this.onForfeit(session, winnerSide, summary);
       } catch (error) {
         this.logger.error({ error }, '[ReconnectManager] Failed to finalize forfeit result');
