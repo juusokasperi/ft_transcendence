@@ -42,7 +42,7 @@ export function onLobbyUpdated(
       tournamentId: previousActiveId,
     },
     { member, tournamentId: member ? msg.tournamentId : null },
-    window.location.pathname,
+    ctx.getPathname(),
   );
   if (route) ctx.navigate(route);
 

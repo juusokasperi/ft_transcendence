@@ -12,6 +12,7 @@ function baseCtx(overrides: Partial<MessageCtx> = {}): MessageCtx {
     userUuid: null,
     getActiveTournamentId: () => null,
     navigate: noop,
+    getPathname: () => '/pong/tournaments',
     enqueueSnackbar: noop as any,
     getAvailableTournaments: () => [],
     setAvailableTournaments: noop,

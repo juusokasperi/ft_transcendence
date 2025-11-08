@@ -24,6 +24,7 @@ export type MessageCtx = {
 
   // Nav + UI
   navigate(path: string): void;
+  getPathname(): string;
   enqueueSnackbar(opts: { message: string; variant: SnackbarVariant }): void;
 
   // Lists / tournaments

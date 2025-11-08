@@ -194,6 +194,7 @@ export function useTournamentPageController(
         userUuid: user?.uuid ?? null,
         getActiveTournamentId: () => activeTournamentIdRef.current,
         navigate,
+        getPathname: () => locationRef.current,
         enqueueSnackbar,
         getAvailableTournaments: () => storeRef.current.availableTournaments,
         setAvailableTournaments: (next) =>
