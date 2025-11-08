@@ -151,7 +151,7 @@ const OnlineGame: React.FC = () => {
   });
 
   const handleQuit = useCallback(() => {
-    console.debug('[OnlineGame] handleQuit invoked');
+    //console.debug('[OnlineGame] handleQuit invoked');
     destroyGame();
     dispatch({ type: 'reset' });
     reconnect();
