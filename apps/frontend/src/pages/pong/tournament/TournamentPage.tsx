@@ -139,7 +139,6 @@ const TournamentPage: React.FC<TournamentPageProps> = ({ onBack, focusTournament
             currentUserUuid={currentUserUuid}
           />
         )}
-
       </PageSection>
     </PageContainer>
   );
