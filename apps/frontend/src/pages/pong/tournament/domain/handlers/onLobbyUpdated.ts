@@ -49,23 +49,26 @@ export function onLobbyUpdated(
   // Update in-memory tournaments list from socket without extra network
   const list = ctx.getAvailableTournaments().slice();
   const index = list.findIndex((i) => i.id === msg.tournamentId);
-  const timestamp = new Date().toISOString();
+
   if (index === -1) {
+    // New to this client: add minimal row WITHOUT fabricating timestamps
     list.push({
       id: msg.tournamentId,
       name: `Tournament #${msg.tournamentId}`,
       status: msg.status,
       maxParticipants: msg.maxParticipants ?? TOURNAMENT_SIZE,
-      updatedAt: timestamp,
+      // leave startAt/createdAt/updatedAt/completedAt as undefined
     });
   } else {
     const existing = list[index]!;
+    // Update **only** fields we actually know changed; preserve server timestamps
     list[index] = {
       ...existing,
       status: msg.status,
       maxParticipants: msg.maxParticipants ?? existing.maxParticipants ?? TOURNAMENT_SIZE,
-      updatedAt: timestamp,
+      // do not write updatedAt/createdAt/startAt/completedAt here
     };
   }
+
   ctx.setAvailableTournaments(ctx.filterTournamentsForDisplay(list));
 }
