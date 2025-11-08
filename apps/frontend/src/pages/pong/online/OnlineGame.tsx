@@ -133,7 +133,7 @@ const OnlineGame: React.FC = () => {
   const setMatchActive = useSetMatchActivity();
 
   useEffect(() => {
-    console.debug('[OnlineGame] matchActive changed', { matchActive });
+    //console.debug('[OnlineGame] matchActive changed', { matchActive });
     setMatchActive(matchActive);
     return () => setMatchActive(false);
   }, [matchActive, setMatchActive]);
