@@ -9,12 +9,10 @@ type UseOnlineMatchEndArgs = {
   delayMs?: number; // delay before showing React PostMatch view on completed match
 };
 
-export function useOnlineMatchEnd({
-  seat,
-  dispatch,
-  enqueueSnackbar,
-  delayMs = 2500,
-}: UseOnlineMatchEndArgs) {
+export function useOnlineMatchEnd(
+  { seat, dispatch, enqueueSnackbar, delayMs = 2500 }: UseOnlineMatchEndArgs,
+  onBootstrapFailed?: () => void,
+) {
   const timerRef = useRef<number | null>(null);
 
   const handleMatchEnd = useCallback(
@@ -24,18 +22,55 @@ export function useOnlineMatchEnd({
           message: 'Unable to start the match. Please try again.',
           variant: 'error',
         });
+        try {
+          onBootstrapFailed?.();
+        } catch {}
       }
 
-      if (payload.reason === 'opponent_timeout' && payload.winner) {
-        const youWon =
-          (seat === 'P1' && payload.winner === 'east') ||
-          (seat === 'P2' && payload.winner === 'west');
+      if (payload.reason === 'forfeit') {
+        const youWon = payload.winner
+          ? (seat === 'P1' && payload.winner === 'east') ||
+            (seat === 'P2' && payload.winner === 'west')
+          : false;
         enqueueSnackbar({
           message: youWon
-            ? 'You won! Opponent disconnected.'
-            : 'Match ended. Opponent disconnected.',
+            ? 'Opponent forfeited. Showing results…'
+            : 'You forfeited. Showing results…',
           variant: youWon ? 'success' : 'info',
         });
+        if (timerRef.current !== null) window.clearTimeout(timerRef.current);
+        timerRef.current = window.setTimeout(() => {
+          if (payload.summary) {
+            dispatch({ type: 'showPostMatch', summary: payload.summary });
+          } else {
+            dispatch({ type: 'endMatch', payload });
+          }
+          timerRef.current = null;
+        }, 5000);
+        return;
+      }
+
+      if (payload.reason === 'opponent_timeout') {
+        const youWon = payload.winner
+          ? (seat === 'P1' && payload.winner === 'east') ||
+            (seat === 'P2' && payload.winner === 'west')
+          : false;
+        enqueueSnackbar({
+          message: youWon
+            ? 'You won by opponent disconnect. Showing results…'
+            : 'Match ended due to disconnect. Showing results…',
+          variant: youWon ? 'success' : 'info',
+        });
+        if (timerRef.current !== null) window.clearTimeout(timerRef.current);
+        timerRef.current = window.setTimeout(() => {
+          if (payload.summary) {
+            dispatch({ type: 'showPostMatch', summary: payload.summary });
+          } else {
+            dispatch({ type: 'endMatch', payload });
+          }
+          timerRef.current = null;
+        }, 5000);
+        return;
       }
 
       if (payload.reason === 'completed' && payload.summary) {
@@ -52,7 +87,7 @@ export function useOnlineMatchEnd({
 
       dispatch({ type: 'endMatch', payload });
     },
-    [dispatch, enqueueSnackbar, seat, delayMs],
+    [dispatch, enqueueSnackbar, seat, delayMs, onBootstrapFailed],
   );
 
   useEffect(() => {

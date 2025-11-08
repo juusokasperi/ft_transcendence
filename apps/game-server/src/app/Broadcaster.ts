@@ -106,7 +106,7 @@ export class Broadcaster {
 
   notifyMatchEnd(
     session: MatchSession,
-    reason: 'opponent_timeout' | 'completed' | 'error',
+    reason: 'opponent_timeout' | 'forfeit' | 'completed' | 'error',
     winner?: 'east' | 'west',
     summary: unknown = null,
   ): void {
