@@ -1,5 +1,5 @@
-import React, { useEffect, useMemo, useState } from 'react';
-import { Routes, Route, useLocation } from 'react-router-dom';
+import React, { useEffect, useState } from 'react';
+import { Routes, Route } from 'react-router-dom';
 import { lazy } from 'react';
 import Registration from './pages/Registration';
 import Login from './pages/Login';
@@ -22,7 +22,6 @@ import { SnackbarProvider } from './context/SnackbarContext';
 import { useAppContext } from './context/AppContext';
 import { ChatProvider } from './context/ChatContext';
 import { useMatchActivity } from './context/MatchActivityContext';
-import { computeChannelFromPath } from './utils/computeChannel';
 
 import PongLayout from './pages/pong/PongLayout';
 const ModePicker = lazy(() => import('./pages/pong/ModePicker'));
@@ -32,32 +31,31 @@ const Tournament = lazy(() => import('./pages/pong/tournament/TournamentPage'));
 const TournamentDetail = lazy(() => import('./pages/pong/tournament/TournamentDetail'));
 
 function App() {
-  const location = useLocation();
   const { user } = useAppContext();
   const [chatOpen, setChatOpen] = useState(false);
   const matchActive = useMatchActivity();
 
-  // compute channel whenever location changes
-  const channel = useMemo(() => computeChannelFromPath(location.pathname), [location.pathname]);
-  const showGlobalChat = Boolean(user && !matchActive);
+  const channel = 'Lobby';
+  const chatUiEnabled = Boolean(user && !matchActive);
 
   useEffect(() => {
-    if (!showGlobalChat && chatOpen) {
+    if (!chatUiEnabled && chatOpen) {
       setChatOpen(false);
     }
-  }, [chatOpen, showGlobalChat]);
+  }, [chatOpen, chatUiEnabled]);
 
   return (
     <SidebarProvider>
       <SnackbarProvider>
         <div>
-          {showGlobalChat && (
+          {user && (
             <ChatProvider channel={channel}>
-              {/* Floating toggle so user can open/close chat — only show when chat is CLOSED */}
-              {!chatOpen && <ChatToggleButton open={chatOpen} setOpen={setChatOpen} />}
-
-              {/* Keep Chat mounted to avoid StrictMode remount flicker */}
-              <Chat onClose={() => setChatOpen(false)} channel={channel} isOpen={chatOpen} />
+              {chatUiEnabled && (
+                <>
+                  {!chatOpen && <ChatToggleButton open={chatOpen} setOpen={setChatOpen} />}
+                  <Chat onClose={() => setChatOpen(false)} channel={channel} isOpen={chatOpen} />
+                </>
+              )}
             </ChatProvider>
           )}
           {/* Routes */}
