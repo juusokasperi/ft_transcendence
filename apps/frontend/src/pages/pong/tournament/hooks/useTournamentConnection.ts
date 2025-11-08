@@ -171,7 +171,7 @@ export function useTournamentConnection({
       lastDisconnectRef.current = Date.now();
       debugLog?.('connection:effect-unmounted');
     };
-  }, [debugLog, onSnackbar, userReady, userUuid, setConnectionReady]);
+  }, [debugLog, onSnackbar, userReady, userUuid]);
 
   const createTournament = useCallback((size: number, name?: string, alias?: string) => {
     socketRef.current?.createTournament(size as any, name, alias);
