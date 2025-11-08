@@ -23,7 +23,11 @@ export default function ChatToggleButton({ open, setOpen }: ChatToggleButtonProp
     return () => window.removeEventListener('chat:indicator', handler as EventListener);
   }, []);
 
-  const bgClass = open ? 'bg-indigo-600' : indicatorActive ? 'bg-gradient-to-r from-indigo-500 to-purple-500 shadow shadow-indigo-900/40' : 'bg-indigo-600/10';
+  const bgClass = open
+    ? 'bg-indigo-600'
+    : indicatorActive
+      ? 'bg-gradient-to-r from-indigo-500 to-purple-500 shadow shadow-indigo-900/40'
+      : 'bg-indigo-600/10';
 
   return (
     <button
