@@ -172,16 +172,8 @@ const Hero: React.FC = () => {
           </div>
 
           <div className="space-y-6">
-            {games.map((game) => (
-              <ElectricBorder
-                key={game.title}
-                color={game.borderColor}
-                chaos={game.available ? 1 : 0.6}
-                speed={game.available ? 1.25 : 0.85}
-                thickness={2}
-                style={{ borderRadius: 24 }}
-                className="block rounded-3xl"
-              >
+            {games.map((game, i) => {
+              const card = (
                 <div className="flex flex-col overflow-hidden rounded-3xl border border-white/10 bg-slate-900/60 shadow-lg shadow-indigo-950/20 ring-1 ring-white/5 transition hover:shadow-indigo-900/30 sm:flex-row">
                   <div className={`h-1 w-full bg-gradient-to-r ${game.accent} sm:h-auto sm:w-1`} />
                   <div className="flex flex-1 flex-col gap-4 p-6 sm:p-8">
@@ -208,8 +200,32 @@ const Hero: React.FC = () => {
                     </div>
                   </div>
                 </div>
-              </ElectricBorder>
-            ))}
+              );
+
+              // Apply ElectricBorder only for the first game
+              if (i === 0) {
+                return (
+                  <ElectricBorder
+                    key={game.title}
+                    color={game.borderColor}
+                    chaos={game.available ? 1 : 0.6}
+                    speed={game.available ? 1.25 : 0.85}
+                    thickness={2}
+                    style={{ borderRadius: 24 }}
+                    className="block rounded-3xl"
+                  >
+                    {card}
+                  </ElectricBorder>
+                );
+              }
+
+              // Non-first items render without ElectricBorder but keep the outer block for layout
+              return (
+                <div key={game.title} className="block rounded-3xl">
+                  {card}
+                </div>
+              );
+            })}
           </div>
         </motion.div>
       </motion.div>
