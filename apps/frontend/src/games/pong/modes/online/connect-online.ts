@@ -108,8 +108,7 @@ export async function connectOnline(cfg: ConnectConfig): Promise<OnlineClient> {
         }
       };
 
-      // Legacy builds emitted separate `snapshot` / `opponentAxis` messages, so normalize
-      // everything through a single helper before fanning out to listeners.
+      // Fan-out helper to keep snapshot/opponent-axis listeners in sync.
       const fanOutFrame = (payload: {
         state?: GameState;
         events?: FrameEvents;
@@ -135,16 +134,7 @@ export async function connectOnline(cfg: ConnectConfig): Promise<OnlineClient> {
 
         switch (data.type) {
           case 'FRAME':
-          case 'frame':
-          case 'snapshot':
-          case 'SNAPSHOT':
             fanOutFrame(data);
-            break;
-          case 'opponentAxis':
-          case 'OPPONENT_AXIS':
-            if (typeof data.axis === 'number') {
-              opponentAxisListeners.forEach((cb) => cb(data.axis));
-            }
             break;
           case 'ROOM_STATE':
             console.debug('[OnlineGame] Room state message', data);
