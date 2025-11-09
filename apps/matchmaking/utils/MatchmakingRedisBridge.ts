@@ -132,7 +132,7 @@ export class MatchmakingRedisBridge {
     const idArgs = TOURNAMENT_STREAM_KEYS.map(() => id);
     args.push('STREAMS', ...TOURNAMENT_STREAM_KEYS, ...idArgs);
 
-    const responseRaw = await this.stream.call('XREADGROUS', ...args);
+    const responseRaw = await this.stream.call('XREADGROUP', ...args);
     const response = responseRaw as Array<[string, Array<[string, string[]]>]> | null;
     if (!response) return false;
 
