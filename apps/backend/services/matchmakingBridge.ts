@@ -6,6 +6,10 @@ import {
 } from '../db/queries/tournamentMatches.ts';
 import { logger } from '@utils/logger';
 
+const STREAM_TOURNAMENT_MATCHES_READY = 'stream:tournament:matches_ready';
+const STREAM_TOURNAMENT_STATE_UPDATED = 'stream:tournament:state_updated';
+const STREAM_MAXLEN = 1000;
+
 const redis = new Redis(REDIS_URL);
 
 type ReadyMatchPayload = {
@@ -59,7 +63,7 @@ export async function notifyMatchesReady(tournamentId: number, matchIds: number[
   if (!payload.matches.length) return;
 
   try {
-    await redis.publish('tournament:matches_ready', JSON.stringify(payload));
+    await appendMatchesReady(payload);
   } catch (error) {
     logger.error({ error }, '[Tournament] Failed to publish matches ready');
   }
@@ -72,8 +76,32 @@ type TournamentStateUpdatedMessage = {
 export async function notifyTournamentStateUpdated(tournamentId: number) {
   const payload: TournamentStateUpdatedMessage = { tournamentId };
   try {
-    await redis.publish('tournament:state_updated', JSON.stringify(payload));
+    await appendStateUpdated(payload);
   } catch (error) {
     logger.error({ error }, '[Tournament] Failed to publish state update');
   }
+}
+
+async function appendMatchesReady(payload: MatchesReadyMessage) {
+  await redis.xadd(
+    STREAM_TOURNAMENT_MATCHES_READY,
+    'MAXLEN',
+    '~',
+    STREAM_MAXLEN,
+    '*',
+    'payload',
+    JSON.stringify(payload),
+  );
+}
+
+async function appendStateUpdated(payload: TournamentStateUpdatedMessage) {
+  await redis.xadd(
+    STREAM_TOURNAMENT_STATE_UPDATED,
+    'MAXLEN',
+    '~',
+    STREAM_MAXLEN,
+    '*',
+    'payload',
+    JSON.stringify(payload),
+  );
 }
