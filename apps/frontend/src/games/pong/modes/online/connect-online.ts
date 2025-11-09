@@ -231,10 +231,6 @@ export async function connectOnline(
             if (expSec) latestResume = { token, expSec };
             // Persist token for page refresh within grace window.
             saveResumeTokenToSession(token, roomIdentifier);
-            console.log('[OnlineGame] Resume token received', {
-              hasToken: Boolean(token),
-              expSec,
-            });
             break;
           default:
             console.warn('[OnlineGame] Unknown message type:', data.type);
