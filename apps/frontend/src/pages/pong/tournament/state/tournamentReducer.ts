@@ -68,7 +68,7 @@ export function tournamentReducer(
       return {
         ...state,
         activeTournamentId: action.payload.id,
-        activeTournamentName: action.payload.name,
+        activeTournamentName: action.payload.name ?? state.activeTournamentName,
         tournamentStatus: action.payload.status,
         maxParticipants: action.payload.maxParticipants,
       };
@@ -92,9 +92,9 @@ export function tournamentReducer(
         pendingMatch: null,
         matchCountdowns: new Map(),
         latestReadyMatches: [],
-        tournamentStatus: 'draft',
-        maxParticipants: null,
-        activeTournamentName: null,
+        tournamentStatus: state.tournamentStatus ?? 'draft',
+        maxParticipants: state.maxParticipants ?? null,
+        activeTournamentName: state.activeTournamentName,
       };
     default:
       return state;

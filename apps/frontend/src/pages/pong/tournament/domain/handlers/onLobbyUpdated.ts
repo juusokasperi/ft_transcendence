@@ -54,7 +54,7 @@ export function onLobbyUpdated(
     // New to this client: add minimal row WITHOUT fabricating timestamps
     list.push({
       id: msg.tournamentId,
-      name: `Tournament #${msg.tournamentId}`,
+      name: undefined as unknown as string, // leave name as undefined
       status: msg.status,
       maxParticipants: msg.maxParticipants ?? TOURNAMENT_SIZE,
       // leave startAt/createdAt/updatedAt/completedAt as undefined
