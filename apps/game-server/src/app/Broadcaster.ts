@@ -38,6 +38,12 @@ export class Broadcaster {
   }
 
   broadcastRoomState(session: MatchSession, override?: RoomState): void {
+    const players: { P1?: { alias?: string }; P2?: { alias?: string } } = {};
+    for (const expected of session.reservation.expectedPlayers.values()) {
+      if (expected.seat === 'P1') players.P1 = { alias: expected.alias };
+      if (expected.seat === 'P2') players.P2 = { alias: expected.alias };
+    }
+
     const ready = session.players.size === 2;
     const state = override ?? resolveRoomState(session.model.started, ready);
     const payload = {
@@ -47,6 +53,7 @@ export class Broadcaster {
       startAtEpochMs: session.reservation.simulationStartTick,
       randomSeed: session.reservation.randomSeed,
       tickRateHz: this.config.tickHz,
+      players,
     };
 
     forEachSeat(session, (seat, player) => {
