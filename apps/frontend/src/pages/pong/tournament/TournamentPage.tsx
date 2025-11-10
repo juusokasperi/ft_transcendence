@@ -96,7 +96,7 @@ const TournamentPage: React.FC<TournamentPageProps> = ({ onBack, focusTournament
             displayTournamentName={activeTournamentName}
             connectionReady={connectionReady}
             loading={headerLoading}
-            onRefresh={headerRefreshHandler}
+            onRefresh={() => headerRefreshHandler()}
             onLeaveTournament={isDetailView ? handleLeaveTournamentClick : undefined}
           />
         </SurfaceCard>
