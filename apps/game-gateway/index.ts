@@ -4,7 +4,7 @@ import type { Duplex } from 'stream';
 import createProxyServer from 'http-proxy';
 import Redis from 'ioredis';
 import { REDIS_URL, PORT } from './config';
-import { verifyJoinToken } from '@pong/shared/auth/tokenSign';
+import { verifyJoinToken, verifyResumeToken } from '@pong/shared/auth/tokenSign';
 import { registerMetrics } from '@utils/metrics';
 import { createFastifyLoggerConfig } from '@utils/logger';
 
@@ -15,6 +15,37 @@ const app = fastify({
 });
 
 registerMetrics(app, { labels: { service: 'game-gateway' } });
+
+const parseProtocols = (header: string | string[] | undefined) =>
+  (typeof header === 'string' ? header : '')
+    .split(',')
+    .map((p) => p.trim())
+    .filter(Boolean);
+
+const extractToken = (protocols: string[], tag: string) => {
+  const idx = protocols.findIndex((p) => p.toLowerCase() === tag);
+  return idx !== -1 ? protocols[idx + 1] : undefined;
+};
+
+const validateJoin = (token: string | undefined, roomId: string) => {
+  if (!token) return null;
+  const claims = verifyJoinToken(token);
+  if (!claims) return null;
+  if (claims.roomIdentifier !== roomId) return null;
+  // Expected issuer/audience for join tokens minted by the allocator
+  if (claims.iss !== 'mm' || claims.aud !== 'game-node') return null;
+  return claims;
+};
+
+const validateResume = (token: string | undefined, roomId: string) => {
+  if (!token) return null;
+  const claims = verifyResumeToken(token);
+  if (!claims) return null;
+  if (claims.roomIdentifier !== roomId) return null;
+  // Resume tokens are issued and consumed by game servers
+  if (claims.iss !== 'game-server' || claims.aud !== 'game-server') return null;
+  return claims;
+};
 
 const proxy = new createProxyServer({ ws: true });
 
@@ -28,6 +59,11 @@ app.server.on('upgrade', async (req: IncomingMessage, socket: Duplex, head: Buff
   }
 
   const roomId = match[1];
+  if (!roomId) {
+    app.log.info('[Gateway] Missing room identifier');
+    socket.destroy();
+    return;
+  }
   const protocolHeader = req.headers['sec-websocket-protocol'];
 
   if (typeof protocolHeader !== 'string') {
@@ -37,23 +73,15 @@ app.server.on('upgrade', async (req: IncomingMessage, socket: Duplex, head: Buff
     return;
   }
 
-  const requestedProtocols = protocolHeader
-    .split(',')
-    .map((p) => p.trim())
-    .filter(Boolean);
-  const bearerIndex = requestedProtocols.findIndex((p) => p.toLowerCase() === 'bearer');
-  const joinToken = bearerIndex !== -1 ? requestedProtocols[bearerIndex + 1] : undefined;
+  const protocols = parseProtocols(protocolHeader);
+  const resumeToken = extractToken(protocols, 'resume');
+  const joinToken = resumeToken ? undefined : extractToken(protocols, 'bearer');
 
-  if (!joinToken) {
-    app.log.info({ roomId: roomId }, '[Gateway] No join token provided for room:');
-    socket.write('HTTP/1.1 4401 Unauthorized\r\nConnection: close\r\n\r\n');
-    socket.destroy();
-    return;
-  }
+  const resumeClaims = resumeToken ? validateResume(resumeToken, roomId) : null;
+  const joinClaims = !resumeClaims && joinToken ? validateJoin(joinToken, roomId) : null;
 
-  const claims = verifyJoinToken(joinToken);
-  if (!claims || claims.roomIdentifier !== roomId) {
-    app.log.info({ roomId: roomId }, '[Gateway] Invalid join token for room:');
+  if (!resumeClaims && !joinClaims) {
+    app.log.info({ roomId }, '[Gateway] Unauthorized attempt');
     socket.write('HTTP/1.1 4401 Unauthorized\r\nConnection: close\r\n\r\n');
     socket.destroy();
     return;
@@ -74,23 +102,28 @@ app.server.on('upgrade', async (req: IncomingMessage, socket: Duplex, head: Buff
     return;
   }
 
-  const nowSec = Math.floor(Date.now() / 1000);
-  const ttlSeconds = Math.max(1, (claims.exp ?? nowSec) - nowSec);
-  const jtiKey = `join-token:${claims.jti}`;
+  if (joinClaims) {
+    const nowSec = Math.floor(Date.now() / 1000);
+    const ttlSeconds = Math.max(1, (joinClaims.exp ?? nowSec) - nowSec);
+    const jtiKey = `join-token:${joinClaims.jti}`;
 
-  try {
-    const setResult = await redis.set(jtiKey, roomId, 'EX', ttlSeconds, 'NX');
-    if (setResult !== 'OK') {
-      app.log.info({ roomId: roomId, jti: claims.jti }, '[Gateway] Join token already consumed');
-      socket.write('HTTP/1.1 4403 Forbidden\r\nConnection: close\r\n\r\n');
+    try {
+      const setResult = await redis.set(jtiKey, roomId, 'EX', ttlSeconds, 'NX');
+      if (setResult !== 'OK') {
+        app.log.info(
+          { roomId: roomId, jti: joinClaims.jti },
+          '[Gateway] Join token already consumed',
+        );
+        socket.write('HTTP/1.1 4403 Forbidden\r\nConnection: close\r\n\r\n');
+        socket.destroy();
+        return;
+      }
+    } catch (err) {
+      app.log.error({ err }, '[Gateway] Failed to persist join token consumption');
+      socket.write('HTTP/1.1 4500 Internal Server Error\r\nConnection: close\r\n\r\n');
       socket.destroy();
       return;
     }
-  } catch (err) {
-    app.log.error({ err }, '[Gateway] Failed to persist join token consumption');
-    socket.write('HTTP/1.1 4500 Internal Server Error\r\nConnection: close\r\n\r\n');
-    socket.destroy();
-    return;
   }
 
   proxy.ws(req, socket, head, {
