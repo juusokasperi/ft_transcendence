@@ -72,7 +72,9 @@ const TournamentLobbyPanel: React.FC<TournamentLobbyPanelProps> = ({
                 >
                   <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
                     <div>
-                      <p className="text-base font-semibold">{tournament.name ?? `Tournament #${tournament.id}`}</p>
+                      <p className="text-base font-semibold">
+                        {tournament.name ?? `Tournament #${tournament.id}`}
+                      </p>
                       <p className="text-xs uppercase tracking-widest text-white/50">
                         Status: {tournament.status}
                       </p>
