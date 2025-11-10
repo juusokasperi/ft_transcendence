@@ -297,6 +297,7 @@ export async function connectOnline(
         },
         disconnect() {
           console.log('[OnlineGame] Disconnecting WebSocket');
+          clearResumeForRoom(roomIdentifier);
           stopReconnector();
           startResolvers.length = 0;
           startListeners.clear();
