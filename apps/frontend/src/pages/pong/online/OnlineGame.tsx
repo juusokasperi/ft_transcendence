@@ -24,6 +24,7 @@ import { useMatchOverEvent } from '../shared/hooks/useMatchOverEvent';
 import { initialState, reducer } from './state/machine';
 import PageContainer from '../shared/components/PageContainer';
 import PageSection from '../shared/components/PageSection';
+import { useSetMatchActivity } from '../../../context/MatchActivityContext';
 
 const OnlineGame: React.FC = () => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -126,6 +127,14 @@ const OnlineGame: React.FC = () => {
   });
 
   const bootstrapConfig = useBootstrapConfig(state);
+
+  const onBootstrapFailed = useCallback(() => {
+    // Ensure users land on the online lobby when resume expires or fails
+    try {
+      navigate('/pong/online');
+    } catch {}
+  }, [navigate]);
+
   const { handleMatchEnd } = useOnlineMatchEnd(
     {
       seat: state.seat,
@@ -133,21 +142,27 @@ const OnlineGame: React.FC = () => {
       enqueueSnackbar,
       delayMs: 2500,
     },
-    () => {
-      // Ensure users land on the online lobby when resume expires or fails
-      try {
-        navigate('/pong/online');
-      } catch {}
-    },
+    onBootstrapFailed,
   );
 
   const matchActive = state.status === 'starting' || state.status === 'playing';
+  const setMatchActive = useSetMatchActivity();
+
+  useEffect(() => {
+    //console.debug('[OnlineGame] matchActive changed', { matchActive });
+    setMatchActive(matchActive);
+    return () => setMatchActive(false);
+  }, [matchActive, setMatchActive]);
+
+  const handleMatchStarted = useCallback(() => {
+    dispatch({ type: 'startPlaying' });
+  }, [dispatch]);
 
   const { giveUp } = useGameBootstrap({
     canvasRef,
     active: matchActive,
     config: bootstrapConfig,
-    onStarted: () => dispatch({ type: 'startPlaying' }),
+    onStarted: handleMatchStarted,
     onEnded: handleMatchEnd,
   });
 
@@ -159,8 +174,9 @@ const OnlineGame: React.FC = () => {
     giveUp();
     // Prevent auto-resume for this navigation context.
     skipAutoResumeRef.current = true;
+    setMatchActive(false);
     // Keep view until server response so we can show PostMatch with results.
-  }, [giveUp]);
+  }, [giveUp, setMatchActive]);
 
   useBodyClass('pong-playing', matchActive);
   useMatchOverEvent({

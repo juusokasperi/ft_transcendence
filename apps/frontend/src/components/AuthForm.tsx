@@ -216,6 +216,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ type, onSubmit }) => {
             id="password"
             type={showPassword ? 'text' : 'password'}
             placeholder="Password"
+            autoComplete={type === 'register' ? 'new-password' : 'current-password'}
             value={password}
             onChange={(e) => {
               clearError();
@@ -251,6 +252,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ type, onSubmit }) => {
               id="confirmPassword"
               type={showConfirmPassword ? 'text' : 'password'}
               placeholder="Confirm Password"
+              autoComplete="new-password"
               value={confirmPassword}
               onChange={(e) => {
                 clearError();

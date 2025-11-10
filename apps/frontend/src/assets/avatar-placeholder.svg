@@ -1,0 +1,29 @@
+<svg
+  width="96"
+  height="96"
+  viewBox="0 0 96 96"
+  fill="none"
+  xmlns="http://www.w3.org/2000/svg"
+>
+  <defs>
+    <linearGradient id="avatarGradient" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#312e81" />
+      <stop offset="100%" stop-color="#4c1d95" />
+    </linearGradient>
+  </defs>
+  <circle cx="48" cy="48" r="46" fill="url(#avatarGradient)" stroke="#1e1b4b" stroke-width="4" />
+  <path
+    d="M48 56c-14.359 0-26 11.641-26 26h52c0-14.359-11.641-26-26-26Z"
+    fill="#1e1b4b"
+    opacity="0.85"
+  />
+  <path
+    d="M48 54c10.493 0 19-8.507 19-19S58.493 16 48 16 29 24.507 29 35s8.507 19 19 19Z"
+    fill="#ede9fe"
+    opacity="0.95"
+  />
+  <path
+    d="M48 52c9.389 0 17-7.611 17-17S57.389 18 48 18s-17 7.611-17 17 7.611 17 17 17Z"
+    fill="#c4b5fd"
+  />
+</svg>

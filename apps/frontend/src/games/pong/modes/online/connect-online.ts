@@ -132,6 +132,21 @@ export async function connectOnline(
         }
       };
 
+      // Fan-out helper to keep snapshot/opponent-axis listeners in sync.
+      const fanOutFrame = (payload: {
+        state?: GameState;
+        events?: FrameEvents;
+        match?: MatchSnapshot;
+        axis?: number;
+      }) => {
+        const { state, events, match, axis } = payload;
+        if (!state) return;
+        snapshotListeners.forEach((cb) => cb(state, events ?? {}, match));
+        if (typeof axis === 'number') {
+          opponentAxisListeners.forEach((cb) => cb(axis));
+        }
+      };
+
       // Track the currently active socket so we can swap it during reconnects.
       let ws: WebSocket = gameWs;
 
@@ -165,8 +180,7 @@ export async function connectOnline(
 
         switch (data.type) {
           case 'FRAME':
-            snapshotListeners.forEach((cb) => cb(data.state, data.events, data.match));
-            opponentAxisListeners.forEach((cb) => cb(data.axis));
+            fanOutFrame(data);
             break;
           case 'ROOM_STATE':
             console.debug('[OnlineGame] Room state message', data);

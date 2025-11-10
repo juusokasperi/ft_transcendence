@@ -10,6 +10,7 @@ import OnlineGame from '../../src/pages/pong/online/OnlineGame';
 import { AppProvider } from '../../src/context/AppContext';
 import { SnackbarProvider } from '../../src/context/SnackbarContext';
 import { SidebarProvider } from '../../src/context/SidebarContext';
+import { MatchActivityProvider } from '../../src/context/MatchActivityContext';
 import { MemoryRouter } from 'react-router-dom';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 
@@ -47,7 +48,9 @@ function renderWithProviders() {
       <AppProvider>
         <SidebarProvider>
           <SnackbarProvider>
-            <OnlineGame />
+            <MatchActivityProvider>
+              <OnlineGame />
+            </MatchActivityProvider>
           </SnackbarProvider>
         </SidebarProvider>
       </AppProvider>

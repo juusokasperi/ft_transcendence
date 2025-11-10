@@ -10,11 +10,12 @@ import PlayingView from '../shared/components/PlayingView';
 import { useTournamentPageController } from './hooks/useTournamentPageController';
 import PageContainer from '../shared/components/PageContainer';
 import PageSection from '../shared/components/PageSection';
-
 type TournamentPageProps = {
   onBack?: () => void;
   focusTournamentId?: number | null;
 };
+
+// Moved ChatToggleButton to a shared component for reuse
 
 const TournamentPage: React.FC<TournamentPageProps> = ({ onBack, focusTournamentId = null }) => {
   const {
