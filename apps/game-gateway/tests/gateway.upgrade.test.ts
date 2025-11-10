@@ -127,6 +127,8 @@ describe('game gateway upgrade flow', () => {
   beforeEach(() => {
     upgradeHandlerRef.handler = undefined;
     vi.clearAllMocks();
+    proxyWsMock.mockReset();
+    proxyWsMock.mockImplementation((_, __, ___, ____, cb) => cb?.(undefined));
     redisGetMock.mockReset();
     redisSetMock.mockReset();
     verifyJoinTokenMock.mockReset();
@@ -341,12 +343,18 @@ describe('game gateway upgrade flow', () => {
     expect(firstCall).toBeDefined();
     const ttl = firstCall![3] as number;
     expect(ttl).toBeGreaterThan(0);
-    expect(proxyWsMock).toHaveBeenCalledWith(req, socket, head, {
-      target: 'ws://game-node-2',
-      headers: {
-        'sec-websocket-protocol': 'bearer,token-ok',
+    expect(proxyWsMock).toHaveBeenCalledWith(
+      req,
+      socket,
+      head,
+      {
+        target: 'ws://game-node-2',
+        headers: {
+          'sec-websocket-protocol': 'bearer,token-ok',
+        },
       },
-    });
+      expect.any(Function),
+    );
     expect(socket.write).not.toHaveBeenCalled();
   });
 });
