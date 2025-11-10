@@ -293,11 +293,13 @@ export async function connectOnline(
         forfeit() {
           try {
             if (ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify({ type: 'forfeit' }));
+            // After forfeiting, we don't want to allow resume.
+            console.log('[OnlineGame] Clearing resume token');
+            clearResumeForRoom(roomIdentifier);
           } catch {}
         },
         disconnect() {
           console.log('[OnlineGame] Disconnecting WebSocket');
-          clearResumeForRoom(roomIdentifier);
           stopReconnector();
           startResolvers.length = 0;
           startListeners.clear();

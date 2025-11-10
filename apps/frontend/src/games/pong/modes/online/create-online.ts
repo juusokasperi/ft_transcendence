@@ -672,10 +672,6 @@ export function createOnlineApp(
       // Intentionally forfeit the match; server will end it.
       net?.forfeit?.();
     } catch {}
-    // Do not allow resume after a deliberate quit.
-    try {
-      clearStoredResumeTokens(cfg.roomIdentifier);
-    } catch {}
   };
 
   return { start, destroy, giveUp };
