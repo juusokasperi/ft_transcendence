@@ -1,4 +1,4 @@
-import { Client } from './types.ts';
+import type { ChatSocket, Client } from './types.ts';
 import jwt from 'jsonwebtoken';
 import type { IncomingMessage } from 'http';
 
@@ -57,7 +57,7 @@ export async function handleAuth(
   return true;
 }
 
-export function extractToken(socket: WebSocket, req: IncomingMessage): string | undefined {
+export function extractToken(socket: ChatSocket, req: IncomingMessage): string | undefined {
   const cookieHeader = req.headers.cookie;
   if (!cookieHeader) {
     // log('Auth: cookie header missing');

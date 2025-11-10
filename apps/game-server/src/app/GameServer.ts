@@ -6,6 +6,7 @@ import { RoomRegistry } from './RoomRegistry.ts';
 import { Broadcaster } from './Broadcaster.ts';
 import { ResultReporter } from './ResultReporter.ts';
 import { MatchRunner } from './MatchRunner.ts';
+import { ResumeTokenService } from './ResumeTokenService.ts';
 import { ReconnectManager } from './ReconnectManager.ts';
 import { createHttpServer } from '../infra/http/index.ts';
 import { WSServer } from '../infra/ws/WSServer.ts';
@@ -26,6 +27,7 @@ export class GameServer {
   private runner: MatchRunner;
   private reconnects: ReconnectManager;
   private wsServer: WSServer;
+  private resumeTokens: ResumeTokenService;
 
   constructor() {
     this.config = loadConfig();
@@ -69,6 +71,11 @@ export class GameServer {
       onCompleted: onMatchComplete,
     });
 
+    this.resumeTokens = new ResumeTokenService({
+      redis: this.redis,
+      logger: this.logger,
+    });
+
     this.reconnects = new ReconnectManager({
       scheduler: this.scheduler,
       logger: this.logger,
@@ -86,9 +93,11 @@ export class GameServer {
       registry: this.registry,
       broadcaster: this.broadcaster,
       runner: this.runner,
+      resumeTokens: this.resumeTokens,
       reconnects: this.reconnects,
       redis: this.redis,
       logger: this.logger,
+      reporter: this.reporter,
     });
 
     createHttpServer({

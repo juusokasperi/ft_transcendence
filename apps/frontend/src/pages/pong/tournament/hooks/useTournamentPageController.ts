@@ -8,6 +8,7 @@ import type {
 } from '../net/messageTypes';
 import { useSnackbar } from '../../../../context/SnackbarContext';
 import { useAppContext } from '../../../../context/AppContext';
+import { useSetMatchActivity } from '../../../../context/MatchActivityContext';
 import type {
   ActiveHandoff,
   CountdownSnapshot,
@@ -77,6 +78,7 @@ export function useTournamentPageController(
 ): TournamentControllerReturn {
   const { enqueueSnackbar } = useSnackbar();
   const { user, userReady, axios, navigate } = useAppContext();
+  const setMatchActive = useSetMatchActivity();
   const location = useLocation();
   const focusTournamentId = options.focusTournamentId ?? null;
 
@@ -329,6 +331,12 @@ export function useTournamentPageController(
 
   const isDetailView = activeTournamentId !== null;
   const headerRefreshHandler = isDetailView ? refreshTournamentState : loadTournaments;
+  const matchActive = matchPhase === 'starting' || matchPhase === 'playing';
+
+  useEffect(() => {
+    setMatchActive(matchActive);
+    return () => setMatchActive(false);
+  }, [matchActive, setMatchActive]);
 
   const { countdownStatus, countdownSecondsDisplay } = useMatchCountdown({
     pendingMatch,

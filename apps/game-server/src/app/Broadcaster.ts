@@ -75,6 +75,15 @@ export class Broadcaster {
     });
   }
 
+  broadcastResumeToken(session: MatchSession, seat: 'P1' | 'P2', token: string): void {
+    const player = session.players.get(seat);
+    if (!player) {
+      this.logger.warn('[Broadcaster] Invalid seat for resume token');
+      return;
+    }
+    safeSend(player.socket, { type: 'RESUME_TOKEN', token }, this.logger);
+  }
+
   broadcastFrame(session: MatchSession): void {
     const { model } = session;
 
@@ -97,7 +106,7 @@ export class Broadcaster {
 
   notifyMatchEnd(
     session: MatchSession,
-    reason: 'opponent_timeout' | 'completed' | 'error',
+    reason: 'opponent_timeout' | 'forfeit' | 'completed' | 'error',
     winner?: 'east' | 'west',
     summary: unknown = null,
   ): void {

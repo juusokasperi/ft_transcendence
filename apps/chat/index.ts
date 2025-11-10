@@ -1,10 +1,9 @@
 import Fastify from 'fastify';
 import websocket from '@fastify/websocket';
 import type { FastifyRequest } from 'fastify';
-import type { WebSocket, RawData } from 'ws';
 import { v4 as uuid } from 'uuid';
 import { ecsFormat } from '@elastic/ecs-pino-format';
-import { Client, PendingInvite } from './types.ts';
+import type { ChatSocket, Client, PendingInvite } from './types.ts';
 import { handleAuth, extractToken } from './auth.ts';
 
 const MATCHMAKING_PORT = process.env.MATCHMAKING_PORT;
@@ -146,8 +145,9 @@ function cleanupExpiredInvites() {
 setInterval(cleanupExpiredInvites, 10000);
 
 type ChatRequest = FastifyRequest;
+type SocketRawData = { toString(): string };
 
-async function handleConnection(socket: WebSocket, _request: ChatRequest) {
+async function handleConnection(socket: ChatSocket, _request: ChatRequest) {
   const token = extractToken(socket, _request.raw);
   if (!token) return;
 
@@ -161,7 +161,7 @@ async function handleConnection(socket: WebSocket, _request: ChatRequest) {
   fastify.log.info({ clientId: id }, '[CHAT] Client connected');
   socket.send(JSON.stringify({ type: 'connected', clientId: id }));
 
-  socket.on('message', async (raw: RawData) => {
+  socket.on('message', async (raw: SocketRawData) => {
     let data: any;
     try {
       data = JSON.parse(raw.toString());
@@ -239,6 +239,22 @@ async function handleConnection(socket: WebSocket, _request: ChatRequest) {
         client.blocked.delete(data.username);
         socket.send(JSON.stringify({ type: 'userUnblocked', username: data.username }));
         return;
+      case 'tournamentMsg': {
+        if (!client.channel) return;
+        fastify.log.info(
+          { channel: client.channel, msg: data.message },
+          '[CHAT] broadcast tournament message',
+        );
+
+        broadcast(
+          {
+            type: 'tournamentMsg',
+            message: data.message,
+          },
+          client.channel,
+        );
+        return;
+      }
       case 'inviteUser':
         if (!client.username) {
           socket.send(JSON.stringify({ type: 'error', message: 'You must set a username first' }));

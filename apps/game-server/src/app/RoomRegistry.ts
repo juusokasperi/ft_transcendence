@@ -17,6 +17,7 @@ export type PlayerConnectionState = {
   alias?: string;
   mmr: number;
   socket?: WebSocket;
+  resumeInterval?: NodeJS.Timeout;
 };
 
 export type MatchSession = {
