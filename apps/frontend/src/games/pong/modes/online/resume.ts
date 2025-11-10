@@ -158,14 +158,3 @@ export function findAnyStoredResumeCandidate(): {
     return null;
   }
 }
-
-/** Temporarily suppress auto-resume discovery for the given duration. */
-export function suppressAutoResumeFor(ms: number): void {
-  if (typeof sessionStorage === 'undefined') return;
-  try {
-    const until = Date.now() + Math.max(0, ms | 0);
-    sessionStorage.setItem(SUPPRESS_KEY, String(until));
-  } catch {
-    // ignore storage errors
-  }
-}

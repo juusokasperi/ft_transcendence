@@ -4,7 +4,6 @@ import type { OnlineMatchSummary, RoomStateMessage, StartMessage } from '@pong/s
 import type { PlayerSeat } from '@pong/render';
 import { wsUrl } from '../../../../utils/url';
 import { readJwtExpSec, clearResumeForRoom, saveResumeTokenToSession } from './resume';
-import { suppressAutoResumeFor } from './resume';
 export {
   getStoredResumeCandidate,
   clearStoredResumeTokens,
@@ -216,12 +215,9 @@ export async function connectOnline(
             matchEndListeners.forEach((cb) => cb(data.reason, data.winner, data.summary ?? null));
             // Clear stored resume tokens for this room to avoid stale entries after match end.
             clearResumeForRoom(roomIdentifier);
-            // If match ended due to an explicit forfeit, suppress auto-resume briefly
-            // so the winner doesn't get pulled back into a dead session.
+            // If match ended due to an explicit forfeit, stop reconnection attempts.
             if (data.reason === 'forfeit') {
-              try {
-                suppressAutoResumeFor(7000);
-              } catch {}
+              stopReconnector();
             }
             break;
           case 'RESUME_TOKEN':
