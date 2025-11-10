@@ -134,11 +134,11 @@ export class MatchmakingRedisBridge {
 
     const responseRaw = await this.stream.call('XREADGROUP', ...args);
     const response = responseRaw as Array<[string, Array<[string, string[]]>]> | null;
-    if (!response) return false;
-
+    if (!response || response.every(([_, entries]) => entries.length === 0)) return false;
     for (const [streamKey, entries] of response) {
       for (const [entryId, fields] of entries) {
         const payload = extractPayload(fields);
+        log('Redis stream received:', { payload }, 'debug');
         await this.processEvent(streamKey, entryId, payload);
       }
     }
