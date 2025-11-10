@@ -81,13 +81,19 @@ services:
     environment:
       - GF_SECURITY_ADMIN_USER=${GRAFANA_ADMIN_USER}
       - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASS}
-      - GF_SERVER_ROOT_URL=${FRONTEND_URL}/grafana/
-      - GF_SERVER_SERVE_FROM_SUB_PATH=true
+      # - GF_SERVER_ROOT_URL=${FRONTEND_URL}/grafana/
+      # - GF_SERVER_SERVE_FROM_SUB_PATH=true
       - GF_SECURITY_ALLOW_EMBEDDING=true
       - GF_SERVER_ENABLE_GZIP=true
       - GF_SERVER_ROUTER_LOGGING=true
-      - GF_AUTH_GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
-      - GF_AUTH_GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
+      - GF_AUTH_GOOGLE_CLIENT_ID=${GRAFANA_OAUTH_CLIENT_ID}
+      - GF_AUTH_GOOGLE_CLIENT_SECRET=${GRAFANA_OAUTH_CLIENT_SECRET}
+      - GF_AUTH_GOOGLE_REDIRECT_URI=http://localhost:3002/login/google
+      - GF_SERVER_ROOT_URL=http://localhost:3002
+      - GF_SERVER_DOMAIN=localhost
+      - GF_SERVER_HTTP_PORT=3002
+      - GF_SERVER_ENFORCE_DOMAIN=false
+      - GF_SECURITY_COOKIE_SAMESITE=lax
     volumes:
       - grafana-storage:/var/lib/grafana
       - ./monitoring/grafana/grafana.ini:/etc/grafana/grafana.ini
@@ -97,7 +103,7 @@ services:
       test:
         - CMD-SHELL
         - |
-          curl -sf http://localhost:3000/api/health \
+          curl -sf http://localhost:3002/api/health \
           | grep -q '"database": "ok"'
       interval: 5s
       timeout: 5s
