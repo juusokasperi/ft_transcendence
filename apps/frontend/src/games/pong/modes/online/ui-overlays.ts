@@ -79,25 +79,59 @@ export function showMatchEndOverlay(
     pointer-events: none;
   `;
 
-  let message = 'Match ended';
-  if (reason === 'opponent_timeout') {
-    if (winner) {
-      const youWon =
-        (mySeat === 'P1' && winner === 'east') || (mySeat === 'P2' && winner === 'west');
-      message = youWon ? 'You won! (Opponent disconnected)' : 'You lost (Disconnected)';
-      el.style.borderColor = youWon ? '#10b981' : '#ef4444';
-      el.style.color = youWon ? '#10b981' : '#ef4444';
-    } else {
-      message = 'Opponent disconnected - Match ended';
-      el.style.borderColor = '#f59e0b';
-      el.style.color = '#f59e0b';
+  const endAt = Date.now() + 5000;
+
+  const computeMessage = (remaining: number): string => {
+    // Default
+    let msg = 'Match ended';
+    if (reason === 'opponent_timeout') {
+      if (winner) {
+        const youWon =
+          (mySeat === 'P1' && winner === 'east') || (mySeat === 'P2' && winner === 'west');
+        msg = youWon
+          ? `You won! Opponent disconnected. Showing results in ${remaining}s…`
+          : `You lost (Disconnected). Showing results in ${remaining}s…`;
+        el.style.borderColor = youWon ? '#10b981' : '#ef4444';
+        el.style.color = youWon ? '#10b981' : '#ef4444';
+      } else {
+        msg = `Opponent disconnected - Match ended. Showing results in ${remaining}s…`;
+        el.style.borderColor = '#f59e0b';
+        el.style.color = '#f59e0b';
+      }
+    } else if (reason === 'forfeit') {
+      if (winner) {
+        const youWon =
+          (mySeat === 'P1' && winner === 'east') || (mySeat === 'P2' && winner === 'west');
+        msg = youWon
+          ? `Opponent forfeited. You win! Showing results in ${remaining}s…`
+          : `You forfeited. Showing results in ${remaining}s…`;
+        el.style.borderColor = youWon ? '#10b981' : '#ef4444';
+        el.style.color = youWon ? '#10b981' : '#ef4444';
+      } else {
+        msg = `Opponent forfeited. Showing results in ${remaining}s…`;
+        el.style.borderColor = '#f59e0b';
+        el.style.color = '#f59e0b';
+      }
     }
-  }
-  el.textContent = message;
+    return msg;
+  };
+
+  const update = () => {
+    const remaining = Math.max(0, Math.ceil((endAt - Date.now()) / 1000));
+    el.textContent = computeMessage(remaining);
+  };
+
+  update();
   canvas.parentElement?.appendChild(el);
-  const t = window.setTimeout(() => el.remove(), 5000);
+  const interval = window.setInterval(update, 250);
+  const timeout = window.setTimeout(() => {
+    try {
+      el.remove();
+    } catch {}
+  }, 5000);
   return () => {
-    clearTimeout(t);
+    clearTimeout(timeout);
+    clearInterval(interval);
     try {
       el.remove();
     } catch {}

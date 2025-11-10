@@ -18,6 +18,7 @@ import { useGameBootstrap } from './hooks/useGameBootstrap';
 import { useOnlineMatchEnd } from './hooks/useOnlineMatchEnd';
 import { useBootstrapConfig } from './hooks/useBootstrapConfig';
 import { useMatchmakingClient } from './hooks/useMatchmakingClient';
+import { findAnyStoredResumeCandidate } from '../../../games/pong/modes/online/resume';
 import { useMatchOverEvent } from '../shared/hooks/useMatchOverEvent';
 
 import { initialState, reducer } from './state/machine';
@@ -34,7 +35,11 @@ const OnlineGame: React.FC = () => {
   const [connectKey, setConnectKey] = useState(0);
   const queueElapsed = useQueueTimer(state.status);
   const matchmakingEnabled =
-    userReady && Boolean(user) && state.status !== 'starting' && state.status !== 'playing';
+    userReady &&
+    Boolean(user) &&
+    state.status !== 'starting' &&
+    state.status !== 'playing' &&
+    state.status !== 'postmatch';
 
   const lastTimestamp = useRef(location.state?.timestamp);
   useEffect(() => {
@@ -121,16 +126,24 @@ const OnlineGame: React.FC = () => {
   });
 
   const bootstrapConfig = useBootstrapConfig(state);
-  const { handleMatchEnd } = useOnlineMatchEnd({
-    seat: state.seat,
-    dispatch,
-    enqueueSnackbar,
-    delayMs: 2500,
-  });
+  const { handleMatchEnd } = useOnlineMatchEnd(
+    {
+      seat: state.seat,
+      dispatch,
+      enqueueSnackbar,
+      delayMs: 2500,
+    },
+    () => {
+      // Ensure users land on the online lobby when resume expires or fails
+      try {
+        navigate('/pong/online');
+      } catch {}
+    },
+  );
 
   const matchActive = state.status === 'starting' || state.status === 'playing';
 
-  const { destroy: destroyGame } = useGameBootstrap({
+  const { giveUp } = useGameBootstrap({
     canvasRef,
     active: matchActive,
     config: bootstrapConfig,
@@ -138,18 +151,24 @@ const OnlineGame: React.FC = () => {
     onEnded: handleMatchEnd,
   });
 
+  // Controls whether we auto-resume from stored tokens after leaving a match.
+  const skipAutoResumeRef = useRef(false);
+
   const handleQuit = useCallback(() => {
-    destroyGame();
-    dispatch({ type: 'reset' });
-    reconnect();
-  }, [destroyGame, reconnect]);
+    // Send forfeit; server will broadcast MATCH_END with a summary.
+    giveUp();
+    // Prevent auto-resume for this navigation context.
+    skipAutoResumeRef.current = true;
+    // Keep view until server response so we can show PostMatch with results.
+  }, [giveUp]);
 
   useBodyClass('pong-playing', matchActive);
   useMatchOverEvent({
     canvasRef,
     active: matchActive,
     onMatchOver: () => {},
-    onAutoExit: handleQuit,
+    // For online, wait for server MATCH_END (with summary) instead of auto-exit.
+    onAutoExit: undefined,
     autoExitDelayMs: 3000,
   });
 
@@ -169,6 +188,28 @@ const OnlineGame: React.FC = () => {
     dispatch({ type: 'matchAccepted' });
     acceptMatch(state.matchId);
   }, [acceptMatch, state.matchId]);
+
+  // If we land on the online page with a valid resume token stored, proactively
+  // bootstrap the PLAYING view so the in-game resume overlay can appear.
+  useEffect(() => {
+    if (!userReady || !user) return;
+    // Only consider auto-resume from stored tokens when truly idle in the online lobby.
+    if (state.status !== 'idle') return;
+    if (skipAutoResumeRef.current) return;
+    const candidate = findAnyStoredResumeCandidate();
+    if (!candidate) return;
+    dispatch({
+      type: 'handoff',
+      payload: {
+        serverUrl: `/g/${candidate.roomIdentifier}`,
+        matchId: 'resume',
+        roomIdentifier: candidate.roomIdentifier,
+        side: 'east', // placeholder; corrected after resume by server state
+        randomSeed: 0,
+        joinToken: '',
+      },
+    });
+  }, [state.status, userReady, user, dispatch]);
 
   const handleDeclineMatch = useCallback(() => {
     if (!state.matchId) return;

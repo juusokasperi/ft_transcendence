@@ -284,6 +284,17 @@ export type MatchEndMessage = {
   summary?: OnlineMatchSummary | null;
 };
 
+export type ResumeTokenClaims = {
+  iss: string;
+  aud: string;
+  iat: number;
+  exp: number;
+  jti: string;
+  roomIdentifier: string;
+  sub: string;
+  sessionIdentifier: string;
+};
+
 export type GameServerControlMessage =
   | RoomStateMessage
   | StartMessage
