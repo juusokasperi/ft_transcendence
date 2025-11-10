@@ -184,8 +184,7 @@ export function createOnlineApp(
     const eastAlias = names.east;
     const westAlias = names.west;
     const history = (latestMatch?.gamesHistory ?? []).map((game) => ({ ...game }));
-    const defaultWinner =
-      (reason === 'completed' && winner ? winner : history.at(-1)?.winner) ?? 'east';
+    const defaultWinner = winner ?? history.at(-1)?.winner ?? 'east';
     const defaultBestOf = latestMatch?.bestOf ?? lastKnownBestOf;
     const mergedSummary: OnlineMatchSummary = summaryFromNet
       ? {
@@ -430,6 +429,20 @@ export function createOnlineApp(
       if (state.seat === 'P1' || state.seat === 'P2') {
         mySeat = state.seat;
       }
+
+      const players = state.players;
+      if (players) {
+        const aliasP1 = players.P1?.alias;
+        const aliasP2 = players.P2?.alias;
+        if (aliasP1 || aliasP2) {
+          playerAliases = {
+            P1: aliasP1 ?? playerAliases?.P1 ?? 'Player 1',
+            P2: aliasP2 ?? playerAliases?.P2 ?? 'Player 2',
+          };
+          didSetPlayerNames = false;
+        }
+      }
+
       if (state.state === 'READY' && typeof state.startAtEpochMs === 'number') {
         clearWaitingForOpponentTimeout();
         startStartCountdown(state.startAtEpochMs);
@@ -439,6 +452,16 @@ export function createOnlineApp(
       } else if (state.state === 'WAITING_FOR_OPPONENT') {
         stopStartCountdown();
         ensureWaitingForOpponentTimeout(state);
+      }
+    });
+
+    net.onStart((payload) => {
+      if (payload.players) {
+        playerAliases = {
+          P1: payload.players.P1?.alias ?? 'Player 1',
+          P2: payload.players.P2?.alias ?? 'Player 2',
+        };
+        didSetPlayerNames = false;
       }
     });
 
