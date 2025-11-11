@@ -12,7 +12,9 @@
       "import": "./src/index.tsx"
     }
   },
-  "files": ["src"],
+  "files": [
+    "src"
+  ],
   "scripts": {
     "build": "rimraf dist && tsc -b",
     "clean": "rimraf dist",
