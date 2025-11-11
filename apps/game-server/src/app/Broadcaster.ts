@@ -38,6 +38,12 @@ export class Broadcaster {
   }
 
   broadcastRoomState(session: MatchSession, override?: RoomState): void {
+    const players: { P1?: { alias?: string }; P2?: { alias?: string } } = {};
+    for (const expected of session.reservation.expectedPlayers.values()) {
+      if (expected.seat === 'P1') players.P1 = { alias: expected.alias };
+      if (expected.seat === 'P2') players.P2 = { alias: expected.alias };
+    }
+
     const ready = session.players.size === 2;
     const state = override ?? resolveRoomState(session.model.started, ready);
     const payload = {
@@ -47,6 +53,7 @@ export class Broadcaster {
       startAtEpochMs: session.reservation.simulationStartTick,
       randomSeed: session.reservation.randomSeed,
       tickRateHz: this.config.tickHz,
+      players,
     };
 
     forEachSeat(session, (seat, player) => {
@@ -75,6 +82,15 @@ export class Broadcaster {
     });
   }
 
+  broadcastResumeToken(session: MatchSession, seat: 'P1' | 'P2', token: string): void {
+    const player = session.players.get(seat);
+    if (!player) {
+      this.logger.warn('[Broadcaster] Invalid seat for resume token');
+      return;
+    }
+    safeSend(player.socket, { type: 'RESUME_TOKEN', token }, this.logger);
+  }
+
   broadcastFrame(session: MatchSession): void {
     const { model } = session;
 
@@ -97,7 +113,7 @@ export class Broadcaster {
 
   notifyMatchEnd(
     session: MatchSession,
-    reason: 'opponent_timeout' | 'completed' | 'error',
+    reason: 'opponent_timeout' | 'forfeit' | 'completed' | 'error',
     winner?: 'east' | 'west',
     summary: unknown = null,
   ): void {

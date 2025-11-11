@@ -7,7 +7,8 @@ export function useBootstrapConfig(state: OnlineState) {
       !state.serverUrl ||
       !state.matchId ||
       !state.roomIdentifier ||
-      !state.joinToken ||
+      // Allow empty string for resume flow (join token not needed when resuming)
+      state.joinToken === null ||
       state.randomSeed === null
     ) {
       return null;

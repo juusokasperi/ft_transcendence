@@ -83,8 +83,14 @@ vi.mock('http-proxy', () => ({
   default: createProxyServerMock,
 }));
 
-const verifyJoinTokenMock =
-  vi.fn<(token: string) => { roomIdentifier: string; exp?: number; jti: string } | null>();
+type JoinClaims = {
+  roomIdentifier: string;
+  jti: string;
+  exp?: number;
+  iss?: string;
+  aud?: string;
+};
+const verifyJoinTokenMock = vi.fn<(token: string) => JoinClaims | null>();
 
 vi.mock('../config.ts', () => ({
   REDIS_URL: 'redis://tests',
@@ -121,6 +127,8 @@ describe('game gateway upgrade flow', () => {
   beforeEach(() => {
     upgradeHandlerRef.handler = undefined;
     vi.clearAllMocks();
+    proxyWsMock.mockReset();
+    proxyWsMock.mockImplementation((_, __, ___, ____, cb) => cb?.(undefined));
     redisGetMock.mockReset();
     redisSetMock.mockReset();
     verifyJoinTokenMock.mockReset();
@@ -200,6 +208,8 @@ describe('game gateway upgrade flow', () => {
       roomIdentifier: 'different',
       exp: Math.floor(Date.now() / 1000) + 30,
       jti: 'jti-1',
+      iss: 'mm',
+      aud: 'game-node',
     });
     const handler = await importGateway();
     const socket = createSocket();
@@ -223,6 +233,8 @@ describe('game gateway upgrade flow', () => {
       roomIdentifier: 'room-123',
       exp: Math.floor(Date.now() / 1000) + 30,
       jti: 'jti-2',
+      iss: 'mm',
+      aud: 'game-node',
     });
     redisGetMock.mockResolvedValueOnce(null);
     const handler = await importGateway();
@@ -245,6 +257,8 @@ describe('game gateway upgrade flow', () => {
       roomIdentifier: 'room-locked',
       exp: Math.floor(Date.now() / 1000) + 30,
       jti: 'jti-duplicate',
+      iss: 'mm',
+      aud: 'game-node',
     });
     redisGetMock.mockResolvedValueOnce('ws://game-node-1');
     redisSetMock.mockResolvedValueOnce(null);
@@ -272,6 +286,8 @@ describe('game gateway upgrade flow', () => {
       roomIdentifier: 'room-crash',
       exp: Math.floor(Date.now() / 1000) + 30,
       jti: 'jti-crash',
+      iss: 'mm',
+      aud: 'game-node',
     });
     redisGetMock.mockResolvedValueOnce('ws://game-node-1');
     redisSetMock.mockRejectedValueOnce(new Error('redis down'));
@@ -299,6 +315,8 @@ describe('game gateway upgrade flow', () => {
       roomIdentifier: 'room-ok',
       exp: nowSec + 120,
       jti: 'jti-ok',
+      iss: 'mm',
+      aud: 'game-node',
     });
     redisGetMock.mockResolvedValueOnce('ws://game-node-2');
     redisSetMock.mockResolvedValueOnce('OK');
@@ -325,12 +343,18 @@ describe('game gateway upgrade flow', () => {
     expect(firstCall).toBeDefined();
     const ttl = firstCall![3] as number;
     expect(ttl).toBeGreaterThan(0);
-    expect(proxyWsMock).toHaveBeenCalledWith(req, socket, head, {
-      target: 'ws://game-node-2',
-      headers: {
-        'sec-websocket-protocol': 'bearer,token-ok',
+    expect(proxyWsMock).toHaveBeenCalledWith(
+      req,
+      socket,
+      head,
+      {
+        target: 'ws://game-node-2',
+        headers: {
+          'sec-websocket-protocol': 'bearer,token-ok',
+        },
       },
-    });
+      expect.any(Function),
+    );
     expect(socket.write).not.toHaveBeenCalled();
   });
 });

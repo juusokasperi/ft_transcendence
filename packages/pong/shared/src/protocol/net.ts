@@ -254,6 +254,10 @@ export type RoomStateMessage = {
   startAtEpochMs?: number;
   randomSeed?: number;
   tickRateHz?: number;
+  players?: {
+    P1?: { alias?: string };
+    P2?: { alias?: string };
+  };
 };
 
 export type StartMessage = {
@@ -282,6 +286,17 @@ export type MatchEndMessage = {
   reason: 'opponent_timeout' | 'completed' | 'error';
   winner?: 'east' | 'west';
   summary?: OnlineMatchSummary | null;
+};
+
+export type ResumeTokenClaims = {
+  iss: string;
+  aud: string;
+  iat: number;
+  exp: number;
+  jti: string;
+  roomIdentifier: string;
+  sub: string;
+  sessionIdentifier: string;
 };
 
 export type GameServerControlMessage =

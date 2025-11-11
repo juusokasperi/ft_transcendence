@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { X } from 'lucide-react';
 import { useAppContext } from '../context/AppContext';
 import { useLocation } from 'react-router-dom';
@@ -84,6 +84,19 @@ export default function Chat({
   const containerRef = useRef<HTMLDivElement | null>(null);
   const wasOpenRef = useRef(isOpen);
   const tournamentTimerRef = useRef<number | null>(null);
+  const lastSeenPrivateMessageCountRef = useRef(0);
+  const privateMessageCount = useMemo(
+    () =>
+      messages.reduce(
+        (count, m) =>
+          count +
+          ((m.type === 'privateMessage' || m.type === 'dm') && m.from && m.from !== chatUsername
+            ? 1
+            : 0),
+        0,
+      ),
+    [messages, chatUsername],
+  );
 
   useEffect(() => {
     const node = containerRef.current;
@@ -159,17 +172,21 @@ export default function Chat({
     el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' });
   }, [messages, isOpen]);
 
-  // Emit indicator (pending invites / DMs) so the chat toggle button can show a visual cue
+  useEffect(() => {
+    if (isOpen) {
+      lastSeenPrivateMessageCountRef.current = privateMessageCount;
+    }
+  }, [isOpen, privateMessageCount]);
+
+  // Emit indicator (pending invites / unread DMs) so the chat toggle button can show a visual cue
   useEffect(() => {
     const hasPending = pendingInvites && pendingInvites.size > 0;
-    const hasDM = messages.some(
-      (m) => (m.type === 'privateMessage' || m.type === 'dm') && m.from && m.from !== chatUsername,
-    );
-    const active = hasPending || hasDM;
+    const hasUnreadDM = privateMessageCount > lastSeenPrivateMessageCountRef.current;
+    const active = hasPending || hasUnreadDM;
     try {
       window.dispatchEvent(new CustomEvent('chat:indicator', { detail: { active } }));
     } catch {}
-  }, [pendingInvites, messages, chatUsername]);
+  }, [pendingInvites, privateMessageCount, isOpen]);
 
   useEffect(() => {
     if (!inviteAcceptedSignal) return;
