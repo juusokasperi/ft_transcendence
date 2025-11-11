@@ -26,7 +26,7 @@ services:
     networks:
       - devnet
     ports:
-      - '3002:3002'
+      - '${GRAFANA_PORT:-3002}:${GRAFANA_PORT:-3002}'
     environment:
       - GF_SERVER_ROOT_URL=http://localhost:${GRAFANA_PORT:-3002}/
       - GF_SERVER_SERVE_FROM_SUB_PATH=false
