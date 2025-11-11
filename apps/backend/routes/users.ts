@@ -9,7 +9,6 @@ import {
   getUserByUuid,
   updateUsername,
   updatePassword,
-  updateEmail,
   markEmailChange,
   confirmEmailChange,
   updateAvatar,
@@ -71,7 +70,7 @@ import { getTotalStatsForUser } from '../db/queries/matchPlayerStats.ts';
 
 export async function userRoutes(app: FastifyInstance) {
   // Get all users
-  app.get('/', { schema: getAllUsersSchema }, async (req: FastifyRequest, res: FastifyReply) => {
+  app.get('/', { schema: getAllUsersSchema }, async (_req: FastifyRequest, res: FastifyReply) => {
     try {
       const users = getUserStats();
       res.status(200).send(users);

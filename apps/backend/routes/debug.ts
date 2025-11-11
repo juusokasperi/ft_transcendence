@@ -7,7 +7,7 @@ export async function debugRoutes(app: FastifyInstance) {
   app.get(
     '/good-sql',
     { schema: getAllUsersSchema },
-    async (req: FastifyRequest, res: FastifyReply) => {
+    async (_req: FastifyRequest, res: FastifyReply) => {
       try {
         goodSql();
         res.status(200).send();
@@ -18,7 +18,7 @@ export async function debugRoutes(app: FastifyInstance) {
   );
 
   // debug endpoint to generate failed SQL query (prepare time)
-  app.get('/bad-sql-prepare', async (req, res) => {
+  app.get('/bad-sql-prepare', async (_req, res) => {
     try {
       badSqlPrepare();
       res.status(200).send({ message: 'This should not succeed' });
@@ -28,7 +28,7 @@ export async function debugRoutes(app: FastifyInstance) {
   });
 
   // debug endpoint to generate failed SQL query (execute time)
-  app.get('/bad-sql-execute', async (req, res) => {
+  app.get('/bad-sql-execute', async (_req, res) => {
     try {
       badSqlExecute();
       res.status(200).send({ message: 'This should not succeed' });

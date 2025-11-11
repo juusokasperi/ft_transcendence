@@ -2,7 +2,7 @@ import type { FastifyError, FastifyReply, FastifyRequest } from 'fastify';
 
 export const prettierErrorMessages = (
   error: FastifyError,
-  request: FastifyRequest,
+  _request: FastifyRequest,
   res: FastifyReply,
 ) => {
   if (error.validation) {

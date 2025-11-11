@@ -8,7 +8,6 @@ import { logger } from '@utils/logger';
 	Seeds a JWT secret to backend .env
 */
 
-const gameSecret = crypto.randomBytes(32).toString('hex');
 const jwtSecret = crypto.randomBytes(32).toString('hex');
 
 const backendEnvPath = path.join(process.cwd(), '.env');
