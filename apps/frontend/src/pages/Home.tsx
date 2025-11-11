@@ -178,13 +178,13 @@ const Hero: React.FC = () => {
               ))}
             </div>
             <div className="mt-2 flex w-full items-center justify-between rounded-2xl border border-white/10 bg-slate-900/80 px-4 py-3 text-xs font-medium text-slate-200 shadow-lg shadow-indigo-900/40 backdrop-blur sm:mt-6">
-              <span className="flex items-center gap-2">
-                <span className="h-2 w-2 rounded-full bg-emerald-400" />
+              <span className="flex items-center gap-2 text-lg">
+                <span className="h-2.5 w-2.5 rounded-full bg-emerald-400" />
                 Live
               </span>
               <div className="text-right">
-                <p className="text-sm font-semibold text-indigo-300 sm:text-base">{matchesLabel}</p>
-                <p className="text-sm font-semibold text-indigo-300 sm:text-base">
+                <p className="text-sm font-medium text-indigo-300 sm:text-base">{matchesLabel}</p>
+                <p className="text-sm font-medium text-indigo-300 sm:text-base">
                   {tournamentsLabel}
                 </p>
               </div>
