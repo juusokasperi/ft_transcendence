@@ -150,26 +150,24 @@ services:
   game-server-2:
     <<: *game-server-template
 
-  # TODO: enable when chat has a prod build script
-    # currently this expects to be able to ru `pnpm build:vite`
-  # chat-service:
-  #   build:
-  #     context: .
-  #     dockerfile: ./node.template.dockerfile
-  #     args:
-  #       PNPM_VERSION: ${PNPM_VERSION:-9.12.3}
-  #       SERVICE_NAME: chat-service
-  #       SERVICE_DIR: chat-service
-  #   image: ft-transcendence-chat-service-prod:latest
-  #   init: true
-  #   restart: unless-stopped
-  #   env_file:
-  #     - .env
-  #   environment:
-  #     <<: *prod-env
-  #   networks:
-  #     - prod-private
-  #   logging: *logstash-logging
+  chat-service:
+    build:
+      context: .
+      dockerfile: ./node.template.dockerfile
+      args:
+        PNPM_VERSION: ${PNPM_VERSION:-9.12.3}
+        SERVICE_NAME: chat-service
+        SERVICE_DIR: chat
+    image: ft-transcendence-chat-service-prod:latest
+    init: true
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      <<: *prod-env
+    networks:
+      - prod-private
+    logging: *logstash-logging
 
   # Allocator
   allocator:

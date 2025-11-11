@@ -65,9 +65,11 @@ RULE_FILE="/etc/prometheus/rules.yml"
 
 cat > "$RULE_FILE" <<EOF
 groups:
- - name: Count greater than 1
+
+ # Test alert
+ - name: Count greater than 0
    rules:
-   - alert: CountGreaterThan1
+   - alert: CountGreaterThan0
      expr: nginx_connections_active > 0
      for: 1s
 
@@ -103,13 +105,13 @@ groups:
        description: "Node.js service {{ \$labels.job }} on {{ \$labels.instance }} has been down for more than 2 minutes"
 
    - alert: HighMemoryUsage
-     expr: (process_resident_memory_bytes / node_memory_MemTotal_bytes) * 100 > 80
+     expr: process_resident_memory_bytes > 500000000
      for: 5m
      labels:
        severity: warning
      annotations:
        summary: "High memory usage detected"
-       description: "Memory usage is above 80% on {{ \$labels.instance }} (current: {{ \$value | humanize }}%)"
+       description: "Memory usage is high on {{ \$labels.instance }} (current: {{ \$value | humanize }}%)"
 
    - alert: HighCPUUsage
      expr: rate(process_cpu_seconds_total[5m]) * 100 > 80
@@ -146,7 +148,7 @@ route:
 receivers:
   - name: combined
     webhook_configs:
-      - url: 'https://webhook.site/2f52e7a4-5d42-41ef-8774-70624d50d770'
+      - url: "${ALERT_WEBHOOK_URL}"
         send_resolved: false
     email_configs:
       - to: "${ALERT_MAIL_TO}"
