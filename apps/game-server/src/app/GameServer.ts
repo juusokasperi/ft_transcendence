@@ -48,7 +48,7 @@ export class GameServer {
 
     const onMatchComplete = (
       session: MatchSession,
-      summary: OnlineMatchSummary | null,
+      _summary: OnlineMatchSummary | null,
       winner?: 'east' | 'west',
     ) => {
       this.logger.info(

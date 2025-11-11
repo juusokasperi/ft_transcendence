@@ -1,4 +1,4 @@
-import type { MatchSession, PlayerConnectionState } from './RoomRegistry.ts';
+import type { MatchSession } from './RoomRegistry.ts';
 import type { Scheduler, Clock } from './Time.ts';
 import type { AppConfig } from './Config.ts';
 import { quantizeMs } from '../domain/PauseQuantizer.ts';
