@@ -15,8 +15,8 @@
     "check-format": "pnpm -F ft_transcendence check-format",
     "fix-format": "pnpm -F ft_transcendence fix-format",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "typecheck:watch": "tsc -p tsconfig.json --noEmit --watch"
-    "build:vite": "vite build",
+    "typecheck:watch": "tsc -p tsconfig.json --noEmit --watch",
+    "build:vite": "vite build"
   },
   "dependencies": {
     "@elastic/ecs-pino-format": "^1.5.0",
