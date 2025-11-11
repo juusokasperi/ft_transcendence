@@ -1,0 +1,23 @@
+{
+  "extends": "../../../.config/tsconfig.base.json",
+  "compilerOptions": {
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "composite": true,
+    "incremental": true,
+
+    "rootDir": "src",
+    "outDir": "dist",
+    "declaration": true,
+    "declarationMap": true,
+    "sourceMap": true,
+    "stripInternal": true,
+    "noEmitOnError": true,
+
+    /* React JSX support */
+    "jsx": "react-jsx",
+
+    /* Spinner package explicitly forbids TS-extension imports */
+    "allowImportingTsExtensions": false
+  },
+  "include": ["src"]
+}

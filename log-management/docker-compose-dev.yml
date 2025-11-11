@@ -30,10 +30,7 @@ services:
 
   logstash:
     ports:
-      # Listens for GELF input here. The GELF driver can only send to host IPs,
-      # not into containers => this port needs to be exposed
-      - '12201:12201/udp'
-      # Logstash monitoring API
-      - '9600:9600'
+      - '12201:12201/udp' # Listening port for logs
+      - '9600:9600'      # Logstash monitoring API
     networks:
       - devnet

@@ -24,6 +24,7 @@ COPY packages/pong/render/package.json ./packages/pong/render/package.json
 COPY packages/pong/shared/package.json ./packages/pong/shared/package.json
 COPY packages/utils/logger/package.json ./packages/utils/logger/package.json
 COPY packages/utils/metrics/package.json ./packages/utils/metrics/package.json
+COPY packages/utils/spinner/package.json ./packages/utils/spinner/package.json
 
 # Install dependencies with BuildKit cache mount for faster builds
 # This layer is cached as long as package files don't change
@@ -33,6 +34,10 @@ RUN --mount=type=cache,id=pnpm-store-frontend,target=/root/.local/share/pnpm/sto
 # Now copy source files (invalidates from here on source changes, but deps are cached)
 COPY packages ./packages
 COPY apps/frontend ./apps/frontend
+
+# Build workspace libraries first (needed by frontend)
+WORKDIR /work
+RUN pnpm run build:libs
 
 # Build frontend with Vite
 WORKDIR /work/apps/frontend

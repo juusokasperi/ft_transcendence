@@ -16,10 +16,12 @@ export default defineConfig({
       external: [
         ...builtinModules,
         ...builtinModules.map((m) => `node:${m}`), // include node: prefix variants
+        /^@fastify\//, // externalize all @fastify/* packages
+        /^@elastic\//, // externalize elastic packages
         'fastify',
-        'axios',
-        'dotenv',
-        'ioredis',
+        'pino',
+        'pino-pretty',
+        'jsonwebtoken',
         'uuid',
         'ws',
       ],
