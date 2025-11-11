@@ -1,5 +1,4 @@
 // packages/pong/game-logic/src/model/state.ts
-import { PAUSE_BETWEEN_POINTS_MS, PAUSE_BETWEEN_GAMES_MS } from '../constants';
 import type { TableEnd } from '@pong/shared';
 
 /** Paddle state along Z (depth). */
