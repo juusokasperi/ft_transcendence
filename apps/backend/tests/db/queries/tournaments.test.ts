@@ -83,4 +83,27 @@ describe('Tournament queries', () => {
     expect(completed!.status).toBe('completed');
     expect(completed!.completedAt).toBeTruthy();
   });
+
+  it('counts tournaments by status', async () => {
+    const {
+      createTournament,
+      updateTournamentStatus,
+      countTournamentsByStatus,
+    } = await import('../../../db/queries/tournaments.ts');
+
+    const draft = createTournament({ name: 'Draft not Active Cup' });
+    const active = createTournament({ name: 'Active Cup', status: 'active' });
+    const toBePromoted = createTournament({ name: 'Soon Active' });
+    const completed = createTournament({ name: 'Completed Cup', status: 'completed' });
+
+    expect(draft && active && toBePromoted && completed).toBeTruthy();
+
+    const promoted = updateTournamentStatus(toBePromoted!.id, 'active');
+    expect(promoted?.status).toBe('active');
+
+    expect(countTournamentsByStatus('active')).toBe(2);
+    expect(countTournamentsByStatus('draft')).toBe(1);
+    expect(countTournamentsByStatus(['active', 'completed'])).toBe(3);
+    expect(countTournamentsByStatus(['completed'])).toBe(1);
+  });
 });
