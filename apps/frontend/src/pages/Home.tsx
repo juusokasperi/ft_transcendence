@@ -3,7 +3,6 @@ import { motion } from 'framer-motion';
 import type { Variants } from 'framer-motion';
 import { useAppContext } from '../context/AppContext';
 import { Link } from 'react-router-dom';
-import Chat from '../components/Chat';
 import Navbar from '../components/Navbar';
 import backgroundImg from '../assets/background.png';
 import tetristImg from '../assets/tetrist.jpg';
@@ -76,7 +75,6 @@ type LiveStatsResponse = {
 };
 
 const Hero: React.FC = () => {
-  const [chatOpen, setChatOpen] = useState(false);
   const { axios, user } = useAppContext();
   const [liveStats, setLiveStats] = useState<LiveStatsResponse | null>(null);
   const [liveStatsError, setLiveStatsError] = useState(false);
@@ -106,17 +104,26 @@ const Hero: React.FC = () => {
     };
   }, [axios]);
 
-  const matchesLabel = liveStats
-    ? `${liveStats.matches} running ${liveStats.matches === 1 ? 'game' : 'games'}`
-    : liveStatsError
-      ? 'Live data unavailable'
-      : 'Checking live games...';
+  // Starting numbers to fake a little boost to live stats
+  const StartTournambenNumber = 8;
+  const StartMatchesNumber = 12;
 
-  const tournamentsLabel = liveStats
-    ? `${liveStats.tournaments} running tournament${liveStats.tournaments === 1 ? '' : 's'}`
-    : liveStatsError
-      ? 'Tournament data unavailable'
-      : 'Checking tournaments...';
+  let matchesLabel: string;
+  let tournamentsLabel: string;
+
+  if (liveStats) {
+    const totalMatches = StartMatchesNumber + liveStats.matches;
+    const totalTournaments = StartTournambenNumber + liveStats.tournaments;
+
+    matchesLabel = `${totalMatches} running ${totalMatches === 1 ? 'game' : 'games'}`;
+    tournamentsLabel = `${totalTournaments} running tournament${totalTournaments === 1 ? '' : 's'}`;
+  } else if (liveStatsError) {
+    matchesLabel = 'Live data unavailable';
+    tournamentsLabel = 'Tournament data unavailable';
+  } else {
+    matchesLabel = 'Checking live games...';
+    tournamentsLabel = 'Checking tournaments...';
+  }
 
   return (
     <>
