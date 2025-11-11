@@ -134,6 +134,9 @@ importers:
       '@fastify/swagger-ui':
         specifier: ^5.2.3
         version: 5.2.3
+      '@pong/shared':
+        specifier: workspace:*
+        version: link:../../packages/pong/shared
       '@utils/logger':
         specifier: workspace:*
         version: link:../../packages/utils/logger

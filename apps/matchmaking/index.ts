@@ -3,7 +3,7 @@ import websocket from '@fastify/websocket';
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import type { WebSocket, RawData } from 'ws';
 import { v4 as uuid } from 'uuid';
-import { PORT, REDIS_URL } from './utils/config.ts';
+import { PORT } from './utils/config.ts';
 import type { ClientInfo, PendingMatch } from './types/types.ts';
 import type { MatchmakingClientMessage } from '@pong/shared/protocol/net';
 import { extractToken, handleAuth } from './auth/auth.ts';
@@ -27,7 +27,6 @@ import {
   restoreTournamentMembership,
 } from './utils/scheduledMatches.ts';
 import { handleJoinQueue } from './utils/queue.ts';
-import Redis from 'ioredis';
 import { handleAdmitConfirmed } from './utils/pendingHandoffs.ts';
 import { registerMetrics } from '@utils/metrics';
 import { log, createFastifyLoggerConfig } from '@utils/logger';
@@ -38,69 +37,25 @@ import {
   clearLobbiesWithClient,
   clearInviteLobbies,
 } from './utils/invites.ts';
+import { MatchmakingRedisBridge } from './utils/MatchmakingRedisBridge.ts';
 
-const redisSub = new Redis(REDIS_URL);
 const app = Fastify({
   logger: createFastifyLoggerConfig({ service: 'matchmaking' }),
 });
 
 registerMetrics(app, { labels: { service: 'matchmaking' } });
 
-redisSub.subscribe('room_ready');
-redisSub.subscribe('tournament:matches_ready');
-redisSub.subscribe('tournament:state_updated');
-redisSub.on('connect', () => {
-  log('Redis pub/sub connected');
-});
-redisSub.on('message', (channel: string, message: string) => {
-  log(`[MM] Redis: ${channel}: ${message}`);
-  if (channel === 'room_ready') {
-    try {
-      const { roomIdentifier } = JSON.parse(message);
-      handleAdmitConfirmed(roomIdentifier);
-    } catch (err) {
-      log(
-        'Error parsing roomIdentifier from redis',
-        { error: err instanceof Error ? err.message : 'Unknown error' },
-        'error',
-      );
-    }
-  } else if (channel === 'tournament:matches_ready') {
-    try {
-      const payload = JSON.parse(message);
-      void handleTournamentMatchesReady(payload, clients);
-    } catch (err) {
-      log(
-        'Failed to handle tournament matches ready message',
-        { error: err instanceof Error ? err.message : 'Unknown error' },
-        'error',
-      );
-    }
-  } else if (channel === 'tournament:state_updated') {
-    try {
-      const payload = JSON.parse(message) as { tournamentId: number };
-      void handleTournamentStateUpdated(payload, clients);
-    } catch (err) {
-      log(
-        'Failed to handle tournament state updated message',
-        { error: err instanceof Error ? err.message : 'Unknown error' },
-        'error',
-      );
-    }
-  }
-});
-redisSub.on('error', (err: Error) => {
-  log(
-    'Redis pub/sub error:',
-    { error: err instanceof Error ? err.message : 'Unknown error' },
-    'error',
-  );
-});
-
 await app.register(websocket);
 
 const clients = new Map<string, ClientInfo>();
 const pendingMatches = new Map<string, PendingMatch>();
+
+const redisBridge = new MatchmakingRedisBridge({
+  onRoomReady: handleAdmitConfirmed,
+  onMatchesReady: (payload) => handleTournamentMatchesReady(payload, clients),
+  onStateUpdated: (payload) => handleTournamentStateUpdated(payload, clients),
+});
+await redisBridge.init();
 
 // Route for creating invite match lobby
 await app.register(inviteRoute, { prefix: '/invite-match' });
@@ -223,18 +178,8 @@ app.addHook('onClose', async () => {
     clearTimeout(match.timer);
   });
   pendingMatches.clear();
-
   clearInviteLobbies();
-
-  try {
-    await redisSub.quit();
-  } catch (err) {
-    log(
-      'Failed to close redis connection',
-      { error: err instanceof Error ? err.message : 'Unknown error' },
-      'error',
-    );
-  }
+  await redisBridge.close();
 });
 
 try {

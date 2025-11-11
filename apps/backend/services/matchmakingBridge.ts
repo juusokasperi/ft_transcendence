@@ -5,6 +5,12 @@ import {
   getTournamentMatchRoster,
 } from '../db/queries/tournamentMatches.ts';
 import { logger } from '@utils/logger';
+import {
+  STREAM_TOURNAMENT_MATCHES_READY,
+  STREAM_TOURNAMENT_STATE_UPDATED,
+} from '@pong/shared/redis/constants';
+
+const STREAM_MAXLEN = 1000;
 
 const redis = new Redis(REDIS_URL);
 
@@ -59,7 +65,7 @@ export async function notifyMatchesReady(tournamentId: number, matchIds: number[
   if (!payload.matches.length) return;
 
   try {
-    await redis.publish('tournament:matches_ready', JSON.stringify(payload));
+    await appendToStream(payload, STREAM_TOURNAMENT_MATCHES_READY);
   } catch (error) {
     logger.error({ error }, '[Tournament] Failed to publish matches ready');
   }
@@ -72,8 +78,23 @@ type TournamentStateUpdatedMessage = {
 export async function notifyTournamentStateUpdated(tournamentId: number) {
   const payload: TournamentStateUpdatedMessage = { tournamentId };
   try {
-    await redis.publish('tournament:state_updated', JSON.stringify(payload));
+    await appendToStream(payload, STREAM_TOURNAMENT_STATE_UPDATED);
   } catch (error) {
     logger.error({ error }, '[Tournament] Failed to publish state update');
   }
+}
+
+async function appendToStream(
+  payload: MatchesReadyMessage | TournamentStateUpdatedMessage,
+  streamKey: string,
+) {
+  await redis.xadd(
+    streamKey,
+    'MAXLEN',
+    '~',
+    STREAM_MAXLEN,
+    '*',
+    'payload',
+    JSON.stringify(payload),
+  );
 }
