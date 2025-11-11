@@ -97,6 +97,7 @@ export class GameServer {
       reconnects: this.reconnects,
       redis: this.redis,
       logger: this.logger,
+      reporter: this.reporter,
     });
 
     createHttpServer({

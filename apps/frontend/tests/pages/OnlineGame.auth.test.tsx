@@ -3,6 +3,7 @@ const mockAxios = { post: vi.fn() };
 
 // Mock navigate
 let navigateMock = vi.fn();
+let setUserMock = vi.fn();
 
 import React from 'react';
 import { render, waitFor, act } from '@testing-library/react';
@@ -10,6 +11,7 @@ import OnlineGame from '../../src/pages/pong/online/OnlineGame';
 import { AppProvider } from '../../src/context/AppContext';
 import { SnackbarProvider } from '../../src/context/SnackbarContext';
 import { SidebarProvider } from '../../src/context/SidebarContext';
+import { MatchActivityProvider } from '../../src/context/MatchActivityContext';
 import { MemoryRouter } from 'react-router-dom';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 
@@ -22,7 +24,7 @@ vi.mock('../../src/context/AppContext', () => {
       axios: mockAxios,
       login: vi.fn(),
       logout: vi.fn(),
-      setUser: vi.fn(),
+      setUser: setUserMock,
       userReady: true,
     }),
     AppProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
@@ -47,7 +49,9 @@ function renderWithProviders() {
       <AppProvider>
         <SidebarProvider>
           <SnackbarProvider>
-            <OnlineGame />
+            <MatchActivityProvider>
+              <OnlineGame />
+            </MatchActivityProvider>
           </SnackbarProvider>
         </SidebarProvider>
       </AppProvider>
@@ -58,6 +62,7 @@ function renderWithProviders() {
 describe('OnlineGame auth error handling', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    setUserMock = vi.fn();
   });
 
   it('refreshes token and reconnects on "Token expired"', async () => {
@@ -68,27 +73,29 @@ describe('OnlineGame auth error handling', () => {
     });
     await waitFor(() => {
       expect(mockAxios.post).toHaveBeenCalledWith('/api/auth/refresh');
+      expect(setUserMock).not.toHaveBeenCalled();
     });
   });
 
-  it('shows error and navigates to login if refresh fails', async () => {
+  it('shows error, calls setUser if refresh fails', async () => {
     mockAxios.post.mockRejectedValueOnce(new Error('fail'));
     renderWithProviders();
     act(() => {
       mmClientInstance.simulateError('Token expired');
     });
     await waitFor(() => {
-      expect(navigateMock).toHaveBeenCalledWith('/login');
+      expect(mockAxios.post).toHaveBeenCalledWith('/api/auth/refresh');
+      expect(setUserMock).toHaveBeenCalledWith(null);
     });
   });
 
-  it('navigates to login immediately on "Invalid token"', async () => {
+  it('calls setUser if "Invalid token"', async () => {
     renderWithProviders();
     act(() => {
       mmClientInstance.simulateError('Invalid token');
     });
     await waitFor(() => {
-      expect(navigateMock).toHaveBeenCalledWith('/login');
+      expect(setUserMock).toHaveBeenCalledWith(null);
     });
   });
 });

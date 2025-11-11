@@ -15,6 +15,7 @@ type UseGameBootstrapOptions = {
 
 type GameInstance = {
   destroy(): void;
+  giveUp?: () => void;
 };
 
 export function useGameBootstrap({
@@ -97,7 +98,13 @@ export function useGameBootstrap({
     }
   }, []);
 
-  return { destroy };
+  const giveUp = useCallback(() => {
+    try {
+      appRef.current?.giveUp?.();
+    } catch {}
+  }, []);
+
+  return { destroy, giveUp };
 }
 
 // Preload the online pong bootstrap bundle ahead of time to reduce latency

@@ -1,4 +1,4 @@
-import placeHolderImg from '../assets/react.svg';
+import placeHolderImg from '../assets/avatar-placeholder.svg';
 
 export const PLACEHOLDER = placeHolderImg; // put any existing asset/public file
 

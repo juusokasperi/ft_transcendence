@@ -30,16 +30,79 @@ const extractToken = (protocols: string[], tag: string) => {
 const validateJoin = (token: string | undefined, roomId: string) => {
   if (!token) return null;
   const claims = verifyJoinToken(token);
-  return claims && claims.roomIdentifier === roomId ? claims : null;
+  if (!claims) return null;
+  if (claims.roomIdentifier !== roomId) return null;
+  // Expected issuer/audience for join tokens minted by the allocator
+  if (claims.iss !== 'mm' || claims.aud !== 'game-node') return null;
+  return claims;
 };
 
 const validateResume = (token: string | undefined, roomId: string) => {
   if (!token) return null;
   const claims = verifyResumeToken(token);
-  return claims && claims.roomIdentifier === roomId ? claims : null;
+  if (!claims) return null;
+  if (claims.roomIdentifier !== roomId) return null;
+  // Resume tokens are issued and consumed by game servers
+  if (claims.iss !== 'game-server' || claims.aud !== 'game-server') return null;
+  return claims;
 };
 
 const proxy = new createProxyServer({ ws: true });
+
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+const MAX_PROXY_RETRIES = 4;
+const INITIAL_RETRY_DELAY_MS = 100;
+const MAX_RETRY_DELAY_MS = 1000;
+
+const proxyWithRetry = async (
+  req: IncomingMessage,
+  socket: Duplex,
+  head: Buffer,
+  target: string,
+  maxRetries = MAX_PROXY_RETRIES,
+  initialDelay = INITIAL_RETRY_DELAY_MS,
+): Promise<boolean> => {
+  let delay = initialDelay;
+
+  for (let attempt = 0; attempt <= maxRetries; ++attempt) {
+    try {
+      await new Promise<void>((resolve, reject) => {
+        proxy.ws(
+          req,
+          socket,
+          head,
+          {
+            target,
+            headers: {
+              'sec-websocket-protocol': req.headers['sec-websocket-protocol'] || '',
+            },
+          },
+          (err) => {
+            if (err) reject(err);
+            else resolve();
+          },
+        );
+      });
+      return true;
+    } catch (err: any) {
+      const isConnectionRefused = err.code === 'ECONNREFUSED' || err.code === 'ECONNRESET';
+      const isLastAttempt = attempt === maxRetries;
+      if (isConnectionRefused && !isLastAttempt) {
+        app.log.warn(
+          { target, attempt: attempt + 1, maxAttempts: maxRetries + 1, nextDelay: delay },
+          '[Gateway] Connection refused, retrying..',
+        );
+        await sleep(delay);
+        delay = Math.min(delay * 2, MAX_RETRY_DELAY_MS);
+      } else {
+        app.log.error({ err, target, attempt: attempt + 1 }, '[Gateway] Proxy failed');
+        throw err;
+      }
+    }
+  }
+  return false;
+};
 
 app.server.on('upgrade', async (req: IncomingMessage, socket: Duplex, head: Buffer) => {
   app.log.info('[Gateway] Upgrade connection started');
@@ -118,14 +181,21 @@ app.server.on('upgrade', async (req: IncomingMessage, socket: Duplex, head: Buff
     }
   }
 
-  proxy.ws(req, socket, head, {
-    target: gameNode,
-    headers: {
-      'sec-websocket-protocol': req.headers['sec-websocket-protocol'] || '',
-    },
-  });
-
-  app.log.info(`[Gateway] Routed room ${roomId} to ${gameNode}`);
+  try {
+    const success = await proxyWithRetry(req, socket, head, gameNode);
+    if (success) app.log.info(`[Gateway] Routed room ${roomId} to ${gameNode}`);
+    else {
+      app.log.error(`[Gateway] Failed to route room ${roomId} to ${gameNode} after retries`);
+      socket.write('HTTP/1.1 503 Service Unavailable\r\nConnection: close\r\n\r\n');
+      socket.destroy();
+    }
+  } catch (err) {
+    app.log.error({ err, roomId, gameNode }, '[Gateway] Unexpected error during proxy');
+    if (!socket.destroyed) {
+      socket.write('HTTP/1.1 502 Bad Gateway\r\nConnection: close\r\n\r\n');
+      socket.destroy();
+    }
+  }
 });
 
 app.get('/health', async () => {

@@ -102,9 +102,9 @@ const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
 
   const confirmButtonClasses = useMemo(() => {
     if (tone === 'danger') {
-      return 'inline-flex items-center justify-center rounded-full bg-gradient-to-r from-rose-500 to-red-500 px-5 py-2 text-sm font-semibold text-white shadow-sm shadow-rose-900/40 transition hover:from-rose-400 hover:to-red-400 disabled:cursor-not-allowed disabled:opacity-70 disabled:hover:from-rose-500 disabled:hover:to-red-500';
+      return 'inline-flex items-center justify-center rounded-full cursor-pointer bg-gradient-to-r from-rose-500 to-red-500 px-5 py-2 text-sm font-semibold text-white shadow-sm shadow-rose-900/40 transition hover:from-rose-400 hover:to-red-400 disabled:cursor-not-allowed disabled:opacity-70 disabled:hover:from-rose-500 disabled:hover:to-red-500';
     }
-    return 'inline-flex items-center justify-center rounded-full bg-indigo-500 px-5 py-2 text-sm font-semibold text-white shadow-sm shadow-indigo-900/40 transition hover:bg-indigo-400 disabled:cursor-not-allowed disabled:opacity-70 disabled:hover:bg-indigo-500';
+    return 'inline-flex items-center justify-center rounded-full cursor-pointer bg-indigo-500 px-5 py-2 text-sm font-semibold text-white shadow-sm shadow-indigo-900/40 transition hover:bg-indigo-400 disabled:cursor-not-allowed disabled:opacity-70 disabled:hover:bg-indigo-500';
   }, [tone]);
 
   if (!open) return null;
@@ -146,7 +146,7 @@ const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
             <button
               type="button"
               onClick={onCancel}
-              className="inline-flex items-center justify-center rounded-full border border-white/20 px-5 py-2 text-sm font-semibold text-slate-200 transition hover:border-white/30 hover:text-white"
+              className="inline-flex cursor-pointer items-center justify-center rounded-full border border-white/20 px-5 py-2 text-sm font-semibold text-slate-200 transition hover:border-white/30 hover:text-white"
             >
               {cancelLabel}
             </button>
