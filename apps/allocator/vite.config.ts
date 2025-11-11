@@ -19,7 +19,16 @@ export default defineConfig({
     emptyOutDir: true,
     minify: false,
     rollupOptions: {
-      external: [...builtinModules], // don't bundle Node built-ins
+      external: [
+        ...builtinModules,
+        ...builtinModules.map((m) => `node:${m}`), // include node: prefix variants
+        'fastify',
+        'axios',
+        'dotenv',
+        'ioredis',
+        'uuid',
+        'ws',
+      ],
       output: {
         entryFileNames: `[name].js`,
       },
