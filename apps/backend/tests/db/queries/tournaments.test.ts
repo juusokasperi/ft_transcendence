@@ -85,11 +85,9 @@ describe('Tournament queries', () => {
   });
 
   it('counts tournaments by status', async () => {
-    const {
-      createTournament,
-      updateTournamentStatus,
-      countTournamentsByStatus,
-    } = await import('../../../db/queries/tournaments.ts');
+    const { createTournament, updateTournamentStatus, countTournamentsByStatus } = await import(
+      '../../../db/queries/tournaments.ts'
+    );
 
     const draft = createTournament({ name: 'Draft not Active Cup' });
     const active = createTournament({ name: 'Active Cup', status: 'active' });
