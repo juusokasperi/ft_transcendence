@@ -106,13 +106,13 @@ const Hero: React.FC = () => {
 
   // Starting numbers to fake a little boost to live stats
   const StartTournambenNumber = 8;
-  const StartMatchesNumber = 12;
+  const StartTournamentNumber = 12;
 
   let matchesLabel: string;
   let tournamentsLabel: string;
 
   if (liveStats) {
-    const totalMatches = StartMatchesNumber + liveStats.matches;
+    const totalMatches = StartTournamentNumber + liveStats.matches;
     const totalTournaments = StartTournambenNumber + liveStats.tournaments;
 
     matchesLabel = `${totalMatches} running ${totalMatches === 1 ? 'game' : 'games'}`;
