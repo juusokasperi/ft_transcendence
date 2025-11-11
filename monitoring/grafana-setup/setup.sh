@@ -34,9 +34,9 @@ create_user() {
 }
 
 # Create Editor user
-create_user "${EDITOR_NAME}" "editor" "${EDITOR_PASS}" "Editor"
+create_user "${EDITOR_NAME}" "${EDITOR_NAME}" "${EDITOR_PASS}" "Editor"
 
 # Create Viewer user
-create_user "${VIEWER_NAME}" "viewer" "${VIEWER_PASS}" "Viewer"
+create_user "${VIEWER_NAME}" "${VIEWER_NAME}" "${VIEWER_PASS}" "Viewer"
 
 echo "All users processed."
