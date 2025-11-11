@@ -40,6 +40,7 @@ vi.mock('fastify', () => ({ default: fastifyMock }));
 
 const proxyWsMock = vi.fn();
 const createProxyServerMock = vi.fn(() => ({ ws: proxyWsMock }));
+
 vi.mock('http-proxy', () => ({ default: createProxyServerMock }));
 
 const redisGetMock = vi.fn<(key: string) => Promise<string | null>>();
@@ -76,8 +77,11 @@ function buildRequest(overrides: Partial<IncomingMessage> = {}): IncomingMessage
 
 describe('gateway resume token path', () => {
   beforeEach(() => {
+    vi.resetModules();
     vi.clearAllMocks();
     upgradeHandlerRef.handler = undefined;
+    proxyWsMock.mockReset();
+    proxyWsMock.mockImplementation((_, __, ___, ____, cb) => cb?.(undefined));
     serverOnMock.mockReset();
     serverOnMock.mockImplementation((event, handler) => {
       if (event === 'upgrade') upgradeHandlerRef.handler = handler;
@@ -92,8 +96,6 @@ describe('gateway resume token path', () => {
       log: appLogMock,
       register: appRegisterMock,
     }));
-    vi.resetModules();
-    proxyWsMock.mockReset();
     verifyJoinTokenMock.mockReset();
     verifyResumeTokenMock.mockReset();
     appListenMock.mockReset();
