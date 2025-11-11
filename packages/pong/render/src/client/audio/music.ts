@@ -11,6 +11,8 @@ export class MusicPlayer {
 
   constructor(scene: Scene) {
     this.scene = scene;
+    // Mark `scene` as used to satisfy `noUnusedLocals`/`noUnusedParameters` checks.
+    void this.scene;
   }
 
   get nowPlaying(): string | null {
@@ -60,6 +62,10 @@ export class MusicPlayer {
   }
 
   async stop(fadeMs = 200) {
+    // Mark `fadeMs` as intentionally unused (fade not implemented) so the
+    // compiler doesn't error, without changing runtime behaviour.
+    void fadeMs;
+
     if (!this.current) return;
     const s = this.current;
     this.current = null;

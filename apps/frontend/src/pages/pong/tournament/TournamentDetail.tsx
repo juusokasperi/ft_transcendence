@@ -1,8 +1,9 @@
-import React, { useEffect, useMemo } from 'react';
+import type { FC } from 'react';
+import { useEffect, useMemo } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import TournamentPage from './TournamentPage';
 
-const TournamentDetail: React.FC = () => {
+const TournamentDetail: FC = () => {
   const navigate = useNavigate();
   const { tournamentId } = useParams<{ tournamentId: string }>();
 
@@ -19,11 +20,7 @@ const TournamentDetail: React.FC = () => {
     }
   }, [navigate, numericTournamentId, tournamentId]);
 
-  const handleBack = () => {
-    navigate('/pong/tournaments');
-  };
-
-  return <TournamentPage onBack={handleBack} focusTournamentId={numericTournamentId} />;
+  return <TournamentPage focusTournamentId={numericTournamentId} />;
 };
 
 export default TournamentDetail;

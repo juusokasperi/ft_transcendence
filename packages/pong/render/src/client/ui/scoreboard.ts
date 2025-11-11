@@ -132,6 +132,10 @@ export function createScoreboard(): DomScoreboardAPI {
     bestOf: number,
     currentGameIndex?: number,
   ) {
+    // mark `bestOf` as intentionally unused to satisfy the TypeScript
+    // no-unused-locals check without changing runtime behaviour
+    void bestOf;
+
     container.textContent = '';
     currentBoxEl[who] = null;
 
