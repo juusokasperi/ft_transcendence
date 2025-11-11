@@ -13,7 +13,22 @@ export default defineConfig({
     emptyOutDir: true,
     minify: false,
     rollupOptions: {
-      external: [...builtinModules], // don't bundle Node built-ins
+      external: [
+        ...builtinModules,
+        ...builtinModules.map((m) => `node:${m}`), // include node: prefix variants
+        /^@fastify\//, // externalize all @fastify/* packages
+        'fastify',
+        'bcrypt',
+        'better-sqlite3',
+        'dotenv',
+        'ioredis',
+        'jsonwebtoken',
+        'nodemailer',
+        'otplib',
+        'prom-client',
+        'umzug',
+        'uuid',
+      ],
       output: {
         entryFileNames: `[name].js`,
       },
