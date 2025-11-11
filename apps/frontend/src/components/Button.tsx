@@ -77,7 +77,7 @@ const variantClasses: Record<ButtonVariant, Record<ButtonTone, string>> = {
 };
 
 const baseClasses =
-  'inline-flex items-center justify-center rounded-full font-semibold transition focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950 disabled:pointer-events-none disabled:opacity-50';
+  'inline-flex items-center justify-center rounded-full font-semibold transition focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950 cursor-pointer disabled:cursor-not-allowed disabled:opacity-50';
 
 const Button: React.FC<ButtonProps> = ({
   variant = 'primary',

@@ -299,7 +299,7 @@ const PublicUser: React.FC = () => {
                         <button
                           onClick={loadMore}
                           disabled={loadingMore}
-                          className="inline-flex items-center justify-center rounded-full bg-gradient-to-r from-indigo-500 to-purple-500 px-5 py-2 text-sm font-semibold text-white shadow shadow-indigo-900/40 transition hover:from-indigo-400 hover:to-purple-400 disabled:cursor-not-allowed disabled:opacity-50"
+                          className="inline-flex cursor-pointer items-center justify-center rounded-full bg-gradient-to-r from-indigo-500 to-purple-500 px-5 py-2 text-sm font-semibold text-white shadow shadow-indigo-900/40 transition hover:from-indigo-400 hover:to-purple-400 disabled:cursor-not-allowed disabled:opacity-50"
                         >
                           {loadingMore ? (
                             <Spinner size={20} color="#FFFFFF" aria-label="Loading more matches" />

@@ -4,7 +4,6 @@ import type { OnlineMatchSummary, RoomStateMessage, StartMessage } from '@pong/s
 import type { PlayerSeat } from '@pong/render';
 import { wsUrl } from '../../../../utils/url';
 import { readJwtExpSec, clearResumeForRoom, saveResumeTokenToSession } from './resume';
-import { suppressAutoResumeFor } from './resume';
 export {
   getStoredResumeCandidate,
   clearStoredResumeTokens,
@@ -133,6 +132,21 @@ export async function connectOnline(
         }
       };
 
+      // Fan-out helper to keep snapshot/opponent-axis listeners in sync.
+      const fanOutFrame = (payload: {
+        state?: GameState;
+        events?: FrameEvents;
+        match?: MatchSnapshot;
+        axis?: number;
+      }) => {
+        const { state, events, match, axis } = payload;
+        if (!state) return;
+        snapshotListeners.forEach((cb) => cb(state, events ?? {}, match));
+        if (typeof axis === 'number') {
+          opponentAxisListeners.forEach((cb) => cb(axis));
+        }
+      };
+
       // Track the currently active socket so we can swap it during reconnects.
       let ws: WebSocket = gameWs;
 
@@ -166,8 +180,7 @@ export async function connectOnline(
 
         switch (data.type) {
           case 'FRAME':
-            snapshotListeners.forEach((cb) => cb(data.state, data.events, data.match));
-            opponentAxisListeners.forEach((cb) => cb(data.axis));
+            fanOutFrame(data);
             break;
           case 'ROOM_STATE':
             console.debug('[OnlineGame] Room state message', data);
@@ -216,12 +229,9 @@ export async function connectOnline(
             matchEndListeners.forEach((cb) => cb(data.reason, data.winner, data.summary ?? null));
             // Clear stored resume tokens for this room to avoid stale entries after match end.
             clearResumeForRoom(roomIdentifier);
-            // If match ended due to an explicit forfeit, suppress auto-resume briefly
-            // so the winner doesn't get pulled back into a dead session.
+            // If match ended due to an explicit forfeit, stop reconnection attempts.
             if (data.reason === 'forfeit') {
-              try {
-                suppressAutoResumeFor(7000);
-              } catch {}
+              stopReconnector();
             }
             break;
           case 'RESUME_TOKEN':
@@ -231,10 +241,6 @@ export async function connectOnline(
             if (expSec) latestResume = { token, expSec };
             // Persist token for page refresh within grace window.
             saveResumeTokenToSession(token, roomIdentifier);
-            console.log('[OnlineGame] Resume token received', {
-              hasToken: Boolean(token),
-              expSec,
-            });
             break;
           default:
             console.warn('[OnlineGame] Unknown message type:', data.type);
@@ -301,6 +307,9 @@ export async function connectOnline(
         forfeit() {
           try {
             if (ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify({ type: 'forfeit' }));
+            // After forfeiting, we don't want to allow resume.
+            console.log('[OnlineGame] Clearing resume token');
+            clearResumeForRoom(roomIdentifier);
           } catch {}
         },
         disconnect() {
