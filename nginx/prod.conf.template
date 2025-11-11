@@ -118,7 +118,7 @@ server {
     proxy_read_timeout 3600s;
     proxy_send_timeout 3600s;
   }
-  
+
   # Redirect plain /kibana (no slash) to /kibana/
   location = /kibana {
     return 301 /kibana/;
