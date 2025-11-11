@@ -3,13 +3,12 @@ import { v4 as uuid } from 'uuid';
 import type { TournamentMatchesReadyMessage } from '@pong/shared/protocol/net';
 import { REDIS_URL } from './config.ts';
 import { log } from '@utils/logger';
-
-const STREAM_TOURNAMENT_MATCHES_READY = 'stream:tournament:matches_ready';
-const STREAM_TOURNAMENT_STATE_UPDATED = 'stream:tournament:state_updated';
-const TOURNAMENT_STREAM_KEYS = [
+import {
   STREAM_TOURNAMENT_MATCHES_READY,
   STREAM_TOURNAMENT_STATE_UPDATED,
-] as const;
+} from '@pong/shared/redis/constants';
+
+const TOURNAMENT_STREAM_KEYS = [STREAM_TOURNAMENT_MATCHES_READY, STREAM_TOURNAMENT_STATE_UPDATED];
 const STREAM_GROUP = 'matchmaking-service';
 const STREAM_BATCH_SIZE = 32;
 const STREAM_BLOCK_MS = 5000;
@@ -138,7 +137,11 @@ export class MatchmakingRedisBridge {
     for (const [streamKey, entries] of response) {
       for (const [entryId, fields] of entries) {
         const payload = extractPayload(fields);
-        log('Redis stream received:', { payload }, 'debug');
+        log(
+          'Redis stream received:',
+          { streamKey, entryId, payloadSize: payload ? payload.length : 0 },
+          'debug',
+        );
         await this.processEvent(streamKey, entryId, payload);
       }
     }

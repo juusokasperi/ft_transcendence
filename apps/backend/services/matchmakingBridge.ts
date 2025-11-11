@@ -5,9 +5,11 @@ import {
   getTournamentMatchRoster,
 } from '../db/queries/tournamentMatches.ts';
 import { logger } from '@utils/logger';
+import {
+  STREAM_TOURNAMENT_MATCHES_READY,
+  STREAM_TOURNAMENT_STATE_UPDATED,
+} from '@pong/shared/redis/constants';
 
-const STREAM_TOURNAMENT_MATCHES_READY = 'stream:tournament:matches_ready';
-const STREAM_TOURNAMENT_STATE_UPDATED = 'stream:tournament:state_updated';
 const STREAM_MAXLEN = 1000;
 
 const redis = new Redis(REDIS_URL);
