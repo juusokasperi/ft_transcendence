@@ -1,10 +1,9 @@
-import { useEffect } from 'react';
-import type React from 'react';
 import { useMatchOverEvent } from '../../shared/hooks/useMatchOverEvent';
 import type { MatchSummary } from '../types';
+import type { RefObject } from 'react';
 
 type Args = {
-  canvasRef: React.RefObject<HTMLCanvasElement | null>;
+  canvasRef: RefObject<HTMLCanvasElement | null>;
   playing: boolean;
   onSummary: (summary: MatchSummary) => void;
   onAutoExit: () => void;

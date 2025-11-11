@@ -1,4 +1,3 @@
-import React from 'react';
 import Button from '../../../components/Button';
 import TournamentParticipantsPanel from './components/ParticipantsPanel';
 import TournamentBracketPanel from './components/BracketPanel';
@@ -11,13 +10,12 @@ import { useTournamentPageController } from './hooks/useTournamentPageController
 import PageContainer from '../shared/components/PageContainer';
 import PageSection from '../shared/components/PageSection';
 type TournamentPageProps = {
-  onBack?: () => void;
   focusTournamentId?: number | null;
 };
 
 // Moved ChatToggleButton to a shared component for reuse
 
-const TournamentPage: React.FC<TournamentPageProps> = ({ onBack, focusTournamentId = null }) => {
+const TournamentPage = ({ focusTournamentId = null }: TournamentPageProps) => {
   const {
     user,
     userReady,

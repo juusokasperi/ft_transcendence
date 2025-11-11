@@ -1,5 +1,4 @@
-import React from 'react';
-import type { GameHistoryEntry } from '@pong/shared';
+import type { FC } from 'react';
 import type { MatchSummary } from '../types';
 import PlayButton from './PlayButton';
 import Card from './Card';
@@ -11,7 +10,7 @@ type PostMatchViewProps = {
   onReturnToMenu: () => void;
 };
 
-export const PostMatchView: React.FC<PostMatchViewProps> = ({
+export const PostMatchView: FC<PostMatchViewProps> = ({
   summary,
   onPlayAgain,
   onReturnToMenu,

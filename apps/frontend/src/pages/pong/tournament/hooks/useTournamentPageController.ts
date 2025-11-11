@@ -135,7 +135,6 @@ export function useTournamentPageController(
   const [activeTournamentId, setActiveTournamentId] = useState<number | null>(null);
   const [activeTournamentName, setActiveTournamentName] = useState<string | null>(null);
   const [tournamentStatus, setTournamentStatus] = useState<string>('draft');
-  const [maxParticipants, setMaxParticipants] = useState<number | null>(null);
   const [participants, setParticipants] = useState<TournamentParticipantState[]>([]);
   const [bracket, setBracket] = useState<TournamentMatchState[]>([]);
   const [latestReadyMatches, setLatestReadyMatches] = useState<ReadyMatch[]>([]);
@@ -287,7 +286,6 @@ export function useTournamentPageController(
     setMatchCountdowns(new Map());
     setLatestReadyMatches([]);
     setTournamentStatus('draft');
-    setMaxParticipants(null);
     setActiveTournamentName(null);
     debugLog('reset-active-tournament');
   }, [debugLog]);
@@ -323,7 +321,6 @@ export function useTournamentPageController(
       };
 
       setTournamentStatus(tournamentData.status);
-      setMaxParticipants(tournamentData.maxParticipants ?? TOURNAMENT_SIZE);
       setActiveTournamentName(tournamentData.name ?? null);
 
       const participantPayload = participantsRes.data as Array<{
@@ -432,7 +429,6 @@ export function useTournamentPageController(
             participants: msg.participants.length,
           });
           setTournamentStatus(msg.status);
-          setMaxParticipants(msg.maxParticipants ?? TOURNAMENT_SIZE);
           setParticipants(msg.participants);
 
           const userUuid = user?.uuid;

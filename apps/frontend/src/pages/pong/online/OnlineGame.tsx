@@ -115,7 +115,7 @@ const OnlineGame: React.FC = () => {
     [axios, enqueueSnackbar, navigate],
   );
 
-  const { joinQueue, leaveQueue, acceptMatch, declineMatch, reconnect } = useMatchmakingClient({
+  const { joinQueue, leaveQueue, acceptMatch, declineMatch } = useMatchmakingClient({
     dispatch,
     connectKey,
     requestReconnect: () => setConnectKey((key) => key + 1),

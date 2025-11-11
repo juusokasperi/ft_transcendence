@@ -41,11 +41,11 @@ import {
 
 import { pickInitialServer, SERVE_SELECT_TOTAL_MS, randomSeed32, sideOpposite } from '@pong/shared';
 import { disposeWorld } from '@pong/render';
-import type { ControllerScheme, Preferences } from '../shared/preferences';
+import type { Preferences } from '../shared/preferences';
 import { applyPreferences, applyControllerBindingsFromPrefs } from '../shared/preferences';
 import { setHudAndPaletteColorsFromPrefs, pickSafeServeAngleDeg } from './utils';
 import { runServeSelectionIntro } from '../shared/utils';
-import { swapPaddleMaterials, handleMatchOver, handleSwapSidesNow } from '../shared/utils';
+import { handleMatchOver, handleSwapSidesNow } from '../shared/utils';
 import { orbitCameraFor } from '@pong/render';
 import { applyFrameEventsToAudio } from '@pong/render';
 import { createLocalAudioKit, createLocalSfxDetectors } from '../shared/audio-utils';

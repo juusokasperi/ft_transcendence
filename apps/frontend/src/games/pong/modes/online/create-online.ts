@@ -25,12 +25,7 @@ import type { FrameEvents, MatchSnapshot } from '@pong/shared';
 import { SERVE_SELECT_TOTAL_MS, clamp01 } from '@pong/shared';
 import type { RoomStateMessage } from '@pong/shared/protocol/net';
 import { rgb01ToCss } from '../shared/preferences';
-import {
-  swapPaddleMaterials,
-  handleSwapSidesNow,
-  handleMatchOver,
-  runServeSelectionIntro,
-} from '../shared/utils';
+import { handleSwapSidesNow, handleMatchOver, runServeSelectionIntro } from '../shared/utils';
 import { createLocalAudioKit, createLocalSfxDetectors } from '../shared/audio-utils';
 import { createHudCache, updateOnlineHUDIfChanged } from './hud-cache';
 import { applyOnlineSideSwap } from './swap-helpers';
@@ -164,7 +159,6 @@ export function createOnlineApp(
   let spinningUntilMs = 0;
   // Track half-rotation timing and whether a server swap event arrived
   let betweenHalfFired = false;
-  let pendingBetweenSwap = false;
   let betweenSwapApplied = false;
   const hudCache = createHudCache();
   let didSetPlayerNames = false;
@@ -529,7 +523,6 @@ export function createOnlineApp(
           );
           spinningUntilMs = until;
           betweenHalfFired = false;
-          pendingBetweenSwap = false;
           betweenSwapApplied = false;
           // TODO: Check
           // const now = performance.now();
@@ -543,8 +536,6 @@ export function createOnlineApp(
           //         rowsMirrored = applyOnlineSideSwap(left.mesh, right.mesh, rowsMirrored);
           //         betweenSwapApplied = true;
           //       }
-          //       // If the server event came earlier and we deferred, it's now fulfilled.
-          //       pendingBetweenSwap = false;
           //     },
           //   });
           // }
@@ -564,9 +555,6 @@ export function createOnlineApp(
             // Half happened but swap not yet applied (race) — apply now.
             rowsMirrored = applyOnlineSideSwap(left.mesh, right.mesh, rowsMirrored);
             betweenSwapApplied = true;
-          } else {
-            // Defer until onHalf; ensures alignment.
-            pendingBetweenSwap = true;
           }
         } else {
           const until = handleSwapSidesNow(
@@ -585,7 +573,6 @@ export function createOnlineApp(
           // Track active spin window to align any subsequent events like between-games flow
           spinningUntilMs = until;
           betweenHalfFired = false;
-          pendingBetweenSwap = false;
           betweenSwapApplied = false;
           const spinMs = Math.max(0, until - now);
           if (spinMs > 0) {
