@@ -51,13 +51,17 @@ const proxy = new createProxyServer({ ws: true });
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
+const MAX_PROXY_RETRIES = 4;
+const INITIAL_RETRY_DELAY_MS = 100;
+const MAX_RETRY_DELAY_MS = 1000;
+
 const proxyWithRetry = async (
   req: IncomingMessage,
   socket: Duplex,
   head: Buffer,
   target: string,
-  maxRetries = 4,
-  initialDelay = 100,
+  maxRetries = MAX_PROXY_RETRIES,
+  initialDelay = INITIAL_RETRY_DELAY_MS,
 ): Promise<boolean> => {
   let delay = initialDelay;
 
@@ -86,11 +90,11 @@ const proxyWithRetry = async (
       const isLastAttempt = attempt === maxRetries;
       if (isConnectionRefused && !isLastAttempt) {
         app.log.warn(
-          { target, attempt: attempt + 1, maxRetries: maxRetries + 1, nextDelay: delay },
+          { target, attempt: attempt + 1, maxAttempts: maxRetries + 1, nextDelay: delay },
           '[Gateway] Connection refused, retrying..',
         );
         await sleep(delay);
-        delay = Math.min(delay * 2, 1000);
+        delay = Math.min(delay * 2, MAX_RETRY_DELAY_MS);
       } else {
         app.log.error({ err, target, attempt: attempt + 1 }, '[Gateway] Proxy failed');
         throw err;
