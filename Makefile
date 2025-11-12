@@ -31,6 +31,7 @@ SERVICES         = deps frontend backend nginx elastic_cert_setup elasticsearch 
 
 # Ensure required bind-mount directories exist
 # 1000:1000 == UID:GID of node user inside of container
+# 777 permissions needed on iMacs
 define ensure_dirs
 	@echo ">> Ensuring required bind-mount directories exist"
 	@if [ ! -d "./apps/backend/data/sqlite/uploads" ]; then \
@@ -40,7 +41,7 @@ define ensure_dirs
   			chown -R 1000:1000 ./apps/backend/data; \
 		else \
 			echo ">> Skipping chown; using chmod instead."; \
-			chmod -R 766 ./apps/backend/data; \
+			chmod -R 777 ./apps/backend/data; \
 		fi; \
 	fi
 endef
@@ -81,7 +82,7 @@ endef
 # ========================
 #  Orchestration
 # ========================
-.PHONY: all up detached prod prod-detached elk elk-detached down clean nuke check-leftovers fclean re stop restart restart-elk restart-% builder-init builder-use builder-prune builder-rm check-leftovers-global overview-docker
+.PHONY: all up detached prod prod-detached elk elk-detached mon mon-detached dev-full dev-full-detached down clean nuke check-leftovers fclean re stop restart restart-% builder-init builder-use builder-prune builder-rm check-leftovers-global overview-docker
 all: up
 
 up:
@@ -153,6 +154,26 @@ mon-detached:
 	$(ensure_builder)
 	docker compose -p $(NAME) $(ENV_ROOT) $(ROOT_COMPOSE) \
 		${MON_DEV_COMPOSE} \
+		up --build -d
+
+dev-full:
+	$(ensure_dirs)
+	$(ensure_env)
+	$(ensure_builder)
+	@echo ">> Starting dev stack with monitoring + ELK (attached)"
+	docker compose -p $(NAME) $(ROOT_COMPOSE) $(ENV_ROOT) \
+		${MON_DEV_COMPOSE} \
+		${LOG_DEV_COMPOSE} \
+		up --build
+
+dev-full-detached:
+	$(ensure_dirs)
+	$(ensure_env)
+	$(ensure_builder)
+	@echo ">> Starting dev stack with monitoring + ELK (detached)"
+	docker compose -p $(NAME) $(ROOT_COMPOSE) $(ENV_ROOT) \
+		${MON_DEV_COMPOSE} \
+		${LOG_DEV_COMPOSE} \
 		up --build -d
 
 down:
@@ -231,14 +252,12 @@ clean:
 fclean:
 	@echo ">> FCLEAN: clean + prune build cache + remove builder"
 	-$(MAKE) clean
-	@echo ">> Removing images referenced by dev compose (default profile)"
-	- docker compose -p $(NAME) $(ROOT_COMPOSE) $(ENV_ROOT) config --images | sort -u | xargs -r docker image rm -f
-	@echo ">> Removing images referenced by dev compose (elk profile)"
-	- docker compose -p $(NAME) $(ROOT_COMPOSE) $(ENV_ROOT) --profile elk config --images | sort -u | xargs -r docker image rm -f
-	@echo ">> Removing images referenced by dev compose (monitoring profile)"
-	- docker compose -p $(NAME) $(ROOT_COMPOSE) ${MON_DEV_COMPOSE} $(ENV_ROOT) config --images | sort -u | xargs -r docker image rm -f
+	@echo ">> Removing images referenced by dev compose"
+	- docker compose -p $(NAME) $(ROOT_COMPOSE) ${MON_DEV_COMPOSE} ${LOG_DEV_COMPOSE} \
+		$(ENV_ROOT) config --images | sort -u | xargs -r docker image rm -f
 	@echo ">> Removing images referenced by prod compose"
-	- docker compose -p $(NAME_PROD) $(PROD_COMPOSE) ${MON_PROD_COMPOSE} $(ENV_ROOT) config --images | sort -u | xargs -r docker image rm -f
+	- docker compose -p $(NAME_PROD) $(PROD_COMPOSE) ${MON_PROD_COMPOSE} ${LOG_PROD_COMPOSE} \
+		$(ENV_ROOT) config --images | sort -u | xargs -r docker image rm -f
 	@echo ">> Pruning build cache for builder '$(BUILDER)'"
 	-$(MAKE) builder-prune
 	@echo ">> Removing builder '$(BUILDER)'"
@@ -258,23 +277,44 @@ stop:
 
 restart:
 	$(ensure_env)
-	@echo ">> Restarting services in default stack"
-	docker compose -p $(NAME) $(ROOT_COMPOSE) $(ENV_ROOT) restart
-
-restart-elk:
-	$(ensure_env)
-	@echo ">> Restarting services in profile 'elk'"
-	docker compose -p $(NAME) --profile elk restart
+	@echo ">> Detecting and restarting currently running services"
+	@if docker ps --filter "label=com.docker.compose.project=$(NAME_PROD)" --format '{{.Names}}' | head -n1 | grep -q .; then \
+		echo ">> Detected prod stack - restarting all services"; \
+		docker compose -p $(NAME_PROD) $(PROD_COMPOSE) $(ENV_ROOT) \
+			${MON_PROD_COMPOSE} \
+			${LOG_PROD_COMPOSE} \
+			restart; \
+	elif docker ps --filter "label=com.docker.compose.project=$(NAME)" --format '{{.Names}}' | head -n1 | grep -q .; then \
+		echo ">> Detected dev stack - restarting all services"; \
+		docker compose -p $(NAME) $(ROOT_COMPOSE) $(ENV_ROOT) \
+			${MON_DEV_COMPOSE} \
+			${LOG_DEV_COMPOSE} \
+			restart; \
+	else \
+		echo ">> Error: No running services detected in either dev or prod stacks"; \
+		echo ">> Use 'make ps' to check container status"; \
+		exit 1; \
+	fi
 
 restart-%:
 	$(ensure_env)
-	@echo ">> Restarting service '$*' (if present in any compose file)"
-	@if echo "$(SERVICES)" | grep -qw "$*"; then \
-		docker compose -p $(NAME) -f docker-compose.yml restart $* || true; \
-		docker compose -p $(NAME) -f log-management/docker-compose.yml --env-file log-management/.env restart $* || true; \
+	@echo ">> Detecting stack and restarting service '$*'"
+	@if docker ps --filter "label=com.docker.compose.project=$(NAME_PROD)" --filter "label=com.docker.compose.service=$*" --format '{{.Names}}' | head -n1 | grep -q .; then \
+		echo ">> Found '$*' in prod stack - restarting"; \
+		docker compose -p $(NAME_PROD) $(PROD_COMPOSE) $(ENV_ROOT) \
+			${MON_PROD_COMPOSE} \
+			${LOG_PROD_COMPOSE} \
+			restart $*; \
+	elif docker ps --filter "label=com.docker.compose.project=$(NAME)" --filter "label=com.docker.compose.service=$*" --format '{{.Names}}' | head -n1 | grep -q .; then \
+		echo ">> Found '$*' in dev stack - restarting"; \
+		docker compose -p $(NAME) $(ROOT_COMPOSE) $(ENV_ROOT) \
+			${MON_DEV_COMPOSE} \
+			${LOG_DEV_COMPOSE} \
+			restart $*; \
 	else \
-		echo "Usage: make restart-[service]"; \
-		echo "Available services: $(SERVICES)"; \
+		echo ">> Error: Service '$*' not found or not running in either stack"; \
+		echo ">> Use 'make ps' to see available services"; \
+		exit 1; \
 	fi
 
 # ========================
@@ -341,34 +381,43 @@ overview-docker:
 .PHONY: help
 help:
 	@echo "Usage:"
-	@echo "  make / make up            # Build & start default stack [uses Buildx '$(BUILDER)']"
-	@echo "  make prod                 # Build & start prod stack [uses Buildx '$(BUILDER)']"
-	@echo "  make detached-prod        # Build & start prod stack but detached"
-	@echo "  make detached             # Same as 'up', but detached (-d)"
-	@echo "  make elk                  # Start compose profile 'elk' (attached)"
-	@echo "  make elk-detached         # Start compose profile 'elk' (detached)"
-	@echo "  make down                 # Stop & remove default stack (+volumes, local images, orphans)"
-	@echo "  make down-elk             # Stop & remove profile 'elk' (+volumes, local images, orphans)"
-	@echo "  make clean                # Project-scoped cleanup (containers, networks, volumes, images, package store, app data)"
-	@echo "  make fclean               # 'clean' + prune builder cache + remove builder"
-	@echo "  make re                   # fclean + up"
-	@echo "  make nuke CONFIRM=1       # GLOBAL prune of ALL UNUSED Docker data (+builder cache)"
-	@echo "  overview-docker           # Show ALL Docker resources on this machine"
 	@echo ""
-	@echo "Build cache (Option A - per-project builder):"
-	@echo "  make builder-init         # Create/select the per-project buildx builder"
-	@echo "  make builder-use          # Select it explicitly (current shell/session)"
-	@echo "  make builder-prune        # Prune ONLY this builder's cache"
-	@echo "  make builder-rm           # Remove the builder & its cache"
+	@echo "Development mode (pick and choose):"
+	@echo "  make / make up                       # Dev only"
+	@echo "  make detached                        # Dev only (detached)"
+	@echo "  make mon                             # Dev + Monitoring (Prometheus/Grafana)"
+	@echo "  make mon-detached                    # Dev + Monitoring (detached)"
+	@echo "  make elk                             # Dev + ELK (Elasticsearch/Kibana/Logstash)"
+	@echo "  make elk-detached                    # Dev + ELK (detached)"
+	@echo "  make dev-full                        # Dev + Monitoring + ELK"
+	@echo "  make dev-full-detached               # Dev + Monitoring + ELK (detached)"
+	@echo ""
+	@echo "Production mode (always with monitoring + ELK):"
+	@echo "  make prod                            # Prod + Monitoring + ELK"
+	@echo "  make prod-detached                   # Prod + Monitoring + ELK (detached)"
+	@echo ""
+	@echo "Cleanup:"
+	@echo "  make down                            # Stop & remove all stacks (volumes, local images, orphans)"
+	@echo "  make down-soft                       # Stop & remove containers (keep volumes/images)"
+	@echo "  make clean                           # Project-scoped cleanup (containers, networks, volumes, images, artifacts)"
+	@echo "  make fclean                          # clean + prune builder cache + remove builder"
+	@echo "  make re                              # fclean + up"
+	@echo "  make nuke CONFIRM=1                  # GLOBAL prune of ALL UNUSED Docker data (+builder cache)"
+	@echo "  make overview-docker                 # Show ALL Docker resources on this machine"
+	@echo ""
+	@echo "Build cache (per-project builder):"
+	@echo "  make builder-init                    # Create/select the per-project buildx builder"
+	@echo "  make builder-use                     # Select it explicitly (current shell/session)"
+	@echo "  make builder-prune                   # Prune ONLY this builder's cache"
+	@echo "  make builder-rm                      # Remove the builder & its cache"
 	@echo ""
 	@echo "Utilities:"
 	@echo "  make ps                   # Show containers (status)"
 	@echo "  make logs-[service]       # Follow logs for a service"
 	@echo "  make sh-[service]         # Open /bin/sh in a service"
 	@echo "  make bash-[service]       # Open bash (fallback: sh) in a service"
-	@echo "  make restart              # Restart services in default stack"
-	@echo "  make restart-elk          # Restart services in profile 'elk'"
-	@echo "  make restart-[service]    # Restart a single service by name"
+	@echo "  make restart              # Restart all services in currently running stack (auto-detects dev/prod)"
+	@echo "  make restart-[service]    # Restart a single service by name (auto-detects stack)"
 	@echo "  make stop                 # Stop all containers in this compose project"
 	@echo ""
 	@echo "Repo tasks (via deps container):"

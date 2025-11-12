@@ -32,24 +32,29 @@ services:
       - MAIL_USER=${MAIL_USER}
       - MAIL_PASS=${MAIL_PASS}
       - ALERT_MAIL_TO=${ALERT_MAIL_TO:-test@example.com}
+      - ALERT_WEBHOOK_URL=${ALERT_WEBHOOK_URL}
     volumes:
       - prometheus-config:/etc/prometheus
       - alertmanager-config:/etc/alertmanager
     restart: no
 
   prometheus:
-    image: prom/prometheus
+    image: prom/prometheus:v3.7.3
     restart: unless-stopped
     depends_on:
       prometheus-pre:
         condition: service_completed_successfully
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.retention.time=30d'
+      - '--storage.tsdb.retention.size=1GB'
     volumes:
       - prometheus-config:/etc/prometheus:ro
     networks:
       - prod-private
 
   alertmanager:
-    image: prom/alertmanager
+    image: prom/alertmanager:v0.29.0
     restart: unless-stopped
     depends_on:
       prometheus-pre:
@@ -61,7 +66,7 @@ services:
       - prod-public
 
   nginx-exporter:
-    image: nginx/nginx-prometheus-exporter:latest
+    image: nginx/nginx-prometheus-exporter:1.5.0
     depends_on:
       nginx:
         condition: service_started
@@ -71,7 +76,7 @@ services:
       - prod-private
 
   grafana:
-    image: grafana/grafana
+    image: grafana/grafana:12.2.1
     restart: unless-stopped
     environment:
       - GF_SECURITY_ADMIN_USER=${GRAFANA_ADMIN_USER}
@@ -81,21 +86,30 @@ services:
       - GF_SECURITY_ALLOW_EMBEDDING=true
       - GF_SERVER_ENABLE_GZIP=true
       - GF_SERVER_ROUTER_LOGGING=true
+      - GF_AUTH_GOOGLE_CLIENT_ID=${GRAFANA_OAUTH_CLIENT_ID}
+      - GF_AUTH_GOOGLE_CLIENT_SECRET=${GRAFANA_OAUTH_CLIENT_SECRET}
+      - GF_AUTH_GOOGLE_REDIRECT_URI=http://localhost:${GRAFANA_PORT:-3002}/grafana/login/google
+      - GF_SERVER_DOMAIN=localhost
+      - GF_SERVER_HTTP_PORT=${GRAFANA_PORT:-3002}
+      - GF_SERVER_ENFORCE_DOMAIN=false
+      - GF_SECURITY_COOKIE_SAMESITE=lax
     volumes:
       - grafana-storage:/var/lib/grafana
+      - ./monitoring/grafana/grafana.ini:/etc/grafana/grafana.ini
       - ./monitoring/grafana/provisioning:/etc/grafana/provisioning
       - ./monitoring/grafana/dashboards/:/etc/grafana/dashboards
     healthcheck:
       test:
         - CMD-SHELL
         - |
-          curl -sf http://localhost:3000/api/health \
+          curl -sf http://localhost:${GRAFANA_PORT:-3002}/api/health \
           | grep -q '"database": "ok"'
       interval: 5s
       timeout: 5s
       retries: 100
     networks:
       - prod-private
+      - prod-public
 
   grafana-setup:
     build:
@@ -104,12 +118,13 @@ services:
       grafana:
         condition: service_healthy
     environment:
-      - GRAFANA_URL=http://grafana:${GRAFANA_PORT}
+      - GRAFANA_URL=http://grafana:${GRAFANA_PORT:-3002}
       - ADMIN_USER=${GRAFANA_ADMIN_USER}
       - ADMIN_PASS=${GRAFANA_ADMIN_PASS}
-      - NEW_NAME=${GRAFANA_USER_NAME}
-      - NEW_LOGIN=${GRAFANA_USER_NAME}
-      - NEW_PASS=${GRAFANA_USER_PASS}
+      - EDITOR_NAME=${GRAFANA_EDITOR_NAME}
+      - EDITOR_PASS=${GRAFANA_EDITOR_PASS}
+      - VIEWER_NAME=${GRAFANA_VIEWER_NAME}
+      - VIEWER_PASS=${GRAFANA_VIEWER_PASS}
     networks:
       - prod-private
 
