@@ -6,7 +6,8 @@ import {
 } from '../utils/config.ts';
 
 const MATCHES_METRIC = 'game_server_matches';
-const PROM_QUERY = `sum(${MATCHES_METRIC})`;
+// We only trust the dedicated game-servers scrape job because node-backend scrapes the same HTTP endpoint as well.
+const PROM_QUERY = `sum(max by (instance) (${MATCHES_METRIC}{job="game-servers"}))`;
 const PROM_TIMEOUT_MS = 2500;
 const NODE_TIMEOUT_MS = 1500;
 
