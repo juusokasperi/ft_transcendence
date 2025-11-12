@@ -1,4 +1,4 @@
-name: Makefile CI
+name: Makefile Prod CI
 
 on:
   workflow_dispatch:
@@ -28,7 +28,7 @@ jobs:
         uses: docker/setup-buildx-action@v3
 
       - name: Build all services
-        run: make detached
+        run: make prod-detached
 
       - name: Stop all services
         run: make down
@@ -47,7 +47,7 @@ jobs:
               return;
             }
             const body = [
-              '**Makefile CI** failed.',
+              '**Makefile Prod CI** failed.',
               `Commit: \`${process.env.GITHUB_SHA.slice(0,7)}\``,
               `Logs: ${process.env.GITHUB_SERVER_URL}/${process.env.GITHUB_REPOSITORY}/actions/runs/${process.env.GITHUB_RUN_ID}`
             ].join('\n');
