@@ -68,11 +68,11 @@ echo ""
 
 # Define test users
 declare -a USERS=(
-    "test1:test1@example.com:TestUser1"
-    "test2:test2@example.com:TestUser2"
-    "test3:test3@example.com:TestUser3"
-    "test4:test4@example.com:TestUser4"
-    "test5:test5@example.com:TestUser5"
+    "test1:test1@example.com"
+    "test2:test2@example.com"
+    "test3:test3@example.com"
+    "test4:test4@example.com"
+    "test5:test5@example.com"
 )
 
 echo -e "${BLUE}Creating 5 test users...${NC}"
@@ -83,7 +83,7 @@ SQL_FILE=$(mktemp)
 trap "rm -f $SQL_FILE" EXIT
 
 for USER_DATA in "${USERS[@]}"; do
-    IFS=':' read -r USERNAME EMAIL DISPLAY_NAME <<< "$USER_DATA"
+    IFS=':' read -r USERNAME EMAIL <<< "$USER_DATA"
     UUID=$(uuidgen | tr '[:upper:]' '[:lower:]')
     
     echo -e "${BLUE}  → ${USERNAME} (${EMAIL})${NC}"
@@ -93,8 +93,13 @@ for USER_DATA in "${USERS[@]}"; do
     
     # Create INSERT statement
     cat >> "$SQL_FILE" << EOF
+.param init
+.param set :uuid '${UUID}'
+.param set :username '${USERNAME}'
+.param set :hash '${ESCAPED_HASH}'
+.param set :email '${EMAIL}'
 INSERT OR IGNORE INTO Users (uuid, username, password_hash, email, avatar, ranking)
-VALUES ('${UUID}', '${USERNAME}', '${ESCAPED_HASH}', '${EMAIL}', NULL, 1000);
+VALUES (:uuid, :username, :hash, :email, NULL, 1000);
 EOF
 done
 
