@@ -1,7 +1,9 @@
 #!/usr/bin/env node
-import { readFileSync } from 'node:fs';
-import { resolve, dirname, isAbsolute } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { readFileSync } from 'fs';
+import { resolve, dirname, isAbsolute } from 'path';
+import { fileURLToPath } from 'url';
+
+// NOTE: this file aims to keep compatibility with node.js version 12
 
 const REQUIRED_VARS = [
   'PNPM_VERSION',
@@ -174,7 +176,7 @@ function parseEnv(content) {
     }
 
     const key = match[1];
-    const value = decodeValue(match[2] ?? '');
+    const value = decodeValue(match[2] != null ? match[2] : '');
     env.set(key, value);
   });
 
@@ -235,7 +237,7 @@ function main() {
 
   if (args.printExports) {
     for (const key of REQUIRED_VARS) {
-      const value = env.get(key) ?? '';
+      const value = env.get(key) != null ? env.get(key) : '';
       console.log(`export ${key}=${shellEscape(value)}`);
     }
     return;
