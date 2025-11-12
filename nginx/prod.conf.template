@@ -7,6 +7,34 @@ map $http_upgrade $connection_upgrade {
   ''      close;
 }
 
+# Extract JWT token from cookie
+map $cookie_token $jwt_token {
+  default $cookie_token;
+  ''      close;
+}
+
+# Use JWT token for rate limiting in available, otherwise fallback to IP
+map $jwt_token $rate_limit_key {
+  'anonymous' $binary_remote_addr;
+  default     $jwt_token;
+}
+
+##
+# Rate limiting zones based on authentication token or IP
+# General API rate limiting - 10 req per sec per user/IP (burst of 20)
+limit_req_zone $rate_limit_key zone=api_limit:10m rate=10r/s;
+
+# Authentication endpoints - 10 req per min per IP
+# Based on IP since authenticating users don't yet have a token
+# More lenient to allow multiple users behind same NAT/proxy
+limit_req_zone $binary_remote_addr zone=auth_limit:10m rate=10r/m;
+
+# File uploads - 5 req per min per user
+limit_req_zone $rate_limit_key zone=upload_limit:10m rate=5r/m;
+
+# Gameserver - allow rapid input changes (30/sec with burst)
+limit_req_zone $rate_limit_key zone=game_input_limit:10m rate=30r/s;
+
 # Redirect HTTP to HTTPS
 # uses templating so that we can use non-standard ports: redirect port 80
 # to whatever is actually our HTTPS port
@@ -32,8 +60,17 @@ server {
   ssl_ciphers HIGH:!aNULL:!MD5;
   ssl_prefer_server_ciphers on;
 
+  # Error page for rate limiting
+  error_page 429 /429.html;
+    location = 429.html {
+      internal;
+      default_type application/json;
+      return 429 '{"message": "Too many requests. Please try again later."'};
+    }
+
   #  ---------- API -> backend ----------
   location /api/ {
+    limit_req zone=api_limit burst=20 nodelay;
     proxy_pass http://backend:${BACKEND_PORT};
     proxy_http_version 1.1;
 
@@ -50,14 +87,34 @@ server {
     proxy_send_timeout 300s;
   }
 
+  #  ---------- API -> backend auth endpoints ----------
+  location ~ ^/api/(login|signup|auth|reset-password) {
+    limit_req zone=auth_limit burst=10 nodelay;
+
+    proxy_pass http://backend:${BACKEND_PORT};
+    proxy_http_version 1.1;
+
+    proxy_set_header Host               $http_host;
+    proxy_set_header X-Forwarded-Proto  $scheme;
+    proxy_set_header X-Forwarded-Host   $http_host;
+    proxy_set_header X-Forwarded-Port   $server_port;
+    proxy_set_header X-Forwarded-For    $proxy_add_x_forwarded_for;
+
+    proxy_read_timeout 300s;
+    proxy_send_timeout 300s;
+  }
+
   # ---------- Static uploads via backend ----------
   location /uploads/ {
+    limit_req zone=upload_limit burst=5 nodelay;
     proxy_pass http://backend:${BACKEND_PORT};
     proxy_http_version 1.1;
     proxy_set_header Host $http_host;
   }
 
   location /g/ {
+    limit_req zone=game_input_limit burst=60 nodelay;
+
     proxy_pass http://game-gateway:${GATEWAY_PORT};
     proxy_http_version 1.1;
 
@@ -72,9 +129,13 @@ server {
 
     proxy_read_timeout 300s;
     proxy_send_timeout 300s;
+
+    proxy_buffering off;
   }
 
   location /matchmaking {
+    limit_req zone=api_limit burst=10 nodelay;
+
     proxy_pass http://matchmaking-service:${MATCHMAKING_PORT};
     proxy_http_version 1.1;
 
@@ -89,6 +150,8 @@ server {
 
     proxy_read_timeout 300s;
     proxy_send_timeout 300s;
+
+    proxy_buffering off;
   }
 
   location /game-server {
@@ -109,6 +172,8 @@ server {
   }
 
   location /chat {
+    limit_req zone=api_limit burst=15 nodelay;
+
     proxy_pass http://chat-service:${CHAT_PORT};
     proxy_http_version 1.1;
     proxy_set_header Upgrade $http_upgrade;
@@ -117,6 +182,8 @@ server {
 
     proxy_read_timeout 3600s;
     proxy_send_timeout 3600s;
+
+    proxy_buffering off;
   }
 
   # Redirect plain /kibana (no slash) to /kibana/
