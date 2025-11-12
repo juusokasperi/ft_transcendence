@@ -36,6 +36,7 @@
     "@fastify/swagger-ui": "^5.2.3",
     "@utils/logger": "workspace:*",
     "@utils/metrics": "workspace:*",
+    "@utils/types": "workspace:*",
     "bcrypt": "^6.0.0",
     "better-sqlite3": "^12.2.0",
     "dotenv": "^17.2.2",

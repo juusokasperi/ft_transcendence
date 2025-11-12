@@ -9,59 +9,16 @@ import { DesktopMatches, MobileMatches } from '../components/StatsMatches';
 import { StatsSection } from '../components/StatsOverview';
 import { useRequireAuth } from '../hooks/useRequireAuth';
 import FriendshipStatus from '../components/FriendshipStatus';
-import type { Friendship } from '../types';
 import { Spinner } from '@ft/spinner';
-
-interface UserStats {
-  username: string;
-  uuid: string;
-  avatar: string | null;
-  ranking: number;
-  createdAt: string;
-  wins: number;
-  losses: number;
-  totalMatches: number;
-  online: boolean;
-}
-
-interface MatchPlayerPublic {
-  uuid: string;
-  username: string;
-  avatar: string | null;
-  ranking: number;
-  createdAt: string;
-  rankingDelta: number;
-  stats?: MatchPlayerStats;
-}
-
-interface Match {
-  id: number;
-  team1Score: number;
-  team2Score: number;
-  players: {
-    team1: (MatchPlayerPublic | null)[];
-    team2: (MatchPlayerPublic | null)[];
-  };
-  playedAt: string;
-  tournamentId: number | null;
-  tournamentStage: string | null;
-}
+import type {
+  UserStats,
+  MatchWithPlayers as Match,
+  FriendshipStatus as Friendship,
+} from '@utils/types';
+import type { MatchPlayerStats } from '../types';
 
 interface FriendshipStatus {
   status: Friendship;
-}
-
-interface MatchPlayerStats {
-  uuid?: string;
-  pointsScored: number;
-  pointsConceded: number;
-  gamesWon: number;
-  gamesLost: number;
-  maxPointLead: number;
-  matchesWon?: number;
-  matchesLost?: number;
-  ranking?: number;
-  createdAt?: string | null;
 }
 
 const PublicUser: React.FC = () => {

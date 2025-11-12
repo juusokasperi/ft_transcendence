@@ -3,7 +3,7 @@ import type { MatchSession, PlayerConnectionState } from './RoomRegistry.ts';
 import type { FastifyBaseLogger } from '@utils/logger';
 import type { AppConfig } from './Config.ts';
 import { resolveRoomState } from '../domain/RoomReservation.ts';
-import type { RoomState } from '@pong/shared/protocol/net';
+import type { RoomState, MatchEndReason } from '@pong/shared/protocol/net';
 
 function safeSend(
   socket: WebSocket | undefined,
@@ -113,7 +113,7 @@ export class Broadcaster {
 
   notifyMatchEnd(
     session: MatchSession,
-    reason: 'opponent_timeout' | 'forfeit' | 'completed' | 'error',
+    reason: MatchEndReason,
     winner?: 'east' | 'west',
     summary: unknown = null,
   ): void {
