@@ -4,7 +4,7 @@ import ConfirmDialog from './ConfirmDialog';
 import { useAppContext } from '../context/AppContext';
 import { useSnackbar } from '../context/SnackbarContext';
 import { AxiosError } from 'axios';
-import type { Friendship } from '../types';
+import type { FriendshipStatus as Friendship } from '@utils/types';
 
 interface Props {
   friendship: Friendship;

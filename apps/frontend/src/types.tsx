@@ -1,4 +1,6 @@
 // src/types.ts
+import type { MatchPlayerStats as MatchPlayerStatsBase } from '@utils/types';
+
 export interface User {
   id: number;
   uuid: string;
@@ -11,4 +13,10 @@ export interface User {
   tfaEnabled: boolean;
 }
 
-export type Friendship = 'friends' | 'request_sent' | 'request_received' | 'none';
+export interface MatchPlayerStats extends MatchPlayerStatsBase {
+  uuid?: string;
+  matchesWon?: number;
+  matchesLost?: number;
+  ranking?: number;
+  createdAt?: string | null;
+}

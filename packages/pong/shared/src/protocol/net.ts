@@ -1,4 +1,4 @@
-import type { GameHistoryEntry } from './state';
+import type { GameHistoryEntry, MatchSnapshot } from './state';
 
 export type TournamentParticipantMapping = {
   participantId: number;
@@ -281,11 +281,25 @@ export type OpponentReconnectedMessage = {
   type: 'OPPONENT_RECONNECTED';
 };
 
+export type MatchEndReason = 'opponent_timeout' | 'completed' | 'error' | 'forfeit';
+
 export type MatchEndMessage = {
   type: 'MATCH_END';
-  reason: 'opponent_timeout' | 'completed' | 'error';
+  reason: MatchEndReason;
   winner?: 'east' | 'west';
   summary?: OnlineMatchSummary | null;
+};
+
+export type FrameMessage = {
+  type: 'FRAME';
+  state: any;
+  events: any;
+  match: MatchSnapshot;
+};
+
+export type ResumeTokenMessage = {
+  type: 'RESUME_TOKEN';
+  token: string;
 };
 
 export type ResumeTokenClaims = {
@@ -300,10 +314,12 @@ export type ResumeTokenClaims = {
 };
 
 export type GameServerControlMessage =
+  | FrameMessage
   | RoomStateMessage
   | StartMessage
   | OpponentDisconnectedMessage
   | OpponentReconnectedMessage
+  | ResumeTokenMessage
   | MatchEndMessage;
 
 // Types that were in blueprint but not implemented:

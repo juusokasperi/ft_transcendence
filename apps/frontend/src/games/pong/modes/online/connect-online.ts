@@ -1,6 +1,11 @@
 import type { GameState } from '@pong/game-logic';
 import type { FrameEvents, MatchSnapshot } from '@pong/shared';
-import type { OnlineMatchSummary, RoomStateMessage, StartMessage } from '@pong/shared/protocol/net';
+import type {
+  GameServerControlMessage,
+  OnlineMatchSummary,
+  RoomStateMessage,
+  StartMessage,
+} from '@pong/shared/protocol/net';
 import type { PlayerSeat } from '@pong/render';
 import { wsUrl } from '../../../../utils/url';
 import { readJwtExpSec, clearResumeForRoom, saveResumeTokenToSession } from './resume';
@@ -170,7 +175,7 @@ export async function connectOnline(
       };
 
       const onMessage = (ev: MessageEvent) => {
-        let data: any;
+        let data: GameServerControlMessage;
         try {
           data = JSON.parse(ev.data as string);
         } catch (err) {
@@ -243,7 +248,7 @@ export async function connectOnline(
             saveResumeTokenToSession(token, roomIdentifier);
             break;
           default:
-            console.warn('[OnlineGame] Unknown message type:', data.type);
+            console.warn('[OnlineGame] Unknown message type');
             break;
         }
       };

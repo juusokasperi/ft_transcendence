@@ -7,18 +7,6 @@ export type Lobby = {
   membersCount: number;
 };
 
-// export type MatchmakingMessage =
-// | { type: 'lobbyList'; lobbies: Lobby[] }
-// | { type: 'lobbyAdded'; lobby: Lobby }
-// | { type: 'lobbyUpdated'; lobby: Lobby }
-// | { type: 'lobbyCreated'; lobbyId: string }
-// | { type: 'lobbyRemoved'; lobbyId: string }
-// | { type: 'invited'; lobbyId: string; from: string }
-// | { type: 'inviteAccepted'; memberId: string }
-// | { type: 'inviteDeclined'; memberId: string }
-// | { type: 'memberReady'; memberId: string; ready: boolean }
-// | { type: 'lobbyReady'; lobbyId: string };
-
 import { wsUrl } from '../utils/url';
 
 type MatchmakingClientLifecycleHandlers = {

@@ -134,12 +134,18 @@ importers:
       '@fastify/swagger-ui':
         specifier: ^5.2.3
         version: 5.2.3
+      '@pong/shared':
+        specifier: workspace:*
+        version: link:../../packages/pong/shared
       '@utils/logger':
         specifier: workspace:*
         version: link:../../packages/utils/logger
       '@utils/metrics':
         specifier: workspace:*
         version: link:../../packages/utils/metrics
+      '@utils/types':
+        specifier: workspace:*
+        version: link:../../packages/utils/types
       bcrypt:
         specifier: ^6.0.0
         version: 6.0.0
@@ -223,6 +229,15 @@ importers:
         specifier: ^8.17.0
         version: 8.18.3
     devDependencies:
+      '@types/jsonwebtoken':
+        specifier: ^9.0.10
+        version: 9.0.10
+      '@types/uuid':
+        specifier: ^10.0.0
+        version: 10.0.0
+      '@types/ws':
+        specifier: ^8.18.1
+        version: 8.18.1
       pino-pretty:
         specifier: ^13.1.2
         version: 13.1.2
@@ -232,6 +247,12 @@ importers:
       typescript:
         specifier: ^5.5.0
         version: 5.9.3
+      vite:
+        specifier: ^7.1.5
+        version: 7.1.12(@types/node@24.9.1)(jiti@2.6.1)(lightningcss@1.30.2)(tsx@4.20.6)(yaml@2.8.1)
+      vite-tsconfig-paths:
+        specifier: ^5.1.4
+        version: 5.1.4(typescript@5.9.3)(vite@7.1.12(@types/node@24.9.1)(jiti@2.6.1)(lightningcss@1.30.2)(tsx@4.20.6)(yaml@2.8.1))
 
   apps/frontend:
     dependencies:
@@ -265,6 +286,9 @@ importers:
       '@pong/shared':
         specifier: workspace:*
         version: link:../../packages/pong/shared
+      '@utils/types':
+        specifier: workspace:*
+        version: link:../../packages/utils/types
       axios:
         specifier: ^1.12.0
         version: 1.13.2
@@ -601,13 +625,6 @@ importers:
         version: 5.9.3
 
   packages/utils/spinner:
-    dependencies:
-      react:
-        specifier: ^17.0.0 || ^18.0.0 || ^19.0.0
-        version: 19.2.0
-      react-dom:
-        specifier: ^17.0.0 || ^18.0.0 || ^19.0.0
-        version: 19.2.0(react@19.2.0)
     devDependencies:
       '@types/react':
         specifier: ^19.1.12
@@ -615,6 +632,14 @@ importers:
       '@types/react-dom':
         specifier: ^19.1.9
         version: 19.2.2(@types/react@19.2.2)
+      react:
+        specifier: ^19.1.1
+        version: 19.2.0
+      react-dom:
+        specifier: ^19.1.1
+        version: 19.2.0(react@19.2.0)
+
+  packages/utils/types: {}
 
 packages:
 

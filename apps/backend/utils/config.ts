@@ -106,6 +106,11 @@ export const MAIL_TRANSPORT_CONFIG: MailTransportConfig | null =
       }
     : null;
 
+export const PROMETHEUS_URL = process.env.PROMETHEUS_URL ?? null;
+export const GAME_NODES_AMOUNT = numberFromEnv(process.env.GAME_NODES_AMOUNT, 1);
+export const GAME_SERVER_HTTP_PORT = process.env.GAME_SERVER_HTTP ?? null;
+export const GAME_SERVER_SERVICE = process.env.GAME_SERVER_SERVICE ?? 'game-server';
+
 // Export Swagger config
 export const swaggerConfig: SwaggerOptions = {
   openapi: {

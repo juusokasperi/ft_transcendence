@@ -29,6 +29,8 @@ COPY packages/pong/shared/package.json ./packages/pong/shared/package.json
 COPY packages/utils/logger/package.json ./packages/utils/logger/package.json
 COPY packages/utils/metrics/package.json ./packages/utils/metrics/package.json
 
+# help with cache invalidation for next step
+COPY pnpm-lock.yaml ./
 # Install dependencies with BuildKit cache mount for faster builds
 # This layer is cached as long as package files don't change
 RUN --mount=type=cache,id=pnpm-store,target=/root/.local/share/pnpm/store \
