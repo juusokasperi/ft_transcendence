@@ -152,3 +152,15 @@ export function findUserActiveTournament(
     participantId: row.participant_id,
   };
 }
+
+type CountRow = { total: number };
+
+export function countTournamentsByStatus(status: string | string[]): number {
+  const statuses = Array.isArray(status) ? status : [status];
+  if (statuses.length === 0) return 0;
+  const placeholders = statuses.map(() => '?').join(', ');
+  const row = db
+    .prepare(`SELECT COUNT(*) as total FROM Tournaments WHERE status IN (${placeholders})`)
+    .get(...statuses) as CountRow | undefined;
+  return row?.total ?? 0;
+}

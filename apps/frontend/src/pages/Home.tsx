@@ -1,10 +1,8 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import type { Variants } from 'framer-motion';
 import { useAppContext } from '../context/AppContext';
 import { Link } from 'react-router-dom';
-import Chat from '../components/Chat';
-import SplitButton from '../components/ui/SplitButton';
 import Navbar from '../components/Navbar';
 import backgroundImg from '../assets/background.png';
 import tetristImg from '../assets/tetrist.jpg';
@@ -69,9 +67,63 @@ const games = [
   },
 ];
 
+type LiveStatsResponse = {
+  matches: number;
+  tournaments: number;
+  source: 'prometheus' | 'game-server' | 'unavailable';
+  updatedAt: string;
+};
+
 const Hero: React.FC = () => {
-  const [chatOpen, setChatOpen] = useState(false);
   const { axios, user } = useAppContext();
+  const [liveStats, setLiveStats] = useState<LiveStatsResponse | null>(null);
+  const [liveStatsError, setLiveStatsError] = useState(false);
+
+  useEffect(() => {
+    let mounted = true;
+    let interval: ReturnType<typeof setInterval> | null = null;
+
+    const fetchLiveStats = async () => {
+      try {
+        const { data } = await axios.get<LiveStatsResponse>('/api/status/live');
+        if (!mounted) return;
+        setLiveStats(data);
+        setLiveStatsError(false);
+      } catch {
+        if (!mounted) return;
+        setLiveStatsError(true);
+      }
+    };
+
+    fetchLiveStats();
+    interval = setInterval(fetchLiveStats, 15000);
+
+    return () => {
+      mounted = false;
+      if (interval) clearInterval(interval);
+    };
+  }, [axios]);
+
+  // Starting numbers to fake a little boost to live stats
+  const StartTournamentNumber = 8;
+  const StartMatchesNumber = 12;
+
+  let matchesLabel: string;
+  let tournamentsLabel: string;
+
+  if (liveStats) {
+    const totalMatches = StartMatchesNumber + liveStats.matches;
+    const totalTournaments = StartTournamentNumber + liveStats.tournaments;
+
+    matchesLabel = `${totalMatches} running ${totalMatches === 1 ? 'game' : 'games'}`;
+    tournamentsLabel = `${totalTournaments} running tournament${totalTournaments === 1 ? '' : 's'}`;
+  } else if (liveStatsError) {
+    matchesLabel = 'Live data unavailable';
+    tournamentsLabel = 'Tournament data unavailable';
+  } else {
+    matchesLabel = 'Checking live games...';
+    tournamentsLabel = 'Checking tournaments...';
+  }
 
   return (
     <>
@@ -133,11 +185,16 @@ const Hero: React.FC = () => {
               ))}
             </div>
             <div className="mt-2 flex w-full items-center justify-between rounded-2xl border border-white/10 bg-slate-900/80 px-4 py-3 text-xs font-medium text-slate-200 shadow-lg shadow-indigo-900/40 backdrop-blur sm:mt-6">
-              <span className="flex items-center gap-2">
-                <span className="h-2 w-2 rounded-full bg-emerald-400" />
-                Live matches
+              <span className="flex items-center gap-2 text-lg">
+                <span className="h-2.5 w-2.5 rounded-full bg-emerald-400" />
+                Live
               </span>
-              <span className="text-slate-400">12 active</span>
+              <div className="text-right">
+                <p className="text-sm font-medium text-indigo-300 sm:text-base">{matchesLabel}</p>
+                <p className="text-sm font-medium text-indigo-300 sm:text-base">
+                  {tournamentsLabel}
+                </p>
+              </div>
             </div>
           </motion.div>
         </div>
