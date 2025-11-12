@@ -1,8 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import AuthForm from '../components/AuthForm';
 import { useAppContext } from '../context/AppContext';
-import type { AxiosError } from 'axios';
-import type { AxiosResponse } from 'axios';
+import type { AxiosError, AxiosResponse } from 'axios';
 import { Link } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 import { useSnackbar } from '../context/SnackbarContext';

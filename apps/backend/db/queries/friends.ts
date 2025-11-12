@@ -1,5 +1,5 @@
 import db from '../client.ts';
-import type { FriendshipStatus, PublicUser, UserStats } from '../../types/types.ts';
+import type { FriendshipStatus, PublicUser, UserStats } from '@utils/types';
 import type { PublicUserDb, UserStatsDb } from '../../types/dbtypes.ts';
 
 export function getFriends(user1Uuid: string): UserStats[] {

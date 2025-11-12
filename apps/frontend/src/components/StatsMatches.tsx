@@ -1,5 +1,5 @@
 import { formatDate } from '../utils/formatDate';
-import type { Match } from '../pages/Stats';
+import type { MatchWithPlayers as Match } from '@utils/types';
 import { Link } from 'react-router-dom';
 import { useAppContext } from '../context/AppContext';
 import { toneClass } from '../utils/toneClass';

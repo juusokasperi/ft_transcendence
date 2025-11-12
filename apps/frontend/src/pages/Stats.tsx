@@ -6,42 +6,8 @@ import Navbar from '../components/Navbar';
 import { useSnackbar } from '../context/SnackbarContext';
 import { DesktopMatches, MobileMatches } from '../components/StatsMatches';
 import { StatsSection } from '../components/StatsOverview';
-
-interface MatchPlayerPublic {
-  uuid: string;
-  username: string;
-  avatar: string | null;
-  ranking: number;
-  createdAt: string;
-  rankingDelta: number;
-  stats?: MatchPlayerStats;
-}
-
-export interface Match {
-  id: number;
-  team1Score: number;
-  team2Score: number;
-  players: {
-    team1: (MatchPlayerPublic | null)[];
-    team2: (MatchPlayerPublic | null)[];
-  };
-  playedAt: string;
-  tournamentId: number | null;
-  tournamentStage: string | null;
-}
-
-export interface MatchPlayerStats {
-  uuid?: string;
-  pointsScored: number;
-  pointsConceded: number;
-  gamesWon: number;
-  gamesLost: number;
-  maxPointLead: number;
-  matchesWon?: number;
-  matchesLost?: number;
-  ranking?: number;
-  createdAt?: string | null;
-}
+import type { MatchWithPlayers as Match } from '@utils/types';
+import type { MatchPlayerStats } from '../types.tsx';
 
 const Stats: React.FC = () => {
   const [matches, setMatches] = useState<Match[]>([]);
