@@ -32,6 +32,7 @@ services:
         PNPM_VERSION: ${PNPM_VERSION:-9.12.3}
         SERVICE_NAME: api
         SERVICE_DIR: backend
+        INSTALL_SQLITE: "true"
     image: ft-transcendence-backend-prod:latest
     init: true
     restart: unless-stopped
