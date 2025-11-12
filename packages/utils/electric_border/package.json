@@ -2,18 +2,17 @@
   "name": "@ft/electric_border",
   "version": "0.1.0",
   "private": false,
-  "main": "dist/index.js",
-  "module": "dist/index.js",
-  "types": "dist/index.d.ts",
+  "type": "module",
+  "main": "./src/index.tsx",
+  "types": "./src/index.tsx",
   "exports": {
     ".": {
-      "import": "./dist/index.js",
-      "require": "./dist/index.js",
-      "types": "./dist/index.d.ts"
+      "types": "./src/index.tsx",
+      "import": "./src/index.tsx"
     }
   },
   "files": [
-    "dist"
+    "src"
   ],
   "scripts": {
     "build": "rimraf dist && tsc -b",
