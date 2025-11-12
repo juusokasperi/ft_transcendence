@@ -8,11 +8,12 @@ import SplitButton from './ui/SplitButton';
 import Button from './Button';
 import type { AxiosInstance } from 'axios';
 import { useChatContext } from '../context/ChatContext';
+import type { UserStats } from '@utils/types';
 
 async function fetchUserUuidByUsername(
   axios: AxiosInstance,
   targetUser: string,
-): Promise<any | null> {
+): Promise<UserStats | null> {
   try {
     const res = await axios.get(`/api/users/${targetUser}`);
     return res.data;
@@ -66,7 +67,7 @@ export default function Chat({
   const [dmTarget, setDmTarget] = useState<string | null>(null);
   // profile card state
   const [profileLoading, setProfileLoading] = useState(false);
-  const [profileData, setProfileData] = useState<any | null>(null);
+  const [profileData, setProfileData] = useState<UserStats | null>(null);
   const [profileOpen, setProfileOpen] = useState(false);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [pendingNavId, setPendingNavId] = useState<string | null>(null);
