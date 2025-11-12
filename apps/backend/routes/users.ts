@@ -61,14 +61,6 @@ import { generateAuthenticatorSecret, verifyTotpToken } from '../utils/twoFactor
 import { getMatchesWithPlayersForUser } from '../db/queries/matches.ts';
 import { getTotalStatsForUser } from '../db/queries/matchPlayerStats.ts';
 
-/*
-	TO DO:
-
-	// Add routes for 2 Factor Auth? Which will also require some additional
-	// fields to User table in database. At least one for the secret, maybe one for backup codes?
-
-*/
-
 export async function userRoutes(app: FastifyInstance) {
   // Get all users
   // app.get('/', { schema: getAllUsersSchema }, async (req: FastifyRequest, res: FastifyReply) => {
