@@ -143,6 +143,9 @@ importers:
       '@utils/metrics':
         specifier: workspace:*
         version: link:../../packages/utils/metrics
+      '@utils/types':
+        specifier: workspace:*
+        version: link:../../packages/utils/types
       bcrypt:
         specifier: ^6.0.0
         version: 6.0.0
@@ -265,6 +268,9 @@ importers:
       '@pong/shared':
         specifier: workspace:*
         version: link:../../packages/pong/shared
+      '@utils/types':
+        specifier: workspace:*
+        version: link:../../packages/utils/types
       axios:
         specifier: ^1.12.0
         version: 1.12.2
@@ -593,6 +599,8 @@ importers:
       '@types/react-dom':
         specifier: ^19.1.9
         version: 19.2.2(@types/react@19.2.2)
+
+  packages/utils/types: {}
 
 packages:
 
