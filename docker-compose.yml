@@ -167,6 +167,12 @@ services:
     depends_on:
       deps:
         condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:55554/health || exit 1"]
+      interval: 5s
+      timeout: 2s
+      retries: 10
+      start_period: 5s
     networks: [devnet]
     logging: *logstash-logging
 
@@ -254,9 +260,9 @@ services:
       redis:
         condition: service_started
       game-server:
-        condition: service_started
+        condition: service_healthy
       game-server-2:
-        condition: service_started
+        condition: service_healthy
     networks: [devnet]
     ports:
       - "4008:4008"
