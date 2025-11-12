@@ -71,14 +71,14 @@ import { getTotalStatsForUser } from '../db/queries/matchPlayerStats.ts';
 
 export async function userRoutes(app: FastifyInstance) {
   // Get all users
-  app.get('/', { schema: getAllUsersSchema }, async (req: FastifyRequest, res: FastifyReply) => {
-    try {
-      const users = getUserStats();
-      res.status(200).send(users);
-    } catch (error) {
-      res.status(500).send({ message: 'Failed to fetch users' });
-    }
-  });
+  // app.get('/', { schema: getAllUsersSchema }, async (req: FastifyRequest, res: FastifyReply) => {
+  //   try {
+  //     const users = getUserStats();
+  //     res.status(200).send(users);
+  //   } catch (error) {
+  //     res.status(500).send({ message: 'Failed to fetch users' });
+  //   }
+  // });
 
   // Get a single user
   app.get(
