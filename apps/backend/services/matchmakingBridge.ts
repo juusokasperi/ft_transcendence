@@ -42,9 +42,7 @@ export async function notifyMatchesReady(tournamentId: number, matchIds: number[
     if (roster.length !== 2) continue;
 
     // Exclude forfeited participants from ready consideration; do not schedule countdowns
-    const readyParticipants = roster.filter(
-      (p) => p.userUuid && p.status !== 'forfeited',
-    );
+    const readyParticipants = roster.filter((p) => p.userUuid && p.status !== 'forfeited');
     if (readyParticipants.length !== 2) continue;
 
     payload.matches.push({

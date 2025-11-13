@@ -283,17 +283,17 @@ async function isAgainstForfeitedParticipant(
 ): Promise<boolean> {
   // Find any authenticated tournament client to use their site token
   const tournamentClient = Array.from(clients.values()).find(
-    (client) => client.tournamentId === pending.tournamentId && client.authenticated && client.siteToken,
+    (client) =>
+      client.tournamentId === pending.tournamentId && client.authenticated && client.siteToken,
   );
   if (!tournamentClient) return false;
   const token = extractSiteToken(tournamentClient);
   if (!token) return false;
   try {
     const headers = { Authorization: `Bearer ${token}` };
-    const res = await axios.get(
-      `${API_URL}/api/tournaments/${pending.tournamentId}/participants`,
-      { headers },
-    );
+    const res = await axios.get(`${API_URL}/api/tournaments/${pending.tournamentId}/participants`, {
+      headers,
+    });
     const statuses = new Map<number, string>(
       (res.data as Array<{ id: number; status: string }>).map((p) => [p.id, p.status]),
     );
@@ -1160,7 +1160,7 @@ export function handleClientDisconnectFromTournament(
 
   for (const pending of pendingTournamentMatches.values()) {
     if (pending.match.participants.some((participant) => participant.userUuid === client.uuid)) {
-    cancelTournamentCountdown(pending, clients, 'offline');
+      cancelTournamentCountdown(pending, clients, 'offline');
       if (pending.reminder) {
         clearTimeout(pending.reminder);
         pending.reminder = undefined;

@@ -54,7 +54,10 @@ function applyFinalOrBronzePlacement(
       updateTournamentParticipant(loserId, { status: 'eliminated' });
     }
   } catch (error) {
-    logger.error({ error, matchId: match.id }, '[TournamentOrchestrator] Failed to assign placements');
+    logger.error(
+      { error, matchId: match.id },
+      '[TournamentOrchestrator] Failed to assign placements',
+    );
   }
 
   const finalMatch = getTournamentMatchByRoundAndPosition(match.tournamentId, 2, 1);
@@ -106,7 +109,9 @@ function computeAutoWinForRoster(
   roster: Array<{ participantId: number; userUuid: string | null }>,
 ): AutoWin {
   if (roster.length !== 2) return null;
-  const [a, b] = roster;
+  const a = roster[0];
+  const b = roster[1];
+  if (!a || !b) return null;
   const pa = getTournamentParticipantById(a.participantId);
   const pb = getTournamentParticipantById(b.participantId);
   if (!pa || !pb) return null;
@@ -505,11 +510,7 @@ export function resolveOrphanedReadyMatches(tournamentId: number): {
     const autoWin = computeAutoWinForRoster(roster);
     if (!autoWin) continue;
 
-    const progression = completeMatchWithWinnerAndLoser(
-      m.id,
-      autoWin.winnerId,
-      autoWin.loserId,
-    );
+    const progression = completeMatchWithWinnerAndLoser(m.id, autoWin.winnerId, autoWin.loserId);
     completedMatches.push(progression.completedMatchId);
     readyToNotify.push(...progression.readyMatches);
   }
