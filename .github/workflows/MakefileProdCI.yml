@@ -36,7 +36,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: /tmp/.buildx-cache
-          key: ${{ runner.os }}-buildx-${{ hashFiles('**/pnpm-lock.yaml', '**/package.json', 'node.template.dockerfile', 'apps/frontend/prod.dockerfile') }}
+          key: ${{ runner.os }}-buildx-${{ hashFiles('**/pnpm-lock.yaml', '**/package.json', 'docker-compose-prod.yml', 'node.template.dockerfile', 'apps/frontend/prod.dockerfile', 'nginx/prod.conf.template', '.env.example', 'Makefile', '.config/tsconfig.*.json', 'tsconfig*.json') }}
           restore-keys: |
             ${{ runner.os }}-buildx-
 
