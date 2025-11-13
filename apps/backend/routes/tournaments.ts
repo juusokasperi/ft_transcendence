@@ -15,6 +15,7 @@ import {
   checkAndAutoCompleteTournament,
   forfeitParticipantInTournament,
   resolveOrphanedReadyMatches,
+  completeMatchWithWinnerAndLoser,
 } from '../services/tournamentOrchestrator.ts';
 import type { MatchProgression } from '../services/tournamentOrchestrator.ts';
 import { notifyMatchesReady, notifyTournamentStateUpdated } from '../services/matchmakingBridge.ts';
@@ -416,41 +417,16 @@ export async function tournamentRoutes(app: FastifyInstance) {
             );
           }
         } else if (match.roundNumber === 2) {
-          const applyStatusUpdate = (participantId: number, status: string) => {
-            const participant = updateTournamentParticipant(participantId, { status });
-            if (!participant) throw new Error('Failed to update participant status');
-            participantStatusUpdates.push({
-              participantId: participant.id,
-              status: participant.status,
-            });
-          };
+          // Use actual winner from score calculation if available, fallback to body
+          const finalWinner = actualWinnerParticipantId ?? body.winnerParticipantId;
+          const finalLoser = actualLoserParticipantId ?? body.loserParticipantId;
 
+          // Delegate placements and potential tournament completion to orchestrator helper
           try {
-            // Use actual winner from score calculation if available, fallback to body
-            const finalWinner = actualWinnerParticipantId ?? body.winnerParticipantId;
-            const finalLoser = actualLoserParticipantId ?? body.loserParticipantId;
-
-            if (match.roundPosition === 1) {
-              applyStatusUpdate(finalWinner, 'champion');
-              applyStatusUpdate(finalLoser, 'silver');
-            } else if (match.roundPosition === 2) {
-              applyStatusUpdate(finalWinner, 'third_place');
-              applyStatusUpdate(finalLoser, 'eliminated');
-            }
+            void completeMatchWithWinnerAndLoser(matchId, finalWinner, finalLoser);
           } catch (error) {
-            req.log.error({ error }, 'Failed to update participant status after tournament result');
-            return res.status(500).send({ message: 'Failed to update participant status' });
-          }
-
-          const finalMatch = getTournamentMatchByRoundAndPosition(tournamentId, 2, 1);
-          const bronzeMatch = getTournamentMatchByRoundAndPosition(tournamentId, 2, 2);
-
-          if (finalMatch?.status === 'completed' && bronzeMatch?.status === 'completed') {
-            tournamentUpdate = markTournamentCompleted(tournamentId);
-            if (!tournamentUpdate) {
-              const fallback = updateTournamentStatus(tournamentId, 'completed');
-              if (fallback) tournamentUpdate = fallback;
-            }
+            req.log.error({ error }, 'Failed to apply final/bronze placements');
+            return res.status(500).send({ message: 'Failed to apply placements' });
           }
         }
 

@@ -25,6 +25,109 @@ import { logger } from '@utils/logger';
 import { getTournamentMatchRoster } from '../db/queries/tournamentMatches.ts';
 import { getTournamentParticipantById } from '../db/queries/tournamentParticipants.ts';
 
+/**
+ * Determine if a participant status should be considered "active" in the bracket.
+ */
+function isActiveParticipantStatus(status: string | null | undefined): boolean {
+  if (!status) return false;
+  const terminal = new Set(['eliminated', 'forfeited', 'champion', 'silver', 'third_place']);
+  return !terminal.has(status);
+}
+
+type PlacementResult = { readyMatches: number[] };
+
+/**
+ * Apply placements for Final (roundPosition 1) or Bronze (roundPosition 2) and
+ * complete the tournament if both are completed.
+ */
+function applyFinalOrBronzePlacement(
+  match: { id: number; tournamentId: number; roundPosition: number },
+  winnerId: number,
+  loserId: number,
+): PlacementResult {
+  try {
+    if (match.roundPosition === 1) {
+      updateTournamentParticipant(winnerId, { status: 'champion' });
+      updateTournamentParticipant(loserId, { status: 'silver' });
+    } else {
+      updateTournamentParticipant(winnerId, { status: 'third_place' });
+      updateTournamentParticipant(loserId, { status: 'eliminated' });
+    }
+  } catch (error) {
+    logger.error({ error, matchId: match.id }, '[TournamentOrchestrator] Failed to assign placements');
+  }
+
+  const finalMatch = getTournamentMatchByRoundAndPosition(match.tournamentId, 2, 1);
+  const bronzeMatch = getTournamentMatchByRoundAndPosition(match.tournamentId, 2, 2);
+  if (finalMatch?.status === 'completed' && bronzeMatch?.status === 'completed') {
+    const completed = markTournamentCompleted(match.tournamentId);
+    if (!completed) updateTournamentStatus(match.tournamentId, 'completed');
+  }
+  return { readyMatches: [] };
+}
+
+type MatchAutoProgression = { completedMatchId: number; readyMatches: number[] };
+
+/**
+ * Complete the match with a known winner/loser and propagate the bracket.
+ */
+export function completeMatchWithWinnerAndLoser(
+  matchId: number,
+  winnerId: number,
+  loserId: number,
+): MatchAutoProgression {
+  const match = getTournamentMatchById(matchId);
+  if (!match) return { completedMatchId: matchId, readyMatches: [] };
+  if (match.status !== 'completed') {
+    updateTournamentMatchStatus(matchId, 'completed', { setCompletedAt: true });
+  }
+
+  if (match.roundNumber === 1) {
+    const progression = processSemifinalResult(matchId, {
+      manualResult: { winnerParticipantId: winnerId, loserParticipantId: loserId },
+    });
+    return { completedMatchId: matchId, readyMatches: progression?.readyMatches ?? [] };
+  }
+
+  if (match.roundNumber === 2) {
+    const placement = applyFinalOrBronzePlacement(match, winnerId, loserId);
+    return { completedMatchId: matchId, readyMatches: placement.readyMatches };
+  }
+
+  return { completedMatchId: matchId, readyMatches: [] };
+}
+
+type AutoWin = { winnerId: number; loserId: number } | null;
+
+/**
+ * Decide auto-winner due to forfeits or orphaned slots in a ready match roster.
+ */
+function computeAutoWinForRoster(
+  roster: Array<{ participantId: number; userUuid: string | null }>,
+): AutoWin {
+  if (roster.length !== 2) return null;
+  const [a, b] = roster;
+  const pa = getTournamentParticipantById(a.participantId);
+  const pb = getTournamentParticipantById(b.participantId);
+  if (!pa || !pb) return null;
+
+  const aForfeited = pa.status === 'forfeited';
+  const bForfeited = pb.status === 'forfeited';
+  if (aForfeited !== bForfeited) {
+    return aForfeited
+      ? { winnerId: b.participantId, loserId: a.participantId }
+      : { winnerId: a.participantId, loserId: b.participantId };
+  }
+  if (aForfeited && bForfeited) return null;
+
+  const aHasUser = !!a.userUuid;
+  const bHasUser = !!b.userUuid;
+  if (aHasUser === bHasUser) return null;
+  return aHasUser
+    ? { winnerId: a.participantId, loserId: b.participantId }
+    : { winnerId: b.participantId, loserId: a.participantId };
+}
+
 const REQUIRED_PARTICIPANTS = TOURNAMENT_REQUIRED_PARTICIPANTS;
 
 export type BracketGenerationSummary = {
@@ -268,45 +371,22 @@ export function processSemifinalResult(
 
   const bronzePlayers = listTournamentMatchPlayers(bronzeMatch.id);
   if (bronzePlayers.length === 2) {
-    // If a player reached bronze with a forfeited status (e.g., forfeited during semifinal),
-    // auto-resolve bronze immediately in favor of the other player instead of leaving it READY.
     const p1 = getTournamentParticipantById(bronzePlayers[0]!.participantId);
     const p2 = getTournamentParticipantById(bronzePlayers[1]!.participantId);
-
-    const isForfeited = (p?: ReturnType<typeof getTournamentParticipantById>) =>
-      p?.status === 'forfeited';
-
-    if (p1 && p2 && (isForfeited(p1) || isForfeited(p2))) {
-      // Complete bronze match immediately
+    const p1Forfeited = p1?.status === 'forfeited';
+    const p2Forfeited = p2?.status === 'forfeited';
+    if (p1 && p2 && (p1Forfeited || p2Forfeited)) {
       updateTournamentMatchStatus(bronzeMatch.id, 'completed', { setCompletedAt: true });
-
-      // If exactly one is forfeited, assign placements accordingly
-      const p1Forfeited = isForfeited(p1);
-      const p2Forfeited = isForfeited(p2);
       if (p1Forfeited !== p2Forfeited) {
-        const winner = p1Forfeited ? p2! : p1!;
-        const loser = p1Forfeited ? p1! : p2!;
-        try {
-          updateTournamentParticipant(winner.id, { status: 'third_place' });
-          updateTournamentParticipant(loser.id, { status: 'eliminated' });
-        } catch (error) {
-          logger.error({ error }, '[TournamentOrchestrator] Failed to assign bronze placements');
-        }
-
-        // If the Final is already completed as well, mark tournament complete.
-        const finalState = getTournamentMatchByRoundAndPosition(
-          tournamentMatch.tournamentId,
-          2,
-          1,
+        const winnerId = p1Forfeited ? p2.id : p1.id;
+        const loserId = p1Forfeited ? p1.id : p2.id;
+        applyFinalOrBronzePlacement(
+          { id: bronzeMatch.id, tournamentId: tournamentMatch.tournamentId, roundPosition: 2 },
+          winnerId,
+          loserId,
         );
-        if (finalState?.status === 'completed') {
-          const completed = markTournamentCompleted(tournamentMatch.tournamentId);
-          if (!completed) updateTournamentStatus(tournamentMatch.tournamentId, 'completed');
-        }
       }
-      // Do not push bronze as ready; it's handled.
     } else {
-      // Normal case: both players are active; mark bronze as ready.
       const updated = updateTournamentMatchStatus(bronzeMatch.id, 'ready');
       if (updated) readyMatches.push(bronzeMatch.id);
     }
@@ -327,16 +407,7 @@ export function checkAndAutoCompleteTournament(tournamentId: number): number | u
     return undefined;
   }
   const participants = listTournamentParticipants(tournamentId);
-
-  // Filter for active participants (not eliminated, forfeited, etc.)
-  const activeParticipants = participants.filter(
-    (p) =>
-      p.status !== 'eliminated' &&
-      p.status !== 'forfeited' &&
-      p.status !== 'champion' &&
-      p.status !== 'silver' &&
-      p.status !== 'third_place',
-  );
+  const activeParticipants = participants.filter((p) => isActiveParticipantStatus(p.status));
 
   // If only one active participant remains, make them champion
   if (activeParticipants.length === 1) {
@@ -380,75 +451,40 @@ export function forfeitParticipantInTournament(
   tournamentId: number,
   participantId: number,
 ): { readyMatches: number[]; completedMatchId?: number } {
-  // Ensure participant exists and is in the correct tournament
   const participant = getTournamentParticipantById(participantId);
   if (!participant || participant.tournamentId !== tournamentId) {
     return { readyMatches: [] };
   }
 
-  // Mark participant as forfeited if not already
   if (participant.status !== 'forfeited') {
     updateTournamentParticipant(participantId, { status: 'forfeited' });
   }
 
   const matches = listTournamentMatches(tournamentId).filter((m) => m.status !== 'completed');
+  let firstCompleted: number | undefined;
+  const readyMatches: number[] = [];
+
   for (const m of matches) {
-    const players = listTournamentMatchPlayers(m.id);
-    const inMatch = players.find((p) => p.participantId === participantId);
-    if (!inMatch) continue;
+    const roster = getTournamentMatchRoster(m.id);
+    const involved = roster.some((r) => r.participantId === participantId);
+    if (!involved) continue;
 
-    const opponent = players.find((p) => p.participantId !== participantId);
-
-    // Complete the match in favor of the opponent if available
-    updateTournamentMatchStatus(m.id, 'completed', { setCompletedAt: true });
-
-    // If there is no opponent in slot yet, nothing to propagate further
-    if (!opponent) {
-      return { readyMatches: [], completedMatchId: m.id };
+    const autoWin = computeAutoWinForRoster(roster);
+    if (!autoWin) {
+      updateTournamentMatchStatus(m.id, 'completed', { setCompletedAt: true });
+      if (!firstCompleted) firstCompleted = m.id;
+      continue;
     }
 
-    // Semifinal progression uses existing utility
-    if (m.roundNumber === 1) {
-      const progression = processSemifinalResult(m.id, {
-        manualResult: { winnerParticipantId: opponent.participantId, loserParticipantId: participantId },
-      });
-      return {
-        readyMatches: progression?.readyMatches ?? [],
-        completedMatchId: m.id,
-      };
-    }
-
-    // Finals/Bronze placement assignment
-    if (m.roundNumber === 2) {
-      try {
-        if (m.roundPosition === 1) {
-          updateTournamentParticipant(opponent.participantId, { status: 'champion' });
-          updateTournamentParticipant(participantId, { status: 'silver' });
-        } else if (m.roundPosition === 2) {
-          updateTournamentParticipant(opponent.participantId, { status: 'third_place' });
-          updateTournamentParticipant(participantId, { status: 'eliminated' });
-        }
-      } catch (error) {
-        logger.error({ error }, '[TournamentOrchestrator] Failed to assign placements after forfeit');
-      }
-
-      // If both final and bronze completed, mark tournament complete
-      const finalMatch = getTournamentMatchByRoundAndPosition(tournamentId, 2, 1);
-      const bronzeMatch = getTournamentMatchByRoundAndPosition(tournamentId, 2, 2);
-      if (finalMatch?.status === 'completed' && bronzeMatch?.status === 'completed') {
-        const completed = markTournamentCompleted(tournamentId);
-        if (!completed) {
-          updateTournamentStatus(tournamentId, 'completed');
-        }
-      }
-
-      return { readyMatches: [], completedMatchId: m.id };
-    }
+    const progression = completeMatchWithWinnerAndLoser(m.id, autoWin.winnerId, autoWin.loserId);
+    if (!firstCompleted) firstCompleted = progression.completedMatchId;
+    readyMatches.push(...progression.readyMatches);
   }
 
-  // No active match found; still check auto-completion scenarios
-  checkAndAutoCompleteTournament(tournamentId);
-  return { readyMatches: [] };
+  const sweep = resolveOrphanedReadyMatches(tournamentId);
+  readyMatches.push(...sweep.readyMatches);
+
+  return { readyMatches, completedMatchId: firstCompleted };
 }
 
 /**
@@ -466,45 +502,18 @@ export function resolveOrphanedReadyMatches(tournamentId: number): {
   const matches = listTournamentMatches(tournamentId).filter((m) => m.status === 'ready');
   for (const m of matches) {
     const roster = getTournamentMatchRoster(m.id);
-    if (roster.length !== 2) continue;
-    const withUser = roster.filter((r) => !!r.userUuid);
-    if (withUser.length !== 1) continue;
+    const autoWin = computeAutoWinForRoster(roster);
+    if (!autoWin) continue;
 
-    const winner = withUser[0]!;
-    const loser = roster.find((r) => r.participantId !== winner.participantId)!;
-
-    // Complete the match and progress
-    updateTournamentMatchStatus(m.id, 'completed', { setCompletedAt: true });
-    completedMatches.push(m.id);
-
-    if (m.roundNumber === 1) {
-      const progression = processSemifinalResult(m.id, {
-        manualResult: { winnerParticipantId: winner.participantId, loserParticipantId: loser.participantId },
-      });
-      if (progression?.readyMatches?.length) readyToNotify.push(...progression.readyMatches);
-    } else if (m.roundNumber === 2) {
-      try {
-        if (m.roundPosition === 1) {
-          updateTournamentParticipant(winner.participantId, { status: 'champion' });
-          updateTournamentParticipant(loser.participantId, { status: 'silver' });
-        } else {
-          updateTournamentParticipant(winner.participantId, { status: 'third_place' });
-          updateTournamentParticipant(loser.participantId, { status: 'eliminated' });
-        }
-      } catch (error) {
-        logger.error({ error }, '[TournamentOrchestrator] Failed to assign placements after orphan resolution');
-      }
-
-      const finalMatch = getTournamentMatchByRoundAndPosition(tournamentId, 2, 1);
-      const bronzeMatch = getTournamentMatchByRoundAndPosition(tournamentId, 2, 2);
-      if (finalMatch?.status === 'completed' && bronzeMatch?.status === 'completed') {
-        const completed = markTournamentCompleted(tournamentId);
-        if (!completed) updateTournamentStatus(tournamentId, 'completed');
-      }
-    }
+    const progression = completeMatchWithWinnerAndLoser(
+      m.id,
+      autoWin.winnerId,
+      autoWin.loserId,
+    );
+    completedMatches.push(progression.completedMatchId);
+    readyToNotify.push(...progression.readyMatches);
   }
 
-  // After resolving orphans, check if only one participant remains
   checkAndAutoCompleteTournament(tournamentId);
   return { completedMatches, readyMatches: readyToNotify };
 }
