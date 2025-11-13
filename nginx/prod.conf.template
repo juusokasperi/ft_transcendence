@@ -176,20 +176,42 @@ server {
     proxy_buffering off;
   }
 
+  # ---------- Site served from volume populated by the frontend container ----
+   location / {
+    root /usr/share/nginx/html;
+    index index.html;
+    try_files $uri /index.html;
+  }
+
+}
+
+# for metrics, only on docker network, used by nginx-prometheus-exporter
+server {
+  listen ${NGINX_STUB_STATUS_PORT};
+  server_name _;
+
+  access_log off;
+  location /stub_status {
+    stub_status;
+    allow 172.16.0.0/12;  # internal Docker subnet
+    deny all;
+  }
+}
+
+# Monitoring server - only accessible from host machine via 127.0.0.1:8082
+server {
+  listen 8082;
+  server_name _;
+
   # Redirect plain /kibana (no slash) to /kibana/
   location = /kibana {
     return 301 /kibana/;
   }
 
   location /kibana/ {
-    # Restrict access to localhost (Docker host) only
-    allow 127.0.0.1;           # Container's localhost
-    allow 172.16.0.0/12;       # Docker internal networks (includes gateway)
-    deny all;
-
     # Use variable to force runtime DNS resolution (won't fail at startup if kibana doesn't exist)
     set $kibana_upstream http://kibana:${KIBANA_PORT};
-    proxy_pass $kibana_upstream/;
+    proxy_pass $kibana_upstream;
     proxy_http_version 1.1;
 
     proxy_set_header Host               $http_host;
@@ -211,11 +233,6 @@ server {
   }
 
   location /grafana/ {
-    # Restrict access to localhost (Docker host) only
-    allow 127.0.0.1;           # Container's localhost
-    allow 172.16.0.0/12;       # Docker internal networks (includes gateway)
-    deny all;
-
     # Use variable to force runtime DNS resolution (won't fail at startup if grafana doesn't exist)
     set $grafana_upstream http://grafana:${GRAFANA_PORT};
     proxy_pass $grafana_upstream; # must NOT have trailing slash
@@ -235,26 +252,5 @@ server {
     proxy_send_timeout 300s;
 
     proxy_redirect off;
-  }
-
-  # ---------- Site served from volume populated by the frontend container ----
-   location / {
-    root /usr/share/nginx/html;
-    index index.html;
-    try_files $uri /index.html;
-  }
-
-}
-
-# for metrics, only on docker network, used by nginx-prometheus-exporter
-server {
-  listen ${NGINX_STUB_STATUS_PORT};
-  server_name _;
-
-  access_log off;
-  location /stub_status {
-    stub_status;
-    allow 172.16.0.0/12;  # internal Docker subnet
-    deny all;
   }
 }
