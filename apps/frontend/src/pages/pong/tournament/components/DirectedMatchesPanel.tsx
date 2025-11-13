@@ -70,7 +70,11 @@ const TournamentDirectedMatchesPanel: React.FC<TournamentDirectedMatchesPanelPro
                 countdownText = 'Launching match…';
                 countdownTone = 'text-sky-300';
               } else if (countdownInfo.status === 'cancelled') {
-                countdownText = 'Countdown paused — waiting for players';
+                if ((countdownInfo as any).reason === 'forfeited') {
+                  countdownText = 'Countdown cancelled — player left tournament';
+                } else {
+                  countdownText = 'Countdown paused — waiting for players';
+                }
                 countdownTone = 'text-amber-300';
               }
             }

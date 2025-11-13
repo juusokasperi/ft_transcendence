@@ -13,6 +13,7 @@ export function createCountdownSnapshot(
     status: payload.status,
     targetStartEpochMs: payload.targetStartEpochMs,
     secondsRemaining: payload.secondsRemaining,
+    reason: (payload as any).reason,
   };
 }
 

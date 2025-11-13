@@ -182,6 +182,37 @@ function evaluatePlayerAvailability(
   };
 }
 
+async function isAgainstForfeitedParticipant(
+  pending: PendingTournamentMatch,
+  clients: Map<string, ClientInfo>,
+): Promise<boolean> {
+  // Find any authenticated tournament client to use their site token
+  const tournamentClient = Array.from(clients.values()).find(
+    (client) => client.tournamentId === pending.tournamentId && client.authenticated && client.siteToken,
+  );
+  if (!tournamentClient) return false;
+  const token = extractSiteToken(tournamentClient);
+  if (!token) return false;
+  try {
+    const headers = { Authorization: `Bearer ${token}` };
+    const res = await axios.get(
+      `${API_URL}/api/tournaments/${pending.tournamentId}/participants`,
+      { headers },
+    );
+    const statuses = new Map<number, string>(
+      (res.data as Array<{ id: number; status: string }>).map((p) => [p.id, p.status]),
+    );
+    return pending.match.participants.some((p) => statuses.get(p.participantId) === 'forfeited');
+  } catch (error) {
+    log(
+      'Failed to check participant statuses when starting countdown',
+      { tournamentId: pending.tournamentId, error },
+      'warn',
+    );
+    return false;
+  }
+}
+
 function countdownSecondsRemaining(targetStartEpochMs: number) {
   return Math.max(0, Math.ceil((targetStartEpochMs - Date.now()) / 1000));
 }
@@ -191,7 +222,7 @@ function emitTournamentCountdown(
   clients: Map<string, ClientInfo>,
   status: TournamentMatchCountdownStatus,
   secondsRemaining: number,
-  options: { force?: boolean } = {},
+  options: { force?: boolean; reason?: 'offline' | 'forfeited' | 'stopped' } = {},
 ) {
   const countdown = pending.countdown;
   if (!countdown) return;
@@ -213,6 +244,7 @@ function emitTournamentCountdown(
     secondsRemaining,
     targetStartEpochMs: countdown.targetStartEpochMs,
     status,
+    reason: options.reason,
   };
 
   broadcastToTournament(pending.tournamentId, clients, payload);
@@ -228,11 +260,14 @@ function emitTournamentCountdown(
 function cancelTournamentCountdown(
   pending: PendingTournamentMatch,
   clients: Map<string, ClientInfo>,
-  reason: 'offline' | 'stopped' = 'offline',
+  reason: 'offline' | 'forfeited' | 'stopped' = 'offline',
 ) {
   if (!pending.countdown) return;
   const secondsRemaining = countdownSecondsRemaining(pending.countdown.targetStartEpochMs);
-  emitTournamentCountdown(pending, clients, 'cancelled', secondsRemaining, { force: true });
+  emitTournamentCountdown(pending, clients, 'cancelled', secondsRemaining, {
+    force: true,
+    reason,
+  });
   clearTournamentCountdown(pending);
   log('Cancelled tournament match countdown', {
     tournamentId: pending.tournamentId,
@@ -402,7 +437,21 @@ function handleSingleTournamentMatch(
     sendToClient(client, notification);
   }
 
-  startTournamentCountdown(pending, clients);
+  // Before starting countdown, ensure neither participant is forfeited
+  void (async () => {
+    const hasForfeit = await isAgainstForfeitedParticipant(pending!, clients);
+    if (hasForfeit) {
+      log(
+        'Skipping countdown for match with forfeited participant',
+        { tournamentId, matchId: match.tournamentMatchId },
+        'info',
+      );
+      // Ask for a tournament state sync to reflect any auto-resolved outcomes
+      await requestTournamentSync(tournamentId, clients, 'state_updated');
+      return;
+    }
+    startTournamentCountdown(pending!, clients);
+  })();
 }
 
 function extractSiteToken(client: ClientInfo) {
@@ -866,6 +915,20 @@ export async function handleLeaveTournament(client: ClientInfo, clients: Map<str
       participantId,
     });
 
+    // Cancel any pending countdowns involving this player; treat as forfeited for this match context
+    for (const [matchId, pending] of pendingTournamentMatches.entries()) {
+      if (pending.match.participants.some((p) => p.userUuid === client.uuid)) {
+        if (pending.reminder) clearTimeout(pending.reminder);
+        cancelTournamentCountdown(pending, clients, 'forfeited');
+        pendingTournamentMatches.delete(matchId);
+        log('Cancelled pending tournament match after player left tournament', {
+          tournamentId,
+          matchId,
+          uuid: client.uuid,
+        });
+      }
+    }
+
     await syncTournamentState(tournamentId, client, clients);
 
     unsubscribeClientFromTournament(tournamentId, client.id);
@@ -924,7 +987,7 @@ export async function handleForfeitTournament(
     for (const [matchId, pending] of pendingTournamentMatches.entries()) {
       if (pending.match.participants.some((participant) => participant.userUuid === client.uuid)) {
         if (pending.reminder) clearTimeout(pending.reminder);
-        cancelTournamentCountdown(pending, clients, 'stopped');
+        cancelTournamentCountdown(pending, clients, 'forfeited');
         pendingTournamentMatches.delete(matchId);
         log('Cancelled pending tournament match after forfeit', {
           tournamentId,
@@ -991,7 +1054,7 @@ export function handleClientDisconnectFromTournament(
 
   for (const pending of pendingTournamentMatches.values()) {
     if (pending.match.participants.some((participant) => participant.userUuid === client.uuid)) {
-      cancelTournamentCountdown(pending, clients, 'offline');
+    cancelTournamentCountdown(pending, clients, 'offline');
       if (pending.reminder) {
         clearTimeout(pending.reminder);
         pending.reminder = undefined;

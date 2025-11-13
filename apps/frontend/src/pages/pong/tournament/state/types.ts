@@ -24,6 +24,7 @@ export type CountdownSnapshot = {
   status: TournamentMatchCountdownStatus;
   targetStartEpochMs: number;
   secondsRemaining: number;
+  reason?: 'offline' | 'forfeited' | 'stopped';
 };
 
 export type ActiveHandoff = {
