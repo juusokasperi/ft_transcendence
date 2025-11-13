@@ -347,7 +347,9 @@ export function useTournamentPageController(
     dispatch({ type: 'setMatchPhase', payload: phase });
   }, []);
 
-  const { handleQuitMatch } = useMatchLifecycle({
+  const skipAutoResumeRef = useRef(false);
+
+  const { handleQuitMatch: handleQuitMatchInner } = useMatchLifecycle({
     matchPhase,
     setMatchPhase,
     handoff,
@@ -357,6 +359,71 @@ export function useTournamentPageController(
     debugLog,
     enqueueSnackbar,
   });
+
+  const handleQuitMatch = useCallback(() => {
+    skipAutoResumeRef.current = true;
+    handleQuitMatchInner();
+  }, [handleQuitMatchInner]);
+
+  // Auto-resume support: if the user lands on a tournament detail view while having
+  // a valid resume token in sessionStorage (from an in-progress match), automatically
+  // bootstrap the game using that token. This mirrors the OnlineGame behavior, but is
+  // scoped to the tournament page so it does not affect regular online gameplay.
+  useEffect(() => {
+    // Only in tournament detail view with a signed-in user
+    if (!userReady || !user) return;
+    if (activeTournamentId === null) return;
+    if (tournamentStatus === 'completed') return;
+    // Do not interfere if we are already starting/playing or have a live handoff
+    if (matchPhase === 'starting' || matchPhase === 'playing') return;
+    if (handoff) return;
+    if (skipAutoResumeRef.current) return;
+
+    // Find any stored resume token; tokens are short-lived and cleared on match end/forfeit,
+    // so the presence of a token strongly indicates an in-progress match.
+    (async () => {
+      try {
+        const { findAnyStoredResumeCandidate } = await import(
+          '../../../../games/pong/modes/online/resume'
+        );
+        const candidate = findAnyStoredResumeCandidate();
+        if (!candidate) return;
+
+        // Seed a synthetic handoff so the lifecycle hook boots the game. Seat and joinToken
+        // are placeholders; the online bootstrap will switch to resume mode using the token
+        // stored for this room.
+        setHandoff({
+          matchId: 'resume',
+          roomIdentifier: candidate.roomIdentifier,
+          gameServerWSUrl: `/g/${candidate.roomIdentifier}`,
+          joinToken: '',
+          randomSeed: 0,
+          side: 'east',
+        });
+        setMatchPhase('starting');
+        debugLog('auto-resume:attempt', {
+          tournamentId: activeTournamentId,
+          roomIdentifier: candidate.roomIdentifier,
+        });
+      } catch (err) {
+        // Fail silently; auto-resume is best-effort
+        if (import.meta.env?.DEV) {
+          // eslint-disable-next-line no-console
+          console.debug('[TournamentController] auto-resume unavailable', err);
+        }
+      }
+    })();
+  }, [
+    activeTournamentId,
+    debugLog,
+    handoff,
+    matchPhase,
+    setHandoff,
+    setMatchPhase,
+    tournamentStatus,
+    user,
+    userReady,
+  ]);
 
   return {
     user,
