@@ -25,6 +25,7 @@ COPY packages/pong/shared/package.json ./packages/pong/shared/package.json
 COPY packages/utils/logger/package.json ./packages/utils/logger/package.json
 COPY packages/utils/metrics/package.json ./packages/utils/metrics/package.json
 COPY packages/utils/spinner/package.json ./packages/utils/spinner/package.json
+COPY packages/utils/electric_border/package.json ./packages/utils/electric_border/package.json
 
 # Install dependencies with BuildKit cache mount for faster builds
 # This layer is cached as long as package files don't change
