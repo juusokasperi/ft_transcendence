@@ -28,7 +28,7 @@ export function useMatchLifecycle({
   debugLog,
   enqueueSnackbar,
 }: Options) {
-  const appRef = useRef<{ destroy(): void } | null>(null);
+  const appRef = useRef<{ destroy(): void; giveUp?: () => void } | null>(null);
   const rejoinTimerRef = useRef<number | null>(null);
   const refreshTimerRef = useRef<number | null>(null);
   const teardownInProgressRef = useRef(false);
@@ -156,6 +156,12 @@ export function useMatchLifecycle({
 
   const handleQuitMatch = useCallback(() => {
     debugLog('action:quit-match', { trigger: 'manual' });
+    // Intentionally forfeit the current online match so the server ends it
+    // and stops publishing resume tokens for our session. This preserves
+    // tournament membership while ending only the active match.
+    try {
+      appRef.current?.giveUp?.();
+    } catch {}
     performMatchTeardown({ refreshDelayMs: 1000 });
   }, [debugLog, performMatchTeardown]);
 

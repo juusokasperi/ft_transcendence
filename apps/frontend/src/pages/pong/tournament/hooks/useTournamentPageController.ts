@@ -362,8 +362,22 @@ export function useTournamentPageController(
 
   const handleQuitMatch = useCallback(() => {
     skipAutoResumeRef.current = true;
+    const roomId = handoff?.roomIdentifier;
+    if (roomId) {
+      // Clear any stored resume tokens for this room when the user intentionally quits.
+      // This mirrors online flow semantics and prevents immediate auto-resume loops.
+      (async () => {
+        try {
+          const { clearStoredResumeTokens } = await import(
+            '../../../../games/pong/modes/online/resume'
+          );
+          clearStoredResumeTokens(roomId);
+          debugLog('auto-resume:cleared-on-quit', { roomIdentifier: roomId });
+        } catch {}
+      })();
+    }
     handleQuitMatchInner();
-  }, [handleQuitMatchInner]);
+  }, [debugLog, handoff?.roomIdentifier, handleQuitMatchInner]);
 
   // Auto-resume support: if the user lands on a tournament detail view while having
   // a valid resume token in sessionStorage (from an in-progress match), automatically
