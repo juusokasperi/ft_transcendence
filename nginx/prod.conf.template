@@ -51,6 +51,9 @@ server {
 
   client_max_body_size 20m;
 
+  # Rate limit sends status 429
+  limit_req_status 429;
+
   # SSL certificate configuration
   ssl_certificate /etc/nginx/certs/cert.pem;
   ssl_certificate_key /etc/nginx/certs/key.pem;
@@ -62,10 +65,10 @@ server {
 
   # Error page for rate limiting
   error_page 429 /429.html;
-    location = 429.html {
+    location = /429.html {
       internal;
       default_type application/json;
-      return 429 '{"message": "Too many requests. Please try again later."'};
+      return 429 '{"message": "Too many requests. Please try again later."}';
     }
 
   #  ---------- API -> backend ----------
@@ -206,7 +209,7 @@ server {
 
     proxy_read_timeout 300s;
     proxy_send_timeout 300s;
-}
+  }
 
 # # Redirect plain /grafana (no slash) to /grafana/
   location = /grafana {
