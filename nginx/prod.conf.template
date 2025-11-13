@@ -182,6 +182,11 @@ server {
   }
 
   location /kibana/ {
+    # Restrict access to localhost (Docker host) only
+    allow 127.0.0.1;           # Container's localhost
+    allow 172.16.0.0/12;       # Docker internal networks (includes gateway)
+    deny all;
+
     # Use variable to force runtime DNS resolution (won't fail at startup if kibana doesn't exist)
     set $kibana_upstream http://kibana:${KIBANA_PORT};
     proxy_pass $kibana_upstream/;
@@ -206,6 +211,11 @@ server {
   }
 
   location /grafana/ {
+    # Restrict access to localhost (Docker host) only
+    allow 127.0.0.1;           # Container's localhost
+    allow 172.16.0.0/12;       # Docker internal networks (includes gateway)
+    deny all;
+
     # Use variable to force runtime DNS resolution (won't fail at startup if grafana doesn't exist)
     set $grafana_upstream http://grafana:${GRAFANA_PORT};
     proxy_pass $grafana_upstream; # must NOT have trailing slash
