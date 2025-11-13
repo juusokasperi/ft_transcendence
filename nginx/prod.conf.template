@@ -200,7 +200,7 @@ server {
 
 # Monitoring server - only accessible from host machine via 127.0.0.1:8082
 server {
-  listen 8082;
+  listen ${MONITORING_PORT};
   server_name _;
 
   # Redirect plain /kibana (no slash) to /kibana/

@@ -89,6 +89,7 @@ services:
       - KIBANA_PORT=${KIBANA_PORT:-5601}
       - GRAFANA_PORT=${GRAFANA_PORT:-3000}
       - NGINX_STUB_STATUS_PORT=${NGINX_STUB_STATUS_PORT:-8081}
+      - MONITORING_PORT=${MONITORING_PORT:-8082}
     volumes:
       - ./nginx/prod.conf.template:/etc/nginx/templates/default.conf.template:ro
       - frontend_dist:/usr/share/nginx/html:ro

@@ -126,14 +126,14 @@ services:
       - XPACK_REPORTING_ENCRYPTIONKEY=${ES_ENCRYPTION_KEY}
       - xpack.security.enabled=true
       - SERVER_BASEPATH=/kibana
-      - SERVER_PUBLICBASEURL=http://localhost:8082/kibana
+      - SERVER_PUBLICBASEURL=http://localhost:${MONITORING_PORT:-8082}/kibana
       - SERVER_REWRITEBASEPATH=true
     mem_limit: 1024m
     healthcheck:
       test:
        - CMD-SHELL
        - |
-         curl -s http://localhost:${KIBANA_PORT}/api/status | \
+         curl -s http://localhost:${KIBANA_PORT}/kibana/api/status | \
          grep -q '\"level\":\"available\"'
       interval: 10s
       timeout: 10s

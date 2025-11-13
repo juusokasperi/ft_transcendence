@@ -84,6 +84,7 @@ const REQUIRED_VARS = [
   'ES_ANALYST_PASSWORD',
   'ES_PORT',
   'MAIL_FROM_RAW',
+  'MONITORING_PORT',
 ];
 
 const help =
