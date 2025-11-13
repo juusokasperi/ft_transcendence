@@ -1,54 +1,72 @@
 import { Link } from 'react-router-dom';
-import { Home, Gamepad2, User, Users } from 'lucide-react';
+import { motion } from 'framer-motion';
+import type { Variants } from 'framer-motion';
+import Navbar from '../components/Navbar';
+
+const containerVariants: Variants = {
+  hidden: {},
+  visible: {
+    transition: {
+      staggerChildren: 0.2,
+      delayChildren: 0.1,
+    },
+  },
+};
+
+const itemVariants: Variants = {
+  hidden: { opacity: 0, y: 20 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.4, ease: 'easeOut' },
+  },
+};
 
 function NotFound() {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 px-4">
-      <div className="w-full max-w-2xl text-center">
-        <div className="mb-8">
-          <h1 className="bg-gradient-to-r from-blue-400 to-purple-600 bg-clip-text text-9xl font-bold text-transparent">
-            404
-          </h1>
-          <h2 className="mb-2 mt-4 text-3xl font-semibold text-white">Page Not Found</h2>
-          <p className="text-lg text-gray-400">
-            The page you're looking for doesn't exist or has been moved.
-          </p>
+    <div className="min-h-screen bg-slate-950">
+      <Navbar />
+      <motion.div
+        className="relative min-h-[calc(100vh-6rem)] pb-16 pt-28 text-white"
+        variants={containerVariants}
+        initial="hidden"
+        animate="visible"
+      >
+        <div className="pointer-events-none absolute inset-x-0 top-0 h-80 bg-gradient-to-b from-indigo-600/30 via-indigo-400/10 to-transparent blur-3xl" />
+        <div className="pointer-events-none absolute inset-0 overflow-hidden">
+          <div className="absolute -left-32 top-40 h-64 w-64 rounded-full bg-indigo-500/10 blur-3xl" />
+          <div className="absolute bottom-24 right-12 h-72 w-72 rounded-full bg-purple-500/10 blur-3xl" />
         </div>
 
-        <div className="mt-12 grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <Link
-            to="/"
-            className="flex items-center justify-center gap-3 rounded-lg bg-blue-600 px-6 py-4 font-medium text-white transition-colors duration-200 hover:bg-blue-700"
-          >
-            <Home size={20} />
-            <span>Home</span>
-          </Link>
+        <div className="relative mx-auto w-full max-w-4xl px-4 sm:px-6 lg:px-12">
+          <motion.div className="space-y-8 text-center" variants={itemVariants}>
+            <span className="inline-flex items-center gap-2 rounded-full border border-indigo-500/40 bg-indigo-500/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-indigo-200">
+              Lost in the arcade
+            </span>
 
-          <Link
-            to="/pong"
-            className="flex items-center justify-center gap-3 rounded-lg bg-purple-600 px-6 py-4 font-medium text-white transition-colors duration-200 hover:bg-purple-700"
-          >
-            <Gamepad2 size={20} />
-            <span>Play Pong</span>
-          </Link>
+            <div className="space-y-4">
+              <h1 className="bg-gradient-to-r from-indigo-400 via-purple-400 to-indigo-400 bg-clip-text text-8xl font-bold leading-tight text-transparent sm:text-9xl">
+                404
+              </h1>
+              <h2 className="text-2xl font-semibold text-white sm:text-3xl md:text-4xl">
+                Page Not Found
+              </h2>
+              <p className="mx-auto max-w-xl text-base text-slate-200/80 sm:text-lg">
+                The page you're looking for doesn't exist or has been moved.
+              </p>
+            </div>
 
-          <Link
-            to="/profile"
-            className="flex items-center justify-center gap-3 rounded-lg bg-green-600 px-6 py-4 font-medium text-white transition-colors duration-200 hover:bg-green-700"
-          >
-            <User size={20} />
-            <span>Profile</span>
-          </Link>
-
-          <Link
-            to="/profile/friends"
-            className="flex items-center justify-center gap-3 rounded-lg bg-orange-600 px-6 py-4 font-medium text-white transition-colors duration-200 hover:bg-orange-700"
-          >
-            <Users size={20} />
-            <span>Friends</span>
-          </Link>
+            <div className="pt-4">
+              <Link
+                to="/"
+                className="inline-flex items-center justify-center rounded-full bg-gradient-to-r from-indigo-500 to-purple-500 px-8 py-3 text-sm font-semibold text-white shadow-lg shadow-indigo-900/40 transition hover:from-indigo-400 hover:to-purple-400"
+              >
+                Back to home
+              </Link>
+            </div>
+          </motion.div>
         </div>
-      </div>
+      </motion.div>
     </div>
   );
 }
