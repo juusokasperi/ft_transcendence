@@ -21,6 +21,10 @@ map $jwt_token $rate_limit_key {
 
 ##
 # Rate limiting zones based on authentication token or IP
+# These limit HTTP requests and initial WS connections.
+# Once a WS connection is established between a client and a service,
+# nginx limiting does not affect the messaging.
+
 # General API rate limiting - 10 req per sec per user/IP (burst of 20)
 limit_req_zone $rate_limit_key zone=api_limit:10m rate=10r/s;
 
@@ -32,8 +36,8 @@ limit_req_zone $binary_remote_addr zone=auth_limit:10m rate=10r/m;
 # File uploads - 5 req per min per user
 limit_req_zone $rate_limit_key zone=upload_limit:10m rate=5r/m;
 
-# Gameserver - allow rapid input changes (30/sec with burst)
-limit_req_zone $rate_limit_key zone=game_input_limit:10m rate=30r/s;
+# Gameserver/matchmaking - limits reconnect storms
+limit_req_zone $rate_limit_key zone=ws_connect_limit:10m rate=3r/s;
 
 # Redirect HTTP to HTTPS
 # uses templating so that we can use non-standard ports: redirect port 80
@@ -116,7 +120,7 @@ server {
   }
 
   location /g/ {
-    limit_req zone=game_input_limit burst=60 nodelay;
+    limit_req zone=ws_connect_limit burst=5 nodelay;
 
     proxy_pass http://game-gateway:${GATEWAY_PORT};
     proxy_http_version 1.1;
@@ -137,7 +141,7 @@ server {
   }
 
   location /matchmaking {
-    limit_req zone=api_limit burst=10 nodelay;
+    limit_req zone=ws_connect_limit burst=5 nodelay;
 
     proxy_pass http://matchmaking-service:${MATCHMAKING_PORT};
     proxy_http_version 1.1;
@@ -157,25 +161,8 @@ server {
     proxy_buffering off;
   }
 
-  location /game-server {
-    proxy_pass http://game-server:${GAME_SERVER_PORT};
-    proxy_http_version 1.1;
-
-    proxy_set_header Host               $http_host;
-    proxy_set_header X-Forwarded-Proto  $scheme;
-    proxy_set_header X-Forwarded-Host   $http_host;
-    proxy_set_header X-Forwarded-Port   $server_port;
-    proxy_set_header X-Forwarded-For    $proxy_add_x_forwarded_for;
-
-    proxy_set_header Upgrade            $http_upgrade;
-    proxy_set_header Connection         $connection_upgrade;
-
-    proxy_read_timeout 300s;
-    proxy_send_timeout 300s;
-  }
-
   location /chat {
-    limit_req zone=api_limit burst=15 nodelay;
+    limit_req zone=ws_connect_limit burst=5 nodelay;
 
     proxy_pass http://chat-service:${CHAT_PORT};
     proxy_http_version 1.1;
