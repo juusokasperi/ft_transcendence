@@ -133,7 +133,7 @@ services:
       test:
        - CMD-SHELL
        - |
-         curl -s http://localhost:${KIBANA_PORT}/kibana/api/status | \
+         curl -s http://localhost:${KIBANA_PORT}/api/status | \
          grep -q '\"level\":\"available\"'
       interval: 10s
       timeout: 10s

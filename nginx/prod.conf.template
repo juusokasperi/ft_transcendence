@@ -211,7 +211,8 @@ server {
   location /kibana/ {
     # Use variable to force runtime DNS resolution (won't fail at startup if kibana doesn't exist)
     set $kibana_upstream http://kibana:${KIBANA_PORT};
-    proxy_pass $kibana_upstream;
+    rewrite ^/kibana(/.*)$ $1 break;
+    proxy_pass $kibana_upstream$request_uri;
     proxy_http_version 1.1;
 
     proxy_set_header Host               $http_host;
