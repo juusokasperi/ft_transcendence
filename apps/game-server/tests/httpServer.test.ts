@@ -26,8 +26,14 @@ function createFakeApp() {
   app.log = appLogMock;
   app.metrics = { client: metricsClientMock };
 
-  app.get = vi.fn((path: string, handler: any) => {
-    getRoutes.set(path, handler);
+  app.get = vi.fn((path: string, opts: any, handler: any) => {
+    let actualOptions = opts;
+    let actualHandler = handler;
+    if (typeof handler === 'undefined') {
+      actualHandler = opts;
+      actualOptions = undefined;
+    }
+    getRoutes.set(path, actualHandler);
     return app;
   });
   app.post = vi.fn((path: string, opts: any, handler?: any) => {
