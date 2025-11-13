@@ -72,17 +72,17 @@ export async function userRoutes(app: FastifyInstance) {
   //   }
   // });
 
-  // Get a single user
+  // Get a single user by uuid or username
   app.get(
-    '/:uuid',
+    '/:id',
     {
       schema: getUserSchema,
       preHandler: [authPreHandler],
     },
     async (req: FastifyRequest, res: FastifyReply) => {
       try {
-        const { uuid } = req.params as { uuid: string };
-        const user = getUserStats(uuid);
+        const { id } = req.params as { id: string };
+        const user = getUserStats(id);
         if (!user) return res.status(404).send({ message: 'User not found' });
         res.status(200).send(user);
       } catch (error) {

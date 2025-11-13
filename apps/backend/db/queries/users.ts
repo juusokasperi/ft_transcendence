@@ -348,11 +348,11 @@ export function getUserStats(uuid?: string): UserStats[] | UserStats | null {
         .prepare(
           `
 			${baseQuery}
-			WHERE u.uuid = ?
+			WHERE u.uuid = ? OR u.username = ?
 			GROUP BY u.uuid
 			`,
         )
-        .get(uuid) as UserStatsDb) || null;
+        .get(uuid, uuid) as UserStatsDb) || null;
     if (!result) return null;
     return {
       username: result.username,

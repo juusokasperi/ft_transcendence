@@ -8,23 +8,17 @@ import SplitButton from './ui/SplitButton';
 import Button from './Button';
 import type { AxiosInstance } from 'axios';
 import { useChatContext } from '../context/ChatContext';
+import type { UserStats } from '@utils/types';
 
-async function fetchUserUuidByUsername(
+async function fetchUserByUsername(
   axios: AxiosInstance,
   targetUser: string,
-): Promise<string | null> {
+): Promise<UserStats | null> {
   try {
-    const res = await axios.get('/api/users');
-    const users = Array.isArray(res.data) ? res.data : (res.data?.users ?? []);
-
-    const target = users.find((u: any) => u.username?.toLowerCase() === targetUser.toLowerCase());
-
-    if (target?.userId || target?.uuid || target?.id) {
-      return target.userId ?? target.uuid ?? target.id;
-    }
-    return null;
+    const res = await axios.get(`/api/users/${targetUser}`);
+    return res.data;
   } catch (err) {
-    console.error('Error fetching users:', err);
+    console.error('Error fetching user:', err);
     return null;
   }
 }
@@ -73,7 +67,7 @@ export default function Chat({
   const [dmTarget, setDmTarget] = useState<string | null>(null);
   // profile card state
   const [profileLoading, setProfileLoading] = useState(false);
-  const [profileData, setProfileData] = useState<any | null>(null);
+  const [profileData, setProfileData] = useState<UserStats | null>(null);
   const [profileOpen, setProfileOpen] = useState(false);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [pendingNavId, setPendingNavId] = useState<string | null>(null);
@@ -251,16 +245,15 @@ export default function Chat({
           setProfileLoading(true);
           setProfileOpen(true);
           try {
-            const uid = await fetchUserUuidByUsername(authAxios, targetUser);
-            if (!uid) {
+            const user = await fetchUserByUsername(authAxios, targetUser);
+            if (!user) {
               addSystemMessage(`Invalid or missing profile for ${targetUser}`);
               setProfileData(null);
               setProfileLoading(false);
               return;
             }
 
-            const res = await authAxios.get(`/api/users/${uid}`);
-            setProfileData(res.data ?? null);
+            setProfileData(user ?? null);
           } catch (err) {
             console.error('Error fetching profile:', err);
             addSystemMessage(`Failed to load profile for ${targetUser}`);
