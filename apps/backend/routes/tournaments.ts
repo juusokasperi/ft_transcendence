@@ -612,21 +612,45 @@ export async function tournamentRoutes(app: FastifyInstance) {
           (match) => match.completedAt !== null || match.status === 'completed',
         );
 
-        // If tournament has started (active/completed), mark as forfeited and auto-resolve
-        // This preserves bracket history and final standings
+        // If tournament has started (active/completed), decide between unlinking membership
+        // (keep placement) or forfeiting (propagate bracket).
         if (tournament.status === 'active' || tournament.status === 'completed') {
-          const updated = updateTournamentParticipant(participantId, { status: 'forfeited' });
-          if (!updated)
-            return res.status(500).send({ message: 'Failed to mark participant as forfeited' });
+          const terminalStatuses = new Set(['champion', 'silver', 'third_place', 'eliminated']);
+          const participantHasTerminalPlacement = terminalStatuses.has(existing.status);
 
-          req.log.info(
-            { tournamentId, participantId, alias: existing.alias },
-            'Participant marked as forfeited',
+          // Determine whether participant is still involved in any uncompleted match
+          const openMatches = listTournamentMatches(tournamentId).filter(
+            (m) => m.status !== 'completed',
+          );
+          const involvedInOpenMatch = openMatches.some((m) =>
+            listTournamentMatchPlayers(m.id).some((p) => p.participantId === participantId),
           );
 
-          const result = forfeitParticipantInTournament(tournamentId, participantId);
-          if (result.readyMatches?.length) {
-            await notifyMatchesReady(tournamentId, result.readyMatches);
+          if (participantHasTerminalPlacement || !involvedInOpenMatch) {
+            // All matches for this participant are resolved. Do NOT mark forfeited.
+            // Unlink the user to end membership while preserving placement for classement UI.
+            const unlinked = updateTournamentParticipant(participantId, { userUuid: null });
+            if (!unlinked)
+              return res.status(500).send({ message: 'Failed to unlink participant user' });
+            req.log.info(
+              { tournamentId, participantId, alias: existing.alias },
+              'Participant left after completing matches; preserved placement and unlinked user',
+            );
+          } else {
+            // Still has uncompleted matches: mark forfeited and propagate.
+            const updated = updateTournamentParticipant(participantId, { status: 'forfeited' });
+            if (!updated)
+              return res.status(500).send({ message: 'Failed to mark participant as forfeited' });
+
+            req.log.info(
+              { tournamentId, participantId, alias: existing.alias },
+              'Participant marked as forfeited',
+            );
+
+            const result = forfeitParticipantInTournament(tournamentId, participantId);
+            if (result.readyMatches?.length) {
+              await notifyMatchesReady(tournamentId, result.readyMatches);
+            }
           }
         } else {
           // Tournament hasn't started yet (draft), safe to delete
