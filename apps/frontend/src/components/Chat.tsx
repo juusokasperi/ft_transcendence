@@ -10,7 +10,7 @@ import type { AxiosInstance } from 'axios';
 import { useChatContext } from '../context/ChatContext';
 import type { UserStats } from '@utils/types';
 
-async function fetchUserUuidByUsername(
+async function fetchUserByUsername(
   axios: AxiosInstance,
   targetUser: string,
 ): Promise<UserStats | null> {
@@ -245,15 +245,15 @@ export default function Chat({
           setProfileLoading(true);
           setProfileOpen(true);
           try {
-            const res = await fetchUserUuidByUsername(authAxios, targetUser);
-            if (!res) {
+            const user = await fetchUserByUsername(authAxios, targetUser);
+            if (!user) {
               addSystemMessage(`Invalid or missing profile for ${targetUser}`);
               setProfileData(null);
               setProfileLoading(false);
               return;
             }
 
-            setProfileData(res ?? null);
+            setProfileData(user ?? null);
           } catch (err) {
             console.error('Error fetching profile:', err);
             addSystemMessage(`Failed to load profile for ${targetUser}`);
