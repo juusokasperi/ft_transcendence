@@ -182,7 +182,9 @@ server {
   }
 
   location /kibana/ {
-    proxy_pass http://kibana:${KIBANA_PORT}/;
+    # Use variable to force runtime DNS resolution (won't fail at startup if kibana doesn't exist)
+    set $kibana_upstream http://kibana:${KIBANA_PORT};
+    proxy_pass $kibana_upstream/;
     proxy_http_version 1.1;
 
     proxy_set_header Host               $http_host;
@@ -198,13 +200,15 @@ server {
     proxy_send_timeout 300s;
   }
 
-# # Redirect plain /grafana (no slash) to /grafana/
+  # Redirect plain /grafana (no slash) to /grafana/
   location = /grafana {
     return 301 /grafana/;
   }
 
   location /grafana/ {
-    proxy_pass http://grafana:${GRAFANA_PORT}; # must NOT have trailing slash
+    # Use variable to force runtime DNS resolution (won't fail at startup if grafana doesn't exist)
+    set $grafana_upstream http://grafana:${GRAFANA_PORT};
+    proxy_pass $grafana_upstream; # must NOT have trailing slash
     proxy_http_version 1.1;
 
     proxy_set_header Host               $host;

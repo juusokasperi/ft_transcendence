@@ -21,7 +21,6 @@ x-environment: &prod-env
   NODE_ENV: production
 
 services:
-
   # Backend
   # Needs outbound internet access to send confirmation mails, hence prod-public
   backend:
@@ -32,7 +31,7 @@ services:
         PNPM_VERSION: ${PNPM_VERSION:-9.12.3}
         SERVICE_NAME: api
         SERVICE_DIR: backend
-        INSTALL_SQLITE: "true"
+        INSTALL_SQLITE: 'true'
     image: ft-transcendence-backend-prod:latest
     init: true
     restart: unless-stopped
@@ -76,13 +75,9 @@ services:
         condition: service_started
       frontend-builder:
         condition: service_completed_successfully
-      kibana:
-        condition: service_started
-      grafana:
-        condition: service_started
     ports:
-      - "${NGINX_PORT:-80}:80"
-      - "${NGINX_HTTPS_PORT:-443}:443"
+      - '${NGINX_PORT:-80}:80'
+      - '${NGINX_HTTPS_PORT:-443}:443'
     environment:
       - NGINX_HTTPS_PORT=${NGINX_HTTPS_PORT:-443}
       - BACKEND_PORT=${BACKEND_PORT:-3001}
@@ -205,7 +200,7 @@ services:
     image: redis:8.2.1-alpine
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: ['CMD', 'redis-cli', 'ping']
       interval: 5s
       retries: 100
     volumes:
@@ -261,7 +256,7 @@ services:
     networks:
       - prod-private
     ports:
-      - "55550:55550"
+      - '55550:55550'
     depends_on:
       redis:
         condition: service_healthy

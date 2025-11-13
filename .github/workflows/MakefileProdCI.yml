@@ -26,15 +26,62 @@ jobs:
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
+        with:
+          driver-opts: |
+            image=moby/buildkit:buildx-stable-1
+            network=host
+
+      # Cache Docker layers - this caches the final image layers
+      - name: Cache Docker layers
+        uses: actions/cache@v4
+        with:
+          path: /tmp/.buildx-cache
+          key: ${{ runner.os }}-buildx-${{ hashFiles('**/pnpm-lock.yaml', '**/package.json', 'node.template.dockerfile', 'apps/frontend/prod.dockerfile') }}
+          restore-keys: |
+            ${{ runner.os }}-buildx-
+
+      # Import cached images if they exist
+      - name: Load cached Docker images
+        run: |
+          if [ -d "/tmp/.buildx-cache" ]; then
+            echo "Loading cached images..."
+            for img in /tmp/.buildx-cache/*.tar; do
+              if [ -f "$img" ]; then
+                docker load -i "$img" || true
+              fi
+            done
+            echo "Cached images loaded"
+          else
+            echo "No cached images found"
+            mkdir -p /tmp/.buildx-cache
+          fi
 
       - name: Build all services
-        run: make prod-detached
+        run: make prod-slim-detached
+        env:
+          DOCKER_BUILDKIT: 1
+          COMPOSE_DOCKER_CLI_BUILD: 1
 
-      - name: Stop all services
-        run: make down
+      # Export built images to cache
+      - name: Export Docker images to cache
+        if: always()
+        run: |
+          echo "Exporting images to cache..."
+          mkdir -p /tmp/.buildx-cache-new
 
-      - name: Clean everything
-        run: make fclean
+          # Export production images
+          docker images --format "{{.Repository}}:{{.Tag}}" | grep "ft-transcendence.*prod" | while read img; do
+            if [ ! -z "$img" ] && [ "$img" != "<none>:<none>" ]; then
+              filename=$(echo "$img" | tr '/:' '__')
+              echo "Exporting $img to $filename.tar"
+              docker save -o "/tmp/.buildx-cache-new/${filename}.tar" "$img" || true
+            fi
+          done
+
+          # Replace old cache with new
+          rm -rf /tmp/.buildx-cache
+          mv /tmp/.buildx-cache-new /tmp/.buildx-cache
+          echo "Image cache updated"
 
       - name: Comment on PR if failed
         if: ${{ failure() && github.event_name == 'pull_request' }}

@@ -82,7 +82,7 @@ endef
 # ========================
 #  Orchestration
 # ========================
-.PHONY: all up detached prod prod-detached elk elk-detached mon mon-detached dev-full dev-full-detached down clean nuke check-leftovers fclean re stop restart restart-% builder-init builder-use builder-prune builder-rm check-leftovers-global overview-docker
+.PHONY: all up detached prod prod-detached prod-slim prod-slim-detached elk elk-detached mon mon-detached dev-full dev-full-detached down clean nuke check-leftovers fclean re stop restart restart-% builder-init builder-use builder-prune builder-rm check-leftovers-global overview-docker
 all: up
 
 up:
@@ -105,22 +105,64 @@ prod:
 	$(ensure_env)
 	$(ensure_builder)
 	$(ensure_certs)
-	@echo ">> Starting prod stack (attached)"
+	@echo ">> Starting prod stack (attached, with cache optimization)"
+	@echo ">> Building with BUILDKIT_INLINE_CACHE enabled"
+	DOCKER_BUILDKIT=1 COMPOSE_DOCKER_CLI_BUILD=1 \
 	docker compose -p $(NAME_PROD) $(PROD_COMPOSE) $(ENV_ROOT) \
 		${MON_PROD_COMPOSE} \
 		${LOG_PROD_COMPOSE} \
-		up --build
+		build --build-arg BUILDKIT_INLINE_CACHE=1
+	@echo ">> Starting services"
+	docker compose -p $(NAME_PROD) $(PROD_COMPOSE) $(ENV_ROOT) \
+		${MON_PROD_COMPOSE} \
+		${LOG_PROD_COMPOSE} \
+		up
 
 prod-detached:
 	$(ensure_dirs)
 	$(ensure_env)
 	$(ensure_builder)
 	$(ensure_certs)
-	@echo ">> Starting prod stack (detached)"
+	@echo ">> Starting prod stack (detached, with cache optimization)"
+	@echo ">> Building with BUILDKIT_INLINE_CACHE enabled"
+	DOCKER_BUILDKIT=1 COMPOSE_DOCKER_CLI_BUILD=1 \
 	docker compose -p $(NAME_PROD) $(PROD_COMPOSE) $(ENV_ROOT) \
 		${MON_PROD_COMPOSE} \
 		${LOG_PROD_COMPOSE} \
-		up --build -d
+		build --build-arg BUILDKIT_INLINE_CACHE=1
+	@echo ">> Starting services"
+	docker compose -p $(NAME_PROD) $(PROD_COMPOSE) $(ENV_ROOT) \
+		${MON_PROD_COMPOSE} \
+		${LOG_PROD_COMPOSE} \
+		up -d
+
+prod-slim:
+	$(ensure_dirs)
+	$(ensure_env)
+	$(ensure_builder)
+	$(ensure_certs)
+	@echo ">> Starting prod stack without monitoring/ELK (attached, with cache optimization)"
+	@echo ">> Building with BUILDKIT_INLINE_CACHE enabled"
+	DOCKER_BUILDKIT=1 COMPOSE_DOCKER_CLI_BUILD=1 \
+	docker compose -p $(NAME_PROD) $(PROD_COMPOSE) $(ENV_ROOT) \
+		build --build-arg BUILDKIT_INLINE_CACHE=1
+	@echo ">> Starting services"
+	docker compose -p $(NAME_PROD) $(PROD_COMPOSE) $(ENV_ROOT) \
+		up
+
+prod-slim-detached:
+	$(ensure_dirs)
+	$(ensure_env)
+	$(ensure_builder)
+	$(ensure_certs)
+	@echo ">> Starting prod stack without monitoring/ELK (detached, with cache optimization)"
+	@echo ">> Building with BUILDKIT_INLINE_CACHE enabled"
+	DOCKER_BUILDKIT=1 COMPOSE_DOCKER_CLI_BUILD=1 \
+	docker compose -p $(NAME_PROD) $(PROD_COMPOSE) $(ENV_ROOT) \
+		build --build-arg BUILDKIT_INLINE_CACHE=1
+	@echo ">> Starting services"
+	docker compose -p $(NAME_PROD) $(PROD_COMPOSE) $(ENV_ROOT) \
+		up -d
 
 elk:
 	$(ensure_dirs)
@@ -393,8 +435,12 @@ help:
 	@echo "  make dev-full-detached               # Dev + Monitoring + ELK (detached)"
 	@echo ""
 	@echo "Production mode (always with monitoring + ELK):"
-	@echo "  make prod                            # Prod + Monitoring + ELK"
-	@echo "  make prod-detached                   # Prod + Monitoring + ELK (detached)"
+	@echo "  make prod                            # Prod + Monitoring + ELK (with cache)"
+	@echo "  make prod-detached                   # Prod + Monitoring + ELK (detached, with cache)"
+	@echo ""
+	@echo "Production mode (slim - no monitoring/ELK):"
+	@echo "  make prod-slim                       # Prod only (with cache)"
+	@echo "  make prod-slim-detached              # Prod only (detached, with cache)"
 	@echo ""
 	@echo "Cleanup:"
 	@echo "  make down                            # Stop & remove all stacks (volumes, local images, orphans)"
