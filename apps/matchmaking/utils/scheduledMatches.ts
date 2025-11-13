@@ -19,6 +19,7 @@ import {
   TOURNAMENT_MATCH_COUNTDOWN_INTERVAL_MS,
   TOURNAMENT_MAX_REMINDERS,
   TOURNAMENT_REMINDER_DELAY_MS,
+  TOURNAMENT_ABSENCE_AUTO_WIN_MS,
 } from './config.ts';
 
 const scheduledTournamentMatches = new Set<number>();
@@ -35,6 +36,7 @@ interface PendingTournamentMatch {
     lastStatus?: TournamentMatchCountdownStatus;
     lastSecondsRemaining?: number;
   };
+  absenceTimeout?: NodeJS.Timeout;
 }
 
 const pendingTournamentMatches = new Map<number, PendingTournamentMatch>();
@@ -149,6 +151,99 @@ function clearTournamentCountdown(pending: PendingTournamentMatch, remove = true
   if (remove) {
     pending.countdown = undefined;
   }
+}
+
+function clearAbsenceTimeout(pending: PendingTournamentMatch) {
+  if (pending.absenceTimeout) {
+    clearTimeout(pending.absenceTimeout);
+    pending.absenceTimeout = undefined;
+  }
+}
+
+async function autoForfeitParticipant(
+  tournamentId: number,
+  participantId: number,
+  clients: Map<string, ClientInfo>,
+) {
+  const authClient = Array.from(clients.values()).find(
+    (c) => c.tournamentId === tournamentId && c.authenticated && c.siteToken,
+  );
+  if (!authClient) {
+    log(
+      'Auto-forfeit failed: no authenticated tournament client available for token',
+      { tournamentId, participantId },
+      'warn',
+    );
+    return;
+  }
+  const token = extractSiteToken(authClient);
+  if (!token) return;
+  const headers = { Authorization: `Bearer ${token}` };
+  try {
+    log('Auto-forfeit participant due to absence', { tournamentId, participantId });
+    await axios.patch(
+      `${API_URL}/api/tournaments/${tournamentId}/participants/${participantId}`,
+      { status: 'forfeited' },
+      { headers },
+    );
+    await requestTournamentSync(tournamentId, clients, 'state_updated');
+  } catch (error) {
+    log(
+      'Auto-forfeit API failed',
+      { tournamentId, participantId, error: error instanceof Error ? error.message : 'unknown' },
+      'warn',
+    );
+  }
+}
+
+function scheduleAbsenceAutoWin(
+  pending: PendingTournamentMatch,
+  clients: Map<string, ClientInfo>,
+  missingUserUuid: string,
+) {
+  clearAbsenceTimeout(pending);
+  pending.absenceTimeout = setTimeout(async () => {
+    const availability = evaluatePlayerAvailability(pending, clients);
+    if (availability.ready) {
+      log('Absence window ended: both players present, skipping auto-win', {
+        tournamentId: pending.tournamentId,
+        matchId: pending.match.tournamentMatchId,
+      });
+      return;
+    }
+    const stillMissing = availability.missing.includes(missingUserUuid);
+    const presentCount = availability.clients.length;
+    if (!stillMissing || presentCount !== 1) {
+      log('Absence window ended: mismatch in presence state, skipping auto-win', {
+        tournamentId: pending.tournamentId,
+        matchId: pending.match.tournamentMatchId,
+        missing: availability.missing,
+        present: presentCount,
+      });
+      return;
+    }
+    const missingParticipant = pending.match.participants.find(
+      (p) => p.userUuid === missingUserUuid,
+    );
+    if (!missingParticipant) {
+      log('Absence window ended: missing participant not found', {
+        tournamentId: pending.tournamentId,
+        matchId: pending.match.tournamentMatchId,
+      });
+      return;
+    }
+    await autoForfeitParticipant(pending.tournamentId, missingParticipant.participantId, clients);
+    clearTournamentCountdown(pending);
+    clearAbsenceTimeout(pending);
+    pendingTournamentMatches.delete(pending.match.tournamentMatchId);
+  }, TOURNAMENT_ABSENCE_AUTO_WIN_MS);
+
+  log('Scheduled absence auto-win timer', {
+    tournamentId: pending.tournamentId,
+    matchId: pending.match.tournamentMatchId,
+    delayMs: TOURNAMENT_ABSENCE_AUTO_WIN_MS,
+    missingUserUuid,
+  });
 }
 
 function resolvePlayerClients(
@@ -269,6 +364,7 @@ function cancelTournamentCountdown(
     reason,
   });
   clearTournamentCountdown(pending);
+  if (reason !== 'offline') clearAbsenceTimeout(pending);
   log('Cancelled tournament match countdown', {
     tournamentId: pending.tournamentId,
     matchId: pending.match.tournamentMatchId,
@@ -283,6 +379,7 @@ async function finalizeTournamentMatchLaunch(
 ) {
   emitTournamentCountdown(pending, clients, 'started', 0, { force: true });
   clearTournamentCountdown(pending);
+  clearAbsenceTimeout(pending);
 
   scheduledTournamentMatches.add(pending.match.tournamentMatchId);
   pendingTournamentMatches.delete(pending.match.tournamentMatchId);
@@ -349,6 +446,9 @@ function startTournamentCountdown(
     const availability = evaluatePlayerAvailability(pending, clients);
     if (!availability.ready) {
       cancelTournamentCountdown(pending, clients, 'offline');
+      if (availability.missing.length === 1 && availability.clients.length === 1) {
+        scheduleAbsenceAutoWin(pending, clients, availability.missing[0]!);
+      }
       scheduleTournamentReminder(pending.match, pending.tournamentId, clients, pending.attempts);
       return;
     }
@@ -365,6 +465,9 @@ function startTournamentCountdown(
     const availability = evaluatePlayerAvailability(pending, clients);
     if (!availability.ready) {
       cancelTournamentCountdown(pending, clients, 'offline');
+      if (availability.missing.length === 1 && availability.clients.length === 1) {
+        scheduleAbsenceAutoWin(pending, clients, availability.missing[0]!);
+      }
       scheduleTournamentReminder(pending.match, pending.tournamentId, clients, pending.attempts);
       return;
     }
@@ -423,6 +526,9 @@ function handleSingleTournamentMatch(
       'warn',
     );
     cancelTournamentCountdown(pending, clients, 'offline');
+    if (availability.missing.length === 1 && availability.clients.length === 1) {
+      scheduleAbsenceAutoWin(pending, clients, availability.missing[0]!);
+    }
     scheduleTournamentReminder(match, tournamentId, clients, attempts);
     return;
   }
