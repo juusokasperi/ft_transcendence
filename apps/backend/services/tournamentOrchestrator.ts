@@ -268,8 +268,48 @@ export function processSemifinalResult(
 
   const bronzePlayers = listTournamentMatchPlayers(bronzeMatch.id);
   if (bronzePlayers.length === 2) {
-    const updated = updateTournamentMatchStatus(bronzeMatch.id, 'ready');
-    if (updated) readyMatches.push(bronzeMatch.id);
+    // If a player reached bronze with a forfeited status (e.g., forfeited during semifinal),
+    // auto-resolve bronze immediately in favor of the other player instead of leaving it READY.
+    const p1 = getTournamentParticipantById(bronzePlayers[0]!.participantId);
+    const p2 = getTournamentParticipantById(bronzePlayers[1]!.participantId);
+
+    const isForfeited = (p?: ReturnType<typeof getTournamentParticipantById>) =>
+      p?.status === 'forfeited';
+
+    if (p1 && p2 && (isForfeited(p1) || isForfeited(p2))) {
+      // Complete bronze match immediately
+      updateTournamentMatchStatus(bronzeMatch.id, 'completed', { setCompletedAt: true });
+
+      // If exactly one is forfeited, assign placements accordingly
+      const p1Forfeited = isForfeited(p1);
+      const p2Forfeited = isForfeited(p2);
+      if (p1Forfeited !== p2Forfeited) {
+        const winner = p1Forfeited ? p2! : p1!;
+        const loser = p1Forfeited ? p1! : p2!;
+        try {
+          updateTournamentParticipant(winner.id, { status: 'third_place' });
+          updateTournamentParticipant(loser.id, { status: 'eliminated' });
+        } catch (error) {
+          logger.error({ error }, '[TournamentOrchestrator] Failed to assign bronze placements');
+        }
+
+        // If the Final is already completed as well, mark tournament complete.
+        const finalState = getTournamentMatchByRoundAndPosition(
+          tournamentMatch.tournamentId,
+          2,
+          1,
+        );
+        if (finalState?.status === 'completed') {
+          const completed = markTournamentCompleted(tournamentMatch.tournamentId);
+          if (!completed) updateTournamentStatus(tournamentMatch.tournamentId, 'completed');
+        }
+      }
+      // Do not push bronze as ready; it's handled.
+    } else {
+      // Normal case: both players are active; mark bronze as ready.
+      const updated = updateTournamentMatchStatus(bronzeMatch.id, 'ready');
+      if (updated) readyMatches.push(bronzeMatch.id);
+    }
   }
 
   return { readyMatches, autoAdvancedMatches };
