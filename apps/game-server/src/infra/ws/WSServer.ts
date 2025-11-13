@@ -403,9 +403,39 @@ export class WSServer {
     const remainingP2 = session.players.get('P2');
 
     if (!remainingP1 && !remainingP2) {
-      this.logger.info({ roomIdentifier }, '[WSServer] Room empty, cleaning up');
-      this.runner.stop(session);
-      this.registry.clearSession(roomIdentifier);
+      // Both players have disconnected (or quit) nearly simultaneously.
+      // Declare the LAST quitter (current 'seat') as the winner to avoid tournament lock.
+      const winnerSeat: 'P1' | 'P2' = seat;
+      const winnerSide = seatToSide(session.model.state.playerAtEnd, winnerSeat);
+
+      this.logger.info(
+        { roomIdentifier, winnerSeat, winnerSide },
+        '[WSServer] Both players absent, awarding win to last quitter',
+      );
+      try {
+        this.runner.stop(session);
+      } catch {}
+
+      (async () => {
+        try {
+          const summary = await this.reporter.report(session, { winner: winnerSide });
+          this.broadcaster.notifyMatchEnd(session, 'forfeit', winnerSide, summary);
+          try {
+            for (const p of session.players.values()) {
+              try {
+                p.socket?.close(1000, 'match-ended');
+              } catch {}
+            }
+          } catch {}
+        } catch (error) {
+          this.logger.error({ error }, '[WSServer] Failed to finalize double-quit fallback result');
+          this.broadcaster.notifyMatchEnd(session, 'error');
+        } finally {
+          try {
+            this.registry.clearSession(roomIdentifier);
+          } catch {}
+        }
+      })().catch(() => void 0);
       return;
     }
 
