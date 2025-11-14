@@ -353,6 +353,7 @@ export function createOnlineApp(
   const syncFrameCursor = (targetTime: number) => {
     if (!frameBuffer.length) return;
     const newest = frameBuffer[frameBuffer.length - 1];
+    if (!newest) return;
     if (targetTime >= newest.timestamp) {
       prevSnap = newest.state;
       latest = newest.state;
@@ -363,10 +364,13 @@ export function createOnlineApp(
       }
       return;
     }
-    while (frameBuffer.length >= 2 && frameBuffer[1].timestamp <= targetTime) {
+    while (frameBuffer.length >= 2) {
+      const maybeSecond = frameBuffer[1];
+      if (!maybeSecond || maybeSecond.timestamp > targetTime) break;
       frameBuffer.shift();
     }
     const first = frameBuffer[0];
+    if (!first) return;
     const second = frameBuffer[1] ?? first;
     prevSnap = first.state;
     latest = second.state;
@@ -390,8 +394,7 @@ export function createOnlineApp(
     if (startCountdownTimer !== null) return;
     lastPoorWarningAt = now;
     const rounded = Math.max(0, Math.round(latencyMs));
-    const message =
-      rounded > 0 ? `Connection unstable (${rounded}ms)` : 'Connection unstable';
+    const message = rounded > 0 ? `Connection unstable (${rounded}ms)` : 'Connection unstable';
     hud.flashMessage(message, POOR_CONNECTION_MESSAGE_MS);
   };
 

@@ -248,8 +248,7 @@ export async function connectOnline(
                   randomSeed: typeof rs.randomSeed === 'number' ? rs.randomSeed : cfg.randomSeed,
                   tickRateHz:
                     typeof rs.tickRateHz === 'number' ? rs.tickRateHz : CLIENT_TICK_RATE_HZ,
-                  frameRateHz:
-                    typeof rs.frameRateHz === 'number' ? rs.frameRateHz : undefined,
+                  frameRateHz: typeof rs.frameRateHz === 'number' ? rs.frameRateHz : undefined,
                 };
                 notifyStart(payload);
               }
