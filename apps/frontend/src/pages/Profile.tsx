@@ -251,8 +251,8 @@ const Profile: React.FC = () => {
       setUsernameError(null);
       return true;
     } catch (err: any) {
-      const axiosErr = err as AxiosError<{ error?: string }>;
-      const message = axiosErr?.response?.data?.error;
+      const axiosErr = err as AxiosError<{ error?: string; message?: string }>;
+      const message = axiosErr?.response?.data?.message ?? axiosErr?.response?.data?.error;
       setUsernameError(String(message ?? 'Unable to change username'));
       setEmailError(null);
       enqueueSnackbar({
@@ -365,9 +365,10 @@ const Profile: React.FC = () => {
             variant: 'success',
           });
         } catch (err: any) {
-          const axiosErr = err as AxiosError<{ error?: string }>;
+          const axiosErr = err as AxiosError<{ error?: string; message?: string }>;
+          const message = axiosErr?.response?.data?.message ?? axiosErr?.response?.data?.error;
           enqueueSnackbar({
-            message: String(axiosErr?.response?.data?.error ?? 'Avatar update failed'),
+            message: String(message ?? 'Avatar update failed'),
             variant: 'error',
           });
           avatarResult = false;
@@ -381,9 +382,10 @@ const Profile: React.FC = () => {
         setIsEditing(false);
       }
     } catch (err: any) {
-      const axiosErr = err as AxiosError<{ error?: string }>;
+      const axiosErr = err as AxiosError<{ error?: string; message?: string }>;
+      const message = axiosErr?.response?.data?.message ?? axiosErr?.response?.data?.error;
       enqueueSnackbar({
-        message: String(axiosErr?.response?.data?.error ?? 'Update failed'),
+        message: String(message ?? 'Update failed'),
         variant: 'error',
       });
     } finally {

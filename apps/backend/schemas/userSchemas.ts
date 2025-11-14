@@ -58,14 +58,16 @@ export const getAllUsersSchema = {
 
 export const getUserSchema = {
   tags: ['User'],
-  summary: 'Get user by UUID',
+  summary: 'Get user by UUID or username',
   security: USER_ROUTE_SECURITY,
   params: {
     type: 'object',
-    required: ['uuid'],
     properties: {
-      uuid: UuidSchema,
+      id: {
+        anyOf: [UuidSchema, UsernameSchema],
+      },
     },
+    required: ['id'],
   },
   response: {
     200: UsersSchema,

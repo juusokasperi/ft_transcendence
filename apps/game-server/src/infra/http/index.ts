@@ -58,7 +58,7 @@ export function createHttpServer({
     done();
   };
 
-  app.get('/health', async (_request, reply) => {
+  app.get('/health', { logLevel: 'silent' }, async (_request, reply) => {
     reply.send({ status: 'ok' });
   });
 

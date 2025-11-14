@@ -38,6 +38,10 @@
     "./utils/random": {
       "types": "./src/utils/random.ts",
       "import": "./src/utils/random.ts"
+    },
+    "./redis/constants": {
+      "types": "./src/redis/constants.ts",
+      "import": "./src/redis/constants.ts"
     }
   },
   "files": [

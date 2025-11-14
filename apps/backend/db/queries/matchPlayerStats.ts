@@ -1,5 +1,6 @@
 import db from '../client.ts';
-import type { MatchPlayerStats, MatchPlayerStatsMe } from '../../types/types.ts';
+import type { MatchPlayerStatsMe } from '../../types/types.ts';
+import type { MatchPlayerStats } from '@utils/types';
 
 export function upsertMatchPlayerStats(
   matchPlayerId: number,

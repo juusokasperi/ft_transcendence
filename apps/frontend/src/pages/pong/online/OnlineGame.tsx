@@ -29,7 +29,7 @@ import { useSetMatchActivity } from '../../../context/MatchActivityContext';
 const OnlineGame: React.FC = () => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const [state, dispatch] = useReducer(reducer, initialState);
-  const { axios, navigate, user, userReady } = useAppContext();
+  const { axios, navigate, user, setUser, userReady } = useAppContext();
   const { enqueueSnackbar } = useSnackbar();
   const location = useLocation();
 
@@ -110,7 +110,7 @@ const OnlineGame: React.FC = () => {
       }
 
       enqueueSnackbar({ message: fallbackMessage, variant: 'error' });
-      navigate('/login');
+      setUser(null);
     },
     [axios, enqueueSnackbar, navigate],
   );

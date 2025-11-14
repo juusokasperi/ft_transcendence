@@ -1,5 +1,5 @@
 import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
-import type { UserStats } from '../types/types.ts';
+import type { UserStats } from '@utils/types';
 import db from '../db/client.ts';
 import { getUserStats, updateUserRanking } from '../db/queries/users.ts';
 import {

@@ -1,5 +1,6 @@
 import db from '../client.ts';
-import type { User, UserStats, UserSettings } from '../../types/types.ts';
+import type { UserStats } from '@utils/types';
+import type { User, UserSettings } from '../../types/types.ts';
 import type { UserDb, UserStatsDb, UserSettingsDb } from '../../types/dbtypes.ts';
 import crypto from 'crypto';
 
@@ -347,11 +348,11 @@ export function getUserStats(uuid?: string): UserStats[] | UserStats | null {
         .prepare(
           `
 			${baseQuery}
-			WHERE u.uuid = ?
+			WHERE u.uuid = ? OR u.username = ?
 			GROUP BY u.uuid
 			`,
         )
-        .get(uuid) as UserStatsDb) || null;
+        .get(uuid, uuid) as UserStatsDb) || null;
     if (!result) return null;
     return {
       username: result.username,

@@ -1,4 +1,4 @@
-import type { MatchPlayerStats } from '../pages/Stats';
+import type { MatchPlayerStats } from '../types.tsx';
 import { StatBarChartCard, PieChartCard, StatCard } from './StatsCards';
 import { formatDate } from '../utils/formatDate';
 
