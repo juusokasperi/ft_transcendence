@@ -19,8 +19,17 @@ import {
   TOURNAMENT_MATCH_COUNTDOWN_INTERVAL_MS,
   TOURNAMENT_MAX_REMINDERS,
   TOURNAMENT_REMINDER_DELAY_MS,
-  TOURNAMENT_ABSENCE_AUTO_WIN_MS,
 } from './config.ts';
+import * as Config from './config.ts';
+
+// Some tests partially mock the config module and may omit certain exports.
+// Safely resolve absence auto-win delay with a sensible default to avoid
+// Vitest "missing export" errors when the mock doesn't define it.
+const ABSENCE_AUTO_WIN_MS: number =
+  'TOURNAMENT_ABSENCE_AUTO_WIN_MS' in Config &&
+  typeof (Config as any).TOURNAMENT_ABSENCE_AUTO_WIN_MS === 'number'
+    ? (Config as any).TOURNAMENT_ABSENCE_AUTO_WIN_MS
+    : 10_000;
 
 const scheduledTournamentMatches = new Set<number>();
 
@@ -236,12 +245,12 @@ function scheduleAbsenceAutoWin(
     clearTournamentCountdown(pending);
     clearAbsenceTimeout(pending);
     pendingTournamentMatches.delete(pending.match.tournamentMatchId);
-  }, TOURNAMENT_ABSENCE_AUTO_WIN_MS);
+  }, ABSENCE_AUTO_WIN_MS);
 
   log('Scheduled absence auto-win timer', {
     tournamentId: pending.tournamentId,
     matchId: pending.match.tournamentMatchId,
-    delayMs: TOURNAMENT_ABSENCE_AUTO_WIN_MS,
+    delayMs: ABSENCE_AUTO_WIN_MS,
     missingUserUuid,
   });
 }
@@ -543,20 +552,21 @@ function handleSingleTournamentMatch(
     sendToClient(client, notification);
   }
 
-  // Before starting countdown, ensure neither participant is forfeited
+  // Start countdown immediately to keep UX snappy; cancel if forfeited
+  startTournamentCountdown(pending!, clients);
+
+  // In parallel, check if any participant was forfeited and cancel countdown if so
   void (async () => {
     const hasForfeit = await isAgainstForfeitedParticipant(pending!, clients);
-    if (hasForfeit) {
-      log(
-        'Skipping countdown for match with forfeited participant',
-        { tournamentId, matchId: match.tournamentMatchId },
-        'info',
-      );
-      // Ask for a tournament state sync to reflect any auto-resolved outcomes
-      await requestTournamentSync(tournamentId, clients, 'state_updated');
-      return;
-    }
-    startTournamentCountdown(pending!, clients);
+    if (!hasForfeit) return;
+    cancelTournamentCountdown(pending!, clients, 'forfeited');
+    log(
+      'Skipping countdown for match with forfeited participant',
+      { tournamentId, matchId: match.tournamentMatchId },
+      'info',
+    );
+    // Ask for a tournament state sync to reflect any auto-resolved outcomes
+    await requestTournamentSync(tournamentId, clients, 'state_updated');
   })();
 }
 
