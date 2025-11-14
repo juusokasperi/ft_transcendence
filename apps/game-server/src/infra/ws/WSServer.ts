@@ -360,7 +360,8 @@ export class WSServer {
         const session = this.registry.getSession(roomIdentifier);
         if (!session) return;
         const winnerSeat: 'P1' | 'P2' = seat === 'P1' ? 'P2' : 'P1';
-        const winnerSide = seatToSide(session.model.state.playerAtEnd, winnerSeat);
+        // Guard against tests or edge cases where model.state may be undefined
+        const winnerSide = seatToSide((session.model.state as any)?.playerAtEnd, winnerSeat);
         // Stop runner to cease frames, then report and broadcast the result.
         try {
           this.runner.stop(session);
@@ -406,7 +407,8 @@ export class WSServer {
       // Both players have disconnected (or quit) nearly simultaneously.
       // Declare the LAST quitter (current 'seat') as the winner to avoid tournament lock.
       const winnerSeat: 'P1' | 'P2' = seat;
-      const winnerSide = seatToSide(session.model.state.playerAtEnd, winnerSeat);
+      // Guard against cases where model.state may be undefined (e.g., mocked sessions in tests)
+      const winnerSide = seatToSide((session.model.state as any)?.playerAtEnd, winnerSeat);
 
       this.logger.info(
         { roomIdentifier, winnerSeat, winnerSide },
