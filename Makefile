@@ -20,6 +20,22 @@ BUILDER ?= $(BUILDER_NAME)-builder
 BUILDKIT_BASE_IMG ?= moby/buildkit:buildx-stable-1
 BUILDER_IMAGE    ?= $(BUILDER_NAME)-buildkit:latest
 
+# Grouped prod compose bundles (full vs slim)
+PROD_FULL_STACK = $(PROD_COMPOSE) $(MON_PROD_COMPOSE) $(LOG_PROD_COMPOSE)
+PROD_SLIM_STACK = $(PROD_COMPOSE)
+
+# Prod build/run helper macros
+define prod_build
+	@echo ">> Building with BUILDKIT_INLINE_CACHE enabled"
+	DOCKER_BUILDKIT=1 COMPOSE_DOCKER_CLI_BUILD=1 \
+	docker compose -p $(NAME_PROD) $(ENV_ROOT) $(1) build
+endef
+
+define prod_up
+	@echo ">> Starting services"
+	docker compose -p $(NAME_PROD) $(ENV_ROOT) $(1) up $(2)
+endef
+
 # Env file passed to docker compose (keep secrets out of the Makefile)
 ENV_ROOT         = --env-file .env
 
@@ -105,64 +121,36 @@ prod:
 	$(ensure_env)
 	$(ensure_builder)
 	$(ensure_certs)
-	@echo ">> Starting prod stack (attached, with cache optimization)"
-	@echo ">> Building with BUILDKIT_INLINE_CACHE enabled"
-	DOCKER_BUILDKIT=1 COMPOSE_DOCKER_CLI_BUILD=1 \
-	docker compose -p $(NAME_PROD) $(PROD_COMPOSE) $(ENV_ROOT) \
-		${MON_PROD_COMPOSE} \
-		${LOG_PROD_COMPOSE} \
-		build
-	@echo ">> Starting services"
-	docker compose -p $(NAME_PROD) $(PROD_COMPOSE) $(ENV_ROOT) \
-		${MON_PROD_COMPOSE} \
-		${LOG_PROD_COMPOSE} \
-		up
+	@echo ">> Starting prod stack (attached)"
+	$(call prod_build,$(PROD_FULL_STACK))
+	$(call prod_up,$(PROD_FULL_STACK),)
 
 prod-detached:
 	$(ensure_dirs)
 	$(ensure_env)
 	$(ensure_builder)
 	$(ensure_certs)
-	@echo ">> Starting prod stack (detached, with cache optimization)"
-	@echo ">> Building with BUILDKIT_INLINE_CACHE enabled"
-	DOCKER_BUILDKIT=1 COMPOSE_DOCKER_CLI_BUILD=1 \
-	docker compose -p $(NAME_PROD) $(PROD_COMPOSE) $(ENV_ROOT) \
-		${MON_PROD_COMPOSE} \
-		${LOG_PROD_COMPOSE} \
-		build
-	@echo ">> Starting services"
-	docker compose -p $(NAME_PROD) $(PROD_COMPOSE) $(ENV_ROOT) \
-		${MON_PROD_COMPOSE} \
-		${LOG_PROD_COMPOSE} \
-		up -d
+	@echo ">> Starting prod stack (detached)"
+	$(call prod_build,$(PROD_FULL_STACK))
+	$(call prod_up,$(PROD_FULL_STACK),-d)
 
 prod-slim:
 	$(ensure_dirs)
 	$(ensure_env)
 	$(ensure_builder)
 	$(ensure_certs)
-	@echo ">> Starting prod stack without monitoring/ELK (attached, with cache optimization)"
-	@echo ">> Building with BUILDKIT_INLINE_CACHE enabled"
-	DOCKER_BUILDKIT=1 COMPOSE_DOCKER_CLI_BUILD=1 \
-	docker compose -p $(NAME_PROD) $(PROD_COMPOSE) $(ENV_ROOT) \
-		build
-	@echo ">> Starting services"
-	docker compose -p $(NAME_PROD) $(PROD_COMPOSE) $(ENV_ROOT) \
-		up
+	@echo ">> Starting prod stack without monitoring/ELK (attached)"
+	$(call prod_build,$(PROD_SLIM_STACK))
+	$(call prod_up,$(PROD_SLIM_STACK),)
 
 prod-slim-detached:
 	$(ensure_dirs)
 	$(ensure_env)
 	$(ensure_builder)
 	$(ensure_certs)
-	@echo ">> Starting prod stack without monitoring/ELK (detached, with cache optimization)"
-	@echo ">> Building with BUILDKIT_INLINE_CACHE enabled"
-	DOCKER_BUILDKIT=1 COMPOSE_DOCKER_CLI_BUILD=1 \
-	docker compose -p $(NAME_PROD) $(PROD_COMPOSE) $(ENV_ROOT) \
-		build
-	@echo ">> Starting services"
-	docker compose -p $(NAME_PROD) $(PROD_COMPOSE) $(ENV_ROOT) \
-		up -d
+	@echo ">> Starting prod stack without monitoring/ELK (detached)"
+	$(call prod_build,$(PROD_SLIM_STACK))
+	$(call prod_up,$(PROD_SLIM_STACK),-d)
 
 elk:
 	$(ensure_dirs)
