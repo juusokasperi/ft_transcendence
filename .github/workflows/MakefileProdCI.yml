@@ -40,48 +40,15 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-buildx-
 
-      # Import cached images if they exist
-      - name: Load cached Docker images
+      - name: Build images with Buildx bake (local cache)
         run: |
-          if [ -d "/tmp/.buildx-cache" ]; then
-            echo "Loading cached images..."
-            for img in /tmp/.buildx-cache/*.tar; do
-              if [ -f "$img" ]; then
-                docker load -i "$img" || true
-              fi
-            done
-            echo "Cached images loaded"
-          else
-            echo "No cached images found"
-            mkdir -p /tmp/.buildx-cache
-          fi
+          docker buildx bake -f docker-compose-prod.yml \
+            --set *.cache-from=type=local,src=/tmp/.buildx-cache \
+            --set *.cache-to=type=local,dest=/tmp/.buildx-cache,mode=max \
+            --load
 
-      - name: Build all services
-        run: make prod-slim-detached
-        env:
-          DOCKER_BUILDKIT: 1
-          COMPOSE_DOCKER_CLI_BUILD: 1
-
-      # Export built images to cache
-      - name: Export Docker images to cache
-        if: always()
-        run: |
-          echo "Exporting images to cache..."
-          mkdir -p /tmp/.buildx-cache-new
-
-          # Export production images
-          docker images --format "{{.Repository}}:{{.Tag}}" | grep "ft-transcendence.*prod" | while read img; do
-            if [ ! -z "$img" ] && [ "$img" != "<none>:<none>" ]; then
-              filename=$(echo "$img" | tr '/:' '__')
-              echo "Exporting $img to $filename.tar"
-              docker save -o "/tmp/.buildx-cache-new/${filename}.tar" "$img" || true
-            fi
-          done
-
-          # Replace old cache with new
-          rm -rf /tmp/.buildx-cache
-          mv /tmp/.buildx-cache-new /tmp/.buildx-cache
-          echo "Image cache updated"
+      - name: Start prod stack (no build)
+        run: docker compose -p ft-transcendence-prod --env-file .env -f docker-compose-prod.yml up -d
 
       - name: Comment on PR if failed
         if: ${{ failure() && github.event_name == 'pull_request' }}

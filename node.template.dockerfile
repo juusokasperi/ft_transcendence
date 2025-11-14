@@ -6,6 +6,7 @@ WORKDIR /work
 
 ENV COREPACK_ENABLE_DOWNLOAD_PROMPT=0
 ARG PNPM_VERSION
+ARG BUILDKIT_INLINE_CACHE=1
 RUN corepack enable && corepack prepare pnpm@${PNPM_VERSION} --activate
 
 # Copy workspace configs and package.json files ONLY (for better layer caching)
@@ -58,6 +59,7 @@ WORKDIR /app
 
 ARG SERVICE_DIR
 ARG INSTALL_SQLITE=false
+ARG BUILDKIT_INLINE_CACHE=1
 
 # Conditionally install sqlite3 CLI (only for services that need it, e.g., backend)
 RUN if [ "$INSTALL_SQLITE" = "true" ]; then \

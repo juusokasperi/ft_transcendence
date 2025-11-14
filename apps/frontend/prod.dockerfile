@@ -9,6 +9,7 @@ WORKDIR /work
 # Enable Corepack / pnpm
 ENV COREPACK_ENABLE_DOWNLOAD_PROMPT=0
 ARG PNPM_VERSION
+ARG BUILDKIT_INLINE_CACHE=1
 RUN corepack enable
 RUN corepack prepare pnpm@${PNPM_VERSION} --activate
 
