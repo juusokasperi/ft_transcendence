@@ -106,27 +106,12 @@ prod:
 	$(ensure_builder)
 	$(ensure_certs)
 	@echo ">> Starting prod stack (attached, with cache optimization)"
-	@if [ -n "$(BUILDX_CACHE_FROM)" ] || [ -n "$(BUILDX_CACHE_TO)" ]; then \
-		echo ">> Building with BuildKit cache mounts"; \
-		CACHE_ARGS=""; \
-		if [ -n "$(BUILDX_CACHE_FROM)" ]; then \
-			CACHE_ARGS="$$CACHE_ARGS --cache-from $(BUILDX_CACHE_FROM)"; \
-		fi; \
-		if [ -n "$(BUILDX_CACHE_TO)" ]; then \
-			CACHE_ARGS="$$CACHE_ARGS --cache-to $(BUILDX_CACHE_TO)"; \
-		fi; \
-		DOCKER_BUILDKIT=1 COMPOSE_DOCKER_CLI_BUILD=1 \
-		docker compose -p $(NAME_PROD) $(PROD_COMPOSE) $(ENV_ROOT) \
-			${MON_PROD_COMPOSE} \
-			${LOG_PROD_COMPOSE} \
-			build $$CACHE_ARGS; \
-	else \
-		DOCKER_BUILDKIT=1 COMPOSE_DOCKER_CLI_BUILD=1 \
-		docker compose -p $(NAME_PROD) $(PROD_COMPOSE) $(ENV_ROOT) \
-			${MON_PROD_COMPOSE} \
-			${LOG_PROD_COMPOSE} \
-			build; \
-	fi
+	@echo ">> Building with BUILDKIT_INLINE_CACHE enabled"
+	DOCKER_BUILDKIT=1 COMPOSE_DOCKER_CLI_BUILD=1 \
+	docker compose -p $(NAME_PROD) $(PROD_COMPOSE) $(ENV_ROOT) \
+		${MON_PROD_COMPOSE} \
+		${LOG_PROD_COMPOSE} \
+		build --build-arg BUILDKIT_INLINE_CACHE=1
 	@echo ">> Starting services"
 	docker compose -p $(NAME_PROD) $(PROD_COMPOSE) $(ENV_ROOT) \
 		${MON_PROD_COMPOSE} \
@@ -139,27 +124,12 @@ prod-detached:
 	$(ensure_builder)
 	$(ensure_certs)
 	@echo ">> Starting prod stack (detached, with cache optimization)"
-	@if [ -n "$(BUILDX_CACHE_FROM)" ] || [ -n "$(BUILDX_CACHE_TO)" ]; then \
-		echo ">> Building with BuildKit cache mounts"; \
-		CACHE_ARGS=""; \
-		if [ -n "$(BUILDX_CACHE_FROM)" ]; then \
-			CACHE_ARGS="$$CACHE_ARGS --cache-from $(BUILDX_CACHE_FROM)"; \
-		fi; \
-		if [ -n "$(BUILDX_CACHE_TO)" ]; then \
-			CACHE_ARGS="$$CACHE_ARGS --cache-to $(BUILDX_CACHE_TO)"; \
-		fi; \
-		DOCKER_BUILDKIT=1 COMPOSE_DOCKER_CLI_BUILD=1 \
-		docker compose -p $(NAME_PROD) $(PROD_COMPOSE) $(ENV_ROOT) \
-			${MON_PROD_COMPOSE} \
-			${LOG_PROD_COMPOSE} \
-			build $$CACHE_ARGS; \
-	else \
-		DOCKER_BUILDKIT=1 COMPOSE_DOCKER_CLI_BUILD=1 \
-		docker compose -p $(NAME_PROD) $(PROD_COMPOSE) $(ENV_ROOT) \
-			${MON_PROD_COMPOSE} \
-			${LOG_PROD_COMPOSE} \
-			build; \
-	fi
+	@echo ">> Building with BUILDKIT_INLINE_CACHE enabled"
+	DOCKER_BUILDKIT=1 COMPOSE_DOCKER_CLI_BUILD=1 \
+	docker compose -p $(NAME_PROD) $(PROD_COMPOSE) $(ENV_ROOT) \
+		${MON_PROD_COMPOSE} \
+		${LOG_PROD_COMPOSE} \
+		build --build-arg BUILDKIT_INLINE_CACHE=1
 	@echo ">> Starting services"
 	docker compose -p $(NAME_PROD) $(PROD_COMPOSE) $(ENV_ROOT) \
 		${MON_PROD_COMPOSE} \
@@ -172,23 +142,10 @@ prod-slim:
 	$(ensure_builder)
 	$(ensure_certs)
 	@echo ">> Starting prod stack without monitoring/ELK (attached, with cache optimization)"
-	@if [ -n "$(BUILDX_CACHE_FROM)" ] || [ -n "$(BUILDX_CACHE_TO)" ]; then \
-		echo ">> Building with BuildKit cache mounts"; \
-		CACHE_ARGS=""; \
-		if [ -n "$(BUILDX_CACHE_FROM)" ]; then \
-			CACHE_ARGS="$$CACHE_ARGS --cache-from $(BUILDX_CACHE_FROM)"; \
-		fi; \
-		if [ -n "$(BUILDX_CACHE_TO)" ]; then \
-			CACHE_ARGS="$$CACHE_ARGS --cache-to $(BUILDX_CACHE_TO)"; \
-		fi; \
-		DOCKER_BUILDKIT=1 COMPOSE_DOCKER_CLI_BUILD=1 \
-		docker compose -p $(NAME_PROD) $(PROD_COMPOSE) $(ENV_ROOT) \
-			build $$CACHE_ARGS; \
-	else \
-		DOCKER_BUILDKIT=1 COMPOSE_DOCKER_CLI_BUILD=1 \
-		docker compose -p $(NAME_PROD) $(PROD_COMPOSE) $(ENV_ROOT) \
-			build; \
-	fi
+	@echo ">> Building with BUILDKIT_INLINE_CACHE enabled"
+	DOCKER_BUILDKIT=1 COMPOSE_DOCKER_CLI_BUILD=1 \
+	docker compose -p $(NAME_PROD) $(PROD_COMPOSE) $(ENV_ROOT) \
+		build --build-arg BUILDKIT_INLINE_CACHE=1
 	@echo ">> Starting services"
 	docker compose -p $(NAME_PROD) $(PROD_COMPOSE) $(ENV_ROOT) \
 		up
@@ -199,23 +156,10 @@ prod-slim-detached:
 	$(ensure_builder)
 	$(ensure_certs)
 	@echo ">> Starting prod stack without monitoring/ELK (detached, with cache optimization)"
-	@if [ -n "$(BUILDX_CACHE_FROM)" ] || [ -n "$(BUILDX_CACHE_TO)" ]; then \
-		echo ">> Building with BuildKit cache mounts"; \
-		CACHE_ARGS=""; \
-		if [ -n "$(BUILDX_CACHE_FROM)" ]; then \
-			CACHE_ARGS="$$CACHE_ARGS --cache-from $(BUILDX_CACHE_FROM)"; \
-		fi; \
-		if [ -n "$(BUILDX_CACHE_TO)" ]; then \
-			CACHE_ARGS="$$CACHE_ARGS --cache-to $(BUILDX_CACHE_TO)"; \
-		fi; \
-		DOCKER_BUILDKIT=1 COMPOSE_DOCKER_CLI_BUILD=1 \
-		docker compose -p $(NAME_PROD) $(PROD_COMPOSE) $(ENV_ROOT) \
-			build $$CACHE_ARGS; \
-	else \
-		DOCKER_BUILDKIT=1 COMPOSE_DOCKER_CLI_BUILD=1 \
-		docker compose -p $(NAME_PROD) $(PROD_COMPOSE) $(ENV_ROOT) \
-			build; \
-	fi
+	@echo ">> Building with BUILDKIT_INLINE_CACHE enabled"
+	DOCKER_BUILDKIT=1 COMPOSE_DOCKER_CLI_BUILD=1 \
+	docker compose -p $(NAME_PROD) $(PROD_COMPOSE) $(ENV_ROOT) \
+		build --build-arg BUILDKIT_INLINE_CACHE=1
 	@echo ">> Starting services"
 	docker compose -p $(NAME_PROD) $(PROD_COMPOSE) $(ENV_ROOT) \
 		up -d

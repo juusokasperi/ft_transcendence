@@ -31,47 +31,57 @@ jobs:
             image=moby/buildkit:buildx-stable-1
             network=host
 
-      # Cache BuildKit build cache (much more efficient than saving image tars)
-      - name: Cache BuildKit
+      # Cache Docker layers - this caches the final image layers
+      - name: Cache Docker layers
         uses: actions/cache@v4
         with:
-          path: /tmp/.buildkit-cache
-          key: ${{ runner.os }}-buildkit-${{ hashFiles('**/pnpm-lock.yaml', '**/package.json', 'docker-compose-prod.yml', 'node.template.dockerfile', 'apps/frontend/prod.dockerfile', 'nginx/prod.conf.template', '.env.example', 'Makefile', '.config/tsconfig.*.json', 'tsconfig*.json') }}
+          path: /tmp/.buildx-cache
+          key: ${{ runner.os }}-buildx-${{ hashFiles('**/pnpm-lock.yaml', '**/package.json', 'docker-compose-prod.yml', 'node.template.dockerfile', 'apps/frontend/prod.dockerfile', 'nginx/prod.conf.template', '.env.example', 'Makefile', '.config/tsconfig.*.json', 'tsconfig*.json') }}
           restore-keys: |
-            ${{ runner.os }}-buildkit-
+            ${{ runner.os }}-buildx-
 
-      - name: Build all services with cache
+      # Import cached images if they exist
+      - name: Load cached Docker images
         run: |
-          # Create cache directory structure
-          mkdir -p /tmp/.buildkit-cache-new
-          
-          # Build with BuildKit cache mounts
-          CACHE_FROM=""
-          CACHE_TO="type=local,dest=/tmp/.buildkit-cache-new,mode=max"
-          
-          if [ -d "/tmp/.buildkit-cache" ] && [ "$(ls -A /tmp/.buildkit-cache)" ]; then
-            echo "Using existing BuildKit cache"
-            CACHE_FROM="type=local,src=/tmp/.buildkit-cache"
+          if [ -d "/tmp/.buildx-cache" ]; then
+            echo "Loading cached images..."
+            for img in /tmp/.buildx-cache/*.tar; do
+              if [ -f "$img" ]; then
+                docker load -i "$img" || true
+              fi
+            done
+            echo "Cached images loaded"
           else
-            echo "No existing cache found, building from scratch"
+            echo "No cached images found"
+            mkdir -p /tmp/.buildx-cache
           fi
-          
-          make prod-slim-detached \
-            BUILDX_CACHE_FROM="$CACHE_FROM" \
-            BUILDX_CACHE_TO="$CACHE_TO"
+
+      - name: Build all services
+        run: make prod-slim-detached
         env:
           DOCKER_BUILDKIT: 1
           COMPOSE_DOCKER_CLI_BUILD: 1
 
-      # Move new cache into place for next run
-      - name: Rotate BuildKit cache
+      # Export built images to cache
+      - name: Export Docker images to cache
         if: always()
         run: |
-          rm -rf /tmp/.buildkit-cache
-          if [ -d "/tmp/.buildkit-cache-new" ]; then
-            mv /tmp/.buildkit-cache-new /tmp/.buildkit-cache
-            echo "BuildKit cache updated"
-          fi
+          echo "Exporting images to cache..."
+          mkdir -p /tmp/.buildx-cache-new
+
+          # Export production images
+          docker images --format "{{.Repository}}:{{.Tag}}" | grep "ft-transcendence.*prod" | while read img; do
+            if [ ! -z "$img" ] && [ "$img" != "<none>:<none>" ]; then
+              filename=$(echo "$img" | tr '/:' '__')
+              echo "Exporting $img to $filename.tar"
+              docker save -o "/tmp/.buildx-cache-new/${filename}.tar" "$img" || true
+            fi
+          done
+
+          # Replace old cache with new
+          rm -rf /tmp/.buildx-cache
+          mv /tmp/.buildx-cache-new /tmp/.buildx-cache
+          echo "Image cache updated"
 
       - name: Comment on PR if failed
         if: ${{ failure() && github.event_name == 'pull_request' }}
