@@ -28,6 +28,7 @@ COPY packages/pong/render/package.json ./packages/pong/render/package.json
 COPY packages/pong/shared/package.json ./packages/pong/shared/package.json
 COPY packages/utils/logger/package.json ./packages/utils/logger/package.json
 COPY packages/utils/metrics/package.json ./packages/utils/metrics/package.json
+COPY packages/utils/rate-limiter/package.json ./packages/utils/rate-limiter/package.json
 
 # help with cache invalidation for next step
 COPY pnpm-lock.yaml ./
@@ -56,6 +57,15 @@ FROM node:22-bookworm-slim AS runtime
 WORKDIR /app
 
 ARG SERVICE_DIR
+ARG INSTALL_SQLITE=false
+
+# Conditionally install sqlite3 CLI (only for services that need it, e.g., backend)
+RUN if [ "$INSTALL_SQLITE" = "true" ]; then \
+      apt-get update && \
+      apt-get install -y sqlite3 && \
+      rm -rf /var/lib/apt/lists/*; \
+    fi
+
 COPY --from=builder /prod/${SERVICE_DIR} ./
 ENV NODE_ENV=production
 

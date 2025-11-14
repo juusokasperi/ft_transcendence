@@ -70,7 +70,7 @@ describe('WSServer resume rotation and interval lifecycle', () => {
       runner: { resume: vi.fn() } as any,
       resumeTokens: { issue: resumeIssue } as any,
       reconnects: { onReconnect: vi.fn() } as any,
-      redis: { publish: vi.fn(), exists: vi.fn() } as any,
+      redis: { publish: vi.fn(), exists: vi.fn(), defineCommand: vi.fn() } as any,
       logger,
       auth: { verifyJoinToken: vi.fn() } as any,
     });
@@ -127,7 +127,7 @@ describe('WSServer resume rotation and interval lifecycle', () => {
       runner: { resume: vi.fn(), stop: vi.fn() } as any,
       resumeTokens,
       reconnects: { onReconnect: vi.fn() } as any,
-      redis: { publish: vi.fn(), exists: vi.fn() } as any,
+      redis: { publish: vi.fn(), exists: vi.fn(), defineCommand: vi.fn() } as any,
       logger,
       auth: { verifyJoinToken: vi.fn() } as any,
     });

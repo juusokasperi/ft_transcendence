@@ -1,7 +1,6 @@
-import Redis from 'ioredis';
+import type Redis from 'ioredis';
 import { v4 as uuid } from 'uuid';
 import type { TournamentMatchesReadyMessage } from '@pong/shared/protocol/net';
-import { REDIS_URL } from './config.ts';
 import { log } from '@utils/logger';
 import {
   STREAM_TOURNAMENT_MATCHES_READY,
@@ -20,7 +19,6 @@ type InitHandlers = {
 };
 
 export class MatchmakingRedisBridge {
-  private readonly redisUrl: string;
   private readonly handlers: InitHandlers;
   private readonly consumerId = `matchmaking-${uuid()}`;
   private subscriber?: Redis;
@@ -28,16 +26,15 @@ export class MatchmakingRedisBridge {
   private consuming = false;
   private consumerPromise?: Promise<void>;
 
-  constructor(handlers: InitHandlers, redisUrl = REDIS_URL) {
+  constructor(handlers: InitHandlers, subscriber: Redis, stream: Redis) {
     this.handlers = handlers;
-    this.redisUrl = redisUrl;
+    this.subscriber = subscriber;
+    this.stream = stream;
   }
 
   async init(): Promise<void> {
-    this.subscriber = new Redis(this.redisUrl);
-    this.stream = new Redis(this.redisUrl);
     this.consuming = true;
-
+    if (!this.subscriber || !this.stream) throw new Error('Redis pub/sub or stream undefined');
     this.subscriber.on('error', (err) =>
       log('Redis pub/sub error', { error: err?.message ?? String(err) }, 'error'),
     );
@@ -75,9 +72,7 @@ export class MatchmakingRedisBridge {
     this.consuming = false;
     if (this.subscriber) {
       await this.subscriber.unsubscribe('room_ready');
-      await this.subscriber.quit();
     }
-    if (this.stream) await this.stream.quit();
     if (this.consumerPromise) await this.consumerPromise.catch(() => {});
   }
 
