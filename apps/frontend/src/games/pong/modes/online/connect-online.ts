@@ -23,7 +23,6 @@ export type StartSignal = {
   startAtEpochMs: number;
   randomSeed: number;
   tickRateHz: number;
-  frameRateHz?: number;
   players?: {
     P1?: { alias?: string };
     P2?: { alias?: string };
@@ -248,7 +247,6 @@ export async function connectOnline(
                   randomSeed: typeof rs.randomSeed === 'number' ? rs.randomSeed : cfg.randomSeed,
                   tickRateHz:
                     typeof rs.tickRateHz === 'number' ? rs.tickRateHz : CLIENT_TICK_RATE_HZ,
-                  frameRateHz: typeof rs.frameRateHz === 'number' ? rs.frameRateHz : undefined,
                 };
                 notifyStart(payload);
               }
@@ -265,8 +263,6 @@ export async function connectOnline(
                 typeof startMsg.randomSeed === 'number' ? startMsg.randomSeed : cfg.randomSeed,
               tickRateHz:
                 typeof startMsg.tickRateHz === 'number' ? startMsg.tickRateHz : CLIENT_TICK_RATE_HZ,
-              frameRateHz:
-                typeof startMsg.frameRateHz === 'number' ? startMsg.frameRateHz : undefined,
               players: startMsg.players,
             };
             notifyStart(payload);

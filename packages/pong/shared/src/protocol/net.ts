@@ -254,7 +254,6 @@ export type RoomStateMessage = {
   startAtEpochMs?: number;
   randomSeed?: number;
   tickRateHz?: number;
-  frameRateHz?: number;
   players?: {
     P1?: { alias?: string };
     P2?: { alias?: string };
@@ -267,7 +266,6 @@ export type StartMessage = {
   startAtEpochMs: number;
   randomSeed: number;
   tickRateHz: number;
-  frameRateHz?: number;
   players?: {
     P1?: { alias?: string };
     P2?: { alias?: string };
