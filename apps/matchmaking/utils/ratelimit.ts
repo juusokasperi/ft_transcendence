@@ -13,6 +13,7 @@ export async function isRateLimited(
     client.socket.send(
       JSON.stringify({
         type: 'ERROR',
+        code: 'RATELIMIT',
         message: 'You are sending messages too fast. Try again soon.',
       }),
     );

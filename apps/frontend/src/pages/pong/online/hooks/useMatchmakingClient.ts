@@ -8,6 +8,7 @@ type Handlers = {
   dispatch: React.Dispatch<OnlineAction>;
   onAuthError: (message?: string) => void;
   onAllocatorError: (message?: string) => void;
+  onRatelimit: (message?: string) => void;
   onMatchTimeout?: () => void;
   onMatchDeclined?: () => void;
 };
@@ -19,6 +20,7 @@ type UseMatchmakingClientArgs = {
   enabled: boolean;
   onAuthError: (message?: string) => void;
   onAllocatorError: (message?: string) => void;
+  onRatelimit: (message?: string) => void;
   onMatchTimeout?: () => void;
   onMatchDeclined?: () => void;
 };
@@ -30,6 +32,7 @@ export function useMatchmakingClient({
   enabled,
   onAuthError,
   onAllocatorError,
+  onRatelimit,
   onMatchTimeout,
   onMatchDeclined,
 }: UseMatchmakingClientArgs) {
@@ -37,6 +40,7 @@ export function useMatchmakingClient({
     dispatch,
     onAuthError,
     onAllocatorError,
+    onRatelimit,
     onMatchTimeout,
     onMatchDeclined,
   });
@@ -51,10 +55,11 @@ export function useMatchmakingClient({
       dispatch,
       onAuthError,
       onAllocatorError,
+      onRatelimit,
       onMatchTimeout,
       onMatchDeclined,
     };
-  }, [dispatch, onAuthError, onAllocatorError, onMatchTimeout, onMatchDeclined]);
+  }, [dispatch, onAuthError, onAllocatorError, onRatelimit, onMatchTimeout, onMatchDeclined]);
 
   useEffect(() => {
     requestReconnectRef.current = requestReconnect;
@@ -126,7 +131,11 @@ export function useMatchmakingClient({
             } else if (msg.code === 'ALLOCATOR') {
               handlers.dispatch({ type: 'allocatorError' });
               handlers.onAllocatorError(msg.message);
+            } else if (msg.code === 'RATELIMIT') {
+              handlers.dispatch({ type: 'ratelimitError' });
+              handlers.onRatelimit(msg.message);
             }
+
             break;
           case 'INFO':
             if (msg.message === 'New connection detected, closing this one') {
