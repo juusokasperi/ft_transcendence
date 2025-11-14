@@ -7,6 +7,7 @@ import Navbar from '../components/Navbar';
 import backgroundImg from '../assets/background.png';
 import tetristImg from '../assets/tetrist.jpg';
 import snakeImg from '../assets/snake.jpeg';
+import ElectricBorder from '@ft/electric_border';
 
 const containerVariants: Variants = {
   hidden: {},
@@ -52,18 +53,21 @@ const games = [
     available: true,
     accent: 'from-indigo-500 to-purple-500',
     link: '/pong',
+    borderColor: '#6366F1',
   },
   {
     title: 'Tetris',
     desc: 'The classic block-dropper reimagined with competitive seasons. Coming soon.',
     available: false,
     accent: 'from-fuchsia-500 to-rose-500',
+    borderColor: '#D946EF',
   },
   {
     title: 'Snake',
     desc: 'Retro snake with modern twists, power-ups, and shared scoreboards. Coming soon.',
     available: false,
     accent: 'from-emerald-500 to-teal-500',
+    borderColor: '#10B981',
   },
 ];
 
@@ -225,37 +229,60 @@ const Hero: React.FC = () => {
           </div>
 
           <div className="space-y-6">
-            {games.map((game) => (
-              <div
-                key={game.title}
-                className="flex flex-col overflow-hidden rounded-3xl border border-white/10 bg-slate-900/60 shadow-lg shadow-indigo-950/20 ring-1 ring-white/5 transition hover:shadow-indigo-900/30 sm:flex-row"
-              >
-                <div className={`h-1 w-full bg-gradient-to-r ${game.accent} sm:h-auto sm:w-1`} />
-                <div className="flex flex-1 flex-col gap-4 p-6 sm:p-8">
-                  <div>
-                    <h3 className="text-xl font-semibold sm:text-2xl">{game.title}</h3>
-                    <p className="mt-2 text-sm text-slate-200/80 sm:text-base">{game.desc}</p>
-                  </div>
-                  <div className="mt-auto flex flex-col gap-2 sm:flex-row sm:items-center">
-                    {game.available ? (
-                      <Link
-                        to={game.link ?? '#'}
-                        className="inline-flex items-center justify-center rounded-full bg-gradient-to-r from-indigo-500 to-purple-500 px-5 py-2 text-sm font-semibold text-white shadow-sm shadow-indigo-900/40 transition hover:from-indigo-400 hover:to-purple-400"
-                      >
-                        Play now
-                      </Link>
-                    ) : (
-                      <span className="inline-flex items-center justify-center rounded-full border border-white/10 px-5 py-2 text-sm font-semibold text-slate-300/70">
-                        Coming soon
+            {games.map((game, i) => {
+              const card = (
+                <div className="flex flex-col overflow-hidden rounded-3xl border border-white/10 bg-slate-900/60 shadow-lg shadow-indigo-950/20 ring-1 ring-white/5 transition hover:shadow-indigo-900/30 sm:flex-row">
+                  <div className={`h-1 w-full bg-gradient-to-r ${game.accent} sm:h-auto sm:w-1`} />
+                  <div className="flex flex-1 flex-col gap-4 p-6 sm:p-8">
+                    <div>
+                      <h3 className="text-xl font-semibold sm:text-2xl">{game.title}</h3>
+                      <p className="mt-2 text-sm text-slate-200/80 sm:text-base">{game.desc}</p>
+                    </div>
+                    <div className="mt-auto flex flex-col gap-2 sm:flex-row sm:items-center">
+                      {game.available ? (
+                        <Link
+                          to={game.link ?? '#'}
+                          className="inline-flex items-center justify-center rounded-full bg-gradient-to-r from-indigo-500 to-purple-500 px-5 py-2 text-sm font-semibold text-white shadow-sm shadow-indigo-900/40 transition hover:from-indigo-400 hover:to-purple-400"
+                        >
+                          Play now
+                        </Link>
+                      ) : (
+                        <span className="inline-flex items-center justify-center rounded-full border border-white/10 px-5 py-2 text-sm font-semibold text-slate-300/70">
+                          Coming soon
+                        </span>
+                      )}
+                      <span className="text-xs uppercase tracking-[0.25em] text-slate-500">
+                        {game.available ? 'Live' : 'In development'}
                       </span>
-                    )}
-                    <span className="text-xs uppercase tracking-[0.25em] text-slate-500">
-                      {game.available ? 'Live' : 'In development'}
-                    </span>
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              );
+
+              // Apply ElectricBorder only for the first game
+              if (i === 0) {
+                return (
+                  <ElectricBorder
+                    key={game.title}
+                    color={game.borderColor}
+                    chaos={game.available ? 1 : 0.6}
+                    speed={game.available ? 1.25 : 0.85}
+                    thickness={2}
+                    style={{ borderRadius: 24 }}
+                    className="block rounded-3xl"
+                  >
+                    {card}
+                  </ElectricBorder>
+                );
+              }
+
+              // Non-first items render without ElectricBorder but keep the outer block for layout
+              return (
+                <div key={game.title} className="block rounded-3xl">
+                  {card}
+                </div>
+              );
+            })}
           </div>
         </motion.div>
       </motion.div>

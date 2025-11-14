@@ -30,7 +30,9 @@
       "@pong/game-logic": ["packages/pong/game-logic/src/index.ts"],
       "@pong/game-logic/*": ["packages/pong/game-logic/src/*"],
       "@pong/render": ["packages/pong/render/src/index.ts"],
-      "@pong/render/*": ["packages/pong/render/src/*"]
+      "@pong/render/*": ["packages/pong/render/src/*"],
+      "@ft/electric_border": ["packages/utils/electric_border/src/index.tsx"],
+      "@ft/electric_border/*": ["packages/utils/electric_border/src/*"]
     }
   }
 }
