@@ -13,6 +13,7 @@ import type { FastifyBaseLogger } from '@utils/logger';
 import { reconnectGraceMs } from '../../domain/Policies.ts';
 import { seatToSide } from '../../domain/Policies.ts';
 import type { ResultReporter } from '../../app/ResultReporter.ts';
+import { RedisTokenBucket } from '@utils/rate-limiter';
 
 type JoinClaims = VerifiedJoinTokenClaims;
 
@@ -40,6 +41,7 @@ export class WSServer {
   private readonly redis: Redis;
   private readonly logger: FastifyBaseLogger;
   private readonly app: FastifyInstance;
+  private readonly rateLimiter: RedisTokenBucket;
 
   constructor(args: {
     config: AppConfig;
@@ -52,6 +54,7 @@ export class WSServer {
     logger: FastifyBaseLogger;
     auth?: AuthService;
     reporter: ResultReporter;
+    rateLimiter?: RedisTokenBucket;
   }) {
     this.config = args.config;
     this.registry = args.registry;
@@ -63,6 +66,7 @@ export class WSServer {
     this.logger = args.logger;
     this.auth = args.auth ?? new AuthService();
     this.reporter = args.reporter;
+    this.rateLimiter = args.rateLimiter ?? new RedisTokenBucket(this.redis, 'gs:rl', 30, 1000);
     this.app = fastify({ logger: true });
   }
 
@@ -349,8 +353,26 @@ export class WSServer {
     }
   }
 
-  private handleMessage(roomIdentifier: string, seat: 'P1' | 'P2', raw: RawData): void {
+  private async isRateLimited(roomIdentifier: string, seat: 'P1' | 'P2'): Promise<boolean> {
+    const session = this.registry.getSession(roomIdentifier);
+    const playerId = session?.players.get(seat)?.playerIdentifier;
+    if (!playerId) {
+      this.logger.warn({ roomIdentifier, seat }, '[WSServer] Missing player for rate limit');
+      return false;
+    }
+    if (await this.rateLimiter.consume(playerId)) return false;
+    this.logger.warn({ roomIdentifier, playerId }, '[WSServer] Throttled player input');
+    return true;
+  }
+
+  private async handleMessage(
+    roomIdentifier: string,
+    seat: 'P1' | 'P2',
+    raw: RawData,
+  ): Promise<void> {
     try {
+      if (await this.isRateLimited(roomIdentifier, seat)) return;
+
       const data = JSON.parse(raw.toString());
       if (data.type === 'axis') {
         const axis = Number(data.axis) || 0;
