@@ -226,8 +226,7 @@ export async function connectOnline(
             break;
           case 'PONG': {
             const now = Date.now();
-            const sentAt =
-              typeof (data as any).clientSentAt === 'number' ? (data as any).clientSentAt : now;
+            const sentAt = typeof data.clientSentAt === 'number' ? data.clientSentAt : now;
             const rtt = Math.max(0, now - sentAt);
             const nextLatency = smoothedLatencyMs * 0.7 + rtt * 0.3;
             notifyLatency({ rttMs: rtt, avgMs: nextLatency });

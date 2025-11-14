@@ -302,11 +302,6 @@ export type ResumeTokenMessage = {
   token: string;
 };
 
-export type PingMessage = {
-  type: 'PING';
-  clientSentAt: number;
-};
-
 export type PongMessage = {
   type: 'PONG';
   clientSentAt: number;
@@ -337,7 +332,7 @@ export type GameServerControlMessage =
 
 // Types that were in blueprint but not implemented:
 
-// export type MatchmakingClientMessage = JoinQueueRequest | ReadyMessage | PingMessage;
+// export type MatchmakingClientMessage = JoinQueueRequest | ReadyMessage;
 
 // export type ReadyMessage = {
 //   type: 'READY';
@@ -364,16 +359,6 @@ export type GameServerControlMessage =
 //   type: 'END';
 //   reason: 'completed' | 'forfeit' | 'disconnect';
 //   winner?: 'west' | 'east';
-// };
-
-// export type PingMessage = {
-//   type: 'PING';
-//   timestamp?: number;
-// };
-
-// export type PongMessage = {
-//   type: 'PONG';
-//   timestamp?: number;
 // };
 
 // export type GameServerClientMessage =

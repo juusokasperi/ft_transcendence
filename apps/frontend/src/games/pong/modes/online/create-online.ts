@@ -110,7 +110,7 @@ export function createOnlineApp(
 
   const setPingIndicator = (latencyMs: number | null) => {
     attachPingIndicator();
-    if (!latencyMs && latencyMs !== 0) {
+    if (latencyMs == null) {
       pingIndicator.style.display = 'none';
       return;
     }
