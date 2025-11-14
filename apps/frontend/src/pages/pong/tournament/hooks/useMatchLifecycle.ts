@@ -3,6 +3,7 @@ import type { RefObject } from 'react';
 import type { ActiveHandoff } from '../state/types';
 import type { MatchPhase } from '../domain/countdown';
 import { useMatchOverEvent } from '../../shared/hooks/useMatchOverEvent';
+import { useAppContext } from '../../../../context/AppContext';
 
 type Options = {
   matchPhase: MatchPhase;
@@ -28,6 +29,7 @@ export function useMatchLifecycle({
   debugLog,
   enqueueSnackbar,
 }: Options) {
+  const { navigate } = useAppContext();
   const appRef = useRef<{ destroy(): void; giveUp?: () => void } | null>(null);
   const rejoinTimerRef = useRef<number | null>(null);
   const refreshTimerRef = useRef<number | null>(null);
@@ -94,6 +96,13 @@ export function useMatchLifecycle({
           randomSeed: handoff.randomSeed,
           onMatchEnd: (reason: string, winner?: 'east' | 'west') => {
             debugLog('match-end-auto-quit', { reason, winner });
+            // If opponent quit (forfeit) and you are the winner, route back to the
+            // tournament page immediately for clarity.
+            if (reason === 'forfeit' && winner && winner === handoff.side) {
+              try {
+                navigate('/pong/tournaments');
+              } catch {}
+            }
             const delay = reason === 'completed' ? 2500 : 1500;
             performMatchTeardown({ refreshDelayMs: delay });
           },
