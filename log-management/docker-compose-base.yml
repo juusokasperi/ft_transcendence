@@ -126,8 +126,8 @@ services:
       - XPACK_REPORTING_ENCRYPTIONKEY=${ES_ENCRYPTION_KEY}
       - xpack.security.enabled=true
       - SERVER_BASEPATH=/kibana
-      - SERVER_PUBLICBASEURL=${FRONTEND_URL}/kibana
-      - SERVER_REWRITEBASEPATH=false
+      - SERVER_PUBLICBASEURL=http://localhost:${MONITORING_PORT:-8082}/kibana
+      - SERVER_REWRITEBASEPATH=true
     mem_limit: 1024m
     healthcheck:
       test:

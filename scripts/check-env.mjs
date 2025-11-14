@@ -1,7 +1,9 @@
 #!/usr/bin/env node
-import { readFileSync } from 'node:fs';
-import { resolve, dirname, isAbsolute } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { readFileSync } from 'fs';
+import { resolve, dirname, isAbsolute } from 'path';
+import { fileURLToPath } from 'url';
+
+// NOTE: this file aims to keep compatibility with node.js version 12
 
 const REQUIRED_VARS = [
   'PNPM_VERSION',
@@ -65,9 +67,7 @@ const REQUIRED_VARS = [
   'GRAFANA_ADMIN_USER',
   'GRAFANA_ADMIN_PASS',
   'GRAFANA_EDITOR_NAME',
-  'GRAFANA_EDITOR_PASS',
   'GRAFANA_VIEWER_NAME',
-  'GRAFANA_VIEWER_PASS',
   'ELASTIC_USER',
   'ELASTIC_PASSWORD',
   'KIBANA_PASSWORD',
@@ -82,6 +82,9 @@ const REQUIRED_VARS = [
   'GRAFANA_OAUTH_CLIENT_SECRET',
   'ES_DEVELOPER_PASSWORD',
   'ES_ANALYST_PASSWORD',
+  'ES_PORT',
+  'MAIL_FROM_RAW',
+  'MONITORING_PORT',
 ];
 
 const help =
@@ -174,7 +177,7 @@ function parseEnv(content) {
     }
 
     const key = match[1];
-    const value = decodeValue(match[2] ?? '');
+    const value = decodeValue(match[2] != null ? match[2] : '');
     env.set(key, value);
   });
 
@@ -235,7 +238,7 @@ function main() {
 
   if (args.printExports) {
     for (const key of REQUIRED_VARS) {
-      const value = env.get(key) ?? '';
+      const value = env.get(key) != null ? env.get(key) : '';
       console.log(`export ${key}=${shellEscape(value)}`);
     }
     return;
