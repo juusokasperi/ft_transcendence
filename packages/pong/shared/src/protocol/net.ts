@@ -302,6 +302,18 @@ export type ResumeTokenMessage = {
   token: string;
 };
 
+export type PingMessage = {
+  type: 'PING';
+  clientSentAt: number;
+};
+
+export type PongMessage = {
+  type: 'PONG';
+  clientSentAt: number;
+  serverReceivedAt: number;
+  serverSentAt: number;
+};
+
 export type ResumeTokenClaims = {
   iss: string;
   aud: string;
@@ -320,7 +332,8 @@ export type GameServerControlMessage =
   | OpponentDisconnectedMessage
   | OpponentReconnectedMessage
   | ResumeTokenMessage
-  | MatchEndMessage;
+  | MatchEndMessage
+  | PongMessage;
 
 // Types that were in blueprint but not implemented:
 

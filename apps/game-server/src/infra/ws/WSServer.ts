@@ -352,7 +352,9 @@ export class WSServer {
   private handleMessage(roomIdentifier: string, seat: 'P1' | 'P2', raw: RawData): void {
     try {
       const data = JSON.parse(raw.toString());
-      if (data.type === 'axis') {
+      if (data.type === 'ping') {
+        this.sendPong(roomIdentifier, seat, data);
+      } else if (data.type === 'axis') {
         const axis = Number(data.axis) || 0;
         this.registry.updateAxis(roomIdentifier, seat, axis);
       } else if (data.type === 'forfeit') {
@@ -389,6 +391,30 @@ export class WSServer {
       }
     } catch (err) {
       this.logger.warn({ roomIdentifier, err }, '[WSServer] Malformed message');
+    }
+  }
+
+  private sendPong(
+    roomIdentifier: string,
+    seat: 'P1' | 'P2',
+    payload: { clientSentAt?: number },
+  ): void {
+    const session = this.registry.getSession(roomIdentifier);
+    if (!session) return;
+    const player = session.players.get(seat);
+    const socket = player?.socket;
+    if (!socket) return;
+    const receivedAt = Date.now();
+    const message = {
+      type: 'PONG' as const,
+      clientSentAt: typeof payload.clientSentAt === 'number' ? payload.clientSentAt : 0,
+      serverReceivedAt: receivedAt,
+      serverSentAt: Date.now(),
+    };
+    try {
+      socket.send(JSON.stringify(message));
+    } catch (err) {
+      this.logger.warn({ err }, '[WSServer] Failed to send PONG');
     }
   }
 

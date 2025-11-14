@@ -41,6 +41,15 @@ import type { OnlineMatchSummary } from './types';
 
 // Render/update cadence we expect from the authoritative node.
 const CLIENT_TICK_RATE_HZ = 60;
+const BASE_PLAYBACK_DELAY_MS = 45;
+const MIN_PLAYBACK_DELAY_MS = 40;
+const MAX_PLAYBACK_DELAY_MS = 200;
+const FRAME_BUFFER_LIMIT = 90;
+const PLAYBACK_EASING = 0.1;
+const POOR_CONNECTION_LATENCY_MS = 150;
+const POOR_CONNECTION_JITTER_MS = 90;
+const POOR_CONNECTION_COOLDOWN_MS = 4000;
+const POOR_CONNECTION_MESSAGE_MS = 2600;
 const WAITING_MIN_TIMEOUT_MS = 3000;
 const WAITING_MAX_TIMEOUT_MS = 15000;
 const WAITING_EXTRA_GRACE_MS = 5000;
@@ -52,6 +61,11 @@ interface PongInstance {
   // Should not allow resume for this room.
   giveUp?(): void;
 }
+
+type FrameSample = {
+  state: GameState;
+  timestamp: number;
+};
 
 export function createOnlineApp(
   canvas: HTMLCanvasElement,
@@ -80,6 +94,33 @@ export function createOnlineApp(
 
   const hud = createScoreboard();
   hud.attachToCanvas(canvas);
+
+  const pingIndicator = document.createElement('div');
+  pingIndicator.className = 'pong-hud-ping';
+  pingIndicator.style.display = 'none';
+
+  const attachPingIndicator = () => {
+    const overlay = document.querySelector('#pong-hud-root .pong-hud-overlay');
+    if (overlay && pingIndicator.parentElement !== overlay) overlay.appendChild(pingIndicator);
+  };
+
+  const detachPingIndicator = () => {
+    pingIndicator.remove();
+  };
+
+  const setPingIndicator = (latencyMs: number | null) => {
+    attachPingIndicator();
+    if (!latencyMs && latencyMs !== 0) {
+      pingIndicator.style.display = 'none';
+      return;
+    }
+    pingIndicator.style.display = 'block';
+    const rounded = Math.max(0, Math.round(latencyMs));
+    pingIndicator.textContent = `Ping ${rounded} ms`;
+    pingIndicator.dataset.level = latencyMs >= 200 ? 'bad' : latencyMs >= 120 ? 'warn' : 'good';
+  };
+
+  setPingIndicator(null);
 
   const { showDisconnectOverlay, hideDisconnectOverlay } = createDisconnectOverlayManager(canvas);
   const seatToSide = (seat: PlayerSeat): 'east' | 'west' => (seat === 'P1' ? 'east' : 'west');
@@ -162,6 +203,8 @@ export function createOnlineApp(
   let latestMatch: MatchSnapshot | undefined;
   let lastKnownBestOf = 3;
   let spinningUntilMs = 0;
+  let lastLatencyMs = 0;
+  let lastPoorWarningAt = 0;
   // Track half-rotation timing and whether a server swap event arrived
   let betweenHalfFired = false;
   let pendingBetweenSwap = false;
@@ -170,6 +213,9 @@ export function createOnlineApp(
   let didSetPlayerNames = false;
   let playerAliases: { P1: string; P2: string } | null = null;
   let seatMap: { east: 'P1' | 'P2'; west: 'P1' | 'P2' } | null = null;
+  const frameBuffer: FrameSample[] = [];
+  const clampPlaybackDelay = (value: number) =>
+    Math.max(MIN_PLAYBACK_DELAY_MS, Math.min(MAX_PLAYBACK_DELAY_MS, value));
 
   const finalizeMatch = (
     reason: string,
@@ -278,6 +324,76 @@ export function createOnlineApp(
   let prevT = 0,
     currT = 0;
   let tickMs = 1000 / CLIENT_TICK_RATE_HZ;
+  let playbackDelayMs = clampPlaybackDelay(BASE_PLAYBACK_DELAY_MS);
+  let desiredPlaybackDelayMs = playbackDelayMs;
+
+  const resetFrameBuffer = () => {
+    frameBuffer.length = 0;
+    prevSnap = null;
+    latest = null;
+    prevT = 0;
+    currT = 0;
+  };
+
+  const enqueueFrameSample = (state: GameState) => {
+    const timestamp = performance.now();
+    const sample: FrameSample = { state, timestamp };
+    frameBuffer.push(sample);
+    while (frameBuffer.length > FRAME_BUFFER_LIMIT) {
+      frameBuffer.shift();
+    }
+    if (!prevSnap) {
+      prevSnap = sample.state;
+      latest = sample.state;
+      prevT = sample.timestamp;
+      currT = sample.timestamp + tickMs;
+    }
+  };
+
+  const syncFrameCursor = (targetTime: number) => {
+    if (!frameBuffer.length) return;
+    const newest = frameBuffer[frameBuffer.length - 1];
+    if (targetTime >= newest.timestamp) {
+      prevSnap = newest.state;
+      latest = newest.state;
+      prevT = newest.timestamp;
+      currT = newest.timestamp + tickMs;
+      if (frameBuffer.length > 1) {
+        frameBuffer.splice(0, frameBuffer.length - 1);
+      }
+      return;
+    }
+    while (frameBuffer.length >= 2 && frameBuffer[1].timestamp <= targetTime) {
+      frameBuffer.shift();
+    }
+    const first = frameBuffer[0];
+    const second = frameBuffer[1] ?? first;
+    prevSnap = first.state;
+    latest = second.state;
+    prevT = first.timestamp;
+    currT = second === first ? first.timestamp + tickMs : second.timestamp;
+  };
+
+  const updateDesiredPlaybackDelay = (latencyMs: number) => {
+    desiredPlaybackDelayMs = clampPlaybackDelay(BASE_PLAYBACK_DELAY_MS + latencyMs * 0.5);
+  };
+
+  const warnPoorConnectionIfNeeded = (latencyMs: number) => {
+    const jitter = Math.abs(latencyMs - lastLatencyMs);
+    lastLatencyMs = latencyMs;
+    if (latencyMs < POOR_CONNECTION_LATENCY_MS && jitter < POOR_CONNECTION_JITTER_MS) {
+      return;
+    }
+    const now = Date.now();
+    if (now - lastPoorWarningAt < POOR_CONNECTION_COOLDOWN_MS) return;
+    if (matchEnded) return;
+    if (startCountdownTimer !== null) return;
+    lastPoorWarningAt = now;
+    const rounded = Math.max(0, Math.round(latencyMs));
+    const message =
+      rounded > 0 ? `Connection unstable (${rounded}ms)` : 'Connection unstable';
+    hud.flashMessage(message, POOR_CONNECTION_MESSAGE_MS);
+  };
 
   const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
 
@@ -289,6 +405,9 @@ export function createOnlineApp(
       net?.sendLocalAxis(localAxis);
 
       const now = performance.now();
+      playbackDelayMs += (desiredPlaybackDelayMs - playbackDelayMs) * PLAYBACK_EASING;
+      const targetTime = now - playbackDelayMs;
+      syncFrameCursor(targetTime);
       const hasPrev = !!prevSnap && prevT < currT;
       const alpha = hasPrev ? clamp01((now - prevT) / Math.max(1, currT - prevT)) : 1;
 
@@ -389,6 +508,9 @@ export function createOnlineApp(
     matchEnded = false;
     clearWaitingForOpponentTimeout();
     blockInputFor(SERVE_SELECT_TOTAL_MS + 200);
+    resetFrameBuffer();
+    playbackDelayMs = clampPlaybackDelay(BASE_PLAYBACK_DELAY_MS);
+    desiredPlaybackDelayMs = playbackDelayMs;
 
     // If we have a valid stored resume token for this room, auto-resume immediately.
     const candidate = getStoredResumeCandidate(cfg.roomIdentifier);
@@ -479,6 +601,12 @@ export function createOnlineApp(
     net.onMatchEnd((reason, winner, summaryFromNet = null) => {
       console.log('[OnlineGame] Match ended:', reason, 'winner:', winner);
       finalizeMatch(reason, winner, summaryFromNet);
+    });
+
+    net.onLatencyMeasured(({ avgMs, rttMs }) => {
+      updateDesiredPlaybackDelay(avgMs);
+      warnPoorConnectionIfNeeded(rttMs);
+      setPingIndicator(rttMs);
     });
 
     const startPromise = net.awaitStart();
@@ -619,18 +747,7 @@ export function createOnlineApp(
         audioKit.stop();
       }
 
-      if (!prevSnap) {
-        prevSnap = s;
-        latest = s;
-        const t0 = performance.now();
-        prevT = t0;
-        currT = t0 + tickMs;
-      } else {
-        prevSnap = latest ?? s;
-        latest = s;
-        prevT = currT;
-        currT = currT + tickMs;
-      }
+      enqueueFrameSample(s);
 
       if (ev && (ev.wallHit || ev.paddleHit || ev.explode)) {
         if (eventQueue.length > 8) eventQueue.splice(0, eventQueue.length - 8);
@@ -673,9 +790,12 @@ export function createOnlineApp(
 
     clearWaitingForOpponentTimeout();
     matchEnded = true;
+    resetFrameBuffer();
 
     // Clean up disconnect overlay
     hideDisconnectOverlay();
+    setPingIndicator(null);
+    detachPingIndicator();
 
     disposeWorld({
       loop,
