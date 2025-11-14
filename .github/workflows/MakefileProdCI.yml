@@ -31,20 +31,11 @@ jobs:
             image=moby/buildkit:buildx-stable-1
             network=host
 
-      # Cache Docker layers - this caches the final image layers
-      - name: Cache Docker layers
-        uses: actions/cache@v4
-        with:
-          path: /tmp/.buildx-cache
-          key: ${{ runner.os }}-buildx-${{ hashFiles('**/pnpm-lock.yaml', '**/package.json', 'docker-compose-prod.yml', 'node.template.dockerfile', 'apps/frontend/prod.dockerfile', 'nginx/prod.conf.template', '.env.example', 'Makefile', '.config/tsconfig.*.json', 'tsconfig*.json') }}
-          restore-keys: |
-            ${{ runner.os }}-buildx-
-
-      - name: Build images with Buildx bake (local cache)
+      - name: Build images with GitHub Actions cache
         run: |
           docker buildx bake -f docker-compose-prod.yml \
-            --set *.cache-from=type=local,src=/tmp/.buildx-cache \
-            --set *.cache-to=type=local,dest=/tmp/.buildx-cache,mode=max \
+            --set *.cache-from=type=gha \
+            --set *.cache-to=type=gha,mode=max \
             --load
 
       - name: Start prod stack (no build)

@@ -32,7 +32,6 @@ services:
         SERVICE_NAME: api
         SERVICE_DIR: backend
         INSTALL_SQLITE: 'true'
-        BUILDKIT_INLINE_CACHE: "1"
     image: ft-transcendence-backend-prod:latest
     init: true
     restart: unless-stopped
@@ -55,7 +54,6 @@ services:
       dockerfile: ./apps/frontend/prod.dockerfile
       args:
         PNPM_VERSION: ${PNPM_VERSION:-9.12.3}
-        BUILDKIT_INLINE_CACHE: "1"
     image: ft-transcendence-frontend-builder:latest
     environment:
       <<: *prod-env
@@ -110,7 +108,6 @@ services:
         PNPM_VERSION: ${PNPM_VERSION:-9.12.3}
         SERVICE_NAME: matchmaking
         SERVICE_DIR: matchmaking
-        BUILDKIT_INLINE_CACHE: "1"
     image: ft-transcendence-matchmaking-prod:latest
     init: true
     restart: unless-stopped
@@ -133,7 +130,6 @@ services:
         PNPM_VERSION: ${PNPM_VERSION:-9.12.3}
         SERVICE_NAME: game-server
         SERVICE_DIR: game-server
-        BUILDKIT_INLINE_CACHE: "1"
     image: ft-transcendence-game-server-prod:latest
     init: true
     restart: unless-stopped
@@ -166,7 +162,6 @@ services:
         PNPM_VERSION: ${PNPM_VERSION:-9.12.3}
         SERVICE_NAME: chat-service
         SERVICE_DIR: chat
-        BUILDKIT_INLINE_CACHE: "1"
     image: ft-transcendence-chat-service-prod:latest
     init: true
     restart: unless-stopped
@@ -187,7 +182,6 @@ services:
         PNPM_VERSION: ${PNPM_VERSION:-9.12.3}
         SERVICE_NAME: allocator
         SERVICE_DIR: allocator
-        BUILDKIT_INLINE_CACHE: "1"
     image: ft-transcendence-allocator-prod:latest
     init: true
     restart: unless-stopped
@@ -226,7 +220,6 @@ services:
         PNPM_VERSION: ${PNPM_VERSION:-9.12.3}
         SERVICE_NAME: scorer
         SERVICE_DIR: scorer
-        BUILDKIT_INLINE_CACHE: "1"
     image: ft-transcendence-scorer-prod:latest
     init: true
     restart: unless-stopped
@@ -255,7 +248,6 @@ services:
         PNPM_VERSION: ${PNPM_VERSION:-9.12.3}
         SERVICE_NAME: game-gateway
         SERVICE_DIR: game-gateway
-        BUILDKIT_INLINE_CACHE: "1"
     image: ft-transcendence-game-gateway-prod:latest
     init: true
     restart: unless-stopped

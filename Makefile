@@ -26,9 +26,9 @@ PROD_SLIM_STACK = $(PROD_COMPOSE)
 
 # Prod build/run helper macros
 define prod_build
-	@echo ">> Building with BUILDKIT_INLINE_CACHE enabled"
+	@echo ">> Building production images"
 	DOCKER_BUILDKIT=1 COMPOSE_DOCKER_CLI_BUILD=1 \
-	docker compose -p $(NAME_PROD) $(ENV_ROOT) $(1) build --build-arg BUILDKIT_INLINE_CACHE=1
+	docker compose -p $(NAME_PROD) $(ENV_ROOT) $(1) build
 endef
 
 define prod_up
