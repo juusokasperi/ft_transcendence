@@ -14,6 +14,7 @@ export interface ClientInfo {
   uuid: string;
   authenticated: boolean;
   joinedAt: number;
+  lastRateLimitNotice: number;
 }
 
 export interface PendingMatch {
