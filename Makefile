@@ -111,7 +111,7 @@ prod:
 	docker compose -p $(NAME_PROD) $(PROD_COMPOSE) $(ENV_ROOT) \
 		${MON_PROD_COMPOSE} \
 		${LOG_PROD_COMPOSE} \
-		build --build-arg BUILDKIT_INLINE_CACHE=1
+		build
 	@echo ">> Starting services"
 	docker compose -p $(NAME_PROD) $(PROD_COMPOSE) $(ENV_ROOT) \
 		${MON_PROD_COMPOSE} \
@@ -129,7 +129,7 @@ prod-detached:
 	docker compose -p $(NAME_PROD) $(PROD_COMPOSE) $(ENV_ROOT) \
 		${MON_PROD_COMPOSE} \
 		${LOG_PROD_COMPOSE} \
-		build --build-arg BUILDKIT_INLINE_CACHE=1
+		build
 	@echo ">> Starting services"
 	docker compose -p $(NAME_PROD) $(PROD_COMPOSE) $(ENV_ROOT) \
 		${MON_PROD_COMPOSE} \
@@ -145,7 +145,7 @@ prod-slim:
 	@echo ">> Building with BUILDKIT_INLINE_CACHE enabled"
 	DOCKER_BUILDKIT=1 COMPOSE_DOCKER_CLI_BUILD=1 \
 	docker compose -p $(NAME_PROD) $(PROD_COMPOSE) $(ENV_ROOT) \
-		build --build-arg BUILDKIT_INLINE_CACHE=1
+		build
 	@echo ">> Starting services"
 	docker compose -p $(NAME_PROD) $(PROD_COMPOSE) $(ENV_ROOT) \
 		up
@@ -159,7 +159,7 @@ prod-slim-detached:
 	@echo ">> Building with BUILDKIT_INLINE_CACHE enabled"
 	DOCKER_BUILDKIT=1 COMPOSE_DOCKER_CLI_BUILD=1 \
 	docker compose -p $(NAME_PROD) $(PROD_COMPOSE) $(ENV_ROOT) \
-		build --build-arg BUILDKIT_INLINE_CACHE=1
+		build
 	@echo ">> Starting services"
 	docker compose -p $(NAME_PROD) $(PROD_COMPOSE) $(ENV_ROOT) \
 		up -d
