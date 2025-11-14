@@ -94,7 +94,9 @@ export function createOnlineApp(
   };
 
   const showEnd = (reason: string, winner?: 'east' | 'west') => {
-    return showMatchEndOverlay(canvas, reason, winner, cfg.seat);
+    // Use the current resolved seat (mySeat), not the initial cfg.seat,
+    // to avoid incorrect messages after resume or side swaps.
+    return showMatchEndOverlay(canvas, reason, winner, mySeat);
   };
 
   setBindingProfile('online');
