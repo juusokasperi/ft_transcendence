@@ -27,7 +27,7 @@ ENV_ROOT         = --env-file .env
 CLEAN_HELPER_IMG ?= alpine:3.19
 
 # Known services (for helper targets)
-SERVICES         = deps frontend backend nginx elastic_cert_setup elasticsearch kibana kibana-post logstash game-server matchmaking
+SERVICES         = deps frontend backend nginx elastic_cert_setup elasticsearch kibana kibana-post logstash game-server matchmaking game-gateway chat allocator scorer
 
 # Ensure required bind-mount directories exist
 # 1000:1000 == UID:GID of node user inside of container
@@ -246,7 +246,7 @@ clean:
 	  "
 	@echo ">> Removing helper image ($(CLEAN_HELPER_IMG))"
 	- docker image rm -f $(CLEAN_HELPER_IMG) || true
-	
+
 
 # 'fclean' = clean + remove per-project build cache & builder
 fclean:
