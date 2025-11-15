@@ -2,7 +2,7 @@ import React from 'react';
 import Button from '../../../../components/Button';
 import SurfaceCard from '../../shared/components/SurfaceCard';
 import type { TournamentSummary } from '../state/types';
-import AliasInput from './AliasInput';
+import AliasCard from './AliasCard';
 
 export type TournamentLobbyPanelProps = {
   tournamentName: string;
@@ -29,6 +29,9 @@ const TournamentLobbyPanel: React.FC<TournamentLobbyPanelProps> = ({
 }) => {
   return (
     <div className="flex flex-col gap-6">
+      {/* Global alias selector used for both creating and joining tournaments */}
+      <AliasCard value={aliasInput} onChange={onAliasInputChange} />
+
       <SurfaceCard className="p-6 shadow-2xl">
         <h2 className="mb-4 text-lg font-semibold">Create a new tournament</h2>
         <div className="flex flex-col gap-3">
@@ -40,11 +43,6 @@ const TournamentLobbyPanel: React.FC<TournamentLobbyPanelProps> = ({
             maxLength={20}
           />
           <div className="flex flex-col gap-3 md:flex-row md:items-center">
-            <AliasInput
-              value={aliasInput}
-              onChange={onAliasInputChange}
-              inputClassName="w-full rounded-full border border-white/10 bg-black/50 px-4 py-2 text-sm text-white placeholder:text-white/40 focus:border-indigo-400 focus:outline-none"
-            />
             <Button variant="primary" onClick={onCreateTournament} disabled={!connectionReady}>
               Create tournament
             </Button>
@@ -93,13 +91,8 @@ const TournamentLobbyPanel: React.FC<TournamentLobbyPanelProps> = ({
                   </div>
                   {canJoin && (
                     <div className="flex flex-col gap-2 md:flex-row md:items-center">
-                      <AliasInput
-                        value={aliasInput}
-                        onChange={onAliasInputChange}
-                        inputClassName="flex-1 rounded-full border border-white/10 bg-black/50 px-4 py-2 text-sm text-white placeholder:text-white/40 focus:border-indigo-400 focus:outline-none"
-                      />
                       <Button
-                        variant="secondary"
+                        variant="primary"
                         size="sm"
                         onClick={() => onJoinTournament(tournament.id)}
                         disabled={!connectionReady || activeTournamentId !== null}

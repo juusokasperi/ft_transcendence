@@ -56,7 +56,7 @@ const TournamentPage: React.FC<TournamentPageProps> = ({ onBack, focusTournament
   const shouldShowOverlay = matchPhase === 'starting' || matchPhase === 'playing';
   // Only the lobby is shown on the main page; use a single-column layout there.
   // Participants sit alone in detail view; keep it single-column as well.
-  const overviewSectionClass = 'grid gap-6';
+  const overviewSectionClass = 'mt-4 grid gap-6';
 
   if (userReady && !user) {
     return (
@@ -68,10 +68,7 @@ const TournamentPage: React.FC<TournamentPageProps> = ({ onBack, focusTournament
           <div className="flex justify-center">
             <SurfaceCard className="w-full max-w-xl space-y-4 p-6 text-center shadow-2xl">
               <p className="text-base text-white">
-                You need to be signed in before you can browse or join tournaments.
-              </p>
-              <p className="text-sm text-white/60">
-                Log in to enter brackets, follow match progress, and receive directed invites.
+                You need to be signed in and logged in before you can create or join tournaments.
               </p>
               <Button variant="primary" onClick={() => navigate('/login')}>
                 Go to login
