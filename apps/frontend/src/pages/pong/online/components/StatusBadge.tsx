@@ -8,6 +8,7 @@ type StatusBadgeProps = {
 const statusToClass: Record<Status, string> = {
   connecting: 'bg-yellow-500/20 text-yellow-300',
   idle: 'bg-emerald-500/20 text-emerald-300',
+  connected: 'bg-emerald-500/20 text-emerald-300',
   in_queue: 'bg-sky-500/20 text-sky-300',
   match_found: 'bg-indigo-500/20 text-indigo-300',
   match_accepted: 'bg-purple-500/20 text-purple-300',

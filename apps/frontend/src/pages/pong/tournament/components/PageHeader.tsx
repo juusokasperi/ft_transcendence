@@ -1,6 +1,8 @@
 import React from 'react';
 import Button from '../../../../components/Button';
 import { InlineSpinner } from '@ft/spinner';
+// Reuse the matchmaking status badge chip for a consistent look
+import StatusBadge from '../../online/components/StatusBadge';
 
 export type TournamentPageHeaderProps = {
   isDetailView: boolean;
@@ -33,7 +35,7 @@ const TournamentPageHeader: React.FC<TournamentPageHeaderProps> = ({
   })();
 
   return (
-    <header className="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
+    <header className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
       <div>
         <h1 id="page-title" className="text-3xl font-semibold">
           {isDetailView ? detailTitle : 'Pong Tournaments'}
@@ -41,31 +43,23 @@ const TournamentPageHeader: React.FC<TournamentPageHeaderProps> = ({
         <p className="text-white/60">
           {isDetailView
             ? 'Stay in sync with participants, bracket updates, and match countdowns for this tournament.'
-            : 'Create a lobby, invite players, and advance through the fixed four-slot bracket.'}
+            : 'Create or join four-slot tournaments.'}
         </p>
       </div>
       <div className="flex flex-wrap items-center gap-3 text-sm text-white/70">
         {isDetailView && onLeaveTournament && (
-          <Button variant="outline" size="sm" onClick={onLeaveTournament}>
+          <Button variant="danger" size="sm" onClick={onLeaveTournament}>
             Leave tournament
           </Button>
         )}
-        <span>
-          Connection:
-          {connectionReady ? (
-            <span className="ml-2 font-semibold text-emerald-400">Ready</span>
-          ) : (
-            <InlineSpinner
-              size={14}
-              color="#F87171"
-              label="Connecting"
-              ariaLabel="Connecting to tournament service"
-              className="ml-2 font-semibold text-rose-300"
-              labelClassName="font-semibold text-rose-300"
-            />
-          )}
-        </span>
-        <Button variant="secondary" size="sm" onClick={onRefresh} disabled={loading}>
+        {connectionReady ? (
+          // Use the same green "Ready" chip style from the online page
+          <StatusBadge status="connected" />
+        ) : (
+          // Yellow connecting chip for consistency with online matchmaking
+          <StatusBadge status="connecting" />
+        )}
+        <Button variant="primary" size="sm" onClick={onRefresh} disabled={loading}>
           {loading ? (
             <InlineSpinner
               size={16}
@@ -76,7 +70,7 @@ const TournamentPageHeader: React.FC<TournamentPageHeaderProps> = ({
               labelClassName="text-current"
             />
           ) : isDetailView ? (
-            'Refresh data'
+            'Refresh details'
           ) : (
             'Refresh list'
           )}

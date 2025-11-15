@@ -876,7 +876,7 @@ export async function handleCreateTournament(
 
   const headers = { Authorization: `Bearer ${token}` };
   const maxParticipants = data.size ?? 4;
-  const tournamentName = data.name?.trim().slice(0, 128) || 'Ping Pong Cup';
+  const tournamentName = data.name?.trim().slice(0, 128) || 'Pong Tournament';
 
   try {
     const activeRes = await axios.get(`${API_URL}/api/tournaments/my/active`, { headers });

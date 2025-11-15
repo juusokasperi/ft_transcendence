@@ -2,6 +2,7 @@ import type { OnlineMatchSummary as SharedOnlineMatchSummary } from '@pong/share
 
 export type Status =
   | 'connecting'
+  | 'connected'
   | 'idle'
   | 'in_queue'
   | 'match_found'
