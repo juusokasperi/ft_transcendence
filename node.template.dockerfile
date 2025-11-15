@@ -28,7 +28,6 @@ COPY packages/pong/render/package.json ./packages/pong/render/package.json
 COPY packages/pong/shared/package.json ./packages/pong/shared/package.json
 COPY packages/utils/logger/package.json ./packages/utils/logger/package.json
 COPY packages/utils/metrics/package.json ./packages/utils/metrics/package.json
-COPY packages/utils/rate-limiter/package.json ./packages/utils/rate-limiter/package.json
 
 # help with cache invalidation for next step
 COPY pnpm-lock.yaml ./
