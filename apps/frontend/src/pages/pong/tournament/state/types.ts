@@ -6,7 +6,7 @@ import type {
 
 export type TournamentSummary = {
   id: number;
-  name: string;
+  name?: string;
   status: string;
   maxParticipants: number | null;
   startAt?: string | null;
@@ -35,5 +35,3 @@ export type ActiveHandoff = {
   randomSeed: number;
   side: 'west' | 'east';
 };
-
-export type ExtendedTournamentMatchState = TournamentMatchState;

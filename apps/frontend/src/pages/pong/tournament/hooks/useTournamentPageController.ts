@@ -16,7 +16,7 @@ import type {
   TournamentSummary,
 } from '../state/types';
 import { type MatchPhase } from '../domain/countdown';
-import { MAX_VISIBLE_TOURNAMENTS, RECENT_TOURNAMENT_WINDOW_MS, TOURNAMENT_SIZE } from '../config';
+import { TOURNAMENT_SIZE } from '../config';
 import { routeMessage } from '../net/router';
 import type { MessageCtx } from '../domain/handlers/types';
 import { useTournamentConnection } from './useTournamentConnection';
@@ -99,7 +99,6 @@ export function useTournamentPageController(
     storeRef.current = store;
   }, [store]);
 
-  const pendingMatchRef = useRef<ReadyMatch | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   // connection internals are managed in useTournamentConnection
   // membership bookkeeping via onLobbyUpdated + reducer; no separate ref needed
@@ -169,9 +168,7 @@ export function useTournamentPageController(
     activeTournamentIdRef.current = store.activeTournamentId;
   }, [store.activeTournamentId]);
 
-  useEffect(() => {
-    pendingMatchRef.current = store.pendingMatch;
-  }, [store.pendingMatch]);
+  // no local ref tracking for pendingMatch required; reducer state is the source of truth
 
   // loadTournaments, filterTournamentsForDisplay come from the list hook
 
