@@ -27,11 +27,12 @@
     "check-format": "pnpm -F ft_transcendence check-format",
     "fix-format": "pnpm -F ft_transcendence fix-format"
   },
-  "dependencies": {
-    "ioredis": "^5.8.0"
-  },
   "devDependencies": {
+    "ioredis": "^5.8.0",
     "rimraf": "^6.0.1",
     "typescript": "^5.9.2"
+  },
+  "peerDependencies": {
+    "ioredis": "^5.8.0"
   }
 }

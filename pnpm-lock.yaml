@@ -631,11 +631,10 @@ importers:
         version: 5.9.3
 
   packages/utils/rate-limiter:
-    dependencies:
+    devDependencies:
       ioredis:
         specifier: ^5.8.0
         version: 5.8.2
-    devDependencies:
       rimraf:
         specifier: ^6.0.1
         version: 6.1.0
