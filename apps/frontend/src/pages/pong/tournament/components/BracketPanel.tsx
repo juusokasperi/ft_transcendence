@@ -65,7 +65,11 @@ const TournamentBracketPanel: React.FC<TournamentBracketPanelProps> = ({
                       {(() => {
                         const tStat = (tournamentStatus ?? '').toLowerCase();
                         const pStat = (player.status ?? '').toLowerCase();
-                        if (tStat && tStat !== 'draft' && (pStat === 'pending' || pStat === 'accepted')) {
+                        if (
+                          tStat &&
+                          tStat !== 'draft' &&
+                          (pStat === 'pending' || pStat === 'accepted')
+                        ) {
                           return 'Active';
                         }
                         return participantStatusLabel(player.status);

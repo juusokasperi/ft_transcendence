@@ -134,17 +134,17 @@ const TournamentPage: React.FC<TournamentPageProps> = ({ onBack, focusTournament
               currentParticipantId={currentParticipantId}
               forfeitedParticipantIds={forfeitedParticipantIds}
             />
-        {hasActiveTournament && tournamentStatus !== 'completed' && (
-          <TournamentDirectedMatchesPanel
-            matches={latestReadyMatches}
-            countdowns={matchCountdowns}
-            pendingMatch={pendingMatch}
-            pendingCountdownStatus={countdownStatus}
-            pendingCountdownSeconds={countdownSecondsDisplay}
-            currentUserUuid={currentUserUuid}
-            forfeitedParticipantIds={forfeitedParticipantIds}
-          />
-        )}
+            {hasActiveTournament && tournamentStatus !== 'completed' && (
+              <TournamentDirectedMatchesPanel
+                matches={latestReadyMatches}
+                countdowns={matchCountdowns}
+                pendingMatch={pendingMatch}
+                pendingCountdownStatus={countdownStatus}
+                pendingCountdownSeconds={countdownSecondsDisplay}
+                currentUserUuid={currentUserUuid}
+                forfeitedParticipantIds={forfeitedParticipantIds}
+              />
+            )}
           </section>
         )}
       </PageSection>

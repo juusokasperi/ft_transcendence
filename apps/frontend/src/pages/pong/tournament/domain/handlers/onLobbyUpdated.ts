@@ -27,7 +27,7 @@ export function onLobbyUpdated(
     const forfeited = msg.participants
       .filter((p) => String(p.status).toLowerCase() === 'forfeited')
       .map((p) => p.participantId);
-    if (forfeited.length) ctx.markForfeited(forfeited);
+    if (forfeited.length) ctx.markForfeited?.(forfeited);
   } catch {}
 
   // Membership + routing

@@ -31,4 +31,3 @@ const AliasCard: React.FC<AliasCardProps> = ({ value, onChange }) => {
 };
 
 export default AliasCard;
-

@@ -11,6 +11,6 @@ export function onBracketSnapshot(msg: TournamentBracketSnapshotMessage, ctx: Me
         if (String(p.status).toLowerCase() === 'forfeited') forfeited.push(p.participantId);
       }
     }
-    if (forfeited.length) ctx.markForfeited(forfeited);
+    if (forfeited.length) ctx.markForfeited?.(forfeited);
   } catch {}
 }

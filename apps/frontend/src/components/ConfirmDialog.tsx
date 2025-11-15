@@ -113,7 +113,7 @@ const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
   const node = (
     <div
       ref={overlayRef}
-      className="fixed inset-0 z-[2000] flex items-center justify-center bg-slate-950/60 backdrop-blur-sm p-4"
+      className="fixed inset-0 z-[2000] flex items-center justify-center bg-slate-950/60 p-4 backdrop-blur-sm"
       onMouseDown={(event) => {
         if (event.target === overlayRef.current) {
           onCancel();

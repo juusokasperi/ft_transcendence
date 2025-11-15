@@ -59,8 +59,8 @@ export type MessageCtx = {
   // Connection
   setConnectionReady(ready: boolean): void;
 
-  // Persistent annotations
-  markForfeited(ids: number[]): void;
+  // Persistent annotations (optional for tests / older contexts)
+  markForfeited?(ids: number[]): void;
 };
 
 export type AnyMessage = MatchmakingMessage;

@@ -46,9 +46,7 @@ const TournamentPageHeader: React.FC<TournamentPageHeaderProps> = ({
           {isDetailView ? detailTitle : 'Pong Tournaments'}
         </h1>
         <p className="text-white/60">
-          {isDetailView
-            ? 'May the best pong player win.'
-            : 'Create a four-slot tournament.'}
+          {isDetailView ? 'May the best pong player win.' : 'Create a four-slot tournament.'}
         </p>
       </div>
       <div className="flex flex-wrap items-center gap-3 text-sm text-white/70">
@@ -86,23 +84,24 @@ const TournamentPageHeader: React.FC<TournamentPageHeaderProps> = ({
           )}
         </Button>
       </div>
-      {onLeaveTournament && !['completed', 'draft'].includes((tournamentStatus ?? '').toLowerCase()) && (
-        <ConfirmDialog
-          open={confirmOpen}
-          title="Leave tournament?"
-          description="You will not be able to come back to this tournament and be declared forfeit."
-          confirmLabel="Leave"
-          cancelLabel="Stay"
-          tone="danger"
-          onCancel={() => setConfirmOpen(false)}
-          onConfirm={() => {
-            setConfirmOpen(false);
-            try {
-              onLeaveTournament();
-            } catch {}
-          }}
-        />
-      )}
+      {onLeaveTournament &&
+        !['completed', 'draft'].includes((tournamentStatus ?? '').toLowerCase()) && (
+          <ConfirmDialog
+            open={confirmOpen}
+            title="Leave tournament?"
+            description="You will not be able to come back to this tournament and be declared forfeit."
+            confirmLabel="Leave"
+            cancelLabel="Stay"
+            tone="danger"
+            onCancel={() => setConfirmOpen(false)}
+            onConfirm={() => {
+              setConfirmOpen(false);
+              try {
+                onLeaveTournament();
+              } catch {}
+            }}
+          />
+        )}
     </header>
   );
 };
