@@ -97,14 +97,18 @@ export function useMatchLifecycle({
           onMatchEnd: (reason: string, winner?: 'east' | 'west') => {
             debugLog('match-end-auto-quit', { reason, winner });
             // If opponent quit (forfeit) and you are the winner, route back to the
-            // tournament page immediately for clarity.
+            // tournament detail page immediately for clarity.
             if (reason === 'forfeit' && winner && winner === handoff.side) {
               enqueueSnackbar({
                 message: 'Your opponent declared forfeit. You won this match!',
                 variant: 'success',
               });
               try {
-                navigate('/pong/tournaments');
+                if (handoff.tournamentId) {
+                  navigate(`/pong/tournaments/${handoff.tournamentId}`);
+                } else {
+                  navigate('/pong/tournaments');
+                }
               } catch {}
             }
             const delay = reason === 'completed' ? 2500 : 1500;

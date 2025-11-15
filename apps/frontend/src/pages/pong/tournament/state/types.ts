@@ -34,4 +34,8 @@ export type ActiveHandoff = {
   joinToken: string;
   randomSeed: number;
   side: 'west' | 'east';
+  // Optional tournament context (present for tournament matches)
+  tournamentId?: number;
+  tournamentMatchId?: number;
+  tournamentStage?: 'semifinal' | 'final' | 'bronze';
 };
