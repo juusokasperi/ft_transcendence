@@ -4,7 +4,7 @@ import {
   createCountdownSnapshot,
   nextMatchPhaseForCountdown,
   type MatchPhase,
-} from '../useTournamentPageController';
+} from '../../domain/countdown';
 
 const baseCountdown: TournamentMatchCountdownMessage = {
   type: 'TOURNAMENT_MATCH_COUNTDOWN',

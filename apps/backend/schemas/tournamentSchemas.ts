@@ -462,3 +462,50 @@ export const reportMatchResultSchema = {
     500: ErrorResponseSchema,
   },
 };
+
+export const forfeitParticipantSchema = {
+  tags: ['Tournament Participants'],
+  summary: 'Forfeit a participant and auto-advance opponent',
+  security: USER_ROUTE_SECURITY,
+  params: {
+    type: 'object',
+    required: ['tournamentId', 'participantId'],
+    properties: {
+      tournamentId: { type: 'integer', minimum: 1 },
+      participantId: { type: 'integer', minimum: 1 },
+    },
+    additionalProperties: false,
+  },
+  response: {
+    200: {
+      type: 'object',
+      additionalProperties: false,
+      properties: {
+        participant: TournamentParticipantSchema,
+        match: { anyOf: [TournamentMatchSchema, { type: 'null' }] },
+        progression: {
+          anyOf: [
+            {
+              type: 'object',
+              additionalProperties: false,
+              properties: {
+                readyMatches: {
+                  type: 'array',
+                  items: { type: 'integer', minimum: 1 },
+                },
+                autoAdvancedMatches: {
+                  type: 'array',
+                  items: { type: 'integer', minimum: 1 },
+                },
+              },
+            },
+            { type: 'null' },
+          ],
+        },
+      },
+      required: ['participant'],
+    },
+    404: ErrorResponseSchema,
+    500: ErrorResponseSchema,
+  },
+};

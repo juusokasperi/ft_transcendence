@@ -13,6 +13,9 @@ import {
   generateSingleEliminationBracket,
   processSemifinalResult,
   checkAndAutoCompleteTournament,
+  forfeitParticipantInTournament,
+  resolveOrphanedReadyMatches,
+  completeMatchWithWinnerAndLoser,
 } from '../services/tournamentOrchestrator.ts';
 import type { MatchProgression } from '../services/tournamentOrchestrator.ts';
 import { notifyMatchesReady, notifyTournamentStateUpdated } from '../services/matchmakingBridge.ts';
@@ -56,6 +59,7 @@ import {
   updateParticipantSchema,
   updateTournamentStatusSchema,
   reportMatchResultSchema,
+  forfeitParticipantSchema,
 } from '../schemas/tournamentSchemas.ts';
 import db from '../db/client.ts';
 
@@ -413,41 +417,16 @@ export async function tournamentRoutes(app: FastifyInstance) {
             );
           }
         } else if (match.roundNumber === 2) {
-          const applyStatusUpdate = (participantId: number, status: string) => {
-            const participant = updateTournamentParticipant(participantId, { status });
-            if (!participant) throw new Error('Failed to update participant status');
-            participantStatusUpdates.push({
-              participantId: participant.id,
-              status: participant.status,
-            });
-          };
+          // Use actual winner from score calculation if available, fallback to body
+          const finalWinner = actualWinnerParticipantId ?? body.winnerParticipantId;
+          const finalLoser = actualLoserParticipantId ?? body.loserParticipantId;
 
+          // Delegate placements and potential tournament completion to orchestrator helper
           try {
-            // Use actual winner from score calculation if available, fallback to body
-            const finalWinner = actualWinnerParticipantId ?? body.winnerParticipantId;
-            const finalLoser = actualLoserParticipantId ?? body.loserParticipantId;
-
-            if (match.roundPosition === 1) {
-              applyStatusUpdate(finalWinner, 'champion');
-              applyStatusUpdate(finalLoser, 'silver');
-            } else if (match.roundPosition === 2) {
-              applyStatusUpdate(finalWinner, 'third_place');
-              applyStatusUpdate(finalLoser, 'eliminated');
-            }
+            void completeMatchWithWinnerAndLoser(matchId, finalWinner, finalLoser);
           } catch (error) {
-            req.log.error({ error }, 'Failed to update participant status after tournament result');
-            return res.status(500).send({ message: 'Failed to update participant status' });
-          }
-
-          const finalMatch = getTournamentMatchByRoundAndPosition(tournamentId, 2, 1);
-          const bronzeMatch = getTournamentMatchByRoundAndPosition(tournamentId, 2, 2);
-
-          if (finalMatch?.status === 'completed' && bronzeMatch?.status === 'completed') {
-            tournamentUpdate = markTournamentCompleted(tournamentId);
-            if (!tournamentUpdate) {
-              const fallback = updateTournamentStatus(tournamentId, 'completed');
-              if (fallback) tournamentUpdate = fallback;
-            }
+            req.log.error({ error }, 'Failed to apply final/bronze placements');
+            return res.status(500).send({ message: 'Failed to apply placements' });
           }
         }
 
@@ -585,6 +564,19 @@ export async function tournamentRoutes(app: FastifyInstance) {
           return res
             .status(409)
             .send({ message: 'Unable to update participant with provided data' });
+
+        // If participant unlinked or forfeited mid-tournament, try to auto-resolve any ready match
+        const userUnlinked =
+          Object.prototype.hasOwnProperty.call(body, 'userUuid') && body.userUuid === null;
+        const wasForfeited = body.status === 'forfeited';
+        if (userUnlinked || wasForfeited) {
+          const sweep = resolveOrphanedReadyMatches(tournamentId);
+          if (sweep.readyMatches.length) {
+            await notifyMatchesReady(tournamentId, sweep.readyMatches);
+          }
+          await notifyTournamentStateUpdated(tournamentId);
+        }
+
         return res.status(200).send(updated);
       } catch (error) {
         req.log.error({ error }, 'Failed to update participant');
@@ -620,17 +612,46 @@ export async function tournamentRoutes(app: FastifyInstance) {
           (match) => match.completedAt !== null || match.status === 'completed',
         );
 
-        // If tournament has started (active/completed), mark as forfeited instead of deleting
-        // This preserves bracket history and final standings
+        // If tournament has started (active/completed), decide between unlinking membership
+        // (keep placement) or forfeiting (propagate bracket).
         if (tournament.status === 'active' || tournament.status === 'completed') {
-          const updated = updateTournamentParticipant(participantId, { status: 'forfeited' });
-          if (!updated)
-            return res.status(500).send({ message: 'Failed to mark participant as forfeited' });
+          const terminalStatuses = new Set(['champion', 'silver', 'third_place', 'eliminated']);
+          const participantHasTerminalPlacement = terminalStatuses.has(existing.status);
 
-          req.log.info(
-            { tournamentId, participantId, alias: existing.alias },
-            'Participant marked as forfeited',
+          // Determine whether participant is still involved in any uncompleted match
+          const openMatches = listTournamentMatches(tournamentId).filter(
+            (m) => m.status !== 'completed',
           );
+          const involvedInOpenMatch = openMatches.some((m) =>
+            listTournamentMatchPlayers(m.id).some((p) => p.participantId === participantId),
+          );
+
+          if (participantHasTerminalPlacement || !involvedInOpenMatch) {
+            // All matches for this participant are resolved. Do NOT mark forfeited.
+            // Unlink the user to end membership while preserving placement for classement UI.
+            const unlinked = updateTournamentParticipant(participantId, { userUuid: null });
+            if (!unlinked)
+              return res.status(500).send({ message: 'Failed to unlink participant user' });
+            req.log.info(
+              { tournamentId, participantId, alias: existing.alias },
+              'Participant left after completing matches; preserved placement and unlinked user',
+            );
+          } else {
+            // Still has uncompleted matches: mark forfeited and propagate.
+            const updated = updateTournamentParticipant(participantId, { status: 'forfeited' });
+            if (!updated)
+              return res.status(500).send({ message: 'Failed to mark participant as forfeited' });
+
+            req.log.info(
+              { tournamentId, participantId, alias: existing.alias },
+              'Participant marked as forfeited',
+            );
+
+            const result = forfeitParticipantInTournament(tournamentId, participantId);
+            if (result.readyMatches?.length) {
+              await notifyMatchesReady(tournamentId, result.readyMatches);
+            }
+          }
         } else {
           // Tournament hasn't started yet (draft), safe to delete
           const removed = removeTournamentParticipant(participantId);
@@ -661,6 +682,51 @@ export async function tournamentRoutes(app: FastifyInstance) {
       } catch (error) {
         req.log.error({ error }, 'Failed to remove participant');
         return res.status(500).send({ message: 'Failed to remove participant' });
+      }
+    },
+  );
+
+  app.post(
+    '/:tournamentId/participants/:participantId/forfeit',
+    {
+      schema: forfeitParticipantSchema,
+      preHandler: [authPreHandler],
+    },
+    async (req, res) => {
+      try {
+        const { tournamentId, participantId } = req.params as {
+          tournamentId: number;
+          participantId: number;
+        };
+
+        const tournament = getTournamentById(tournamentId);
+        if (!tournament) return res.status(404).send({ message: 'Tournament not found' });
+        const participant = getTournamentParticipantById(participantId);
+        if (!participant || participant.tournamentId !== tournamentId)
+          return res.status(404).send({ message: 'Participant not found for tournament' });
+
+        const progression = forfeitParticipantInTournament(tournamentId, participantId);
+
+        if (progression.readyMatches?.length) {
+          await notifyMatchesReady(tournamentId, progression.readyMatches);
+        }
+        await notifyTournamentStateUpdated(tournamentId);
+
+        const updatedParticipant = getTournamentParticipantById(participantId)!;
+        const match = progression.completedMatchId
+          ? getTournamentMatchById(progression.completedMatchId)
+          : null;
+
+        return res.status(200).send({
+          participant: updatedParticipant,
+          match,
+          progression: progression.readyMatches?.length
+            ? { readyMatches: progression.readyMatches, autoAdvancedMatches: [] }
+            : null,
+        });
+      } catch (error) {
+        req.log.error({ error }, 'Failed to forfeit participant');
+        return res.status(500).send({ message: 'Failed to forfeit participant' });
       }
     },
   );

@@ -47,15 +47,18 @@ const TournamentPage: React.FC<TournamentPageProps> = ({ onBack, focusTournament
     handleQuitMatch,
     isDetailView,
     headerRefreshHandler,
+    headerLoading,
     currentParticipantId,
+    forfeitedParticipantIds,
   } = useTournamentPageController({ focusTournamentId });
 
   const currentUserUuid = user?.uuid ?? null;
   const hasActiveTournament = activeTournamentId !== null;
   const shouldShowOverlay = matchPhase === 'starting' || matchPhase === 'playing';
-  const overviewSectionClass = isDetailView
-    ? 'grid gap-6'
-    : 'grid gap-6 lg:grid-cols-[1.1fr_0.9fr]';
+  // Only the lobby is shown on the main page; use a single-column layout there.
+  // Participants sit alone in detail view; keep it single-column as well.
+  const overviewSectionClass = 'mt-4 grid gap-6';
+  const detailsSectionClass = 'mt-4 grid gap-4';
 
   if (userReady && !user) {
     return (
@@ -67,10 +70,7 @@ const TournamentPage: React.FC<TournamentPageProps> = ({ onBack, focusTournament
           <div className="flex justify-center">
             <SurfaceCard className="w-full max-w-xl space-y-4 p-6 text-center shadow-2xl">
               <p className="text-base text-white">
-                You need to be signed in before you can browse or join tournaments.
-              </p>
-              <p className="text-sm text-white/60">
-                Log in to enter brackets, follow match progress, and receive directed invites.
+                You need to be signed in and logged in before you can create or join tournaments.
               </p>
               <Button variant="primary" onClick={() => navigate('/login')}>
                 Go to login
@@ -94,15 +94,16 @@ const TournamentPage: React.FC<TournamentPageProps> = ({ onBack, focusTournament
             isDetailView={isDetailView}
             displayTournamentId={activeTournamentId}
             displayTournamentName={activeTournamentName}
+            tournamentStatus={tournamentStatus}
             connectionReady={connectionReady}
-            loading={loadingTournaments}
-            onRefresh={headerRefreshHandler}
+            loading={headerLoading}
+            onRefresh={() => headerRefreshHandler()}
             onLeaveTournament={isDetailView ? handleLeaveTournamentClick : undefined}
           />
         </SurfaceCard>
 
-        <section className={overviewSectionClass}>
-          {!isDetailView && (
+        {!isDetailView && (
+          <section className={overviewSectionClass}>
             <TournamentLobbyPanel
               tournamentName={tournamentName}
               onTournamentNameChange={setTournamentName}
@@ -114,30 +115,37 @@ const TournamentPage: React.FC<TournamentPageProps> = ({ onBack, focusTournament
               onAliasInputChange={setAliasInput}
               onJoinTournament={handleJoinTournamentClick}
             />
-          )}
-          <TournamentParticipantsPanel
-            participants={sortedParticipants}
-            hasActiveTournament={hasActiveTournament}
-            currentUserUuid={currentUserUuid}
-          />
-        </section>
+          </section>
+        )}
 
-        <TournamentBracketPanel
-          matches={matchesByStage}
-          hasActiveTournament={hasActiveTournament}
-          tournamentStatus={tournamentStatus}
-          currentParticipantId={currentParticipantId}
-        />
-
-        {hasActiveTournament && tournamentStatus !== 'completed' && (
-          <TournamentDirectedMatchesPanel
-            matches={latestReadyMatches}
-            countdowns={matchCountdowns}
-            pendingMatch={pendingMatch}
-            pendingCountdownStatus={countdownStatus}
-            pendingCountdownSeconds={countdownSecondsDisplay}
-            currentUserUuid={currentUserUuid}
-          />
+        {isDetailView && (
+          <section className={detailsSectionClass}>
+            <TournamentParticipantsPanel
+              participants={sortedParticipants}
+              hasActiveTournament={hasActiveTournament}
+              currentUserUuid={currentUserUuid}
+              tournamentStatus={tournamentStatus}
+              forfeitedParticipantIds={forfeitedParticipantIds}
+            />
+            <TournamentBracketPanel
+              matches={matchesByStage}
+              hasActiveTournament={hasActiveTournament}
+              tournamentStatus={tournamentStatus}
+              currentParticipantId={currentParticipantId}
+              forfeitedParticipantIds={forfeitedParticipantIds}
+            />
+            {hasActiveTournament && tournamentStatus !== 'completed' && (
+              <TournamentDirectedMatchesPanel
+                matches={latestReadyMatches}
+                countdowns={matchCountdowns}
+                pendingMatch={pendingMatch}
+                pendingCountdownStatus={countdownStatus}
+                pendingCountdownSeconds={countdownSecondsDisplay}
+                currentUserUuid={currentUserUuid}
+                forfeitedParticipantIds={forfeitedParticipantIds}
+              />
+            )}
+          </section>
         )}
       </PageSection>
     </PageContainer>
