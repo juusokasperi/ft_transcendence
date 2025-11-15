@@ -57,6 +57,7 @@ const TournamentPage: React.FC<TournamentPageProps> = ({ onBack, focusTournament
   // Only the lobby is shown on the main page; use a single-column layout there.
   // Participants sit alone in detail view; keep it single-column as well.
   const overviewSectionClass = 'mt-4 grid gap-6';
+  const detailsSectionClass = 'mt-4 grid gap-4';
 
   if (userReady && !user) {
     return (
@@ -99,8 +100,8 @@ const TournamentPage: React.FC<TournamentPageProps> = ({ onBack, focusTournament
           />
         </SurfaceCard>
 
-        <section className={overviewSectionClass}>
-          {!isDetailView && (
+        {!isDetailView && (
+          <section className={overviewSectionClass}>
             <TournamentLobbyPanel
               tournamentName={tournamentName}
               onTournamentNameChange={setTournamentName}
@@ -112,34 +113,33 @@ const TournamentPage: React.FC<TournamentPageProps> = ({ onBack, focusTournament
               onAliasInputChange={setAliasInput}
               onJoinTournament={handleJoinTournamentClick}
             />
-          )}
-          {isDetailView && (
+          </section>
+        )}
+
+        {isDetailView && (
+          <section className={detailsSectionClass}>
             <TournamentParticipantsPanel
               participants={sortedParticipants}
               hasActiveTournament={hasActiveTournament}
               currentUserUuid={currentUserUuid}
             />
-          )}
-        </section>
-
-        {isDetailView && (
-          <TournamentBracketPanel
-            matches={matchesByStage}
-            hasActiveTournament={hasActiveTournament}
-            tournamentStatus={tournamentStatus}
-            currentParticipantId={currentParticipantId}
-          />
-        )}
-
-        {hasActiveTournament && tournamentStatus !== 'completed' && (
-          <TournamentDirectedMatchesPanel
-            matches={latestReadyMatches}
-            countdowns={matchCountdowns}
-            pendingMatch={pendingMatch}
-            pendingCountdownStatus={countdownStatus}
-            pendingCountdownSeconds={countdownSecondsDisplay}
-            currentUserUuid={currentUserUuid}
-          />
+            <TournamentBracketPanel
+              matches={matchesByStage}
+              hasActiveTournament={hasActiveTournament}
+              tournamentStatus={tournamentStatus}
+              currentParticipantId={currentParticipantId}
+            />
+            {hasActiveTournament && tournamentStatus !== 'completed' && (
+              <TournamentDirectedMatchesPanel
+                matches={latestReadyMatches}
+                countdowns={matchCountdowns}
+                pendingMatch={pendingMatch}
+                pendingCountdownStatus={countdownStatus}
+                pendingCountdownSeconds={countdownSecondsDisplay}
+                currentUserUuid={currentUserUuid}
+              />
+            )}
+          </section>
         )}
       </PageSection>
     </PageContainer>

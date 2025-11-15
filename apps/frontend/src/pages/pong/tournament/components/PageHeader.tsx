@@ -1,8 +1,9 @@
-import React from 'react';
+import React, { useState } from 'react';
 import Button from '../../../../components/Button';
 import { InlineSpinner } from '@ft/spinner';
 // Reuse the matchmaking status badge chip for a consistent look
 import StatusBadge from '../../online/components/StatusBadge';
+import ConfirmDialog from '../../../../components/ConfirmDialog';
 
 export type TournamentPageHeaderProps = {
   isDetailView: boolean;
@@ -34,6 +35,8 @@ const TournamentPageHeader: React.FC<TournamentPageHeaderProps> = ({
     return 'Tournament lobby';
   })();
 
+  const [confirmOpen, setConfirmOpen] = useState(false);
+
   return (
     <header className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
       <div>
@@ -42,23 +45,17 @@ const TournamentPageHeader: React.FC<TournamentPageHeaderProps> = ({
         </h1>
         <p className="text-white/60">
           {isDetailView
-            ? 'Stay in sync with participants, bracket updates, and match countdowns for this tournament.'
-            : 'Create or join four-slot tournaments.'}
+            ? 'SMay the best pong player win.'
+            : 'Create a four-slot tournament.'}
         </p>
       </div>
       <div className="flex flex-wrap items-center gap-3 text-sm text-white/70">
         {isDetailView && onLeaveTournament && (
-          <Button variant="danger" size="sm" onClick={onLeaveTournament}>
+          <Button variant="danger" size="sm" onClick={() => setConfirmOpen(true)}>
             Leave tournament
           </Button>
         )}
-        {connectionReady ? (
-          // Use the same green "Ready" chip style from the online page
-          <StatusBadge status="connected" />
-        ) : (
-          // Yellow connecting chip for consistency with online matchmaking
-          <StatusBadge status="connecting" />
-        )}
+        {connectionReady ? <StatusBadge status="connected" /> : <StatusBadge status="connecting" />}
         <Button variant="primary" size="sm" onClick={onRefresh} disabled={loading}>
           {loading ? (
             <InlineSpinner
@@ -70,12 +67,29 @@ const TournamentPageHeader: React.FC<TournamentPageHeaderProps> = ({
               labelClassName="text-current"
             />
           ) : isDetailView ? (
-            'Refresh details'
+            'Refresh data'
           ) : (
             'Refresh list'
           )}
         </Button>
       </div>
+      {onLeaveTournament && (
+        <ConfirmDialog
+          open={confirmOpen}
+          title="Leave tournament?"
+          description="You will not be able to come back to this tournament and be declared forfeit."
+          confirmLabel="Leave"
+          cancelLabel="Stay"
+          tone="danger"
+          onCancel={() => setConfirmOpen(false)}
+          onConfirm={() => {
+            setConfirmOpen(false);
+            try {
+              onLeaveTournament();
+            } catch {}
+          }}
+        />
+      )}
     </header>
   );
 };

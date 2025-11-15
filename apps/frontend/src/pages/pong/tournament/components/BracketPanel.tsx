@@ -27,7 +27,7 @@ const TournamentBracketPanel: React.FC<TournamentBracketPanelProps> = ({
       {!hasActiveTournament ? (
         <p className="text-sm text-white/60">Join a tournament to see the bracket.</p>
       ) : matches.length === 0 ? (
-        <p className="text-sm text-white/60">Bracket pending — waiting for all participants.</p>
+        <p className="text-sm text-white/60">Tournament pending, waiting for all participants.</p>
       ) : (
         <div className="grid gap-3 md:grid-cols-2">
           {matches.map((match) => (
