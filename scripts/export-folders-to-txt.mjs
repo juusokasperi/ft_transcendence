@@ -32,6 +32,9 @@ const DEFAULT_DIRS = [
   'apps/frontend/src/pages/pong/local',
   'packages/pong/render/src/client/engine',
   'apps/frontend/src/games/pong/modes',
+  'apps/frontend/src/games/pong/modes/online',
+  'apps/frontend/src/games/pong/modes/local',
+  'apps/frontend/src/pages/pong/tournament',
   'apps',
   'packages',
 ];

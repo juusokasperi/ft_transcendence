@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useState } from 'react';
 import Button from '../../../../components/Button';
 import SurfaceCard from '../../shared/components/SurfaceCard';
 import { ALIAS_MAX_LENGTH, aliasInputAllowedRegex } from '../../../../utils/alias';
+import ConfirmDialog from '../../../../components/ConfirmDialog';
 
 export type TournamentInfoCardProps = {
   tournamentId: number | null;
@@ -28,6 +29,7 @@ const TournamentInfoCard: React.FC<TournamentInfoCardProps> = ({
   onJoin,
   onLeave,
 }) => {
+  const [confirmOpen, setConfirmOpen] = useState(false);
   return (
     <SurfaceCard className="p-6 shadow-2xl">
       <h2 className="mb-2 text-lg font-semibold">
@@ -56,12 +58,22 @@ const TournamentInfoCard: React.FC<TournamentInfoCardProps> = ({
           }}
         />
         {currentParticipantId !== null ? (
-          <Button variant="outline" size="sm" onClick={onLeave}>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              if ((tournamentStatus ?? '').toLowerCase() === 'completed') {
+                onLeave();
+              } else {
+                setConfirmOpen(true);
+              }
+            }}
+          >
             Leave tournament
           </Button>
         ) : (
           <Button
-            variant="primary"
+            variant="success"
             size="sm"
             onClick={onJoin}
             disabled={!connectionReady || tournamentId === null}
@@ -70,6 +82,21 @@ const TournamentInfoCard: React.FC<TournamentInfoCardProps> = ({
           </Button>
         )}
       </div>
+      {(tournamentStatus ?? '').toLowerCase() !== 'completed' && (
+        <ConfirmDialog
+          open={confirmOpen}
+          title="Leave tournament?"
+          description="You will not be able to come back to this tournament and be declared forfeit."
+          confirmLabel="Leave"
+          cancelLabel="Stay"
+          tone="danger"
+          onCancel={() => setConfirmOpen(false)}
+          onConfirm={() => {
+            setConfirmOpen(false);
+            onLeave();
+          }}
+        />
+      )}
       {currentParticipantId === null && (
         <p className="mt-2 text-xs text-white/60">
           Choose a nickname for the bracket before joining. You can update it until the matches

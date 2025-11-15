@@ -2,7 +2,7 @@ import type {
   TournamentMatchCountdownStatus,
   TournamentMatchesReadyMessage,
   TournamentMatchState,
-} from '@pong/shared/protocol/net';
+} from '../net/messageTypes';
 
 export type TournamentSummary = {
   id: number;
@@ -24,6 +24,7 @@ export type CountdownSnapshot = {
   status: TournamentMatchCountdownStatus;
   targetStartEpochMs: number;
   secondsRemaining: number;
+  reason?: 'offline' | 'forfeited' | 'stopped';
 };
 
 export type ActiveHandoff = {

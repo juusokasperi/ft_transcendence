@@ -43,3 +43,11 @@ export const TOURNAMENT_MATCH_COUNTDOWN_INTERVAL_MS = numberFromEnv(
   'TOURNAMENT_MATCH_COUNTDOWN_INTERVAL_MS',
   1000,
 );
+
+// If one player is present and the other is absent when a countdown should
+// auto-start, give an auto-win to the present player after this delay.
+// This avoids tournaments stalling when a player does not show up.
+export const TOURNAMENT_ABSENCE_AUTO_WIN_MS = numberFromEnv(
+  'TOURNAMENT_ABSENCE_AUTO_WIN_MS',
+  10_000,
+);

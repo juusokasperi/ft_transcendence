@@ -137,7 +137,9 @@ export function findUserActiveTournament(
       SELECT t.*, p.id AS participant_id
       FROM Tournaments t
       INNER JOIN TournamentParticipants p ON p.tournament_id = t.id
-      WHERE p.user_uuid = ? AND t.status IN ('draft', 'active')
+      WHERE p.user_uuid = ?
+        AND t.status IN ('draft', 'active')
+        AND p.status != 'forfeited'
       ORDER BY t.updated_at DESC, t.id DESC
       LIMIT 1
     `,

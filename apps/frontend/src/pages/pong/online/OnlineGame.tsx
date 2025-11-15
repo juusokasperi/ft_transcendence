@@ -251,10 +251,7 @@ const OnlineGame: React.FC = () => {
           <div className="flex justify-center">
             <SurfaceCard className="w-full max-w-xl space-y-4 p-6 text-center shadow-2xl">
               <p className="text-base text-white">
-                You need to be signed in before you can join online matchmaking.
-              </p>
-              <p className="text-sm text-white/60">
-                Log in to enter the queue, challenge opponents, and track your results.
+                You need to be signed in and logged in before you can join online matches.
               </p>
               <Button variant="primary" onClick={() => navigate('/login')}>
                 Go to login

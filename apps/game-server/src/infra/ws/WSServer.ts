@@ -384,7 +384,8 @@ export class WSServer {
         const session = this.registry.getSession(roomIdentifier);
         if (!session) return;
         const winnerSeat: 'P1' | 'P2' = seat === 'P1' ? 'P2' : 'P1';
-        const winnerSide = seatToSide(session.model.state.playerAtEnd, winnerSeat);
+        // Guard against tests or edge cases where model.state may be undefined
+        const winnerSide = seatToSide((session.model.state as any)?.playerAtEnd, winnerSeat);
         // Stop runner to cease frames, then report and broadcast the result.
         try {
           this.runner.stop(session);
@@ -451,9 +452,40 @@ export class WSServer {
     const remainingP2 = session.players.get('P2');
 
     if (!remainingP1 && !remainingP2) {
-      this.logger.info({ roomIdentifier }, '[WSServer] Room empty, cleaning up');
-      this.runner.stop(session);
-      this.registry.clearSession(roomIdentifier);
+      // Both players have disconnected (or quit) nearly simultaneously.
+      // Declare the LAST quitter (current 'seat') as the winner to avoid tournament lock.
+      const winnerSeat: 'P1' | 'P2' = seat;
+      // Guard against cases where model.state may be undefined (e.g., mocked sessions in tests)
+      const winnerSide = seatToSide((session.model.state as any)?.playerAtEnd, winnerSeat);
+
+      this.logger.info(
+        { roomIdentifier, winnerSeat, winnerSide },
+        '[WSServer] Both players absent, awarding win to last quitter',
+      );
+      try {
+        this.runner.stop(session);
+      } catch {}
+
+      (async () => {
+        try {
+          const summary = await this.reporter.report(session, { winner: winnerSide });
+          this.broadcaster.notifyMatchEnd(session, 'forfeit', winnerSide, summary);
+          try {
+            for (const p of session.players.values()) {
+              try {
+                p.socket?.close(1000, 'match-ended');
+              } catch {}
+            }
+          } catch {}
+        } catch (error) {
+          this.logger.error({ error }, '[WSServer] Failed to finalize double-quit fallback result');
+          this.broadcaster.notifyMatchEnd(session, 'error');
+        } finally {
+          try {
+            this.registry.clearSession(roomIdentifier);
+          } catch {}
+        }
+      })().catch(() => void 0);
       return;
     }
 

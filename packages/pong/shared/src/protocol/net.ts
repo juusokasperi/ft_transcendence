@@ -126,6 +126,11 @@ export type TournamentMatchCountdownMessage = {
   tournamentId: number;
   tournamentMatchId: number;
   stage: 'semifinal' | 'final' | 'bronze';
+  // Optional reason for status transitions, used when status === 'cancelled'
+  // - 'offline': a player went offline/disconnected
+  // - 'forfeited': a player left the tournament (participant forfeited)
+  // - 'stopped': manual stop by server logic
+  reason?: 'offline' | 'forfeited' | 'stopped';
   secondsRemaining: number;
   targetStartEpochMs: number;
   status: TournamentMatchCountdownStatus;
