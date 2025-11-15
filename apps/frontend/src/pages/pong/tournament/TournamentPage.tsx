@@ -54,9 +54,9 @@ const TournamentPage: React.FC<TournamentPageProps> = ({ onBack, focusTournament
   const currentUserUuid = user?.uuid ?? null;
   const hasActiveTournament = activeTournamentId !== null;
   const shouldShowOverlay = matchPhase === 'starting' || matchPhase === 'playing';
-  const overviewSectionClass = isDetailView
-    ? 'grid gap-6'
-    : 'grid gap-6 lg:grid-cols-[1.1fr_0.9fr]';
+  // Only the lobby is shown on the main page; use a single-column layout there.
+  // Participants sit alone in detail view; keep it single-column as well.
+  const overviewSectionClass = 'grid gap-6';
 
   if (userReady && !user) {
     return (
@@ -116,19 +116,23 @@ const TournamentPage: React.FC<TournamentPageProps> = ({ onBack, focusTournament
               onJoinTournament={handleJoinTournamentClick}
             />
           )}
-          <TournamentParticipantsPanel
-            participants={sortedParticipants}
-            hasActiveTournament={hasActiveTournament}
-            currentUserUuid={currentUserUuid}
-          />
+          {isDetailView && (
+            <TournamentParticipantsPanel
+              participants={sortedParticipants}
+              hasActiveTournament={hasActiveTournament}
+              currentUserUuid={currentUserUuid}
+            />
+          )}
         </section>
 
-        <TournamentBracketPanel
-          matches={matchesByStage}
-          hasActiveTournament={hasActiveTournament}
-          tournamentStatus={tournamentStatus}
-          currentParticipantId={currentParticipantId}
-        />
+        {isDetailView && (
+          <TournamentBracketPanel
+            matches={matchesByStage}
+            hasActiveTournament={hasActiveTournament}
+            tournamentStatus={tournamentStatus}
+            currentParticipantId={currentParticipantId}
+          />
+        )}
 
         {hasActiveTournament && tournamentStatus !== 'completed' && (
           <TournamentDirectedMatchesPanel

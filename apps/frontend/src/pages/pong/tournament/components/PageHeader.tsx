@@ -36,7 +36,7 @@ const TournamentPageHeader: React.FC<TournamentPageHeaderProps> = ({
     <header className="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
       <div>
         <h1 id="page-title" className="text-3xl font-semibold">
-          {isDetailView ? detailTitle : 'Ping Pong Tournaments'}
+          {isDetailView ? detailTitle : 'Pong Tournaments'}
         </h1>
         <p className="text-white/60">
           {isDetailView
