@@ -3,7 +3,7 @@ import websocket from '@fastify/websocket';
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import type { WebSocket, RawData } from 'ws';
 import { v4 as uuid } from 'uuid';
-import { PORT } from './utils/config.ts';
+import { PORT, REDIS_URL } from './utils/config.ts';
 import type { ClientInfo, PendingMatch } from './types/types.ts';
 import type { MatchmakingClientMessage } from '@pong/shared/protocol/net';
 import { extractToken, handleAuth } from './auth/auth.ts';
@@ -38,6 +38,9 @@ import {
   clearInviteLobbies,
 } from './utils/invites.ts';
 import { MatchmakingRedisBridge } from './utils/MatchmakingRedisBridge.ts';
+import { RedisTokenBucket } from '@utils/rate-limiter';
+import { isRateLimited } from './utils/ratelimit.ts';
+import Redis from 'ioredis';
 
 const app = Fastify({
   logger: createFastifyLoggerConfig({ service: 'matchmaking' }),
@@ -50,12 +53,20 @@ await app.register(websocket);
 const clients = new Map<string, ClientInfo>();
 const pendingMatches = new Map<string, PendingMatch>();
 
-const redisBridge = new MatchmakingRedisBridge({
-  onRoomReady: handleAdmitConfirmed,
-  onMatchesReady: (payload) => handleTournamentMatchesReady(payload, clients),
-  onStateUpdated: (payload) => handleTournamentStateUpdated(payload, clients),
-});
+const redis = new Redis(REDIS_URL);
+const redisStream = redis.duplicate();
+const redisPubSub = redis.duplicate();
+const redisBridge = new MatchmakingRedisBridge(
+  {
+    onRoomReady: handleAdmitConfirmed,
+    onMatchesReady: (payload) => handleTournamentMatchesReady(payload, clients),
+    onStateUpdated: (payload) => handleTournamentStateUpdated(payload, clients),
+  },
+  redisPubSub,
+  redisStream,
+);
 await redisBridge.init();
+const rateLimiter = new RedisTokenBucket(redis, 'mm:rl');
 
 // Route for creating invite match lobby
 await app.register(inviteRoute, { prefix: '/invite-match' });
@@ -84,6 +95,7 @@ async function handleConnection(socket: WebSocket, req: FastifyRequest) {
     uuid: '',
     mmr: 1000,
     authenticated: false,
+    lastRateLimitNotice: Date.now() - 5000,
   };
   log(`Client connected, validating.`, { clientId: client.id });
   const authenticated = await handleAuth(client, token, clients);
@@ -98,8 +110,10 @@ async function handleConnection(socket: WebSocket, req: FastifyRequest) {
   }
 
   void restoreTournamentMembership(client, clients);
-  // broadcastLobbies(client, lobbies, clients); Maybe for tournament system..
-  socket.on('message', (raw: RawData) => {
+
+  socket.on('message', async (raw: RawData) => {
+    if (await isRateLimited(client, rateLimiter)) return;
+
     let data: MatchmakingClientMessage;
     try {
       data = JSON.parse(raw.toString());
@@ -143,7 +157,7 @@ async function handleConnection(socket: WebSocket, req: FastifyRequest) {
     }
   });
 
-  socket.on('close', () => {
+  socket.on('close', async () => {
     log('Client disconnected', { id });
 
     clearLobbiesWithClient(client);
@@ -157,9 +171,6 @@ async function handleConnection(socket: WebSocket, req: FastifyRequest) {
     }
     removeFromQueue(id);
     clients.delete(id);
-    //removeFromTournamentLobby(id)
-    //which broadcasts TOURNAMENT_LOBBY_UPDATE or something similar to clients in lobby
-    //waiting for tournament to start
   });
 }
 
@@ -179,8 +190,16 @@ app.addHook('onClose', async () => {
   });
   pendingMatches.clear();
   clearInviteLobbies();
-  await redisBridge.close();
+  await cleanupRedis();
 });
+
+async function cleanupRedis(): Promise<void> {
+  await rateLimiter.clearAll();
+  await redisBridge.close();
+  await redis.quit();
+  await redisPubSub.quit();
+  await redisStream.quit();
+}
 
 try {
   await app.listen({ host: '0.0.0.0', port: PORT });

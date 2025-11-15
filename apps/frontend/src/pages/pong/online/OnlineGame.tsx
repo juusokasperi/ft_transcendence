@@ -96,6 +96,16 @@ const OnlineGame: React.FC = () => {
     [enqueueSnackbar],
   );
 
+  const handleRatelimit = useCallback(
+    (message?: string) => {
+      enqueueSnackbar({
+        message: message ?? 'You are sending messages too fast. Please try again shortly.',
+        variant: 'error',
+      });
+    },
+    [enqueueSnackbar],
+  );
+
   const handleAuthError = useCallback(
     async (message?: string) => {
       const fallbackMessage = message ?? 'Authentication error. Please sign in again.';
@@ -122,6 +132,7 @@ const OnlineGame: React.FC = () => {
     enabled: matchmakingEnabled,
     onAuthError: handleAuthError,
     onAllocatorError: handleAllocatorError,
+    onRatelimit: handleRatelimit,
     onMatchTimeout: handleMatchTimeout,
     onMatchDeclined: handleMatchDeclined,
   });

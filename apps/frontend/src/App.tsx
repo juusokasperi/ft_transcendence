@@ -14,6 +14,7 @@ import ConfirmEmail from './pages/ConfirmEmail';
 import ForgotPassword from './pages/ForgotPassword';
 import ResetPassword from './pages/ResetPassword';
 import PublicUser from './pages/PublicUser';
+import NotFound from './pages/NotFound';
 
 import Chat from './components/Chat';
 import ChatToggleButton from './components/chat/ChatToggleButton';
@@ -79,6 +80,7 @@ function App() {
               <Route path={'friends'} element={<Friends />} />
             </Route>
             <Route path={'/users/:uuid'} element={<PublicUser />} />
+            <Route path="*" element={<NotFound />} />
           </Routes>
         </div>
       </SnackbarProvider>

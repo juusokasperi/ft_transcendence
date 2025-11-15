@@ -56,6 +56,15 @@ FROM node:22-bookworm-slim AS runtime
 WORKDIR /app
 
 ARG SERVICE_DIR
+ARG INSTALL_SQLITE=false
+
+# Conditionally install sqlite3 CLI (only for services that need it, e.g., backend)
+RUN if [ "$INSTALL_SQLITE" = "true" ]; then \
+      apt-get update && \
+      apt-get install -y sqlite3 && \
+      rm -rf /var/lib/apt/lists/*; \
+    fi
+
 COPY --from=builder /prod/${SERVICE_DIR} ./
 ENV NODE_ENV=production
 
