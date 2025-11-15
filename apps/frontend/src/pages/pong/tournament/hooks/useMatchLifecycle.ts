@@ -99,6 +99,11 @@ export function useMatchLifecycle({
             // If opponent quit (forfeit) and you are the winner, route back to the
             // tournament page immediately for clarity.
             if (reason === 'forfeit' && winner && winner === handoff.side) {
+                enqueueSnackbar({
+                  message:
+                    'Your opponent declared forfeit. You won this match!',
+                  variant: 'success',
+                });
               try {
                 navigate('/pong/tournaments');
               } catch {}
@@ -168,9 +173,11 @@ export function useMatchLifecycle({
     // Intentionally forfeit the current online match so the server ends it
     // and stops publishing resume tokens for our session. This preserves
     // tournament membership while ending only the active match.
-    try {
       appRef.current?.giveUp?.();
-    } catch {}
+      enqueueSnackbar({
+        message: 'You quit, forfeiting this match.',
+        variant: 'warning',
+      });
     performMatchTeardown({ refreshDelayMs: 1000 });
   }, [debugLog, performMatchTeardown]);
 

@@ -47,7 +47,7 @@ const TournamentPageHeader: React.FC<TournamentPageHeaderProps> = ({
         </h1>
         <p className="text-white/60">
           {isDetailView
-            ? 'SMay the best pong player win.'
+            ? 'May the best pong player win.'
             : 'Create a four-slot tournament.'}
         </p>
       </div>

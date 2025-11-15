@@ -286,14 +286,14 @@ export function useTournamentPageController(
     setTournamentName('');
     setAliasInput('');
     debugLog('action:create-tournament', { name: tournamentName, alias: aliasInput });
-    enqueueSnackbar({ message: 'Tournament creation requested…', variant: 'info' });
+    enqueueSnackbar({ message: 'Creating tournament.', variant: 'info' });
   }, [debugLog, enqueueSnackbar, tournamentName, aliasInput, setAliasInput]);
 
   const handleJoinTournamentClick = useCallback(
     (tournamentId: number) => {
       joinTournament(tournamentId, aliasInput);
       debugLog('action:join-tournament', { tournamentId, alias: aliasInput });
-      enqueueSnackbar({ message: 'Join request sent', variant: 'info' });
+      enqueueSnackbar({ message: 'Joining tournament.', variant: 'info' });
     },
     [aliasInput, debugLog, enqueueSnackbar],
   );
