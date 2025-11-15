@@ -73,7 +73,7 @@ const TournamentInfoCard: React.FC<TournamentInfoCardProps> = ({
           </Button>
         ) : (
           <Button
-            variant="primary"
+            variant="success"
             size="sm"
             onClick={onJoin}
             disabled={!connectionReady || tournamentId === null}
@@ -86,7 +86,7 @@ const TournamentInfoCard: React.FC<TournamentInfoCardProps> = ({
         <ConfirmDialog
           open={confirmOpen}
           title="Leave tournament?"
-          description="You will not be able to come back to this bracket."
+          description="You will not be able to come back to this tournament and be declared forfeit."
           confirmLabel="Leave"
           cancelLabel="Stay"
           tone="danger"

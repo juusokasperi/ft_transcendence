@@ -40,13 +40,13 @@ const TournamentDirectedMatchesPanel: React.FC<TournamentDirectedMatchesPanelPro
   return (
     <SurfaceCard as="section" className="p-6 shadow-2xl">
       <div className="mb-3 flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
-        <h2 className="text-lg font-semibold">Directed matches</h2>
+        <h2 className="text-lg font-semibold">Schedule match</h2>
         {headerSubtitle && (
           <span className="text-xs uppercase tracking-[0.4em] text-white/60">{headerSubtitle}</span>
         )}
       </div>
       {matches.length === 0 ? (
-        <p className="text-sm text-white/60">No scheduled matches yet.</p>
+        <p className="text-sm text-white/60">No scheduled match yet.</p>
       ) : (
         <ul className="space-y-3">
           {matches.map((match) => {

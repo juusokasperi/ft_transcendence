@@ -92,7 +92,7 @@ const TournamentLobbyPanel: React.FC<TournamentLobbyPanelProps> = ({
                   {canJoin && (
                     <div className="flex flex-col gap-2 md:flex-row md:items-center">
                       <Button
-                        variant="primary"
+                        variant="success"
                         size="sm"
                         onClick={() => onJoinTournament(tournament.id)}
                         disabled={!connectionReady || activeTournamentId !== null}
