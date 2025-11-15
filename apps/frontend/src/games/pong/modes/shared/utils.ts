@@ -69,7 +69,7 @@ export function handleSwapSidesNow(
     const winnerRow = last.winner as TableEnd;
     return announceAndPause(
       hud,
-      `${names[winnerRow]} won the game, swapping side!`,
+      `Swapping side!`,
       messageMs,
       blockInputForFn,
     );
