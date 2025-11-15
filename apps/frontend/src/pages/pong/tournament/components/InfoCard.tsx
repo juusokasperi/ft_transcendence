@@ -58,7 +58,17 @@ const TournamentInfoCard: React.FC<TournamentInfoCardProps> = ({
           }}
         />
         {currentParticipantId !== null ? (
-          <Button variant="outline" size="sm" onClick={() => setConfirmOpen(true)}>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              if ((tournamentStatus ?? '').toLowerCase() === 'completed') {
+                onLeave();
+              } else {
+                setConfirmOpen(true);
+              }
+            }}
+          >
             Leave tournament
           </Button>
         ) : (
@@ -72,19 +82,21 @@ const TournamentInfoCard: React.FC<TournamentInfoCardProps> = ({
           </Button>
         )}
       </div>
-      <ConfirmDialog
-        open={confirmOpen}
-        title="Leave tournament?"
-        description="You will not be able to come back to this bracket."
-        confirmLabel="Leave"
-        cancelLabel="Stay"
-        tone="danger"
-        onCancel={() => setConfirmOpen(false)}
-        onConfirm={() => {
-          setConfirmOpen(false);
-          onLeave();
-        }}
-      />
+      {(tournamentStatus ?? '').toLowerCase() !== 'completed' && (
+        <ConfirmDialog
+          open={confirmOpen}
+          title="Leave tournament?"
+          description="You will not be able to come back to this bracket."
+          confirmLabel="Leave"
+          cancelLabel="Stay"
+          tone="danger"
+          onCancel={() => setConfirmOpen(false)}
+          onConfirm={() => {
+            setConfirmOpen(false);
+            onLeave();
+          }}
+        />
+      )}
       {currentParticipantId === null && (
         <p className="mt-2 text-xs text-white/60">
           Choose a nickname for the bracket before joining. You can update it until the matches

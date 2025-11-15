@@ -93,6 +93,7 @@ const TournamentPage: React.FC<TournamentPageProps> = ({ onBack, focusTournament
             isDetailView={isDetailView}
             displayTournamentId={activeTournamentId}
             displayTournamentName={activeTournamentName}
+            tournamentStatus={tournamentStatus}
             connectionReady={connectionReady}
             loading={headerLoading}
             onRefresh={() => headerRefreshHandler()}

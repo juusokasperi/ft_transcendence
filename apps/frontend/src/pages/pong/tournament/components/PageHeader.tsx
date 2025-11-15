@@ -9,6 +9,7 @@ export type TournamentPageHeaderProps = {
   isDetailView: boolean;
   displayTournamentId: number | null;
   displayTournamentName: string | null;
+  tournamentStatus?: string | null;
   connectionReady: boolean;
   loading: boolean;
   onRefresh(): void;
@@ -19,6 +20,7 @@ const TournamentPageHeader: React.FC<TournamentPageHeaderProps> = ({
   isDetailView,
   displayTournamentId,
   displayTournamentName,
+  tournamentStatus,
   connectionReady,
   loading,
   onRefresh,
@@ -51,7 +53,17 @@ const TournamentPageHeader: React.FC<TournamentPageHeaderProps> = ({
       </div>
       <div className="flex flex-wrap items-center gap-3 text-sm text-white/70">
         {isDetailView && onLeaveTournament && (
-          <Button variant="danger" size="sm" onClick={() => setConfirmOpen(true)}>
+          <Button
+            variant="danger"
+            size="sm"
+            onClick={() => {
+              if ((tournamentStatus ?? '').toLowerCase() === 'completed') {
+                onLeaveTournament();
+              } else {
+                setConfirmOpen(true);
+              }
+            }}
+          >
             Leave tournament
           </Button>
         )}
@@ -73,7 +85,7 @@ const TournamentPageHeader: React.FC<TournamentPageHeaderProps> = ({
           )}
         </Button>
       </div>
-      {onLeaveTournament && (
+      {onLeaveTournament && (tournamentStatus ?? '').toLowerCase() !== 'completed' && (
         <ConfirmDialog
           open={confirmOpen}
           title="Leave tournament?"
