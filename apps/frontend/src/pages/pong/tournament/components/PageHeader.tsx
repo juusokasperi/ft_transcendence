@@ -57,11 +57,12 @@ const TournamentPageHeader: React.FC<TournamentPageHeaderProps> = ({
             variant="danger"
             size="sm"
             onClick={() => {
-              if ((tournamentStatus ?? '').toLowerCase() === 'completed') {
+              const status = (tournamentStatus ?? '').toLowerCase();
+              if (status === 'completed' || status === 'draft') {
                 onLeaveTournament();
-              } else {
-                setConfirmOpen(true);
+                return;
               }
+              setConfirmOpen(true);
             }}
           >
             Leave tournament
@@ -79,13 +80,13 @@ const TournamentPageHeader: React.FC<TournamentPageHeaderProps> = ({
               labelClassName="text-current"
             />
           ) : isDetailView ? (
-            'Refresh data'
+            'Refresh details'
           ) : (
             'Refresh list'
           )}
         </Button>
       </div>
-      {onLeaveTournament && (tournamentStatus ?? '').toLowerCase() !== 'completed' && (
+      {onLeaveTournament && !['completed', 'draft'].includes((tournamentStatus ?? '').toLowerCase()) && (
         <ConfirmDialog
           open={confirmOpen}
           title="Leave tournament?"

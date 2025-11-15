@@ -65,6 +65,7 @@ type TournamentControllerReturn = {
   isDetailView: boolean;
   headerRefreshHandler: () => Promise<void> | void;
   currentParticipantId: number | null;
+  forfeitedParticipantIds: Set<number>;
 };
 
 type UseTournamentPageControllerOptions = {
@@ -253,6 +254,7 @@ export function useTournamentPageController(
         },
         setHandoff: (h) => setHandoff(h),
         setConnectionReady: (ready) => dispatch({ type: 'setConnectionReady', payload: ready }),
+        markForfeited: (ids) => dispatch({ type: 'markParticipantsForfeited', payload: ids }),
       };
 
       routeMessage(msg, ctx);
@@ -470,5 +472,6 @@ export function useTournamentPageController(
     isDetailView,
     headerRefreshHandler,
     currentParticipantId,
+    forfeitedParticipantIds: store.forfeitedParticipantIds,
   };
 }

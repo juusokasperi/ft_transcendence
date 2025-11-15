@@ -15,6 +15,7 @@ export type TournamentState = {
   matchCountdowns: Map<number, CountdownSnapshot>;
   pendingMatch: ReadyMatch | null;
   matchPhase: MatchPhase;
+  forfeitedParticipantIds: Set<number>;
 };
 
 export const initialTournamentState: TournamentState = {
@@ -30,6 +31,7 @@ export const initialTournamentState: TournamentState = {
   matchCountdowns: new Map(),
   pendingMatch: null,
   matchPhase: 'idle',
+  forfeitedParticipantIds: new Set(),
 };
 
 export type TournamentAction =
@@ -51,6 +53,7 @@ export type TournamentAction =
   | { type: 'setMatchCountdowns'; payload: Map<number, CountdownSnapshot> }
   | { type: 'setPendingMatch'; payload: ReadyMatch | null }
   | { type: 'setMatchPhase'; payload: MatchPhase }
+  | { type: 'markParticipantsForfeited'; payload: number[] }
   | { type: 'resetActiveTournamentState' };
 
 export function tournamentReducer(
@@ -95,7 +98,16 @@ export function tournamentReducer(
         tournamentStatus: state.tournamentStatus ?? 'draft',
         maxParticipants: state.maxParticipants ?? null,
         activeTournamentName: state.activeTournamentName,
+        forfeitedParticipantIds: new Set(state.forfeitedParticipantIds),
       };
+    case 'markParticipantsForfeited': {
+      if (!action.payload || action.payload.length === 0) return state;
+      const next = new Set(state.forfeitedParticipantIds);
+      for (const id of action.payload) {
+        if (typeof id === 'number' && Number.isFinite(id)) next.add(id);
+      }
+      return { ...state, forfeitedParticipantIds: next };
+    }
     default:
       return state;
   }

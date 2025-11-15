@@ -10,6 +10,7 @@ export type TournamentDirectedMatchesPanelProps = {
   pendingCountdownStatus: CountdownSnapshot['status'] | null;
   pendingCountdownSeconds: number | null;
   currentUserUuid: string | null;
+  forfeitedParticipantIds?: Set<number>;
 };
 
 const TournamentDirectedMatchesPanel: React.FC<TournamentDirectedMatchesPanelProps> = ({
@@ -19,6 +20,7 @@ const TournamentDirectedMatchesPanel: React.FC<TournamentDirectedMatchesPanelPro
   pendingCountdownStatus,
   pendingCountdownSeconds,
   currentUserUuid,
+  forfeitedParticipantIds,
 }) => {
   const headerSubtitle = useMemo(() => {
     if (!pendingMatch) return null;
@@ -40,7 +42,7 @@ const TournamentDirectedMatchesPanel: React.FC<TournamentDirectedMatchesPanelPro
   return (
     <SurfaceCard as="section" className="p-6 shadow-2xl">
       <div className="mb-3 flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
-        <h2 className="text-lg font-semibold">Schedule match</h2>
+        <h2 className="text-lg font-semibold">Schedule matches</h2>
         {headerSubtitle && (
           <span className="text-xs uppercase tracking-[0.4em] text-white/60">{headerSubtitle}</span>
         )}
@@ -71,9 +73,9 @@ const TournamentDirectedMatchesPanel: React.FC<TournamentDirectedMatchesPanelPro
                 countdownTone = 'text-sky-300';
               } else if (countdownInfo.status === 'cancelled') {
                 if ((countdownInfo as any).reason === 'forfeited') {
-                  countdownText = 'Countdown cancelled — player left tournament';
+                  countdownText = 'Match cancelled, player left tournament.';
                 } else {
-                  countdownText = 'Countdown paused — waiting for players';
+                  countdownText = 'Countdown paused, waiting for player';
                 }
                 countdownTone = 'text-amber-300';
               }
@@ -106,7 +108,11 @@ const TournamentDirectedMatchesPanel: React.FC<TournamentDirectedMatchesPanelPro
                       }`}
                     >
                       <span>
-                        {participant.alias} · {participant.teamNumber === 1 ? 'West' : 'East'}
+                        {participant.alias}
+                        {forfeitedParticipantIds?.has(participant.participantId) && (
+                          <span className="ml-1 text-rose-300/80">(forfeit)</span>
+                        )}{' '}
+                        · {participant.teamNumber === 1 ? 'West' : 'East'}
                       </span>
                     </li>
                   ))}

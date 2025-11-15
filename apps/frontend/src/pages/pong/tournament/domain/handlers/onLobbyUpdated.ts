@@ -22,6 +22,13 @@ export function onLobbyUpdated(
   ctx.setTournamentStatus(msg.status);
   ctx.setMaxParticipants(msg.maxParticipants ?? TOURNAMENT_SIZE);
   ctx.setParticipants(msg.participants);
+  // Persistently mark any participants who are now forfeited
+  try {
+    const forfeited = msg.participants
+      .filter((p) => String(p.status).toLowerCase() === 'forfeited')
+      .map((p) => p.participantId);
+    if (forfeited.length) ctx.markForfeited(forfeited);
+  } catch {}
 
   // Membership + routing
   const member = isMember(ctx.userUuid, msg.participants, msg.status);

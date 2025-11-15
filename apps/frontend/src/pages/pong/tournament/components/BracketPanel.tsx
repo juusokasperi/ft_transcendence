@@ -8,6 +8,7 @@ export type TournamentBracketPanelProps = {
   hasActiveTournament: boolean;
   tournamentStatus: string;
   currentParticipantId: number | null;
+  forfeitedParticipantIds?: Set<number>;
 };
 
 const TournamentBracketPanel: React.FC<TournamentBracketPanelProps> = ({
@@ -15,6 +16,7 @@ const TournamentBracketPanel: React.FC<TournamentBracketPanelProps> = ({
   hasActiveTournament,
   tournamentStatus,
   currentParticipantId,
+  forfeitedParticipantIds,
 }) => {
   return (
     <SurfaceCard as="section" className="p-6 shadow-2xl">
@@ -49,12 +51,25 @@ const TournamentBracketPanel: React.FC<TournamentBracketPanelProps> = ({
                         : 'bg-white/5 text-white/80'
                     }`}
                   >
-                    <span className="truncate">{player.alias ?? 'TBD'}</span>
+                    <span className="truncate">
+                      {player.alias ?? 'TBD'}
+                      {(String(player.status).toLowerCase() === 'forfeited' ||
+                        forfeitedParticipantIds?.has(player.participantId)) && (
+                        <span className="ml-1 text-rose-300/80">(forfeit)</span>
+                      )}
+                    </span>
                     <span className="w-8 text-center font-mono text-lg font-bold tabular-nums">
                       {player.score !== null ? player.score : '—'}
                     </span>
                     <span className="w-24 text-right text-[10px] uppercase tracking-[0.3em] text-white/40">
-                      {participantStatusLabel(player.status)}
+                      {(() => {
+                        const tStat = (tournamentStatus ?? '').toLowerCase();
+                        const pStat = (player.status ?? '').toLowerCase();
+                        if (tStat && tStat !== 'draft' && (pStat === 'pending' || pStat === 'accepted')) {
+                          return 'Active';
+                        }
+                        return participantStatusLabel(player.status);
+                      })()}
                     </span>
                   </li>
                 ))}

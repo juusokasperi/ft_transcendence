@@ -8,12 +8,16 @@ export type TournamentParticipantsPanelProps = {
   participants: TournamentParticipantState[];
   hasActiveTournament: boolean;
   currentUserUuid: string | null;
+  tournamentStatus?: string | null;
+  forfeitedParticipantIds?: Set<number>;
 };
 
 const TournamentParticipantsPanel: React.FC<TournamentParticipantsPanelProps> = ({
   participants,
   hasActiveTournament,
   currentUserUuid,
+  tournamentStatus,
+  forfeitedParticipantIds,
 }) => {
   return (
     <SurfaceCard as="aside" className="p-6 shadow-2xl">
@@ -42,9 +46,22 @@ const TournamentParticipantsPanel: React.FC<TournamentParticipantsPanelProps> = 
                   : ''
               }`}
             >
-              <span>{participant.alias}</span>
+              <span>
+                {participant.alias}
+                {(String(participant.status).toLowerCase() === 'forfeited' ||
+                  forfeitedParticipantIds?.has(participant.participantId)) && (
+                  <span className="ml-1 text-rose-300/80">(forfeit)</span>
+                )}
+              </span>
               <span className="text-xs uppercase tracking-[0.2em] text-white/40">
-                {participantStatusLabel(participant.status)}
+                {(() => {
+                  const tStat = (tournamentStatus ?? '').toLowerCase();
+                  const pStat = (participant.status ?? '').toLowerCase();
+                  if (tStat && tStat !== 'draft' && (pStat === 'pending' || pStat === 'accepted')) {
+                    return 'Active';
+                  }
+                  return participantStatusLabel(participant.status);
+                })()}
               </span>
             </li>
           ))}

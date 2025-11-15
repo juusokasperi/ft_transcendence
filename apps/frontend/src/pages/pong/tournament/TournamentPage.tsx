@@ -49,6 +49,7 @@ const TournamentPage: React.FC<TournamentPageProps> = ({ onBack, focusTournament
     headerRefreshHandler,
     headerLoading,
     currentParticipantId,
+    forfeitedParticipantIds,
   } = useTournamentPageController({ focusTournamentId });
 
   const currentUserUuid = user?.uuid ?? null;
@@ -123,23 +124,27 @@ const TournamentPage: React.FC<TournamentPageProps> = ({ onBack, focusTournament
               participants={sortedParticipants}
               hasActiveTournament={hasActiveTournament}
               currentUserUuid={currentUserUuid}
+              tournamentStatus={tournamentStatus}
+              forfeitedParticipantIds={forfeitedParticipantIds}
             />
             <TournamentBracketPanel
               matches={matchesByStage}
               hasActiveTournament={hasActiveTournament}
               tournamentStatus={tournamentStatus}
               currentParticipantId={currentParticipantId}
+              forfeitedParticipantIds={forfeitedParticipantIds}
             />
-            {hasActiveTournament && tournamentStatus !== 'completed' && (
-              <TournamentDirectedMatchesPanel
-                matches={latestReadyMatches}
-                countdowns={matchCountdowns}
-                pendingMatch={pendingMatch}
-                pendingCountdownStatus={countdownStatus}
-                pendingCountdownSeconds={countdownSecondsDisplay}
-                currentUserUuid={currentUserUuid}
-              />
-            )}
+        {hasActiveTournament && tournamentStatus !== 'completed' && (
+          <TournamentDirectedMatchesPanel
+            matches={latestReadyMatches}
+            countdowns={matchCountdowns}
+            pendingMatch={pendingMatch}
+            pendingCountdownStatus={countdownStatus}
+            pendingCountdownSeconds={countdownSecondsDisplay}
+            currentUserUuid={currentUserUuid}
+            forfeitedParticipantIds={forfeitedParticipantIds}
+          />
+        )}
           </section>
         )}
       </PageSection>
