@@ -51,14 +51,31 @@ export class GameServer {
       summary: OnlineMatchSummary | null,
       winner?: 'east' | 'west',
     ) => {
-      this.logger.info(
-        {
-          room: session.reservation.roomIdentifier,
-          winner,
-        },
-        '[GameServer] Match finished',
-      );
-      this.registry.clearSession(session.reservation.roomIdentifier);
+      const room = session.reservation.roomIdentifier;
+      this.logger.info({ room, winner }, '[GameServer] Match finished');
+
+      // Stop resume-token rotation and detach sockets without triggering reconnect/forfeit.
+      // Order matters: clear the session in the registry first so any socket "close"
+      // handlers will see no active session and bail early.
+      const players = Array.from(session.players.values());
+
+      try {
+        this.registry.clearSession(room);
+      } catch (err) {
+        this.logger.warn({ room, err }, '[GameServer] Failed to clear session promptly');
+      }
+
+      for (const p of players) {
+        try {
+          if (p.resumeInterval) {
+            clearInterval(p.resumeInterval);
+            delete (p as any).resumeInterval;
+          }
+        } catch {}
+        try {
+          p.socket?.close(1000, 'match-ended');
+        } catch {}
+      }
     };
 
     this.runner = new MatchRunner({

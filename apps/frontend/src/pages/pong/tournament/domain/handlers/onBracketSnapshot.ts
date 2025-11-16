@@ -13,4 +13,11 @@ export function onBracketSnapshot(msg: TournamentBracketSnapshotMessage, ctx: Me
     }
     if (forfeited.length) ctx.markForfeited?.(forfeited);
   } catch {}
+
+  // If all bracket matches are completed, ensure tournament status reflects completion.
+  try {
+    if (msg.matches.length > 0 && msg.matches.every((m) => m.status === 'completed')) {
+      ctx.setTournamentStatus('completed');
+    }
+  } catch {}
 }

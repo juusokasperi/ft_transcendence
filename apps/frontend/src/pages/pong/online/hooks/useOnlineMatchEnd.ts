@@ -28,16 +28,7 @@ export function useOnlineMatchEnd(
       }
 
       if (payload.reason === 'forfeit') {
-        const youWon = payload.winner
-          ? (seat === 'P1' && payload.winner === 'east') ||
-            (seat === 'P2' && payload.winner === 'west')
-          : false;
-        enqueueSnackbar({
-          message: youWon
-            ? 'Opponent forfeited. Showing results…'
-            : 'You forfeited. Showing results…',
-          variant: youWon ? 'success' : 'info',
-        });
+        // UI overlay already communicates forfeit; avoid duplicate snackbar.
         if (timerRef.current !== null) window.clearTimeout(timerRef.current);
         timerRef.current = window.setTimeout(() => {
           if (payload.summary) {

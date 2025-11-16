@@ -51,6 +51,23 @@ export function useMatchLifecycle({
       debugLog('action:quit-match', { phase: 'teardown-start', refreshDelayMs });
       teardownInProgressRef.current = true;
 
+      // Best-effort: clear any stored resume tokens for this room so that
+      // the tournament page does not auto-resume into a stale game after
+      // we navigate back. This complements server-side cleanup and client
+      // MATCH_END handling, covering race windows.
+      (async () => {
+        try {
+          const roomId = handoff?.roomIdentifier;
+          if (roomId) {
+            const { clearStoredResumeTokens } = await import(
+              '../../../../games/pong/modes/online/resume'
+            );
+            clearStoredResumeTokens(roomId);
+            debugLog('auto-resume:cleared-on-teardown', { roomIdentifier: roomId });
+          }
+        } catch {}
+      })();
+
       if (appRef.current) {
         appRef.current.destroy();
         appRef.current = null;
@@ -74,7 +91,7 @@ export function useMatchLifecycle({
         teardownInProgressRef.current = false;
       }, refreshDelayMs);
     },
-    [debugLog, refreshTournamentState, setHandoff, setMatchPhase],
+    [debugLog, refreshTournamentState, setHandoff, setMatchPhase, handoff],
   );
 
   useEffect(() => {
@@ -96,15 +113,33 @@ export function useMatchLifecycle({
           randomSeed: handoff.randomSeed,
           onMatchEnd: (reason: string, winner?: 'east' | 'west') => {
             debugLog('match-end-auto-quit', { reason, winner });
+            // Clear any stored resume token as soon as the match resolves to
+            // prevent the tournament auto-resume effect from kicking in.
+            (async () => {
+              try {
+                const roomId = handoff?.roomIdentifier;
+                if (roomId) {
+                  const { clearStoredResumeTokens } = await import(
+                    '../../../../games/pong/modes/online/resume'
+                  );
+                  clearStoredResumeTokens(roomId);
+                  debugLog('auto-resume:cleared-on-end', { roomIdentifier: roomId });
+                }
+              } catch {}
+            })();
             // If opponent quit (forfeit) and you are the winner, route back to the
-            // tournament page immediately for clarity.
+            // tournament detail page immediately for clarity.
             if (reason === 'forfeit' && winner && winner === handoff.side) {
               enqueueSnackbar({
                 message: 'Your opponent declared forfeit. You won this match!',
                 variant: 'success',
               });
               try {
-                navigate('/pong/tournaments');
+                if (handoff.tournamentId) {
+                  navigate(`/pong/tournaments/${handoff.tournamentId}`);
+                } else {
+                  navigate('/pong/tournaments');
+                }
               } catch {}
             }
             const delay = reason === 'completed' ? 2500 : 1500;
