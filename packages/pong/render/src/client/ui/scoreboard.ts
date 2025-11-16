@@ -269,6 +269,15 @@ export function createScoreboard(): DomScoreboardAPI {
 
   const attachToElement = (el: HTMLElement) => {
     boundCanvas = el;
+
+    const host = el.closest('.pong-game-root') ?? document.body;
+    if (root.parentElement !== host) {
+      if (root.parentElement) {
+        root.parentElement.removeChild(root);
+      }
+      host.appendChild(root);
+    }
+
     scheduleSync();
     if (ro) ro.disconnect();
     ro = new ResizeObserver(() => scheduleSync());

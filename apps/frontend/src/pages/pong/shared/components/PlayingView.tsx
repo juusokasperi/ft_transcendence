@@ -38,8 +38,8 @@ export const PlayingView: React.FC<PlayingViewProps> = ({
   const [size, setSize] = useState<{ w: number; h: number }>({ w: 0, h: 0 });
   const [orientation, setOrientation] = useState<Orientation>('landscape');
   const [isMobileLike, setIsMobileLike] = useState(false);
-  const [orientationLockAttempted, setOrientationLockAttempted] = useState(false);
   const lastTapRef = React.useRef<number | null>(null);
+  const rootRef = React.useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     const update = () => {
@@ -64,43 +64,7 @@ export const PlayingView: React.FC<PlayingViewProps> = ({
   }, [aspect]);
 
   useEffect(() => {
-    if (!isMobileLike) return;
-    if (orientationLockAttempted) return;
-
-    let cancelled = false;
-
-    const tryLockOrientation = async () => {
-      const screenAny = window.screen as any;
-      const orientationApi = screenAny?.orientation;
-
-      try {
-        if (orientationApi && typeof orientationApi.lock === 'function') {
-          await orientationApi.lock('landscape');
-          if (!cancelled) {
-            setOrientationLockAttempted(true);
-          }
-          return;
-        }
-
-        const legacyLock =
-          screenAny?.lockOrientation ||
-          screenAny?.mozLockOrientation ||
-          screenAny?.msLockOrientation;
-        if (typeof legacyLock === 'function') {
-          legacyLock.call(screenAny, 'landscape');
-          if (!cancelled) {
-            setOrientationLockAttempted(true);
-          }
-        }
-      } catch (error) {
-        console.warn('[PlayingView] Failed to lock orientation to landscape', error);
-      }
-    };
-
-    tryLockOrientation();
-
     return () => {
-      cancelled = true;
       const screenAny = window.screen as any;
       const orientationApi = screenAny?.orientation;
       try {
@@ -111,7 +75,7 @@ export const PlayingView: React.FC<PlayingViewProps> = ({
         // Ignore unlock errors; not all browsers support this.
       }
     };
-  }, [isMobileLike, orientationLockAttempted]);
+  }, []);
 
   useLayoutEffect(() => {
     const c = canvasRef.current;
@@ -123,7 +87,7 @@ export const PlayingView: React.FC<PlayingViewProps> = ({
     [size],
   );
 
-  const handleCanvasPointerUp = (event: React.PointerEvent<HTMLCanvasElement>) => {
+  const handleCanvasPointerUp = async (event: React.PointerEvent<HTMLCanvasElement>) => {
     if (!isMobile()) return;
     if (event.pointerType && event.pointerType !== 'touch' && event.pointerType !== 'pen') return;
 
@@ -135,19 +99,39 @@ export const PlayingView: React.FC<PlayingViewProps> = ({
       return;
     }
 
-    const el = canvasRef.current;
-    if (!el) return;
+    const rootEl = rootRef.current;
+    const fullscreenTarget: any = rootEl ?? canvasRef.current;
+    if (!fullscreenTarget) return;
 
-    const anyEl = el as any;
     try {
-      if (anyEl.requestFullscreen) {
-        anyEl.requestFullscreen();
-      } else if (anyEl.webkitRequestFullscreen) {
-        anyEl.webkitRequestFullscreen();
-      } else if (anyEl.mozRequestFullScreen) {
-        anyEl.mozRequestFullScreen();
-      } else if (anyEl.msRequestFullscreen) {
-        anyEl.msRequestFullscreen();
+      if (!document.fullscreenElement) {
+        if (fullscreenTarget.requestFullscreen) {
+          await fullscreenTarget.requestFullscreen();
+        } else if (fullscreenTarget.webkitRequestFullscreen) {
+          await fullscreenTarget.webkitRequestFullscreen();
+        } else if (fullscreenTarget.mozRequestFullScreen) {
+          await fullscreenTarget.mozRequestFullScreen();
+        } else if (fullscreenTarget.msRequestFullscreen) {
+          await fullscreenTarget.msRequestFullscreen();
+        }
+      }
+
+      const screenAny = window.screen as any;
+      const orientationApi = screenAny?.orientation;
+      if (orientationApi && typeof orientationApi.lock === 'function') {
+        await orientationApi.lock('landscape').catch(() => {});
+      } else {
+        const legacyLock =
+          screenAny?.lockOrientation ||
+          screenAny?.mozLockOrientation ||
+          screenAny?.msLockOrientation;
+        if (typeof legacyLock === 'function') {
+          try {
+            legacyLock.call(screenAny, 'landscape');
+          } catch {
+            // Ignore legacy lock failures.
+          }
+        }
       }
     } catch (error) {
       // Silently ignore fullscreen errors on unsupported/mobile browsers.
@@ -163,7 +147,8 @@ export const PlayingView: React.FC<PlayingViewProps> = ({
   return (
     <>
       <div
-        className="fixed inset-0 z-[1000] bg-black"
+        ref={rootRef}
+        className="pong-game-root fixed inset-0 z-[1000] bg-black"
         role="application"
         aria-label="Pong game"
         aria-describedby="pong-kb-instructions"
