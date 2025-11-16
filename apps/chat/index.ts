@@ -62,10 +62,24 @@ const fastify = Fastify({
 const clients = new Map<string, Client>();
 const pendingInvites = new Map<string, PendingInvite>();
 
-function broadcast(data: any, channel: string, excludeId?: string) {
+function broadcast(data: any, channel: string, excludeId?: string, sender?: Client) {
   const msg = JSON.stringify(data);
   clients.forEach((client) => {
     if (client.channel === channel && client.id !== excludeId) {
+
+      if (data.type === 'chat' && sender) {
+        const senderName = sender.username;
+        const targetName = client.username;
+
+        if (senderName && targetName) {
+          if (sender.blocked.has(targetName)) {
+            return;
+          }
+          if (client.blocked.has(senderName)) {
+            return;
+          }
+        }
+      }
       client.socket.send(msg);
     }
   });
@@ -232,6 +246,8 @@ async function handleConnection(socket: ChatSocket, _request: ChatRequest) {
             message: data.message,
           },
           client.channel,
+          undefined,
+          client,
         );
         return;
       case 'privateMessage': {
@@ -276,22 +292,42 @@ async function handleConnection(socket: ChatSocket, _request: ChatRequest) {
         client.blocked.delete(data.username);
         socket.send(JSON.stringify({ type: 'userUnblocked', username: data.username }));
         return;
+
       case 'tournamentMsg': {
-        if (!client.channel) return;
+        const { message, recipients } = data;
+        if (!message) return;
+
         fastify.log.info(
-          { channel: client.channel, msg: data.message },
-          '[CHAT] broadcast tournament message',
+          { channel: client.channel, msg: message, recipients },
+          '[CHAT] tournament message',
         );
 
+        // If recipients list is provided, send ONLY to those users
+        if (Array.isArray(recipients) && recipients.length > 0) {
+          const msg = JSON.stringify({
+            type: 'tournamentMsg',
+            message,
+          });
+
+          clients.forEach((c) => {
+            if (!c.uuid) return;
+            if (recipients.includes(c.uuid)) {
+              c.socket.send(msg);
+            }
+          });
+          return;
+        }
+        /*if (!client.channel) return;
         broadcast(
           {
             type: 'tournamentMsg',
-            message: data.message,
+            message,
           },
           client.channel,
-        );
+        );*/
         return;
       }
+
       case 'inviteUser':
         if (!client.username) {
           socket.send(JSON.stringify({ type: 'error', message: 'You must set a username first' }));
@@ -318,6 +354,21 @@ async function handleConnection(socket: ChatSocket, _request: ChatRequest) {
           return;
         }
 
+        const alreadyPending = Array.from(pendingInvites.values()).some(
+          (invite) =>
+            invite.fromUserUuid === client.uuid &&
+            invite.toUserUuid === targetClient.uuid
+        );
+
+        if (alreadyPending) {
+          socket.send(
+            JSON.stringify({
+              type: 'error',
+              message: `You already have a pending invite with ${targetClient.username}.`,
+            }),
+          );
+          return;
+        }
         const inviteId = uuid();
         const invite: PendingInvite = {
           fromUserUuid: client.uuid,

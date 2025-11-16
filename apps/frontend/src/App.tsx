@@ -48,15 +48,14 @@ function App() {
   return (
     <SidebarProvider>
       <SnackbarProvider>
-        <div>
-          <ChatProvider channel={channel}>
+        <ChatProvider channel={channel}>
+          <div>
             {chatUiEnabled && (
               <>
                 {!chatOpen && <ChatToggleButton open={chatOpen} setOpen={setChatOpen} />}
                 <Chat onClose={() => setChatOpen(false)} channel={channel} isOpen={chatOpen} />
               </>
             )}
-          </ChatProvider>
           {/* Routes */}
           <Routes>
             <Route path={'/'} element={<Home />} />
@@ -82,7 +81,8 @@ function App() {
             <Route path={'/users/:uuid'} element={<PublicUser />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
-        </div>
+          </div>
+        </ChatProvider>
       </SnackbarProvider>
     </SidebarProvider>
   );

@@ -72,12 +72,10 @@ export default function Chat({
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [pendingNavId, setPendingNavId] = useState<string | null>(null);
   // Track last tournament announce we broadcasted to avoid duplicates
-  const lastTournamentSigRef = useRef<string | null>(null);
 
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
   const wasOpenRef = useRef(isOpen);
-  const tournamentTimerRef = useRef<number | null>(null);
   const lastSeenPrivateMessageCountRef = useRef(0);
   const privateMessageCount = useMemo(
     () =>
@@ -109,13 +107,8 @@ export default function Chat({
     const wasOpen = wasOpenRef.current;
     wasOpenRef.current = isOpen;
     if (wasOpen && !isOpen) {
-      if (tournamentTimerRef.current) {
-        clearTimeout(tournamentTimerRef.current);
-        tournamentTimerRef.current = null;
-      }
       setInput('');
       setDmTarget(null);
-      lastTournamentSigRef.current = null;
       // close profile card when chat closes
       setProfileOpen(false);
       setProfileData(null);
@@ -127,36 +120,6 @@ export default function Chat({
 
   // ---------- websocket events handled in ChatContext ----------
 
-  // Announce tournament match start when match participants/stage change
-  useEffect(() => {
-    if (!isOpen) return;
-    const sig =
-      firstPlayer && secondPlayer && stage ? `${firstPlayer}|${secondPlayer}|${stage}` : null;
-    if (!sig) return;
-    if (lastTournamentSigRef.current === sig) return;
-
-    if (tournamentTimerRef.current) {
-      clearTimeout(tournamentTimerRef.current);
-      tournamentTimerRef.current = null;
-    }
-    tournamentTimerRef.current = window.setTimeout(() => {
-      const sent = sendPayload({
-        type: 'tournamentMsg',
-        message: `Match starting: ${firstPlayer} vs ${secondPlayer} (Stage: ${stage})`,
-      });
-      if (sent) {
-        lastTournamentSigRef.current = sig;
-      }
-      tournamentTimerRef.current = null;
-    }, 5000);
-
-    return () => {
-      if (tournamentTimerRef.current) {
-        clearTimeout(tournamentTimerRef.current);
-        tournamentTimerRef.current = null;
-      }
-    };
-  }, [isOpen, firstPlayer, secondPlayer, stage, sendPayload]);
 
   // autoscroll
   useEffect(() => {
@@ -204,6 +167,10 @@ export default function Chat({
     const text = input.trim();
     if (!text) return;
 
+    if (text.length > 250) {
+      addSystemMessage("⚠️ Message too long. Max 250 characters.");
+      return;
+    }
     const result = sendChatMessage(text, dmTarget ? { to: dmTarget } : undefined);
     if (result === 'sent') {
       if (dmTarget) {
@@ -390,7 +357,7 @@ export default function Chat({
                   {isPrivate && <span className="ml-2 text-xs italic">(DM)</span>}
                 </div>
 
-                {msg.from && msg.from !== chatUsername && !isPrivate && (
+                {msg.from && msg.from !== chatUsername && (
                   <SplitButton
                     targetUser={msg.from}
                     isBlocked={blocked.has(msg.from)}
@@ -449,7 +416,12 @@ export default function Chat({
         <input
           className="flex-1 bg-transparent px-3 py-2 text-sm outline-none"
           value={input}
-          onChange={(e) => setInput(e.target.value)}
+          onChange={(e) => {
+            const text = e.target.value;
+            if (text.length <= 250) {
+              setInput(text);
+            }
+          }}
           onKeyDown={(e) => e.key === 'Enter' && sendMessage()}
           placeholder={dmTarget ? `Message to ${dmTarget}...` : 'Type a message...'}
           disabled={cooldown}
