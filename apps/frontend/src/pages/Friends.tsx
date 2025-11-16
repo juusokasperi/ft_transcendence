@@ -17,6 +17,7 @@ type Friend = {
   avatar: string;
   online: boolean;
 };
+type FriendApi = Omit<Friend, 'online'>;
 
 const tabs = [
   { key: 'all', label: 'All', description: 'Entire roster' },
@@ -50,7 +51,7 @@ const Friends: React.FC = () => {
   const [pendingSent, setPendingSent] = useState<FriendRequest[]>([]);
   const [pendingReceived, setPendingReceived] = useState<FriendRequest[]>([]);
 
-  const [friends, setFriends] = useState<Friend[]>([]);
+  const [friends, setFriends] = useState<FriendApi[]>([]);
   const [onlineFriends, setOnlineFriends] = useState<Friend[]>([]);
   const [offlineFriends, setOfflineFriends] = useState<Friend[]>([]);
 
@@ -60,7 +61,7 @@ const Friends: React.FC = () => {
   const [friendError, setFriendError] = useState<string | null>(null);
 
   // Derive online status from open chat connection
-  const friendsWithOnline = useMemo(() => {
+  const friendsWithOnline: Friend[] = useMemo(() => {
     const onlineUuids = new Set(chatUsers.map((user) => user.userUuid));
     return friends.map((friend) => ({
       ...friend,
@@ -121,7 +122,8 @@ const Friends: React.FC = () => {
 
   const fetchAllFriends = async () => {
     try {
-      const res = await axios.get<Friend[]>('/api/friends/');
+      const res = await axios.get<FriendApi[]>('/api/friends/');
+      console.log(res);
 
       const friendsWithAvatar = res.data.map((f) => ({
         ...f,

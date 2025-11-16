@@ -27,7 +27,6 @@ import {
 import { authPreHandler, tokenUuidCheck } from '../hooks/auth.ts';
 import { sendDeleteEmail, sendEmailChangeEmail } from '../utils/nodemailer/index.ts';
 import { normalizeCredentials } from '../hooks/auth.ts';
-import { updateLastSeenHandler } from '../hooks/updateLastSeen.ts';
 import { UPLOAD_DIR } from '../utils/config.ts';
 import {
   getAllUsersSchema,
@@ -96,7 +95,7 @@ export async function userRoutes(app: FastifyInstance) {
     '/me',
     {
       schema: getMeSchema,
-      preHandler: [authPreHandler, tokenUuidCheck, updateLastSeenHandler], // token -> req.user
+      preHandler: [authPreHandler, tokenUuidCheck], // token -> req.user
     },
     async (req: FastifyRequest, res: FastifyReply) => {
       try {
@@ -132,7 +131,7 @@ export async function userRoutes(app: FastifyInstance) {
     '/me/stats',
     {
       schema: getMyStatsSchema,
-      preHandler: [authPreHandler, tokenUuidCheck, updateLastSeenHandler],
+      preHandler: [authPreHandler, tokenUuidCheck],
     },
     async (req: FastifyRequest, res: FastifyReply) => {
       try {
@@ -173,7 +172,7 @@ export async function userRoutes(app: FastifyInstance) {
     '/me',
     {
       schema: userDeleteSchema,
-      preHandler: [authPreHandler, tokenUuidCheck, updateLastSeenHandler],
+      preHandler: [authPreHandler, tokenUuidCheck],
     },
     async (req: FastifyRequest, res: FastifyReply) => {
       try {
@@ -224,7 +223,7 @@ export async function userRoutes(app: FastifyInstance) {
     {
       preValidation: [normalizeCredentials],
       schema: updateUsernameSchema,
-      preHandler: [authPreHandler, tokenUuidCheck, updateLastSeenHandler],
+      preHandler: [authPreHandler, tokenUuidCheck],
     },
     async (req: FastifyRequest, res: FastifyReply) => {
       try {
@@ -254,7 +253,7 @@ export async function userRoutes(app: FastifyInstance) {
     {
       preValidation: [normalizeCredentials],
       schema: updatePassSchema,
-      preHandler: [authPreHandler, tokenUuidCheck, updateLastSeenHandler],
+      preHandler: [authPreHandler, tokenUuidCheck],
     },
     async (req: FastifyRequest, res: FastifyReply) => {
       try {
@@ -285,7 +284,7 @@ export async function userRoutes(app: FastifyInstance) {
     '/me/email',
     {
       schema: updateEmailSchema,
-      preHandler: [authPreHandler, tokenUuidCheck, updateLastSeenHandler],
+      preHandler: [authPreHandler, tokenUuidCheck],
     },
     async (req: FastifyRequest, res: FastifyReply) => {
       try {
@@ -342,7 +341,7 @@ export async function userRoutes(app: FastifyInstance) {
     '/me/tfa/setup',
     {
       schema: twoFactorSetupSchema,
-      preHandler: [authPreHandler, tokenUuidCheck, updateLastSeenHandler],
+      preHandler: [authPreHandler, tokenUuidCheck],
     },
     async (req: FastifyRequest, res: FastifyReply) => {
       try {
@@ -370,7 +369,7 @@ export async function userRoutes(app: FastifyInstance) {
     '/me/tfa/confirm',
     {
       schema: twoFactorConfirmSchema,
-      preHandler: [authPreHandler, tokenUuidCheck, updateLastSeenHandler],
+      preHandler: [authPreHandler, tokenUuidCheck],
     },
     async (req: FastifyRequest, res: FastifyReply) => {
       try {
@@ -399,7 +398,7 @@ export async function userRoutes(app: FastifyInstance) {
     '/me/tfa',
     {
       schema: twoFactorDisableSchema,
-      preHandler: [authPreHandler, tokenUuidCheck, updateLastSeenHandler],
+      preHandler: [authPreHandler, tokenUuidCheck],
     },
     async (req: FastifyRequest, res: FastifyReply) => {
       try {
@@ -424,7 +423,7 @@ export async function userRoutes(app: FastifyInstance) {
     '/me/avatar',
     {
       schema: updateAvatarSchema,
-      preHandler: [authPreHandler, tokenUuidCheck, updateLastSeenHandler],
+      preHandler: [authPreHandler, tokenUuidCheck],
     },
     async (req: FastifyRequest, res: FastifyReply) => {
       try {
@@ -476,7 +475,7 @@ export async function userRoutes(app: FastifyInstance) {
     '/me/avatar',
     {
       schema: deleteAvatarSchema,
-      preHandler: [authPreHandler, tokenUuidCheck, updateLastSeenHandler],
+      preHandler: [authPreHandler, tokenUuidCheck],
     },
     async (req: FastifyRequest, res: FastifyReply) => {
       try {
@@ -506,7 +505,7 @@ export async function userRoutes(app: FastifyInstance) {
     '/me/settings',
     {
       schema: getSettingsSchema,
-      preHandler: [authPreHandler, tokenUuidCheck, updateLastSeenHandler],
+      preHandler: [authPreHandler, tokenUuidCheck],
     },
     async (req: FastifyRequest, res: FastifyReply) => {
       try {
@@ -524,7 +523,7 @@ export async function userRoutes(app: FastifyInstance) {
     '/me/settings',
     {
       schema: updateSettingsSchema,
-      preHandler: [authPreHandler, tokenUuidCheck, updateLastSeenHandler],
+      preHandler: [authPreHandler, tokenUuidCheck],
     },
     async (req: FastifyRequest, res: FastifyReply) => {
       try {
