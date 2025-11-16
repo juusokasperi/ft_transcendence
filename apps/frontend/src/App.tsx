@@ -48,55 +48,41 @@ function App() {
   return (
     <SidebarProvider>
       <SnackbarProvider>
-        <div>
-          <ChatProvider channel={channel}>
+        <ChatProvider channel={channel}>
+          <div>
             {chatUiEnabled && (
               <>
                 {!chatOpen && <ChatToggleButton open={chatOpen} setOpen={setChatOpen} />}
                 <Chat onClose={() => setChatOpen(false)} channel={channel} isOpen={chatOpen} />
               </>
             )}
-          </ChatProvider>
-          {/* Routes */}
-          <Routes>
-            <Route path={'/'} element={<Home />} />
-            <Route path={'/signup'} element={<Registration />} />
-            <Route path={'/login'} element={<Login />} />
-            <Route path={'/forgot-password'} element={<ForgotPassword />} />
-            <Route path={'/reset-password/:token'} element={<ResetPassword />} />
-            <Route path="/pong" element={<PongLayout />}>
-              <Route index element={<ModePicker />} />
-              <Route path="local" element={<LocalGame />} />
-              <Route path="online" element={<OnlineGame />} />
-              <Route path="tournaments" element={<Tournament />} />
-              <Route path="tournaments/:tournamentId" element={<TournamentDetail />} />
-            </Route>
-            <Route path={'/confirm/:confirmationToken'} element={<Confirmation />} />
-            <Route path={'/delete-user/:confirmationToken'} element={<DeleteUser />} />
-            <Route path={'/confirm-email/:token'} element={<ConfirmEmail />} />
-            <Route path={'/profile'} element={<Layout />}>
-              <Route index element={<Profile />} />
-              <Route path={'stats'} element={<Stats />} />
-              <Route
-                path={'friends'}
-                element={
-                  <ChatProvider channel={channel}>
-                    <Friends />
-                  </ChatProvider>
-                }
-              />
-            </Route>
-            <Route
-              path={'/users/:uuid'}
-              element={
-                <ChatProvider channel={channel}>
-                  <PublicUser />
-                </ChatProvider>
-              }
-            />
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </div>
+            {/* Routes */}
+            <Routes>
+              <Route path={'/'} element={<Home />} />
+              <Route path={'/signup'} element={<Registration />} />
+              <Route path={'/login'} element={<Login />} />
+              <Route path={'/forgot-password'} element={<ForgotPassword />} />
+              <Route path={'/reset-password/:token'} element={<ResetPassword />} />
+              <Route path="/pong" element={<PongLayout />}>
+                <Route index element={<ModePicker />} />
+                <Route path="local" element={<LocalGame />} />
+                <Route path="online" element={<OnlineGame />} />
+                <Route path="tournaments" element={<Tournament />} />
+                <Route path="tournaments/:tournamentId" element={<TournamentDetail />} />
+              </Route>
+              <Route path={'/confirm/:confirmationToken'} element={<Confirmation />} />
+              <Route path={'/delete-user/:confirmationToken'} element={<DeleteUser />} />
+              <Route path={'/confirm-email/:token'} element={<ConfirmEmail />} />
+              <Route path={'/profile'} element={<Layout />}>
+                <Route index element={<Profile />} />
+                <Route path={'stats'} element={<Stats />} />
+                <Route path={'friends'} element={<Friends />} />
+              </Route>
+              <Route path={'/users/:uuid'} element={<PublicUser />} />
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </div>
+        </ChatProvider>
       </SnackbarProvider>
     </SidebarProvider>
   );
