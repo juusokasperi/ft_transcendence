@@ -86,7 +86,14 @@ function App() {
                 }
               />
             </Route>
-            <Route path={'/users/:uuid'} element={<PublicUser />} />
+            <Route
+              path={'/users/:uuid'}
+              element={
+                <ChatProvider channel={channel}>
+                  <PublicUser />
+                </ChatProvider>
+              }
+            />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </div>

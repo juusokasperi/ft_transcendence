@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useParams } from 'react-router-dom';
 import { useAppContext } from '../context/AppContext';
+import { useChatContext } from '../context/ChatContext';
 import { AxiosError } from 'axios';
 import Navbar from '../components/Navbar';
 import { useSnackbar } from '../context/SnackbarContext';
@@ -11,7 +12,7 @@ import { useRequireAuth } from '../hooks/useRequireAuth';
 import FriendshipStatus from '../components/FriendshipStatus';
 import { Spinner } from '@ft/spinner';
 import type {
-  UserStats,
+  UserStats as UserStatsBase,
   MatchWithPlayers as Match,
   FriendshipStatus as Friendship,
 } from '@utils/types';
@@ -19,6 +20,10 @@ import type { MatchPlayerStats } from '../types';
 
 interface FriendshipStatus {
   status: Friendship;
+}
+
+interface UserStats extends UserStatsBase {
+  online?: boolean;
 }
 
 const PublicUser: React.FC = () => {
@@ -35,7 +40,16 @@ const PublicUser: React.FC = () => {
   const [offset, setOffset] = useState(0);
   const pageSize = 5;
   const { axios, user, navigate } = useAppContext();
+  const { users: chatUsers } = useChatContext();
   const { enqueueSnackbar } = useSnackbar();
+
+  const profileWithOnline = useMemo(() => {
+    if (!profile) return undefined;
+    return {
+      ...profile,
+      online: !!chatUsers.find((u) => u.userUuid === profile.uuid),
+    };
+  }, [profile, chatUsers]);
 
   const fetchFriendship = async () => {
     try {
@@ -55,6 +69,8 @@ const PublicUser: React.FC = () => {
       const response = await axios.get<UserStats>(`/api/users/${uuid}`);
       const fetchedProfile = response.data;
       fetchedProfile.avatar = resolveAvatarUrl(fetchedProfile.avatar, axios.defaults.baseURL);
+      fetchedProfile.online = !!chatUsers.find((u) => u.userUuid === fetchedProfile.uuid);
+
       setProfile(fetchedProfile);
     } catch (err) {
       const axiosErr = err as AxiosError<{ message?: string }>;
@@ -166,10 +182,10 @@ const PublicUser: React.FC = () => {
         </div>
 
         <div className="relative mx-auto flex w-full max-w-6xl flex-col gap-10 px-4 sm:px-6 lg:px-12">
-          {profile && (
+          {profileWithOnline && (
             <header className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
               <div
-                key={profile.uuid}
+                key={profileWithOnline.uuid}
                 className="flex items-center justify-between rounded-2xl px-4 py-3 shadow-sm shadow-indigo-950/20 backdrop-blur"
               >
                 <div className="flex items-center gap-3">
@@ -177,25 +193,27 @@ const PublicUser: React.FC = () => {
                     className={`relative flex h-20 w-20 items-center justify-center rounded-full ring-2 ring-white/20`}
                   >
                     <img
-                      src={profile.avatar!}
-                      alt={profile.username}
+                      src={profileWithOnline.avatar!}
+                      alt={profileWithOnline.username}
                       className="h-full w-full rounded-full object-cover"
                     />
                   </span>
                   <div>
-                    <h1 className="text-3xl font-semibold sm:text-4xl">{profile.username}</h1>
+                    <h1 className="text-3xl font-semibold sm:text-4xl">
+                      {profileWithOnline.username}
+                    </h1>
                     {stats && (
                       <p className="text-sm uppercase tracking-[0.25em] text-slate-400">
                         Rank {stats.ranking}
                       </p>
                     )}
                     <p className="text-sm uppercase tracking-[0.25em] text-slate-400">
-                      {profile.online ? 'Online' : 'Offline'}
+                      {profileWithOnline.online ? 'Online' : 'Offline'}
                     </p>
                   </div>
                 </div>
               </div>
-              {uuid && user?.uuid !== profile.uuid && (
+              {uuid && user?.uuid !== profileWithOnline.uuid && (
                 <FriendshipStatus
                   friendship={friendship}
                   uuid={uuid}
