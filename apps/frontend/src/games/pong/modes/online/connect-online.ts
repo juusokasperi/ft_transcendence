@@ -168,6 +168,8 @@ export async function connectOnline(
       // Will be assigned after the reconnector is created
       let onCloseAfterOpen: (evt: CloseEvent) => void = () => {};
 
+      const nowMs = () => (typeof performance !== 'undefined' ? performance.now() : Date.now());
+
       const attachHandlers = (socket: WebSocket) => {
         socket.addEventListener('message', onMessage);
         socket.addEventListener('close', onCloseAfterOpen);
@@ -193,7 +195,7 @@ export async function connectOnline(
             socket.send(
               JSON.stringify({
                 type: 'ping',
-                clientSentAt: Date.now(),
+                clientSentAt: nowMs(),
               }),
             );
           }
@@ -225,7 +227,7 @@ export async function connectOnline(
             fanOutFrame(data);
             break;
           case 'PONG': {
-            const now = Date.now();
+            const now = nowMs();
             const sentAt = typeof data.clientSentAt === 'number' ? data.clientSentAt : now;
             const rtt = Math.max(0, now - sentAt);
             const nextLatency = smoothedLatencyMs * 0.7 + rtt * 0.3;
@@ -279,6 +281,7 @@ export async function connectOnline(
             matchEndListeners.forEach((cb) => cb(data.reason, data.winner, data.summary ?? null));
             // Clear stored resume tokens for this room to avoid stale entries after match end.
             clearResumeForRoom(roomIdentifier);
+            stopPingLoop();
             // If match ended due to an explicit forfeit, stop reconnection attempts.
             if (data.reason === 'forfeit') {
               stopReconnector();

@@ -2,6 +2,7 @@ import fastify, { type FastifyInstance } from 'fastify';
 import websocket from '@fastify/websocket';
 import type { WebSocket, RawData } from 'ws';
 import type { Redis } from 'ioredis';
+import { performance } from 'node:perf_hooks';
 import type { AppConfig } from '../../app/Config.ts';
 import type { RoomRegistry, MatchSession, PlayerConnectionState } from '../../app/RoomRegistry.ts';
 import type { Broadcaster } from '../../app/Broadcaster.ts';
@@ -427,12 +428,12 @@ export class WSServer {
     const player = session.players.get(seat);
     const socket = player?.socket;
     if (!socket) return;
-    const receivedAt = Date.now();
+    const receivedAt = performance.now();
     const message = {
       type: 'PONG' as const,
       clientSentAt: typeof payload.clientSentAt === 'number' ? payload.clientSentAt : 0,
       serverReceivedAt: receivedAt,
-      serverSentAt: Date.now(),
+      serverSentAt: performance.now(),
     };
     try {
       socket.send(JSON.stringify(message));

@@ -9,6 +9,7 @@ const POOR_CONNECTION_COOLDOWN_MS = 4000;
 const POOR_CONNECTION_MESSAGE_MS = 2600;
 const PING_WARN_THRESHOLD_MS = 120;
 const PING_BAD_THRESHOLD_MS = 200;
+const nowMs = () => (typeof performance !== 'undefined' ? performance.now() : Date.now());
 
 type HudWithFlash = {
   flashMessage(message: string, durationMs: number): void;
@@ -46,7 +47,7 @@ export function createLatencyWarning(options: {
     if (latencyMs < POOR_CONNECTION_LATENCY_MS && jitter < POOR_CONNECTION_JITTER_MS) {
       return;
     }
-    const now = Date.now();
+    const now = nowMs();
     if (now - lastPoorWarningAt < POOR_CONNECTION_COOLDOWN_MS) return;
     if (options.isMatchEnded()) return;
     if (options.isCountdownActive()) return;
