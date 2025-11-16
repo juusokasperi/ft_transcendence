@@ -1,39 +1,20 @@
-export type TouchSeatVisibility = {
-  P1: boolean;
-  P2: boolean;
-};
+import {
+  type Seat,
+  type TouchSeatVisibility,
+  addTouchSeatVisibilityListener,
+  getTouchSeatVisibility,
+  readTouchAxes as readTouchAxesLogic,
+  resetAllSeatAxes,
+  resetSeatAxis,
+  setSeatAxis,
+  setTouchSeatVisibility,
+} from './touch-zones-logic';
 
-// Global visibility config so hosts (local/AI/online) can control which
-// seat columns are shown. Defaults to both visible (local 2P).
-let seatVisibility: TouchSeatVisibility = { P1: true, P2: true };
-
-type VisibilityListener = (vis: TouchSeatVisibility) => void;
-const visibilityListeners = new Set<VisibilityListener>();
-
-export function setTouchSeatVisibility(next: TouchSeatVisibility): void {
-  seatVisibility = {
-    P1: !!next.P1,
-    P2: !!next.P2,
-  };
-  for (const fn of visibilityListeners) {
-    try {
-      fn(seatVisibility);
-    } catch {
-      // Best effort; individual listeners must be resilient.
-    }
-  }
-}
-
-// Seat-centric touch axes (P1/P2). These are mapped to physical paddles
-// via the controlsMirrored flag in aggregate.ts.
-let axisP1 = 0; // -1..1
-let axisP2 = 0; // -1..1
-
-const clampAxis = (v: number): number => (v > 0 ? 1 : v < 0 ? -1 : 0);
+export type { TouchSeatVisibility };
+export { setTouchSeatVisibility };
 
 export type TouchDetach = () => void;
 
-type Seat = 'P1' | 'P2';
 type Direction = 'up' | 'down';
 
 type ActivePointer = {
@@ -45,8 +26,7 @@ type ActivePointer = {
 export function attachTouchZones(el: HTMLElement): TouchDetach {
   if (typeof document === 'undefined') {
     return () => {
-      axisP1 = 0;
-      axisP2 = 0;
+      resetAllSeatAxes();
     };
   }
 
@@ -101,8 +81,7 @@ export function attachTouchZones(el: HTMLElement): TouchDetach {
       else if (info.dir === 'down') down++;
     }
     const axis = up > 0 && down === 0 ? 1 : down > 0 && up === 0 ? -1 : 0;
-    if (seat === 'P1') axisP1 = axis;
-    else axisP2 = axis;
+    setSeatAxis(seat, axis);
   };
 
   const handlePointerDown = (seat: Seat, dir: Direction, ev: PointerEvent) => {
@@ -148,21 +127,21 @@ export function attachTouchZones(el: HTMLElement): TouchDetach {
     colP2.col.style.display = p2Visible ? '' : 'none';
 
     if (!p1Visible) {
-      axisP1 = 0;
+      resetSeatAxis('P1');
       for (const [id, info] of activePointers) {
         if (info.seat === 'P1') activePointers.delete(id);
       }
     }
     if (!p2Visible) {
-      axisP2 = 0;
+      resetSeatAxis('P2');
       for (const [id, info] of activePointers) {
         if (info.seat === 'P2') activePointers.delete(id);
       }
     }
   };
 
-  applyVisibility(seatVisibility);
-  visibilityListeners.add(applyVisibility);
+  applyVisibility(getTouchSeatVisibility());
+  const removeVisibilityListener = addTouchSeatVisibilityListener(applyVisibility);
 
   host.appendChild(root);
 
@@ -177,6 +156,13 @@ export function attachTouchZones(el: HTMLElement): TouchDetach {
     overlay.style.top = rect.top + 'px';
     overlay.style.width = rect.width + 'px';
     overlay.style.height = rect.height + 'px';
+
+    // Dynamically scale touch controls vertically on short viewports so they
+    // don't overwhelm the table, while keeping them near the screen edges.
+    const baselineHeight = 420;
+    const scale = rect.height < baselineHeight ? rect.height / baselineHeight : 1;
+    controls.style.transformOrigin = 'bottom center';
+    controls.style.transform = `scale(1, ${scale})`;
   };
 
   const scheduleSync = () => {
@@ -194,7 +180,7 @@ export function attachTouchZones(el: HTMLElement): TouchDetach {
   window.addEventListener('scroll', scheduleSync, { passive: true });
 
   return () => {
-    visibilityListeners.delete(applyVisibility);
+    removeVisibilityListener();
 
     unbindP1Up();
     unbindP1Down();
@@ -202,8 +188,7 @@ export function attachTouchZones(el: HTMLElement): TouchDetach {
     unbindP2Down();
 
     activePointers.clear();
-    axisP1 = 0;
-    axisP2 = 0;
+    resetAllSeatAxes();
 
     if (ro) {
       ro.disconnect();
@@ -226,8 +211,5 @@ export function readTouchAxes(): {
   leftAxisTouch: number;
   rightAxisTouch: number;
 } {
-  return {
-    leftAxisTouch: clampAxis(axisP1),
-    rightAxisTouch: clampAxis(axisP2),
-  };
+  return readTouchAxesLogic();
 }

@@ -1,0 +1,22 @@
+@layer components {
+  /* Mobile touch controls (seat-based button columns) */
+  .pong-touch-root {
+    @apply pointer-events-none fixed inset-0 z-[1005];
+  }
+  .pong-touch-overlay {
+    @apply pointer-events-none absolute inset-0;
+  }
+  .pong-touch-controls {
+    @apply pointer-events-none absolute inset-x-0 bottom-3 flex items-end justify-between px-4;
+  }
+  .pong-touch-col {
+    @apply pointer-events-auto flex flex-col gap-3;
+  }
+  .pong-touch-btn {
+    @apply pointer-events-auto flex h-11 w-11 items-center justify-center rounded-full border border-white/20 bg-white/10 text-lg font-semibold text-white shadow-[0_8px_24px_rgba(0,0,0,0.5)] backdrop-blur-md active:scale-95 select-none;
+    touch-action: none;
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-touch-callout: none;
+  }
+}
