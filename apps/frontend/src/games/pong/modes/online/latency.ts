@@ -7,6 +7,8 @@ const POOR_CONNECTION_LATENCY_MS = 150;
 const POOR_CONNECTION_JITTER_MS = 90;
 const POOR_CONNECTION_COOLDOWN_MS = 4000;
 const POOR_CONNECTION_MESSAGE_MS = 2600;
+const PING_WARN_THRESHOLD_MS = 120;
+const PING_BAD_THRESHOLD_MS = 200;
 
 type HudWithFlash = {
   flashMessage(message: string, durationMs: number): void;
@@ -15,6 +17,11 @@ type HudWithFlash = {
 export type PingIndicatorHandle = {
   set(latencyMs: number | null): void;
   detach(): void;
+};
+
+export type PingHotkeyController = {
+  update(latencyMs: number | null): void;
+  dispose(): void;
 };
 
 export function clampPlaybackDelay(value: number): number {
@@ -44,9 +51,7 @@ export function createLatencyWarning(options: {
     if (options.isMatchEnded()) return;
     if (options.isCountdownActive()) return;
     lastPoorWarningAt = now;
-    const rounded = Math.max(0, Math.round(latencyMs));
-    const message = rounded > 0 ? `Connection unstable (${rounded}ms)` : 'Connection unstable';
-    options.hud.flashMessage(message, POOR_CONNECTION_MESSAGE_MS);
+    options.hud.flashMessage('Connection unstable', POOR_CONNECTION_MESSAGE_MS);
   };
 }
 
@@ -74,10 +79,64 @@ export function createPingIndicator(
       pingIndicator.style.display = 'block';
       const rounded = Math.max(0, Math.round(latencyMs));
       pingIndicator.textContent = `Ping ${rounded} ms`;
-      pingIndicator.dataset.level = latencyMs >= 200 ? 'bad' : latencyMs >= 120 ? 'warn' : 'good';
+      pingIndicator.dataset.level = getPingLevel(latencyMs);
     },
     detach() {
       pingIndicator.remove();
+    },
+  };
+}
+
+type PingLevel = 'good' | 'warn' | 'bad';
+
+const getPingLevel = (latencyMs: number): PingLevel => {
+  if (latencyMs >= PING_BAD_THRESHOLD_MS) return 'bad';
+  if (latencyMs >= PING_WARN_THRESHOLD_MS) return 'warn';
+  return 'good';
+};
+
+const isTypingTarget = (target: EventTarget | null): boolean => {
+  if (!(target instanceof HTMLElement)) return false;
+  if (target.isContentEditable) return true;
+  const tag = target.tagName;
+  return tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT';
+};
+
+export function bindPingHotkey(indicator: PingIndicatorHandle, key = 'p'): PingHotkeyController {
+  const normalizedKey = key.toLowerCase();
+  let latest: number | null = null;
+  let active = false;
+  let forcedVisible = false;
+
+  const refresh = () => {
+    indicator.set(forcedVisible || active ? latest : null);
+  };
+
+  const matchesKey = (eventKey: string) => eventKey.toLowerCase() === normalizedKey;
+
+  const handleKeyDown = (ev: KeyboardEvent) => {
+    if (!matchesKey(ev.key)) return;
+    if (isTypingTarget(ev.target)) return;
+    if (ev.repeat) return;
+    active = !active;
+    refresh();
+  };
+
+  window.addEventListener('keydown', handleKeyDown);
+  refresh();
+
+  return {
+    update(latencyMs: number | null) {
+      latest = latencyMs;
+      forcedVisible = typeof latencyMs === 'number' && getPingLevel(latencyMs) !== 'good';
+      refresh();
+    },
+    dispose() {
+      window.removeEventListener('keydown', handleKeyDown);
+      active = false;
+      latest = null;
+      forcedVisible = false;
+      indicator.set(null);
     },
   };
 }

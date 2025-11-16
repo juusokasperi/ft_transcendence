@@ -44,6 +44,7 @@ import {
   computeDesiredPlaybackDelay,
   createLatencyWarning,
   createPingIndicator,
+  bindPingHotkey,
 } from './latency';
 import type { OnlineMatchSummary } from './types';
 
@@ -96,7 +97,7 @@ export function createOnlineApp(
   hud.attachToCanvas(canvas);
 
   const pingIndicator = createPingIndicator();
-  pingIndicator.set(null);
+  const pingHotkey = bindPingHotkey(pingIndicator);
 
   const { showDisconnectOverlay, hideDisconnectOverlay } = createDisconnectOverlayManager(canvas);
   const seatToSide = (seat: PlayerSeat): 'east' | 'west' => (seat === 'P1' ? 'east' : 'west');
@@ -569,7 +570,7 @@ export function createOnlineApp(
     net.onLatencyMeasured(({ avgMs, rttMs }) => {
       desiredPlaybackDelayMs = computeDesiredPlaybackDelay(avgMs);
       warnPoorConnectionIfNeeded(rttMs);
-      pingIndicator.set(rttMs);
+      pingHotkey.update(rttMs);
     });
 
     const startPromise = net.awaitStart();
@@ -757,7 +758,7 @@ export function createOnlineApp(
 
     // Clean up disconnect overlay
     hideDisconnectOverlay();
-    pingIndicator.set(null);
+    pingHotkey.dispose();
     pingIndicator.detach();
 
     disposeWorld({
