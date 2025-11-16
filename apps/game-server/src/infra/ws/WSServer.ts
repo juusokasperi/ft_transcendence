@@ -2,6 +2,7 @@ import fastify, { type FastifyInstance } from 'fastify';
 import websocket from '@fastify/websocket';
 import type { WebSocket, RawData } from 'ws';
 import type { Redis } from 'ioredis';
+import { performance } from 'node:perf_hooks';
 import type { AppConfig } from '../../app/Config.ts';
 import type { RoomRegistry, MatchSession, PlayerConnectionState } from '../../app/RoomRegistry.ts';
 import type { Broadcaster } from '../../app/Broadcaster.ts';
@@ -374,7 +375,9 @@ export class WSServer {
       if (await this.isRateLimited(roomIdentifier, seat)) return;
 
       const data = JSON.parse(raw.toString());
-      if (data.type === 'axis') {
+      if (data.type === 'ping') {
+        this.sendPong(roomIdentifier, seat, data);
+      } else if (data.type === 'axis') {
         const axis = Number(data.axis) || 0;
         this.registry.updateAxis(roomIdentifier, seat, axis);
       } else if (data.type === 'forfeit') {
@@ -412,6 +415,30 @@ export class WSServer {
       }
     } catch (err) {
       this.logger.warn({ roomIdentifier, err }, '[WSServer] Malformed message');
+    }
+  }
+
+  private sendPong(
+    roomIdentifier: string,
+    seat: 'P1' | 'P2',
+    payload: { clientSentAt?: number },
+  ): void {
+    const session = this.registry.getSession(roomIdentifier);
+    if (!session) return;
+    const player = session.players.get(seat);
+    const socket = player?.socket;
+    if (!socket) return;
+    const receivedAt = performance.now();
+    const message = {
+      type: 'PONG' as const,
+      clientSentAt: typeof payload.clientSentAt === 'number' ? payload.clientSentAt : 0,
+      serverReceivedAt: receivedAt,
+      serverSentAt: performance.now(),
+    };
+    try {
+      socket.send(JSON.stringify(message));
+    } catch (err) {
+      this.logger.warn({ err }, '[WSServer] Failed to send PONG');
     }
   }
 

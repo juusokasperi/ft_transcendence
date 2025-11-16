@@ -37,10 +37,20 @@ import { applyOnlineSideSwap } from './swap-helpers';
 import { createDisconnectOverlayManager, showMatchEndOverlay } from './ui-overlays';
 import { connectOnline, type OnlineClient } from './connect-online';
 import { getStoredResumeCandidate, clearStoredResumeTokens } from './resume';
+import {
+  BASE_PLAYBACK_DELAY_MS,
+  PLAYBACK_EASING,
+  clampPlaybackDelay,
+  computeDesiredPlaybackDelay,
+  createLatencyWarning,
+  createPingIndicator,
+  bindPingHotkey,
+} from './latency';
 import type { OnlineMatchSummary } from './types';
 
 // Render/update cadence we expect from the authoritative node.
 const CLIENT_TICK_RATE_HZ = 60;
+const FRAME_BUFFER_LIMIT = 90;
 const WAITING_MIN_TIMEOUT_MS = 3000;
 const WAITING_MAX_TIMEOUT_MS = 15000;
 const WAITING_EXTRA_GRACE_MS = 5000;
@@ -52,6 +62,11 @@ interface PongInstance {
   // Should not allow resume for this room.
   giveUp?(): void;
 }
+
+type FrameSample = {
+  state: GameState;
+  timestamp: number;
+};
 
 export function createOnlineApp(
   canvas: HTMLCanvasElement,
@@ -80,6 +95,9 @@ export function createOnlineApp(
 
   const hud = createScoreboard();
   hud.attachToCanvas(canvas);
+
+  const pingIndicator = createPingIndicator();
+  const pingHotkey = bindPingHotkey(pingIndicator);
 
   const { showDisconnectOverlay, hideDisconnectOverlay } = createDisconnectOverlayManager(canvas);
   const seatToSide = (seat: PlayerSeat): 'east' | 'west' => (seat === 'P1' ? 'east' : 'west');
@@ -172,6 +190,7 @@ export function createOnlineApp(
   let didSetPlayerNames = false;
   let playerAliases: { P1: string; P2: string } | null = null;
   let seatMap: { east: 'P1' | 'P2'; west: 'P1' | 'P2' } | null = null;
+  const frameBuffer: FrameSample[] = [];
 
   const finalizeMatch = (
     reason: string,
@@ -251,6 +270,12 @@ export function createOnlineApp(
   let rowsMirrored = false;
   let startCountdownTimer: number | null = null;
 
+  const warnPoorConnectionIfNeeded = createLatencyWarning({
+    hud,
+    isMatchEnded: () => matchEnded,
+    isCountdownActive: () => startCountdownTimer !== null,
+  });
+
   function stopStartCountdown() {
     if (startCountdownTimer !== null) {
       clearInterval(startCountdownTimer);
@@ -280,6 +305,59 @@ export function createOnlineApp(
   let prevT = 0,
     currT = 0;
   let tickMs = 1000 / CLIENT_TICK_RATE_HZ;
+  let playbackDelayMs = clampPlaybackDelay(BASE_PLAYBACK_DELAY_MS);
+  let desiredPlaybackDelayMs = playbackDelayMs;
+
+  const resetFrameBuffer = () => {
+    frameBuffer.length = 0;
+    prevSnap = null;
+    latest = null;
+    prevT = 0;
+    currT = 0;
+  };
+
+  const enqueueFrameSample = (state: GameState) => {
+    const timestamp = performance.now();
+    const sample: FrameSample = { state, timestamp };
+    frameBuffer.push(sample);
+    while (frameBuffer.length > FRAME_BUFFER_LIMIT) {
+      frameBuffer.shift();
+    }
+    if (!prevSnap) {
+      prevSnap = sample.state;
+      latest = sample.state;
+      prevT = sample.timestamp;
+      currT = sample.timestamp + tickMs;
+    }
+  };
+
+  const syncFrameCursor = (targetTime: number) => {
+    if (!frameBuffer.length) return;
+    const newest = frameBuffer[frameBuffer.length - 1];
+    if (!newest) return;
+    if (targetTime >= newest.timestamp) {
+      prevSnap = newest.state;
+      latest = newest.state;
+      prevT = newest.timestamp;
+      currT = newest.timestamp + tickMs;
+      if (frameBuffer.length > 1) {
+        frameBuffer.splice(0, frameBuffer.length - 1);
+      }
+      return;
+    }
+    while (frameBuffer.length >= 2) {
+      const maybeSecond = frameBuffer[1];
+      if (!maybeSecond || maybeSecond.timestamp > targetTime) break;
+      frameBuffer.shift();
+    }
+    const first = frameBuffer[0];
+    if (!first) return;
+    const second = frameBuffer[1] ?? first;
+    prevSnap = first.state;
+    latest = second.state;
+    prevT = first.timestamp;
+    currT = second === first ? first.timestamp + tickMs : second.timestamp;
+  };
 
   const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
 
@@ -291,6 +369,9 @@ export function createOnlineApp(
       net?.sendLocalAxis(localAxis);
 
       const now = performance.now();
+      playbackDelayMs += (desiredPlaybackDelayMs - playbackDelayMs) * PLAYBACK_EASING;
+      const targetTime = now - playbackDelayMs;
+      syncFrameCursor(targetTime);
       const hasPrev = !!prevSnap && prevT < currT;
       const alpha = hasPrev ? clamp01((now - prevT) / Math.max(1, currT - prevT)) : 1;
 
@@ -391,6 +472,9 @@ export function createOnlineApp(
     matchEnded = false;
     clearWaitingForOpponentTimeout();
     blockInputFor(SERVE_SELECT_TOTAL_MS + 200);
+    resetFrameBuffer();
+    playbackDelayMs = clampPlaybackDelay(BASE_PLAYBACK_DELAY_MS);
+    desiredPlaybackDelayMs = playbackDelayMs;
 
     // If we have a valid stored resume token for this room, auto-resume immediately.
     const candidate = getStoredResumeCandidate(cfg.roomIdentifier);
@@ -481,6 +565,12 @@ export function createOnlineApp(
     net.onMatchEnd((reason, winner, summaryFromNet = null) => {
       console.log('[OnlineGame] Match ended:', reason, 'winner:', winner);
       finalizeMatch(reason, winner, summaryFromNet);
+    });
+
+    net.onLatencyMeasured(({ avgMs, rttMs }) => {
+      desiredPlaybackDelayMs = computeDesiredPlaybackDelay(avgMs);
+      warnPoorConnectionIfNeeded(rttMs);
+      pingHotkey.update(rttMs);
     });
 
     const startPromise = net.awaitStart();
@@ -620,18 +710,7 @@ export function createOnlineApp(
         audioKit.stop();
       }
 
-      if (!prevSnap) {
-        prevSnap = s;
-        latest = s;
-        const t0 = performance.now();
-        prevT = t0;
-        currT = t0 + tickMs;
-      } else {
-        prevSnap = latest ?? s;
-        latest = s;
-        prevT = currT;
-        currT = currT + tickMs;
-      }
+      enqueueFrameSample(s);
 
       if (ev && (ev.wallHit || ev.paddleHit || ev.explode)) {
         if (eventQueue.length > 8) eventQueue.splice(0, eventQueue.length - 8);
@@ -674,9 +753,12 @@ export function createOnlineApp(
 
     clearWaitingForOpponentTimeout();
     matchEnded = true;
+    resetFrameBuffer();
 
     // Clean up disconnect overlay
     hideDisconnectOverlay();
+    pingHotkey.dispose();
+    pingIndicator.detach();
 
     disposeWorld({
       loop,
