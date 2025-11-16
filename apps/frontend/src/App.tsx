@@ -77,7 +77,14 @@ function App() {
             <Route path={'/profile'} element={<Layout />}>
               <Route index element={<Profile />} />
               <Route path={'stats'} element={<Stats />} />
-              <Route path={'friends'} element={<Friends />} />
+              <Route
+                path={'friends'}
+                element={
+                  <ChatProvider channel={channel}>
+                    <Friends />
+                  </ChatProvider>
+                }
+              />
             </Route>
             <Route path={'/users/:uuid'} element={<PublicUser />} />
             <Route path="*" element={<NotFound />} />
