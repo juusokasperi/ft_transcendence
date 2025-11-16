@@ -43,6 +43,18 @@
     @apply pointer-events-none absolute left-1/2 top-full mt-1 w-fit -translate-x-1/2 select-none whitespace-nowrap text-[24px] font-semibold leading-[1.05] text-cyan-300 drop-shadow-[0_0_12px_rgba(56,189,248,.35)] transition-opacity md:text-[26px];
   }
 
+  .pong-hud-ping {
+    @apply pointer-events-none absolute left-3 top-3 z-[900] rounded-md border border-white/15 bg-slate-900/70 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-slate-100 shadow-[0_8px_24px_rgba(0,0,0,0.35)] backdrop-blur-md md:text-sm;
+  }
+
+  .pong-hud-ping[data-level='warn'] {
+    @apply border-amber-300/40 text-amber-200;
+  }
+
+  .pong-hud-ping[data-level='bad'] {
+    @apply border-rose-400/50 text-rose-200;
+  }
+
   /* Audio control (bottom-left of canvas) */
   .pong-audio-ctrl {
     @apply pointer-events-auto absolute z-[1010] flex select-none items-center gap-2 rounded-md border border-white/15 bg-slate-900/70 px-2 py-1 text-white shadow-[0_8px_24px_rgba(0,0,0,0.38)] backdrop-blur-md;
