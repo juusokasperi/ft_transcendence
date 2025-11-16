@@ -44,6 +44,7 @@ export type OnlineClient = {
     cb: (reason: string, winner?: 'east' | 'west', summary?: OnlineMatchSummary | null) => void,
   ): void;
   onSelfReconnected(cb: (resumeDelayMs: number) => void): void;
+  onLatencyMeasured(cb: (sample: { rttMs: number; avgMs: number }) => void): void;
   forfeit(): void;
 };
 
@@ -124,8 +125,11 @@ export async function connectOnline(
       const matchEndListeners = new Set<
         (reason: string, winner?: 'east' | 'west', summary?: OnlineMatchSummary | null) => void
       >();
+      const latencyListeners = new Set<(sample: { rttMs: number; avgMs: number }) => void>();
       const startResolvers: Array<(payload: StartSignal) => void> = [];
       let startPayload: StartSignal | null = null;
+      let pingInterval: number | null = null;
+      let smoothedLatencyMs = 80;
 
       // Fan-out helper so listeners and awaiting promises see the same START payload.
       const notifyStart = (payload: StartSignal) => {
@@ -164,6 +168,8 @@ export async function connectOnline(
       // Will be assigned after the reconnector is created
       let onCloseAfterOpen: (evt: CloseEvent) => void = () => {};
 
+      const nowMs = () => (typeof performance !== 'undefined' ? performance.now() : Date.now());
+
       const attachHandlers = (socket: WebSocket) => {
         socket.addEventListener('message', onMessage);
         socket.addEventListener('close', onCloseAfterOpen);
@@ -172,6 +178,39 @@ export async function connectOnline(
       const detachHandlers = (socket: WebSocket) => {
         socket.removeEventListener('message', onMessage as any);
         socket.removeEventListener('close', onCloseAfterOpen as any);
+      };
+
+      const stopPingLoop = () => {
+        if (pingInterval !== null && typeof window !== 'undefined') {
+          window.clearInterval(pingInterval);
+          pingInterval = null;
+        }
+      };
+
+      const startPingLoop = (socket: WebSocket) => {
+        if (typeof window === 'undefined') return;
+        stopPingLoop();
+        const sendPing = () => {
+          if (socket.readyState === WebSocket.OPEN) {
+            socket.send(
+              JSON.stringify({
+                type: 'ping',
+                clientSentAt: nowMs(),
+              }),
+            );
+          }
+        };
+        sendPing();
+        pingInterval = window.setInterval(sendPing, 2000);
+      };
+
+      const notifyLatency = (sample: { rttMs: number; avgMs: number }) => {
+        smoothedLatencyMs = sample.avgMs;
+        latencyListeners.forEach((cb) => {
+          try {
+            cb(sample);
+          } catch {}
+        });
       };
 
       const onMessage = (ev: MessageEvent) => {
@@ -187,6 +226,14 @@ export async function connectOnline(
           case 'FRAME':
             fanOutFrame(data);
             break;
+          case 'PONG': {
+            const now = nowMs();
+            const sentAt = typeof data.clientSentAt === 'number' ? data.clientSentAt : now;
+            const rtt = Math.max(0, now - sentAt);
+            const nextLatency = smoothedLatencyMs * 0.7 + rtt * 0.3;
+            notifyLatency({ rttMs: rtt, avgMs: nextLatency });
+            break;
+          }
           case 'ROOM_STATE':
             console.debug('[OnlineGame] Room state message', data);
             roomStateListeners.forEach((cb) => cb(data as RoomStateMessage));
@@ -234,6 +281,7 @@ export async function connectOnline(
             matchEndListeners.forEach((cb) => cb(data.reason, data.winner, data.summary ?? null));
             // Clear stored resume tokens for this room to avoid stale entries after match end.
             clearResumeForRoom(roomIdentifier);
+            stopPingLoop();
             // If match ended due to an explicit forfeit, stop reconnection attempts.
             if (data.reason === 'forfeit') {
               stopReconnector();
@@ -263,12 +311,16 @@ export async function connectOnline(
         },
         attachHandlers,
         detachHandlers,
-        onResumeOpen: () => notifySelfReconnected(3000),
+        onResumeOpen: (next) => {
+          notifySelfReconnected(3000);
+          startPingLoop(next);
+        },
       });
       onCloseAfterOpen = _onCloseAfterOpen;
 
       // Attach handlers for the initial socket.
       attachHandlers(ws);
+      startPingLoop(ws);
 
       const client: OnlineClient = {
         mySeat: seat,
@@ -303,6 +355,9 @@ export async function connectOnline(
         onSelfReconnected(cb) {
           selfReconnectedListeners.add(cb);
         },
+        onLatencyMeasured(cb) {
+          latencyListeners.add(cb);
+        },
         sendLocalAxis(axis: number) {
           if (axis === lastSentAxis) return;
           lastSentAxis = axis;
@@ -320,6 +375,7 @@ export async function connectOnline(
         disconnect() {
           console.log('[OnlineGame] Disconnecting WebSocket');
           stopReconnector();
+          stopPingLoop();
           startResolvers.length = 0;
           startListeners.clear();
           roomStateListeners.clear();
@@ -328,6 +384,7 @@ export async function connectOnline(
           opponentDisconnectedListeners.clear();
           opponentReconnectedListeners.clear();
           matchEndListeners.clear();
+          latencyListeners.clear();
           try {
             ws.close();
           } catch {
