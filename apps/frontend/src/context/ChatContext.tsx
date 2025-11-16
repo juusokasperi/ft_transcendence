@@ -178,7 +178,17 @@ export function ChatProvider({ channel, children }: ChatProviderProps) {
         console.warn('[CHAT] malformed message', ev.data);
         return;
       }
-
+      if (data.type === 'blockedList' && Array.isArray(data.usernames)) {
+        setBlocked(new Set(data.usernames));
+        setUsers((prev) =>
+          prev.map((u) =>
+            data.usernames.includes(u.username)
+              ? { ...u, isBlocked: true }
+              : { ...u, isBlocked: u.isBlocked },
+          ),
+        );
+        return;
+      }
       if (data.type === 'userList' && Array.isArray(data.users)) {
         setUsers(normalizeUsers(data.users));
         return;

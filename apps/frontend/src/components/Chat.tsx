@@ -232,9 +232,22 @@ export default function Chat({
         setDmTarget(targetUser);
         break;
       case 'Block user':
+        try {
+          await authAxios.post('/api/blocked-users', { username: targetUser });
+        } catch (err) {
+          addSystemMessage(`Failed to block ${targetUser}`);
+          break;
+        }
         sendPayload({ type: 'blockUser', username: targetUser });
         break;
       case 'Unblock user':
+        try {
+          await authAxios.delete('/api/blocked-users', { data: { username: targetUser }}
+          );
+        } catch (err) {
+          addSystemMessage(`Failed to block ${targetUser}`);
+          break;
+        }
         sendPayload({ type: 'unblockUser', username: targetUser });
         break;
       case 'Invite to 1v1':

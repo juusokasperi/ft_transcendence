@@ -14,6 +14,24 @@ const INVITE_TIMEOUT_MS = 60000; // 1 minute
 const PORT = Number(process.env.CHAT_PORT || 6262);
 const HOST = process.env.CHAT_HOST || '0.0.0.0';
 const isDev = process.env.NODE_ENV === 'development';
+const API_PORT = process.env.BACKEND_PORT;
+const API_SERVICE_URL = API_PORT ? `http://backend:${API_PORT}` : 'http://backend:3001';
+
+async function fetchBlockedUsernames(token: string): Promise<string[]> {
+  try {
+    const res = await fetch(`${API_SERVICE_URL}/api/blocked-users`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+    if (!res.ok) return [];
+    const data = (await res.json()) as string[];
+    if (!Array.isArray(data)) return [];
+    return data;
+  } catch {
+    return [];
+  }
+}
 
 function createLoggerOptions(isDev: boolean) {
   if (isDev) {
@@ -155,6 +173,25 @@ async function handleConnection(socket: ChatSocket, _request: ChatRequest) {
   const client: Client = { id, uuid: '', socket, blocked: new Set() };
   const authenticated = await handleAuth(client, token, clients);
   if (!authenticated) return;
+
+  // blocked list from backend for this user
+  try {
+    const blockedUsernames = await fetchBlockedUsernames(token);
+    client.blocked = new Set(blockedUsernames);
+    fastify.log.debug(
+      { clientId: id, blockedCount: blockedUsernames.length },
+      '[CHAT] Hydrated blocked users from API',
+    );
+
+    socket.send(
+      JSON.stringify({
+        type: 'blockedList',
+        usernames: blockedUsernames,
+      }),
+    );
+  } catch (err) {
+    fastify.log.error({ err, clientId: id }, '[CHAT] Failed to hydrate blocked users');
+  }
 
   clients.set(id, client);
 
