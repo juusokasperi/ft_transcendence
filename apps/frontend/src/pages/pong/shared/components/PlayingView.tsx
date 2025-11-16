@@ -39,6 +39,7 @@ export const PlayingView: React.FC<PlayingViewProps> = ({
   const [orientation, setOrientation] = useState<Orientation>('landscape');
   const [isMobileLike, setIsMobileLike] = useState(false);
   const [orientationLockAttempted, setOrientationLockAttempted] = useState(false);
+  const lastTapRef = React.useRef<number | null>(null);
 
   useEffect(() => {
     const update = () => {
@@ -122,6 +123,41 @@ export const PlayingView: React.FC<PlayingViewProps> = ({
     [size],
   );
 
+  const handleCanvasPointerUp = (event: React.PointerEvent<HTMLCanvasElement>) => {
+    if (!isMobile()) return;
+    if (event.pointerType && event.pointerType !== 'touch' && event.pointerType !== 'pen') return;
+
+    const now = performance.now();
+    const last = lastTapRef.current;
+    lastTapRef.current = now;
+
+    if (last == null || now - last > 300) {
+      return;
+    }
+
+    const el = canvasRef.current;
+    if (!el) return;
+
+    const anyEl = el as any;
+    try {
+      if (anyEl.requestFullscreen) {
+        anyEl.requestFullscreen();
+      } else if (anyEl.webkitRequestFullscreen) {
+        anyEl.webkitRequestFullscreen();
+      } else if (anyEl.mozRequestFullScreen) {
+        anyEl.mozRequestFullScreen();
+      } else if (anyEl.msRequestFullscreen) {
+        anyEl.msRequestFullscreen();
+      }
+    } catch (error) {
+      // Silently ignore fullscreen errors on unsupported/mobile browsers.
+      if (import.meta.env?.DEV) {
+        // eslint-disable-next-line no-console
+        console.warn('[PlayingView] Failed to enter fullscreen', error);
+      }
+    }
+  };
+
   const showRotateOverlay = isMobileLike && orientation === 'portrait';
 
   return (
@@ -137,7 +173,13 @@ export const PlayingView: React.FC<PlayingViewProps> = ({
           exit the game.
         </p>
         <div className="absolute inset-0 flex items-center justify-center">
-          <canvas ref={canvasRef} className="block outline-none" style={canvasStyle} tabIndex={0} />
+          <canvas
+            ref={canvasRef}
+            className="block outline-none"
+            style={canvasStyle}
+            tabIndex={0}
+            onPointerUp={handleCanvasPointerUp}
+          />
         </div>
 
         <button
