@@ -62,5 +62,3 @@ export type MessageCtx = {
   // Persistent annotations (optional for tests / older contexts)
   markForfeited?(ids: number[]): void;
 };
-
-export type AnyMessage = MatchmakingMessage;

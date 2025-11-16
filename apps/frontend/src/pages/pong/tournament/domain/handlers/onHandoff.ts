@@ -18,5 +18,8 @@ export function onHandoff(msg: HandoffMessage, ctx: MessageCtx) {
     joinToken: msg.joinToken,
     randomSeed: msg.randomSeed,
     side: msg.side,
+    tournamentId: msg.tournament?.tournamentId,
+    tournamentMatchId: msg.tournament?.tournamentMatchId,
+    tournamentStage: msg.tournament?.tournamentStage,
   });
 }

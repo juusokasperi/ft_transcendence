@@ -29,18 +29,6 @@ export function selectMatchesByStage(state: TournamentState) {
   });
 }
 
-export function selectCountdownStatusAndSeconds(state: TournamentState): {
-  status: string | null;
-  seconds: number | null;
-} {
-  const pending = state.pendingMatch
-    ? state.matchCountdowns.get(state.pendingMatch.tournamentMatchId)
-    : undefined;
-  const status = pending?.status ?? null;
-  const seconds = pending?.secondsRemaining ?? null;
-  return { status, seconds };
-}
-
 export function selectCurrentParticipantId(
   state: TournamentState,
   userUuid: string | null,

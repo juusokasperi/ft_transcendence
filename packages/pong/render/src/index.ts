@@ -22,6 +22,7 @@ export {
   blockInputFor,
   setBindingProfile,
   overrideBindings,
+  setLocalSeatInputDisabled,
 } from './client/input/aggregate';
 
 // ── FX / Visuals ───────────────────────────────────────────────────────────────
