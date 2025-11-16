@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { validateEmail, validateUsername } from '../utils/validation';
 import { useAppContext } from '../context/AppContext';
+import { useChatContext } from '../context/ChatContext';
 import { AxiosError } from 'axios';
 import { resolveAvatarUrl } from '../utils/avatarUrl';
 import { useSnackbar } from '../context/SnackbarContext';
@@ -54,8 +55,18 @@ const Friends: React.FC = () => {
   const [offlineFriends, setOfflineFriends] = useState<Friend[]>([]);
 
   const { axios } = useAppContext();
+  const { users: chatUsers } = useChatContext();
   const { enqueueSnackbar } = useSnackbar();
   const [friendError, setFriendError] = useState<string | null>(null);
+
+  // Derive online status from open chat connection
+  const friendsWithOnline = useMemo(() => {
+    const onlineUuids = new Set(chatUsers.map((user) => user.userUuid));
+    return friends.map((friend) => ({
+      ...friend,
+      online: onlineUuids.has(friend.uuid),
+    }));
+  }, [friends, chatUsers]);
 
   // Add friend
   const handleAddFriend = async (e: React.FormEvent) => {
@@ -118,8 +129,6 @@ const Friends: React.FC = () => {
       }));
 
       setFriends(friendsWithAvatar);
-      setOnlineFriends(friendsWithAvatar.filter((f) => f.online));
-      setOfflineFriends(friendsWithAvatar.filter((f) => !f.online));
     } catch (err) {
       const axiosErr = err as AxiosError<{ message?: string }>;
       enqueueSnackbar({
@@ -200,6 +209,11 @@ const Friends: React.FC = () => {
       fetchAllFriends();
     }
   }, [activeTab]);
+
+  useEffect(() => {
+    setOnlineFriends(friendsWithOnline.filter((f) => f.online));
+    setOfflineFriends(friendsWithOnline.filter((f) => !f.online));
+  }, [friendsWithOnline]);
 
   const renderFriendList = (list: Friend[], emptyMessage: string, accent?: string) => (
     <div className="space-y-3">
@@ -296,7 +310,10 @@ const Friends: React.FC = () => {
                 <h2 className="text-xl font-semibold">All friends</h2>
                 <p className="text-sm text-slate-300/80">Everyone you follow and play with.</p>
               </div>
-              {renderFriendList(friends, 'No friends found yet. Invite someone to start playing!')}
+              {renderFriendList(
+                friendsWithOnline,
+                'No friends found yet. Invite someone to start playing!',
+              )}
             </div>
           )}
 
