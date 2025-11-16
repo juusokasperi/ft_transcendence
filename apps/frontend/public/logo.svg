@@ -1,4 +1,12 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="180 135 665 825">
+
+<defs>
+  <mask id="cut-off-stick">
+    <rect x="0" y="0" width="2000" height="2000" fill="white"/>
+    <rect x="480" y="540" width="60" height="100" fill="black"/>
+  </mask>	
+</defs>
+
   <!-- Bottom base (little base under the base) -->
   <path d="M 200 820 L 200 880 Q 200 950 260 950 L 764 950 Q 824 950 824 880 L 824 820"
         fill="none"
@@ -21,12 +29,12 @@
         stroke-linecap="round"
         stroke-linejoin="round"/>
 
-  <!-- Joystick base (circular) - only front visible part -->
-  <path d="M 445 630 Q 350 705 512 720 Q 670 705 580 630"
-        fill="none"
-        stroke="#a855f7"
-        stroke-width="24"
-        stroke-linecap="round"/>
+  <!-- Joystick base -->
+  <ellipse cx="510" cy="670" rx="70" ry="55"
+           fill="none"
+           mask="url(#cut-off-stick)"
+           stroke="#a855f7"
+           stroke-width="24"/>
 
   <!-- Joystick top ball -->
   <circle cx="512" cy="240" r="90"
