@@ -22,7 +22,7 @@
         stroke-linejoin="round"/>
 
   <!-- Joystick stick -->
-  <path d="M 472 320 L 472 620 Q 472 650 492 660 Q 512 670 532 660 Q 552 650 552 620 L 552 320"
+  <path d="M 472 330 L 472 620 Q 472 650 492 660 Q 512 670 532 660 Q 552 650 552 620 L 552 330"
         fill="none"
         stroke="#a855f7"
         stroke-width="24"
