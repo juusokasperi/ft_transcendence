@@ -55,3 +55,6 @@ export { DefaultAudioManifest } from './client/audio/manifest';
 export { unlockOnInteraction, resumeAudioContext } from './client/audio/loader';
 export { applyFrameEventsToAudio } from './app/events-to-audio';
 export type { Scene } from '@babylonjs/core/scene';
+
+// ── Platform utils ────────────────────────────────────────────────────────────
+export { isMobile } from './client/utils/platform';
