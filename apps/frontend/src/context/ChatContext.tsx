@@ -179,13 +179,15 @@ export function ChatProvider({ channel, children }: ChatProviderProps) {
         return;
       }
       if (data.type === 'blockedList' && Array.isArray(data.usernames)) {
-        setBlocked(new Set(data.usernames));
+        const newBlocked: Set<string> = new Set<string>(data.usernames);
+        blockedRef.current = newBlocked;
+        setBlocked(newBlocked);
         setUsers((prev) =>
           prev.map((u) =>
-            data.usernames.includes(u.username)
+            newBlocked.has(u.username)
               ? { ...u, isBlocked: true }
-              : { ...u, isBlocked: u.isBlocked },
-          ),
+              : { ...u, isBlocked: u.isBlocked }
+          )
         );
         return;
       }
