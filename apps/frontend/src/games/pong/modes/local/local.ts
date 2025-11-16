@@ -51,6 +51,7 @@ import { applyFrameEventsToAudio } from '@pong/render';
 import { createLocalAudioKit, createLocalSfxDetectors } from '../shared/audio-utils';
 import { applySideSwap } from './swap-helpers';
 import { createHudCache, updateLocalHUDIfChanged } from './hud-cache';
+import { setTouchSeatVisibility } from '@pong/render';
 
 // Controller bindings application moved to preferences.ts
 
@@ -151,6 +152,8 @@ export function createLocalApp(canvas: HTMLCanvasElement, preferences?: Preferen
 
   // Input wiring (keyboard/touch aggregator)
   setBindingProfile('local');
+  // Local 2P defaults to both seats visible for touch; AI hook will override.
+  setTouchSeatVisibility({ P1: true, P2: true });
   applyControllerBindingsFromPrefs(preferences);
   const detachInput = attachLocalInput(canvas);
   scene.onDisposeObservable.add(detachInput);

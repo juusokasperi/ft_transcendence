@@ -19,11 +19,14 @@ export {
   readIntent,
   setControlsMirrored,
   toggleControlsMirrored,
+  readSeatAxes,
   blockInputFor,
   setBindingProfile,
   overrideBindings,
   setLocalSeatInputDisabled,
 } from './client/input/aggregate';
+export type { TouchSeatVisibility } from './client/input/touch-zones';
+export { setTouchSeatVisibility } from './client/input/aggregate';
 
 // ── FX / Visuals ───────────────────────────────────────────────────────────────
 export { createBounces } from './client/visuals/bounce/bounces';

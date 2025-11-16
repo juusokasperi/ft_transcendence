@@ -15,22 +15,18 @@ import {
   createBounces,
   createPaddleAnimator,
   orbitCameraFor,
-  readIntent,
+  readSeatAxes,
   blockInputFor,
   disposeWorld,
 } from '@pong/render';
+import { setTouchSeatVisibility } from '@pong/render';
 import type { PlayerSeat } from '@pong/render';
 import type { GameState } from '@pong/game-logic';
 import type { FrameEvents, MatchSnapshot } from '@pong/shared';
 import { SERVE_SELECT_TOTAL_MS, clamp01 } from '@pong/shared';
 import type { RoomStateMessage } from '@pong/shared/protocol/net';
 import { rgb01ToCss } from '../shared/preferences';
-import {
-  swapPaddleMaterials,
-  handleSwapSidesNow,
-  handleMatchOver,
-  runServeSelectionIntro,
-} from '../shared/utils';
+import { handleSwapSidesNow, handleMatchOver, runServeSelectionIntro } from '../shared/utils';
 import { createLocalAudioKit, createLocalSfxDetectors } from '../shared/audio-utils';
 import { createHudCache, updateOnlineHUDIfChanged } from './hud-cache';
 import { applyOnlineSideSwap } from './swap-helpers';
@@ -118,6 +114,8 @@ export function createOnlineApp(
   };
 
   setBindingProfile('online');
+  // Hide touch controls until we know our seat; will be updated once connected.
+  setTouchSeatVisibility({ P1: false, P2: false });
   const detachInput = attachLocalInput(canvas);
   scene.onDisposeObservable.add(detachInput);
 
@@ -191,6 +189,9 @@ export function createOnlineApp(
   let playerAliases: { P1: string; P2: string } | null = null;
   let seatMap: { east: 'P1' | 'P2'; west: 'P1' | 'P2' } | null = null;
   const frameBuffer: FrameSample[] = [];
+  // Stable seat→material mapping so paddle colors follow players across swaps.
+  const seatMaterials: { P1: any | null; P2: any | null } = { P1: null, P2: null };
+  let seatMaterialsInitialized = false;
 
   const finalizeMatch = (
     reason: string,
@@ -364,8 +365,9 @@ export function createOnlineApp(
   const loop = createLifecycle(engine, scene, {
     logicHz: CLIENT_TICK_RATE_HZ,
     update: () => {
-      const inpt = readIntent();
-      const localAxis = mySeat === 'P1' ? inpt.leftAxis : inpt.rightAxis;
+      // Online: send seat-centric axis; server maps seats to ends.
+      const seatAxes = readSeatAxes();
+      const localAxis = mySeat === 'P1' ? seatAxes.P1Axis : seatAxes.P2Axis;
       net?.sendLocalAxis(localAxis);
 
       const now = performance.now();
@@ -383,23 +385,13 @@ export function createOnlineApp(
             west: snap.playerAtEnd.west,
           };
         }
-        // Set player names once we have playerAtEnd info
-        if (!didSetPlayerNames && playerAliases !== null && snap.playerAtEnd) {
+        // Set HUD names once we know player aliases.
+        // Keep rows pinned to player identity: east → P1, west → P2.
+        if (!didSetPlayerNames && playerAliases !== null) {
           const aliases = playerAliases; // TypeScript hint
-          const eastAlias = snap.playerAtEnd.east === 'P1' ? aliases.P1 : aliases.P2;
-          const westAlias = snap.playerAtEnd.west === 'P1' ? aliases.P1 : aliases.P2;
-
-          names = { east: eastAlias, west: westAlias };
-          hud.setPlayerNames(eastAlias, westAlias);
+          names = { east: aliases.P1, west: aliases.P2 };
+          hud.setPlayerNames(names.east, names.west);
           didSetPlayerNames = true;
-          seatMap = {
-            east: snap.playerAtEnd.east,
-            west: snap.playerAtEnd.west,
-          };
-
-          console.log(
-            `[OnlineGame] Set player names based on actual positions: east=${eastAlias} (${snap.playerAtEnd.east}), west=${westAlias} (${snap.playerAtEnd.west})`,
-          );
         }
 
         const ref = prevSnap ?? snap;
@@ -428,17 +420,53 @@ export function createOnlineApp(
           right.mesh.position.z = clampPaddleZ(westZ);
         }
 
-        // HUD (player-pinned) + name colors pinned to players
-        const stateForHUD = mapStateForPlayerRows(snap, rowsMirrored);
-        const eastEndCss = matColorCss(left.mesh.material as any);
-        const westEndCss = matColorCss(right.mesh.material as any);
-        if (rowsMirrored) {
-          const topCss = snap.playerAtEnd.east === 'P1' ? eastEndCss : westEndCss;
-          const bottomCss = snap.playerAtEnd.east === 'P2' ? eastEndCss : westEndCss;
-          hud.setPlayerNameColors(topCss, bottomCss);
-        } else {
-          hud.setPlayerNameColors(eastEndCss, westEndCss);
+        // Seat-based paddle materials: ensure each seat keeps a stable color
+        // and colors follow players across side swaps.
+        if (snap.playerAtEnd) {
+          const eastSeat = snap.playerAtEnd.east;
+          const westSeat = snap.playerAtEnd.west;
+          if (!seatMaterialsInitialized) {
+            seatMaterials[eastSeat] = left.mesh.material;
+            seatMaterials[westSeat] = right.mesh.material;
+            seatMaterialsInitialized = true;
+          } else if (seatMaterials.P1 && seatMaterials.P2) {
+            left.mesh.material = eastSeat === 'P1' ? seatMaterials.P1 : seatMaterials.P2;
+            right.mesh.material = westSeat === 'P1' ? seatMaterials.P1 : seatMaterials.P2;
+          }
         }
+
+        // HUD (player-pinned) + name colors pinned to players
+        // For online, keep HUD rows pinned to player identity (P1 top, P2 bottom)
+        // regardless of which table end they occupy.
+        let stateForHUD = snap;
+        if (snap.playerAtEnd) {
+          const serverSeat = snap.server === 'east' ? snap.playerAtEnd.east : snap.playerAtEnd.west;
+          const serverRow = serverSeat === 'P1' ? 'east' : 'west';
+          stateForHUD = {
+            ...snap,
+            points: { east: snap.pointsByPlayer.P1, west: snap.pointsByPlayer.P2 },
+            server: serverRow,
+          };
+        }
+        // Derive stable colors per player seat (P1/P2) and map them to HUD rows.
+        let p1Css: string | null = null;
+        let p2Css: string | null = null;
+        if (seatMaterials.P1) p1Css = matColorCss(seatMaterials.P1);
+        if (seatMaterials.P2) p2Css = matColorCss(seatMaterials.P2);
+        // Fallback early on before seatMaterials are initialized.
+        if (!p1Css || !p2Css) {
+          const eastEndCss = matColorCss(left.mesh.material as any);
+          const westEndCss = matColorCss(right.mesh.material as any);
+          if (snap.playerAtEnd) {
+            const eastSeat = snap.playerAtEnd.east;
+            p1Css = eastSeat === 'P1' ? eastEndCss : westEndCss;
+            p2Css = eastSeat === 'P1' ? westEndCss : eastEndCss;
+          } else {
+            p1Css = eastEndCss;
+            p2Css = westEndCss;
+          }
+        }
+        hud.setPlayerNameColors(p1Css!, p2Css!);
         {
           const snapForHud =
             latestMatch ??
@@ -506,6 +534,11 @@ export function createOnlineApp(
       return;
     }
     mySeat = net.mySeat;
+    // Show touch controls only for the local seat on mobile.
+    setTouchSeatVisibility({
+      P1: mySeat === 'P1',
+      P2: mySeat === 'P2',
+    });
     console.log('[OnlineGame] Connected. My seat:', mySeat);
 
     void audioKit.start();
@@ -514,6 +547,10 @@ export function createOnlineApp(
       console.log('[OnlineGame] Room state update:', state);
       if (state.seat === 'P1' || state.seat === 'P2') {
         mySeat = state.seat;
+        setTouchSeatVisibility({
+          P1: mySeat === 'P1',
+          P2: mySeat === 'P2',
+        });
       }
 
       const players = state.players;
