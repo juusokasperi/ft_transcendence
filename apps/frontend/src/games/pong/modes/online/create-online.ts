@@ -37,19 +37,19 @@ import { applyOnlineSideSwap } from './swap-helpers';
 import { createDisconnectOverlayManager, showMatchEndOverlay } from './ui-overlays';
 import { connectOnline, type OnlineClient } from './connect-online';
 import { getStoredResumeCandidate, clearStoredResumeTokens } from './resume';
+import {
+  BASE_PLAYBACK_DELAY_MS,
+  PLAYBACK_EASING,
+  clampPlaybackDelay,
+  computeDesiredPlaybackDelay,
+  createLatencyWarning,
+  createPingIndicator,
+} from './latency';
 import type { OnlineMatchSummary } from './types';
 
 // Render/update cadence we expect from the authoritative node.
 const CLIENT_TICK_RATE_HZ = 60;
-const BASE_PLAYBACK_DELAY_MS = 45;
-const MIN_PLAYBACK_DELAY_MS = 40;
-const MAX_PLAYBACK_DELAY_MS = 200;
 const FRAME_BUFFER_LIMIT = 90;
-const PLAYBACK_EASING = 0.1;
-const POOR_CONNECTION_LATENCY_MS = 150;
-const POOR_CONNECTION_JITTER_MS = 90;
-const POOR_CONNECTION_COOLDOWN_MS = 4000;
-const POOR_CONNECTION_MESSAGE_MS = 2600;
 const WAITING_MIN_TIMEOUT_MS = 3000;
 const WAITING_MAX_TIMEOUT_MS = 15000;
 const WAITING_EXTRA_GRACE_MS = 5000;
@@ -95,32 +95,8 @@ export function createOnlineApp(
   const hud = createScoreboard();
   hud.attachToCanvas(canvas);
 
-  const pingIndicator = document.createElement('div');
-  pingIndicator.className = 'pong-hud-ping';
-  pingIndicator.style.display = 'none';
-
-  const attachPingIndicator = () => {
-    const overlay = document.querySelector('#pong-hud-root .pong-hud-overlay');
-    if (overlay && pingIndicator.parentElement !== overlay) overlay.appendChild(pingIndicator);
-  };
-
-  const detachPingIndicator = () => {
-    pingIndicator.remove();
-  };
-
-  const setPingIndicator = (latencyMs: number | null) => {
-    attachPingIndicator();
-    if (latencyMs == null) {
-      pingIndicator.style.display = 'none';
-      return;
-    }
-    pingIndicator.style.display = 'block';
-    const rounded = Math.max(0, Math.round(latencyMs));
-    pingIndicator.textContent = `Ping ${rounded} ms`;
-    pingIndicator.dataset.level = latencyMs >= 200 ? 'bad' : latencyMs >= 120 ? 'warn' : 'good';
-  };
-
-  setPingIndicator(null);
+  const pingIndicator = createPingIndicator();
+  pingIndicator.set(null);
 
   const { showDisconnectOverlay, hideDisconnectOverlay } = createDisconnectOverlayManager(canvas);
   const seatToSide = (seat: PlayerSeat): 'east' | 'west' => (seat === 'P1' ? 'east' : 'west');
@@ -205,8 +181,6 @@ export function createOnlineApp(
   let latestMatch: MatchSnapshot | undefined;
   let lastKnownBestOf = 3;
   let spinningUntilMs = 0;
-  let lastLatencyMs = 0;
-  let lastPoorWarningAt = 0;
   // Track half-rotation timing and whether a server swap event arrived
   let betweenHalfFired = false;
   let pendingBetweenSwap = false;
@@ -216,8 +190,6 @@ export function createOnlineApp(
   let playerAliases: { P1: string; P2: string } | null = null;
   let seatMap: { east: 'P1' | 'P2'; west: 'P1' | 'P2' } | null = null;
   const frameBuffer: FrameSample[] = [];
-  const clampPlaybackDelay = (value: number) =>
-    Math.max(MIN_PLAYBACK_DELAY_MS, Math.min(MAX_PLAYBACK_DELAY_MS, value));
 
   const finalizeMatch = (
     reason: string,
@@ -296,6 +268,12 @@ export function createOnlineApp(
 
   let rowsMirrored = false;
   let startCountdownTimer: number | null = null;
+
+  const warnPoorConnectionIfNeeded = createLatencyWarning({
+    hud,
+    isMatchEnded: () => matchEnded,
+    isCountdownActive: () => startCountdownTimer !== null,
+  });
 
   function stopStartCountdown() {
     if (startCountdownTimer !== null) {
@@ -378,26 +356,6 @@ export function createOnlineApp(
     latest = second.state;
     prevT = first.timestamp;
     currT = second === first ? first.timestamp + tickMs : second.timestamp;
-  };
-
-  const updateDesiredPlaybackDelay = (latencyMs: number) => {
-    desiredPlaybackDelayMs = clampPlaybackDelay(BASE_PLAYBACK_DELAY_MS + latencyMs * 0.5);
-  };
-
-  const warnPoorConnectionIfNeeded = (latencyMs: number) => {
-    const jitter = Math.abs(latencyMs - lastLatencyMs);
-    lastLatencyMs = latencyMs;
-    if (latencyMs < POOR_CONNECTION_LATENCY_MS && jitter < POOR_CONNECTION_JITTER_MS) {
-      return;
-    }
-    const now = Date.now();
-    if (now - lastPoorWarningAt < POOR_CONNECTION_COOLDOWN_MS) return;
-    if (matchEnded) return;
-    if (startCountdownTimer !== null) return;
-    lastPoorWarningAt = now;
-    const rounded = Math.max(0, Math.round(latencyMs));
-    const message = rounded > 0 ? `Connection unstable (${rounded}ms)` : 'Connection unstable';
-    hud.flashMessage(message, POOR_CONNECTION_MESSAGE_MS);
   };
 
   const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
@@ -609,9 +567,9 @@ export function createOnlineApp(
     });
 
     net.onLatencyMeasured(({ avgMs, rttMs }) => {
-      updateDesiredPlaybackDelay(avgMs);
+      desiredPlaybackDelayMs = computeDesiredPlaybackDelay(avgMs);
       warnPoorConnectionIfNeeded(rttMs);
-      setPingIndicator(rttMs);
+      pingIndicator.set(rttMs);
     });
 
     const startPromise = net.awaitStart();
@@ -799,8 +757,8 @@ export function createOnlineApp(
 
     // Clean up disconnect overlay
     hideDisconnectOverlay();
-    setPingIndicator(null);
-    detachPingIndicator();
+    pingIndicator.set(null);
+    pingIndicator.detach();
 
     disposeWorld({
       loop,
