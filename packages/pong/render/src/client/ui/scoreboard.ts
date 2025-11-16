@@ -262,6 +262,12 @@ export function createScoreboard(): DomScoreboardAPI {
     overlay.style.width = rect.width + 'px';
     overlay.style.height = rect.height + 'px';
 
+    // Dynamically scale HUD on very short viewports so it doesnt overlap with the table
+    const baselineHeight = 420;
+    const scale = rect.height < baselineHeight ? rect.height / baselineHeight : 1;
+    wrap.style.transformOrigin = 'top center';
+    wrap.style.transform = `scale(${scale})`;
+
     const p = panel.getBoundingClientRect();
     deuce.style.left = p.right - 8 + 'px';
     deuce.style.top = p.top + 6 + 'px';
@@ -269,6 +275,15 @@ export function createScoreboard(): DomScoreboardAPI {
 
   const attachToElement = (el: HTMLElement) => {
     boundCanvas = el;
+
+    const host = el.closest('.pong-game-root') ?? document.body;
+    if (root.parentElement !== host) {
+      if (root.parentElement) {
+        root.parentElement.removeChild(root);
+      }
+      host.appendChild(root);
+    }
+
     scheduleSync();
     if (ro) ro.disconnect();
     ro = new ResizeObserver(() => scheduleSync());
