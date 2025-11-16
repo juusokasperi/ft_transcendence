@@ -23,6 +23,7 @@ export type ChatMessage = {
 
 export type UserItem = {
   userId: string;
+  userUuid: string;
   username: string;
   isBlocked?: boolean;
 };
@@ -138,9 +139,10 @@ export function ChatProvider({ channel, children }: ChatProviderProps) {
         if (!raw) continue;
         const normalized =
           typeof raw === 'string'
-            ? { userId: raw, username: raw }
+            ? { userId: raw, userUuid: raw, username: raw }
             : {
                 userId: raw.userId ?? String(raw.username ?? Math.random()),
+                userUuid: raw.userUuid ?? raw.uuid ?? raw.userId ?? '',
                 username: raw.username ?? String(raw.userId ?? ''),
               };
         const key = normalized.username.trim();
@@ -149,6 +151,7 @@ export function ChatProvider({ channel, children }: ChatProviderProps) {
       if (!map.has(chatUsername)) {
         map.set(chatUsername, {
           userId: 'self',
+          userUuid: userUuid ?? 'self',
           username: chatUsername,
           isBlocked: blockedRef.current.has(chatUsername),
         });
