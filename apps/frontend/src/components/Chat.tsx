@@ -28,20 +28,12 @@ type ChatProps = {
   username?: string;
   channel: string;
   isOpen?: boolean;
-
-  // tournament data passed from TournamentPage
-  firstPlayer?: string | null;
-  secondPlayer?: string | null;
-  stage?: string | null;
 };
 
 export default function Chat({
   onClose,
   channel,
   isOpen = true,
-  firstPlayer = null,
-  secondPlayer = null,
-  stage = null,
 }: ChatProps) {
   const { navigate, axios: authAxios } = useAppContext();
   const location = useLocation();
@@ -71,7 +63,6 @@ export default function Chat({
   const [profileOpen, setProfileOpen] = useState(false);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [pendingNavId, setPendingNavId] = useState<string | null>(null);
-  // Track last tournament announce we broadcasted to avoid duplicates
 
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
