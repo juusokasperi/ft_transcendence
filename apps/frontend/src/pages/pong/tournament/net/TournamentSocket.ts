@@ -25,12 +25,12 @@ export class TournamentSocket {
     this.client = null;
   }
 
-  createTournament(size: TournamentSize, name?: string, alias?: string) {
-    this.client?.createTournament(size, name, alias);
+  createTournament(size: TournamentSize, name?: string) {
+    this.client?.createTournament(size, name);
   }
 
-  joinTournament(id: number | string, alias?: string) {
-    this.client?.joinTournament(id, alias);
+  joinTournament(id: number | string) {
+    this.client?.joinTournament(id);
   }
 
   leaveTournament(id: number | string) {

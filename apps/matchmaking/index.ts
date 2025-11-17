@@ -123,7 +123,7 @@ async function handleConnection(socket: WebSocket, req: FastifyRequest) {
     }
     switch (data.type) {
       case 'JOIN_QUEUE':
-        handleJoinQueue(client, data.alias);
+        handleJoinQueue(client);
         break;
       case 'LEAVE_QUEUE':
         handleLeaveQueue(client);

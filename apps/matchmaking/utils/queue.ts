@@ -89,12 +89,9 @@ export function handleLeaveQueue(client: ClientInfo) {
   }
 }
 
-export async function handleJoinQueue(client: ClientInfo, alias?: string) {
+export async function handleJoinQueue(client: ClientInfo) {
   if (!isAuthenticated(client)) return;
   client.joinedAt = Date.now();
-  if (alias) {
-    client.alias = alias;
-  }
   const bucketId = Math.floor(client.mmr / MMR_BUCKET_SIZE);
   if (!buckets.has(bucketId)) buckets.set(bucketId, []);
   const bucket = buckets.get(bucketId)!;
@@ -211,13 +208,13 @@ export async function createMatch(
         {
           playerIdentifier: a.uuid,
           side: 'west',
-          alias: a.alias || a.tournamentAlias || a.username,
+          alias: a.username,
           mmr: a.mmr,
         },
         {
           playerIdentifier: b.uuid,
           side: 'east',
-          alias: b.alias || b.tournamentAlias || b.username,
+          alias: b.username,
           mmr: b.mmr,
         },
       ],
