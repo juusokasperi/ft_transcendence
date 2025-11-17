@@ -1,20 +1,11 @@
 import {
-  createEngine,
   createLifecycle,
-  createWorld,
-  FXManager,
-  createScoreboard,
   applyFrameEventsToFx,
   applyFrameEventsToAudio,
-  computeBounds,
   detectEnteredServe,
   onEnteredServe,
-  mapStateForPlayerRows,
   attachLocalInput,
   setBindingProfile,
-  createBounces,
-  createPaddleAnimator,
-  orbitCameraFor,
   readSeatAxes,
   blockInputFor,
   disposeWorld,
@@ -24,12 +15,8 @@ import type { PlayerSeat } from '@pong/render';
 import type { GameState } from '@pong/game-logic';
 import type { FrameEvents, MatchSnapshot } from '@pong/shared';
 import { SERVE_SELECT_TOTAL_MS, clamp01 } from '@pong/shared';
-import type { RoomStateMessage } from '@pong/shared/protocol/net';
-import { rgb01ToCss } from '../shared/preferences';
 import { handleSwapSidesNow, handleMatchOver, runServeSelectionIntro } from '../shared/utils';
-import { createLocalAudioKit, createLocalSfxDetectors } from '../shared/audio-utils';
 import { createHudCache, updateOnlineHUDIfChanged } from './hud-cache';
-import { applyOnlineSideSwap } from './swap-helpers';
 import { createDisconnectOverlayManager, showMatchEndOverlay } from './ui-overlays';
 import { connectOnline, type OnlineClient } from './connect-online';
 import { getStoredResumeCandidate, clearStoredResumeTokens } from './resume';
@@ -38,18 +25,17 @@ import {
   PLAYBACK_EASING,
   clampPlaybackDelay,
   computeDesiredPlaybackDelay,
-  createLatencyWarning,
   createPingIndicator,
   bindPingHotkey,
 } from './latency';
+import { createOnlineWorld } from './world';
+import { createFrameBuffer } from './frame-buffer';
+import { createMatchLifecycle } from './match-lifecycle';
+import { createSideSwapController } from './side-swap-controller';
 import type { OnlineMatchSummary } from './types';
 
 // Render/update cadence we expect from the authoritative node.
 const CLIENT_TICK_RATE_HZ = 60;
-const FRAME_BUFFER_LIMIT = 90;
-const WAITING_MIN_TIMEOUT_MS = 3000;
-const WAITING_MAX_TIMEOUT_MS = 15000;
-const WAITING_EXTRA_GRACE_MS = 5000;
 
 interface PongInstance {
   start(): void;
@@ -58,11 +44,6 @@ interface PongInstance {
   // Should not allow resume for this room.
   giveUp?(): void;
 }
-
-type FrameSample = {
-  state: GameState;
-  timestamp: number;
-};
 
 export function createOnlineApp(
   canvas: HTMLCanvasElement,
@@ -80,8 +61,26 @@ export function createOnlineApp(
     ) => void;
   },
 ): PongInstance {
-  const { engine, engineDisposable } = createEngine(canvas);
-  const world = createWorld(engine);
+  const {
+    engine,
+    engineDisposable,
+    world,
+    bounds,
+    hud,
+    fx,
+    audioKit,
+    audioBus,
+    Bounces,
+    paddleAnim,
+    sfxDetectors,
+    clampPaddleZ,
+    matColorCss,
+  } = createOnlineWorld({
+    canvas,
+    randomSeed: cfg.randomSeed,
+    roomIdentifier: cfg.roomIdentifier,
+    matchId: cfg.matchId,
+  });
   const {
     scene,
     paddles: { left, right },
@@ -89,23 +88,12 @@ export function createOnlineApp(
     ball,
   } = world;
 
-  const hud = createScoreboard();
-  hud.attachToCanvas(canvas);
-
   const pingIndicator = createPingIndicator();
   const pingHotkey = bindPingHotkey(pingIndicator);
 
   const { showDisconnectOverlay, hideDisconnectOverlay } = createDisconnectOverlayManager(canvas);
   const seatToSide = (seat: PlayerSeat): 'east' | 'west' => (seat === 'P1' ? 'east' : 'west');
   let matchEnded = false;
-  let waitingTimeout: number | null = null;
-
-  const clearWaitingForOpponentTimeout = () => {
-    if (waitingTimeout !== null) {
-      window.clearTimeout(waitingTimeout);
-      waitingTimeout = null;
-    }
-  };
 
   const showEnd = (reason: string, winner?: 'east' | 'west') => {
     // Use the current resolved seat (mySeat), not the initial cfg.seat,
@@ -121,53 +109,6 @@ export function createOnlineApp(
 
   let names = { east: 'Magenta', west: 'Green' };
 
-  const { bounds } = computeBounds(world);
-  const fx = new FXManager(scene, {
-    wallZNorth: +bounds.halfWidthZ,
-    wallZSouth: -bounds.halfWidthZ,
-    ballMesh: ball.mesh,
-    ballRadius: bounds.ballRadius,
-    tableTop: table.tableTop,
-    camera: world.camera,
-  });
-
-  const audioKit = createLocalAudioKit(scene, canvas);
-  const audioBus = audioKit.bus;
-
-  // derive CSS color from a paddle mesh's material tint
-  const matColorCss = (mat: any): string => {
-    const c = mat?.subSurface?.tintColor ?? mat?.diffuseColor ?? mat?.albedoColor;
-    return rgb01ToCss({ r: c?.r ?? 1, g: c?.g ?? 1, b: c?.b ?? 1 });
-  };
-
-  function hash32(s: string): number {
-    let h = 0x811c9dc5 >>> 0;
-    for (let i = 0; i < s.length; i++) {
-      h ^= s.charCodeAt(i);
-      h = Math.imul(h, 0x01000193) >>> 0;
-    }
-    return h >>> 0;
-  }
-  const matchSeed = cfg.randomSeed ?? hash32(cfg.roomIdentifier ?? cfg.matchId);
-
-  const Bounces = createBounces(
-    ball.mesh,
-    table.tableTop.position.y,
-    bounds.ballRadius,
-    bounds.halfLengthX,
-    left.mesh,
-    right.mesh,
-    matchSeed,
-  );
-
-  const paddleAnim = createPaddleAnimator(scene, left.mesh, right.mesh);
-
-  const BASE_Y_FOR_AUDIO = table.tableTop.position.y + bounds.ballRadius / 2;
-  const sfxDetectors = createLocalSfxDetectors(audioBus, BASE_Y_FOR_AUDIO);
-
-  const paddleMaxZ = bounds.halfWidthZ - bounds.paddleHalfDepthZ;
-  const clampPaddleZ = (z: number) => Math.max(-paddleMaxZ, Math.min(paddleMaxZ, z));
-
   // --- Net state -------------------------------------------------------------------
   let net: OnlineClient | null = null;
   let mySeat: PlayerSeat = 'P1';
@@ -179,188 +120,65 @@ export function createOnlineApp(
   let didFireMatchOverEvent = false;
   let latestMatch: MatchSnapshot | undefined;
   let lastKnownBestOf = 3;
-  let spinningUntilMs = 0;
-  // Track half-rotation timing and whether a server swap event arrived
-  let betweenHalfFired = false;
-  let pendingBetweenSwap = false;
-  let betweenSwapApplied = false;
   const hudCache = createHudCache();
   let didSetPlayerNames = false;
   let playerAliases: { P1: string; P2: string } | null = null;
   let seatMap: { east: 'P1' | 'P2'; west: 'P1' | 'P2' } | null = null;
-  const frameBuffer: FrameSample[] = [];
+  const frameBuffer = createFrameBuffer(1000 / CLIENT_TICK_RATE_HZ);
   // Stable seat→material mapping so paddle colors follow players across swaps.
   const seatMaterials: { P1: any | null; P2: any | null } = { P1: null, P2: null };
   let seatMaterialsInitialized = false;
 
-  const finalizeMatch = (
-    reason: string,
-    winner?: 'east' | 'west',
-    summaryFromNet: OnlineMatchSummary | null = null,
-  ) => {
-    if (matchEnded) return;
-    matchEnded = true;
-    clearWaitingForOpponentTimeout();
-    hideDisconnectOverlay();
-
-    const eastAlias = names.east;
-    const westAlias = names.west;
-    const history = (latestMatch?.gamesHistory ?? []).map((game) => ({ ...game }));
-    const defaultWinner = winner ?? history.at(-1)?.winner ?? 'east';
-    const defaultBestOf = latestMatch?.bestOf ?? lastKnownBestOf;
-    const mergedSummary: OnlineMatchSummary = summaryFromNet
-      ? {
-          ...summaryFromNet,
-          winner: summaryFromNet.winner ?? defaultWinner,
-          bestOf: summaryFromNet.bestOf ?? defaultBestOf,
-          gamesHistory:
-            summaryFromNet.gamesHistory && summaryFromNet.gamesHistory.length
-              ? summaryFromNet.gamesHistory
-              : history,
-          names: {
-            east: summaryFromNet.names?.east ?? eastAlias,
-            west: summaryFromNet.names?.west ?? westAlias,
-          },
-          seats: summaryFromNet.seats ?? seatMap ?? undefined,
-          mmr: summaryFromNet.mmr ?? {
-            east: { before: 0, after: 0 },
-            west: { before: 0, after: 0 },
-          },
-        }
-      : {
-          winner: defaultWinner,
-          bestOf: defaultBestOf,
-          gamesHistory: history,
-          names: { east: eastAlias, west: westAlias },
-          seats: seatMap ?? undefined,
-          mmr: {
-            east: { before: 0, after: 0 },
-            west: { before: 0, after: 0 },
-          },
-        };
-
-    const resolvedWinner = mergedSummary.winner;
-    showEnd(reason, resolvedWinner);
-    cfg.onMatchEnd?.(reason, resolvedWinner, mergedSummary);
-  };
-
-  const ensureWaitingForOpponentTimeout = (state: RoomStateMessage) => {
-    if (matchEnded || waitingTimeout !== null) return;
-
-    const baseDelay =
-      typeof state.startAtEpochMs === 'number' ? state.startAtEpochMs - Date.now() : 0;
-    const delay = Math.max(
-      WAITING_MIN_TIMEOUT_MS,
-      Math.min(WAITING_MAX_TIMEOUT_MS, baseDelay + WAITING_EXTRA_GRACE_MS),
-    );
-
-    const winnerSide = seatToSide(cfg.seat);
-
-    waitingTimeout = window.setTimeout(() => {
-      waitingTimeout = null;
-      console.warn('[OnlineGame] Opponent missing before start; finishing match early');
-      finalizeMatch('opponent_timeout', winnerSide, null);
+  const {
+    finalizeMatch,
+    ensureWaitingForOpponentTimeout,
+    startCountdown: startStartCountdown,
+    stopCountdown: stopStartCountdown,
+    clearWaitingForOpponentTimeout,
+    warnPoorConnectionIfNeeded,
+  } = createMatchLifecycle({
+    hud,
+    getNames: () => names,
+    getLatestMatch: () => latestMatch,
+    getLastKnownBestOf: () => lastKnownBestOf,
+    getSeatMap: () => seatMap,
+    showEnd,
+    onMatchEnd: cfg.onMatchEnd,
+    seatToSide,
+    getInitialSeat: () => cfg.seat,
+    isMatchEnded: () => matchEnded,
+    setMatchEnded: (ended) => {
+      matchEnded = ended;
+    },
+    disconnectNet: () => {
       try {
         net?.disconnect();
       } catch {
         /* ignore */
       }
-    }, delay);
-  };
-
-  let rowsMirrored = false;
-  let startCountdownTimer: number | null = null;
-
-  const warnPoorConnectionIfNeeded = createLatencyWarning({
-    hud,
-    isMatchEnded: () => matchEnded,
-    isCountdownActive: () => startCountdownTimer !== null,
+    },
+    hideDisconnectOverlay,
   });
 
-  function stopStartCountdown() {
-    if (startCountdownTimer !== null) {
-      clearInterval(startCountdownTimer);
-      startCountdownTimer = null;
-    }
-    hud.flashMessage('', 0);
-  }
-
-  function startStartCountdown(untilEpochMs: number) {
-    stopStartCountdown();
-    const tick = () => {
-      const remain = Math.max(0, untilEpochMs - Date.now());
-      if (remain <= 0) {
-        stopStartCountdown();
-        return;
-      }
-      const secs = remain / 1000;
-      const text =
-        secs >= 10 ? `Match starts in ${Math.ceil(secs)}s` : `Match starts in ${secs.toFixed(1)}s`;
-      hud.flashMessage(text, 500);
-    };
-    tick();
-    startCountdownTimer = window.setInterval(tick, 120);
-  }
-
-  let prevSnap: GameState | null = null;
   let prevT = 0,
     currT = 0;
-  let tickMs = 1000 / CLIENT_TICK_RATE_HZ;
   let playbackDelayMs = clampPlaybackDelay(BASE_PLAYBACK_DELAY_MS);
   let desiredPlaybackDelayMs = playbackDelayMs;
 
-  const resetFrameBuffer = () => {
-    frameBuffer.length = 0;
-    prevSnap = null;
-    latest = null;
-    prevT = 0;
-    currT = 0;
-  };
-
-  const enqueueFrameSample = (state: GameState) => {
-    const timestamp = performance.now();
-    const sample: FrameSample = { state, timestamp };
-    frameBuffer.push(sample);
-    while (frameBuffer.length > FRAME_BUFFER_LIMIT) {
-      frameBuffer.shift();
-    }
-    if (!prevSnap) {
-      prevSnap = sample.state;
-      latest = sample.state;
-      prevT = sample.timestamp;
-      currT = sample.timestamp + tickMs;
-    }
-  };
-
-  const syncFrameCursor = (targetTime: number) => {
-    if (!frameBuffer.length) return;
-    const newest = frameBuffer[frameBuffer.length - 1];
-    if (!newest) return;
-    if (targetTime >= newest.timestamp) {
-      prevSnap = newest.state;
-      latest = newest.state;
-      prevT = newest.timestamp;
-      currT = newest.timestamp + tickMs;
-      if (frameBuffer.length > 1) {
-        frameBuffer.splice(0, frameBuffer.length - 1);
-      }
-      return;
-    }
-    while (frameBuffer.length >= 2) {
-      const maybeSecond = frameBuffer[1];
-      if (!maybeSecond || maybeSecond.timestamp > targetTime) break;
-      frameBuffer.shift();
-    }
-    const first = frameBuffer[0];
-    if (!first) return;
-    const second = frameBuffer[1] ?? first;
-    prevSnap = first.state;
-    latest = second.state;
-    prevT = first.timestamp;
-    currT = second === first ? first.timestamp + tickMs : second.timestamp;
-  };
-
   const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
+
+  const sideSwap = createSideSwapController({
+    hud,
+    camera: world.camera,
+    leftMesh: left.mesh,
+    rightMesh: right.mesh,
+    paddleAnim,
+    blockInputFor,
+    getNames: () => names,
+    getLatestMatch: () => latestMatch,
+    getLastKnownBestOf: () => lastKnownBestOf,
+    frameBuffer,
+  });
 
   const loop = createLifecycle(engine, scene, {
     logicHz: CLIENT_TICK_RATE_HZ,
@@ -373,11 +191,13 @@ export function createOnlineApp(
       const now = performance.now();
       playbackDelayMs += (desiredPlaybackDelayMs - playbackDelayMs) * PLAYBACK_EASING;
       const targetTime = now - playbackDelayMs;
-      syncFrameCursor(targetTime);
-      const hasPrev = !!prevSnap && prevT < currT;
+      const { snap, ref, hasPrev, prevT: prevTSync, currT: currTSync } = frameBuffer.sync(
+        targetTime,
+      );
+      prevT = prevTSync;
+      currT = currTSync;
       const alpha = hasPrev ? clamp01((now - prevT) / Math.max(1, currT - prevT)) : 1;
 
-      const snap = latest ?? prevSnap;
       if (snap) {
         if (snap.playerAtEnd) {
           seatMap = {
@@ -394,27 +214,27 @@ export function createOnlineApp(
           didSetPlayerNames = true;
         }
 
-        const ref = prevSnap ?? snap;
-        const ballX = hasPrev ? lerp(ref.ball.x, snap.ball.x, alpha) : snap.ball.x;
+        const refState = ref ?? snap;
+        const ballX = hasPrev ? lerp(refState.ball.x, snap.ball.x, alpha) : snap.ball.x;
         const ballVX = hasPrev
-          ? ((snap.ball.x - ref.ball.x) / Math.max(1, currT - prevT)) * 1000
+          ? ((snap.ball.x - refState.ball.x) / Math.max(1, currT - prevT)) * 1000
           : 0;
         const ballY = Bounces.update(ballX, ballVX);
 
         ball.mesh.position.set(
           ballX,
           ballY,
-          hasPrev ? lerp(ref.ball.z, snap.ball.z, alpha) : snap.ball.z,
+          hasPrev ? lerp(refState.ball.z, snap.ball.z, alpha) : snap.ball.z,
         );
 
         sfxDetectors.update(ballY);
 
         if (!paddleAnim.isAnimating()) {
           const eastZ = hasPrev
-            ? lerp(ref.paddles.east.z, snap.paddles.east.z, alpha)
+            ? lerp(refState.paddles.east.z, snap.paddles.east.z, alpha)
             : snap.paddles.east.z;
           const westZ = hasPrev
-            ? lerp(ref.paddles.west.z, snap.paddles.west.z, alpha)
+            ? lerp(refState.paddles.west.z, snap.paddles.west.z, alpha)
             : snap.paddles.west.z;
           left.mesh.position.z = clampPaddleZ(eastZ);
           right.mesh.position.z = clampPaddleZ(westZ);
@@ -500,7 +320,7 @@ export function createOnlineApp(
     matchEnded = false;
     clearWaitingForOpponentTimeout();
     blockInputFor(SERVE_SELECT_TOTAL_MS + 200);
-    resetFrameBuffer();
+    frameBuffer.reset();
     playbackDelayMs = clampPlaybackDelay(BASE_PLAYBACK_DELAY_MS);
     desiredPlaybackDelayMs = playbackDelayMs;
 
@@ -617,6 +437,7 @@ export function createOnlineApp(
       if (typeof stateBestOf === 'number') {
         lastKnownBestOf = stateBestOf;
       }
+      const prevPhaseBefore = prevPhase;
       if (!didBootFX) {
         didBootFX = true;
         // Only play the initial serve-intro when starting fresh, not resuming
@@ -629,8 +450,8 @@ export function createOnlineApp(
           Bounces.scheduleServe(dir);
         }
       }
-      if (prevPhase && s.phase !== prevPhase) {
-        const entered = detectEnteredServe(prevPhase, s.phase);
+        if (prevPhaseBefore && s.phase !== prevPhaseBefore) {
+        const entered = detectEnteredServe(prevPhaseBefore, s.phase);
         if (entered) {
           onEnteredServe(entered, {
             ballMesh: ball.mesh,
@@ -639,43 +460,8 @@ export function createOnlineApp(
             blockInputFor,
           });
         }
-        if (prevPhase !== 'pauseBetweenGames' && s.phase === 'pauseBetweenGames') {
-          const rawMs = Math.max(0, (s as any).tPauseBtwGamesMs ?? 0);
-          const ms = Math.max(0, rawMs - tickMs);
-          const until = handleSwapSidesNow(
-            hud,
-            'gameOver',
-            () =>
-              matchSnap ??
-              latestMatch ?? {
-                bestOf: lastKnownBestOf,
-                currentGameIndex: 0,
-                gamesHistory: [],
-              },
-            names,
-            blockInputFor,
-            ms,
-          );
-          spinningUntilMs = until;
-          betweenHalfFired = false;
-          pendingBetweenSwap = false;
-          betweenSwapApplied = false;
-          const now = performance.now();
-          const spinMs = Math.max(0, until - now);
-          if (spinMs > 0) {
-            orbitCameraFor(world.camera, spinMs, {
-              onHalf: () => {
-                // Halfway through the rotation: perform the visual swap now.
-                betweenHalfFired = true;
-                if (!betweenSwapApplied) {
-                  rowsMirrored = applyOnlineSideSwap(left.mesh, right.mesh, rowsMirrored);
-                  betweenSwapApplied = true;
-                }
-                // If the server event came earlier and we deferred, it's now fulfilled.
-                pendingBetweenSwap = false;
-              },
-            });
-          }
+        if (prevPhaseBefore !== 'pauseBetweenGames' && s.phase === 'pauseBetweenGames') {
+          sideSwap.handlePhaseTransition(prevPhaseBefore, s, matchSnap);
         }
       }
       prevPhase = s.phase;
@@ -683,51 +469,7 @@ export function createOnlineApp(
 
       const anyEv = ev as any;
       if (anyEv && anyEv.swapSidesNow) {
-        const now = performance.now();
-        if (spinningUntilMs > now || s.phase === 'pauseBetweenGames') {
-          // Between-games swap is bound to the rotation's midpoint.
-          if (betweenSwapApplied) {
-            // Already applied at half — ignore duplicate event.
-          } else if (betweenHalfFired) {
-            // Half happened but swap not yet applied (race) — apply now.
-            rowsMirrored = applyOnlineSideSwap(left.mesh, right.mesh, rowsMirrored);
-            betweenSwapApplied = true;
-          } else {
-            // Defer until onHalf; ensures alignment.
-            pendingBetweenSwap = true;
-          }
-        } else {
-          const until = handleSwapSidesNow(
-            hud,
-            prevPhase as GameState['phase'],
-            () =>
-              matchSnap ??
-              latestMatch ?? {
-                bestOf: lastKnownBestOf,
-                currentGameIndex: 0,
-                gamesHistory: [],
-              },
-            names,
-            blockInputFor,
-          );
-          // Track active spin window to align any subsequent events like between-games flow
-          spinningUntilMs = until;
-          betweenHalfFired = false;
-          pendingBetweenSwap = false;
-          betweenSwapApplied = false;
-          const spinMs = Math.max(0, until - now);
-          if (spinMs > 0) {
-            orbitCameraFor(world.camera, spinMs, {
-              onHalf: () => {
-                rowsMirrored = applyOnlineSideSwap(left.mesh, right.mesh, rowsMirrored);
-                paddleAnim.cue(180);
-              },
-            });
-          } else {
-            rowsMirrored = applyOnlineSideSwap(left.mesh, right.mesh, rowsMirrored);
-            paddleAnim.cue(180);
-          }
-        }
+        sideSwap.handleSwapEvent(prevPhaseBefore, s, matchSnap ?? latestMatch);
       }
 
       if (!didFireMatchOverEvent && anyEv && anyEv.matchOver) {
@@ -747,7 +489,7 @@ export function createOnlineApp(
         audioKit.stop();
       }
 
-      enqueueFrameSample(s);
+      frameBuffer.enqueue(s);
 
       if (ev && (ev.wallHit || ev.paddleHit || ev.explode)) {
         if (eventQueue.length > 8) eventQueue.splice(0, eventQueue.length - 8);
@@ -756,7 +498,8 @@ export function createOnlineApp(
     });
 
     const startInfo = await startPromise;
-    tickMs = 1000 / Math.max(1, startInfo.tickRateHz || CLIENT_TICK_RATE_HZ);
+    const tickMs = 1000 / Math.max(1, startInfo.tickRateHz || CLIENT_TICK_RATE_HZ);
+    frameBuffer.setTickMs(tickMs);
     if (startInfo.randomSeed !== cfg.randomSeed) {
       console.warn('[OnlineGame] Server randomSeed differs from handoff seed', {
         handoff: cfg.randomSeed,
@@ -790,7 +533,7 @@ export function createOnlineApp(
 
     clearWaitingForOpponentTimeout();
     matchEnded = true;
-    resetFrameBuffer();
+    frameBuffer.reset();
 
     // Clean up disconnect overlay
     hideDisconnectOverlay();
