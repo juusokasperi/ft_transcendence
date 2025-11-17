@@ -70,3 +70,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
     },
   };
 }
+
+// give paddles a small, server‑side forgiveness window so that if the ball would hit them within
+// a few milliseconds after this tick, we treat that collision as happening at the end of the current
+// tick, effectively "rewinding" the ball slightly in the defender’s favor

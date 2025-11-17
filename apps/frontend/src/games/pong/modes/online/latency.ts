@@ -1,5 +1,5 @@
-export const BASE_PLAYBACK_DELAY_MS = 35;
-const MIN_PLAYBACK_DELAY_MS = 30;
+export const BASE_PLAYBACK_DELAY_MS = 45;
+const MIN_PLAYBACK_DELAY_MS = 40;
 const MAX_PLAYBACK_DELAY_MS = 200;
 export const PLAYBACK_EASING = 0.1;
 
