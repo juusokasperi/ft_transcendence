@@ -30,8 +30,8 @@ export default function PongLayout() {
             fallback={
               <PageContainer>
                 <PageSection>
-                  <div className="flex justify-center">
-                    <Spinner color="#A855F7" aria-label="Loading content" />
+                  <div className="flex h-64 items-center justify-center">
+                    <Spinner size={64} color="#A855F7" aria-label="Loading content" />
                   </div>
                 </PageSection>
               </PageContainer>

@@ -27,19 +27,7 @@ const TournamentPageHeader: React.FC<TournamentPageHeaderProps> = ({
   const detailTitle = (() => {
     if (!isDetailView) return '';
     if (displayTournamentName) return displayTournamentName;
-
-    // When the server hasn't provided a tournament name yet, show the
-    // inline spinner so users know we're loading the tournament details.
-    return (
-      <InlineSpinner
-        size={20}
-        color="#FFFFFF"
-        label="Loading tournament"
-        ariaLabel="Loading tournament"
-        className="text-current"
-        labelClassName="text-current"
-      />
-    );
+    return 'Pong Tournament';
   })();
 
   const [confirmOpen, setConfirmOpen] = useState(false);

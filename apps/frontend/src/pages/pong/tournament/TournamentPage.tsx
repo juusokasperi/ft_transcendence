@@ -10,6 +10,7 @@ import PlayingView from '../shared/components/PlayingView';
 import { useTournamentPageController } from './hooks/useTournamentPageController';
 import PageContainer from '../shared/components/PageContainer';
 import PageSection from '../shared/components/PageSection';
+import { Spinner } from '@ft/spinner';
 type TournamentPageProps = {
   onBack?: () => void;
   focusTournamentId?: number | null;
@@ -57,6 +58,7 @@ const TournamentPage: React.FC<TournamentPageProps> = ({ onBack, focusTournament
   // Participants sit alone in detail view; keep it single-column as well.
   const overviewSectionClass = 'mt-4 grid gap-6';
   const detailsSectionClass = 'mt-4 grid gap-4';
+  const isTournamentNameLoading = Boolean(isDetailView && headerLoading && !activeTournamentName);
 
   if (userReady && !user) {
     return (
@@ -82,6 +84,18 @@ const TournamentPage: React.FC<TournamentPageProps> = ({ onBack, focusTournament
 
   if (shouldShowOverlay) {
     return <PlayingView canvasRef={canvasRef} onQuit={handleQuitMatch} />;
+  }
+
+  if (isTournamentNameLoading) {
+    return (
+      <PageContainer>
+        <PageSection>
+          <div className="flex h-64 items-center justify-center">
+            <Spinner size={64} color="#A855F7" aria-label="Loading tournament" />
+          </div>
+        </PageSection>
+      </PageContainer>
+    );
   }
 
   return (
