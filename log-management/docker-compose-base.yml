@@ -64,6 +64,8 @@ services:
       - xpack.security.transport.ssl.certificate_authorities=certs/ca/ca.crt
       - xpack.security.transport.ssl.verification_mode=certificate
       - xpack.license.self_generated.type=${ES_LICENSE:-basic}
+      - bootstrap.memory_lock=false
+      - indices.memory.index_buffer_size=10%
     mem_limit: 1536m
     healthcheck:
       test:
@@ -128,6 +130,10 @@ services:
       - SERVER_BASEPATH=/kibana
       - SERVER_PUBLICBASEURL=http://localhost:${MONITORING_PORT:-8082}/kibana
       - SERVER_REWRITEBASEPATH=true
+      - NODE_OPTIONS=--max-old-space-size=500
+      - xpack.monitoring.enabled=false
+      - xpack.ml.enabled=false
+      - xpack.graph.enabled=false
     mem_limit: 1024m
     healthcheck:
       test:
@@ -169,7 +175,7 @@ services:
     environment:
       - ELASTIC_USER=${ELASTIC_USER}
       - ELASTIC_PASSWORD=${ELASTIC_PASSWORD}
-      - LS_JAVA_OPTS=-Xms512m -Xmx512m -XX:MaxDirectMemorySize=256M
+      - LS_JAVA_OPTS=-Xms256m -Xmx256m -XX:MaxDirectMemorySize=128M
       - xpack.monitoring.enabled=false
       - ELASTIC_HOSTS=https://elasticsearch:${ES_PORT:-9200}
       - ELASTIC_USER=${ELASTIC_USER:-elastic}
