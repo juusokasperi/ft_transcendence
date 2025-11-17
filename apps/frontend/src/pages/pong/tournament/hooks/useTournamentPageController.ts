@@ -23,7 +23,6 @@ import { useTournamentConnection } from './useTournamentConnection';
 import { useMatchCountdown } from './useMatchCountdown';
 import { useMatchLifecycle } from './useMatchLifecycle';
 import { useTournamentList } from './useTournamentList';
-import { sanitizeAliasInput } from '../../../../utils/alias';
 import { tournamentReducer, initialTournamentState } from '../state/tournamentReducer';
 import {
   selectMatchesByStage,
@@ -45,8 +44,6 @@ type TournamentControllerReturn = {
   activeTournamentId: number | null;
   activeTournamentName: string | null;
   tournamentStatus: string;
-  aliasInput: string;
-  setAliasInput: (value: string) => void;
   tournamentName: string;
   setTournamentName: (value: string) => void;
   handleCreateTournamentClick: () => void;
@@ -142,19 +139,11 @@ export function useTournamentPageController(
   const maxParticipants = store.maxParticipants;
   const headerLoading = store.activeTournamentId !== null ? refreshing : loadingTournaments;
   const [handoff, setHandoff] = useState<ActiveHandoff | null>(null);
-  const [aliasInput, setAliasInputState] = useState('');
   const [tournamentName, setTournamentNameState] = useState('');
-  const setAliasInput = useCallback((value: string) => {
-    setAliasInputState(sanitizeAliasInput(value));
-  }, []);
   const setTournamentName = useCallback((value: string) => {
     setTournamentNameState(value.slice(0, TOURNAMENT_NAME_MAX_LENGTH));
   }, []);
   // Match lifecycle timers handled inside useMatchLifecycle
-
-  useEffect(() => {
-    setAliasInputState(sanitizeAliasInput(user?.username ?? ''));
-  }, [user?.username]);
 
   // matchPhase is kept in reducer state
 
@@ -281,20 +270,19 @@ export function useTournamentPageController(
   });
 
   const handleCreateTournamentClick = useCallback(() => {
-    createTournament(TOURNAMENT_SIZE, tournamentName, aliasInput);
+    createTournament(TOURNAMENT_SIZE, tournamentName);
     setTournamentName('');
-    setAliasInput('');
-    debugLog('action:create-tournament', { name: tournamentName, alias: aliasInput });
+    debugLog('action:create-tournament', { name: tournamentName });
     enqueueSnackbar({ message: 'Creating tournament.', variant: 'info' });
-  }, [debugLog, enqueueSnackbar, tournamentName, aliasInput, setAliasInput]);
+  }, [createTournament, debugLog, enqueueSnackbar, tournamentName]);
 
   const handleJoinTournamentClick = useCallback(
     (tournamentId: number) => {
-      joinTournament(tournamentId, aliasInput);
-      debugLog('action:join-tournament', { tournamentId, alias: aliasInput });
+      joinTournament(tournamentId);
+      debugLog('action:join-tournament', { tournamentId });
       enqueueSnackbar({ message: 'Joining tournament.', variant: 'info' });
     },
-    [aliasInput, debugLog, enqueueSnackbar],
+    [debugLog, enqueueSnackbar, joinTournament],
   );
 
   const handleLeaveTournamentClick = useCallback(() => {
@@ -449,8 +437,6 @@ export function useTournamentPageController(
     activeTournamentId,
     activeTournamentName,
     tournamentStatus,
-    aliasInput,
-    setAliasInput,
     tournamentName,
     setTournamentName,
     handleCreateTournamentClick,

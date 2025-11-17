@@ -56,7 +56,6 @@ function makeClient(overrides: Partial<ClientInfo> = {}): TestClient {
     joinedAt: overrides.joinedAt ?? Date.now(),
     tournamentId: overrides.tournamentId,
     tournamentParticipantId: overrides.tournamentParticipantId,
-    tournamentAlias: overrides.tournamentAlias,
     siteToken: overrides.siteToken ?? 'token',
     __sendMock: send,
   };

@@ -89,8 +89,8 @@ export function createMatchmakingClient(
     auth() {
       safeSend({ type: 'AUTH' });
     },
-    joinQueue(alias?: string) {
-      safeSend({ type: 'JOIN_QUEUE', alias });
+    joinQueue() {
+      safeSend({ type: 'JOIN_QUEUE' });
     },
     leaveQueue() {
       safeSend({ type: 'LEAVE_QUEUE' });
@@ -116,26 +116,23 @@ export function createMatchmakingClient(
     setReady(lobbyId: string, ready: boolean) {
       safeSend({ type: 'ready', lobbyId, ready });
     },
-    createTournament(size: TournamentSize = 4, name?: string, alias?: string) {
+    createTournament(size: TournamentSize = 4, name?: string) {
       const payload: {
         type: 'CREATE_TOURNAMENT';
         size: TournamentSize;
         name?: string;
-        alias?: string;
       } = {
         type: 'CREATE_TOURNAMENT',
         size,
       };
       if (name && name.trim().length) payload.name = name.trim();
-      if (alias && alias.trim().length) payload.alias = alias.trim();
       safeSend(payload);
     },
-    joinTournament(tournamentId: string | number, alias?: string) {
-      const payload: { type: 'JOIN_TOURNAMENT'; tournamentId: string; alias?: string } = {
+    joinTournament(tournamentId: string | number) {
+      const payload: { type: 'JOIN_TOURNAMENT'; tournamentId: string } = {
         type: 'JOIN_TOURNAMENT',
         tournamentId: String(tournamentId),
       };
-      if (alias && alias.trim().length) payload.alias = alias.trim();
       safeSend(payload);
     },
     leaveTournament(tournamentId: string | number) {

@@ -2,7 +2,6 @@ import React from 'react';
 import Button from '../../../../components/Button';
 import SurfaceCard from '../../shared/components/SurfaceCard';
 import type { TournamentSummary } from '../state/types';
-import AliasCard from './AliasCard';
 
 export type TournamentLobbyPanelProps = {
   tournamentName: string;
@@ -11,8 +10,6 @@ export type TournamentLobbyPanelProps = {
   connectionReady: boolean;
   availableTournaments: TournamentSummary[];
   activeTournamentId: number | null;
-  aliasInput: string;
-  onAliasInputChange(value: string): void;
   onJoinTournament(tournamentId: number): void;
 };
 
@@ -23,15 +20,10 @@ const TournamentLobbyPanel: React.FC<TournamentLobbyPanelProps> = ({
   connectionReady,
   availableTournaments,
   activeTournamentId,
-  aliasInput,
-  onAliasInputChange,
   onJoinTournament,
 }) => {
   return (
     <div className="flex flex-col gap-6">
-      {/* Global alias selector used for both creating and joining tournaments */}
-      <AliasCard value={aliasInput} onChange={onAliasInputChange} />
-
       <SurfaceCard className="p-6 shadow-2xl">
         <h2 className="mb-4 text-lg font-semibold">Create a new tournament</h2>
         <div className="flex flex-col gap-3">
