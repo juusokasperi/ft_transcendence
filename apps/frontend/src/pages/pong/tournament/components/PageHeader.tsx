@@ -7,7 +7,6 @@ import ConfirmDialog from '../../../../components/ConfirmDialog';
 
 export type TournamentPageHeaderProps = {
   isDetailView: boolean;
-  displayTournamentId: number | null;
   displayTournamentName: string | null;
   tournamentStatus?: string | null;
   connectionReady: boolean;
@@ -18,7 +17,6 @@ export type TournamentPageHeaderProps = {
 
 const TournamentPageHeader: React.FC<TournamentPageHeaderProps> = ({
   isDetailView,
-  displayTournamentId,
   displayTournamentName,
   tournamentStatus,
   connectionReady,
@@ -31,10 +29,9 @@ const TournamentPageHeader: React.FC<TournamentPageHeaderProps> = ({
     if (displayTournamentName) {
       return displayTournamentName;
     }
-    if (displayTournamentId !== null) {
-      return `Tournament #${displayTournamentId}`;
-    }
-    return 'Tournament lobby';
+    // Do not show numeric IDs — prefer a simple, friendly fallback when
+    // the server did not provide a tournament name.
+    return 'Pong Tournament';
   })();
 
   const [confirmOpen, setConfirmOpen] = useState(false);
