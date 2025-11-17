@@ -28,8 +28,6 @@ const TournamentPage: React.FC<TournamentPageProps> = ({ onBack, focusTournament
     activeTournamentId,
     activeTournamentName,
     tournamentStatus,
-    aliasInput,
-    setAliasInput,
     tournamentName,
     setTournamentName,
     handleCreateTournamentClick,
@@ -111,8 +109,6 @@ const TournamentPage: React.FC<TournamentPageProps> = ({ onBack, focusTournament
               connectionReady={connectionReady}
               availableTournaments={availableTournaments}
               activeTournamentId={activeTournamentId}
-              aliasInput={aliasInput}
-              onAliasInputChange={setAliasInput}
               onJoinTournament={handleJoinTournamentClick}
             />
           </section>
