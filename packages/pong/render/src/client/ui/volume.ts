@@ -1,4 +1,5 @@
 import type { AudioCommandBus } from '../audio/commands';
+import { isMobile } from '../utils/platform';
 import speakerOnRaw from './icons/speaker-on.svg?raw';
 import speakerOffRaw from './icons/speaker-off.svg?raw';
 
@@ -30,7 +31,7 @@ export function createVolumeUI(bus: AudioCommandBus, initialVolume = 1): VolumeU
   const btn = createEl('button', 'pong-audio-btn');
   btn.title = muted ? 'Unmute' : 'Mute';
   btn.style.position = 'absolute';
-  btn.style.zIndex = '1010';
+  btn.style.zIndex = '3000';
   parent.appendChild(btn);
   // Pre-parse icons and clone on use for performance
   const iconOn = svgFromRaw(speakerOnRaw);
@@ -76,12 +77,17 @@ export function createVolumeUI(bus: AudioCommandBus, initialVolume = 1): VolumeU
   };
   const sync = () => {
     if (!boundCanvas) return;
+    const mobile = isMobile();
     const rect = boundCanvas.getBoundingClientRect();
     const margin = 8;
     const h = btn.offsetHeight || 0;
     const w = btn.offsetWidth || 0;
-    btn.style.left = rect.right - w - margin + 'px';
-    btn.style.top = rect.bottom - h - margin + 'px';
+    btn.style.left = rect.left + margin + 'px';
+    if (mobile) {
+      btn.style.top = rect.top + margin + 'px';
+    } else {
+      btn.style.top = rect.bottom - h - margin + 'px';
+    }
   };
 
   const attachToElement = (el: HTMLElement) => {
