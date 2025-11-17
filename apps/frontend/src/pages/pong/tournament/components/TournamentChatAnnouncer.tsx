@@ -5,7 +5,7 @@ type TournamentChatAnnouncerProps = {
   firstPlayer: string | null;
   secondPlayer: string | null;
   stage: string | null;
-  participantUuids: string[]; 
+  participantUuids: string[];
 };
 
 const TournamentChatAnnouncer: React.FC<TournamentChatAnnouncerProps> = ({

@@ -30,11 +30,7 @@ type ChatProps = {
   isOpen?: boolean;
 };
 
-export default function Chat({
-  onClose,
-  channel,
-  isOpen = true,
-}: ChatProps) {
+export default function Chat({ onClose, channel, isOpen = true }: ChatProps) {
   const { navigate, axios: authAxios } = useAppContext();
   const location = useLocation();
   const {
@@ -111,7 +107,6 @@ export default function Chat({
 
   // ---------- websocket events handled in ChatContext ----------
 
-
   // autoscroll
   useEffect(() => {
     if (!isOpen) return;
@@ -159,7 +154,7 @@ export default function Chat({
     if (!text) return;
 
     if (text.length > 250) {
-      addSystemMessage("⚠️ Message too long. Max 250 characters.");
+      addSystemMessage('⚠️ Message too long. Max 250 characters.');
       return;
     }
     const result = sendChatMessage(text, dmTarget ? { to: dmTarget } : undefined);
@@ -200,8 +195,7 @@ export default function Chat({
         break;
       case 'Unblock user':
         try {
-          await authAxios.delete('/api/blocked-users', { data: { username: targetUser }}
-          );
+          await authAxios.delete('/api/blocked-users', { data: { username: targetUser } });
         } catch (err) {
           addSystemMessage(`Failed to block ${targetUser}`);
           break;

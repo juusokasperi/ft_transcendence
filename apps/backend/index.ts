@@ -35,7 +35,6 @@ import { createFastifyLoggerConfig } from '@utils/logger';
 import { statusRoutes } from './routes/status.ts';
 import { blockedUsersRoutes } from './routes/blockedUsers.ts';
 
-
 if (ENABLE_SQLITE_METRICS === 'true') initSqliteMetrics();
 
 const isDev = process.env.NODE_ENV === 'development';
@@ -95,7 +94,7 @@ app.register(signupRoutes, { prefix: '/api/signup' });
 app.register(refreshRoutes, { prefix: '/api/auth' });
 app.register(resetPasswordRoutes, { prefix: '/api/reset-password' });
 app.register(statusRoutes, { prefix: '/api/status' });
-app.register(blockedUsersRoutes, { prefix: '/api/blocked-users' }); 
+app.register(blockedUsersRoutes, { prefix: '/api/blocked-users' });
 if (isDev) {
   app.register(debugRoutes, { prefix: '/debug' });
 }

@@ -54,9 +54,7 @@ export async function blockedUsersRoutes(app: FastifyInstance) {
 
         const result = blockUser(blockerUuid, blockedUuid);
         if (!result) {
-          return res
-            .status(400)
-            .send({ message: 'Could not block user (maybe already blocked).' });
+          return res.status(400).send({ message: 'Could not block user (maybe already blocked).' });
         }
 
         return res.status(201).send({ success: 'User successfully blocked' });
@@ -66,34 +64,33 @@ export async function blockedUsersRoutes(app: FastifyInstance) {
     },
   );
 
-  
   // Unblock a user by their username
 
   app.delete(
-  '/',
-  {
-    schema: unblockUserSchema,
-    preHandler: [authPreHandler, tokenUuidCheck, updateLastSeenHandler],
-  },
-  async (req, res) => {
-    try {
-      const blockerUuid = req.user!.uuid;
-      const { username } = req.body as { username: string };
+    '/',
+    {
+      schema: unblockUserSchema,
+      preHandler: [authPreHandler, tokenUuidCheck, updateLastSeenHandler],
+    },
+    async (req, res) => {
+      try {
+        const blockerUuid = req.user!.uuid;
+        const { username } = req.body as { username: string };
 
-      const user = getUser(username);
-      if (!user) {
-        return res.status(400).send({ message: 'User not found' });
+        const user = getUser(username);
+        if (!user) {
+          return res.status(400).send({ message: 'User not found' });
+        }
+
+        const ok = unblockUser(blockerUuid, user.uuid);
+        if (!ok) {
+          return res.status(400).send({ message: 'User was not blocked' });
+        }
+
+        return res.status(204).send();
+      } catch (err) {
+        return res.status(500).send({ message: 'Failed to unblock user' });
       }
-
-      const ok = unblockUser(blockerUuid, user.uuid);
-      if (!ok) {
-        return res.status(400).send({ message: 'User was not blocked' });
-      }
-
-      return res.status(204).send();
-    } catch (err) {
-      return res.status(500).send({ message: 'Failed to unblock user' });
-    }
-  }
-);
+    },
+  );
 }

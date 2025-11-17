@@ -66,7 +66,6 @@ function broadcast(data: any, channel: string, excludeId?: string, sender?: Clie
   const msg = JSON.stringify(data);
   clients.forEach((client) => {
     if (client.channel === channel && client.id !== excludeId) {
-
       if (data.type === 'chat' && sender) {
         const senderName = sender.username;
         const targetName = client.username;
@@ -356,8 +355,7 @@ async function handleConnection(socket: ChatSocket, _request: ChatRequest) {
 
         const alreadyPending = Array.from(pendingInvites.values()).some(
           (invite) =>
-            invite.fromUserUuid === client.uuid &&
-            invite.toUserUuid === targetClient.uuid
+            invite.fromUserUuid === client.uuid && invite.toUserUuid === targetClient.uuid,
         );
 
         if (alreadyPending) {

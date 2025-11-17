@@ -186,8 +186,8 @@ export function ChatProvider({ channel, children }: ChatProviderProps) {
           prev.map((u) =>
             newBlocked.has(u.username)
               ? { ...u, isBlocked: true }
-              : { ...u, isBlocked: u.isBlocked }
-          )
+              : { ...u, isBlocked: u.isBlocked },
+          ),
         );
         return;
       }

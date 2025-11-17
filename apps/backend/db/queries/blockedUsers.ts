@@ -1,6 +1,5 @@
 import db from '../client.ts';
 
-
 export function getBlockedUsernames(blockerUuid: string): string[] {
   try {
     const rows = db

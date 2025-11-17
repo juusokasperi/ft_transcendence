@@ -56,9 +56,8 @@ const TournamentPage: React.FC<TournamentPageProps> = ({ onBack, focusTournament
   const secondPlayer = pendingMatch?.participants?.at(1)?.alias ?? null;
   const stage = pendingMatch?.stage ?? null;
   const participantUuids =
-  pendingMatch?.participants
-    ?.map((p) => p.userUuid)
-    .filter((id): id is string => Boolean(id)) ?? [];
+    pendingMatch?.participants?.map((p) => p.userUuid).filter((id): id is string => Boolean(id)) ??
+    [];
   const hasActiveTournament = activeTournamentId !== null;
   const shouldShowOverlay = matchPhase === 'starting' || matchPhase === 'playing';
   const overviewSectionClass = isDetailView
