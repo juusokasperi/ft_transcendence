@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react';
+import { setLocalSeatInputDisabled } from '@pong/render';
 import type { BotDifficulty } from '../../../../games/pong/ai/bot-controller';
 import type { PongRuntimeHandle } from './usePongRuntime';
 
@@ -35,6 +36,8 @@ export function useAIBot({
         botRef.current.stop();
         botRef.current = null;
       }
+      // Ensure local input is re-enabled on unmount
+      setLocalSeatInputDisabled(null);
     };
   }, []);
 
@@ -50,12 +53,17 @@ export function useAIBot({
         botRef.current.stop();
         botRef.current = null;
       }
+      // Re-enable local input when AI is not active
+      setLocalSeatInputDisabled(null);
       return;
     }
 
     if (!runtimeReady) {
       return;
     }
+
+    // While AI is active, disable local control for its seat
+    setLocalSeatInputDisabled(botSeat);
 
     if (botRef.current) {
       botRef.current.setDifficulty(difficulty);

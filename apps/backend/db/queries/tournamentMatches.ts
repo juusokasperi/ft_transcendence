@@ -48,6 +48,7 @@ export interface TournamentMatchParticipantDetail {
   userUuid: string | null;
   alias: string;
   teamNumber: number;
+  status: string; // tournament participant status (pending/active/forfeited/etc.)
 }
 
 export function getTournamentMatchById(id: number): TournamentMatch | undefined {
@@ -205,7 +206,11 @@ export function getTournamentMatchRoster(matchId: number): TournamentMatchPartic
   const rows = db
     .prepare(
       `
-      SELECT tp.id as participantId, tp.user_uuid as userUuid, tp.alias as alias, tmp.team_number as teamNumber
+      SELECT tp.id as participantId,
+             tp.user_uuid as userUuid,
+             tp.alias as alias,
+             tmp.team_number as teamNumber,
+             tp.status as status
       FROM TournamentMatchPlayers tmp
       JOIN TournamentParticipants tp ON tp.id = tmp.participant_id
       WHERE tmp.tournament_match_id = ?
@@ -217,6 +222,7 @@ export function getTournamentMatchRoster(matchId: number): TournamentMatchPartic
     userUuid: string | null;
     alias: string;
     teamNumber: number;
+    status: string;
   }[];
   return rows;
 }

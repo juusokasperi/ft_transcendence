@@ -2,6 +2,7 @@ import fastify, { type FastifyInstance } from 'fastify';
 import websocket from '@fastify/websocket';
 import type { WebSocket, RawData } from 'ws';
 import type { Redis } from 'ioredis';
+import { performance } from 'node:perf_hooks';
 import type { AppConfig } from '../../app/Config.ts';
 import type { RoomRegistry, MatchSession, PlayerConnectionState } from '../../app/RoomRegistry.ts';
 import type { Broadcaster } from '../../app/Broadcaster.ts';
@@ -374,7 +375,9 @@ export class WSServer {
       if (await this.isRateLimited(roomIdentifier, seat)) return;
 
       const data = JSON.parse(raw.toString());
-      if (data.type === 'axis') {
+      if (data.type === 'ping') {
+        this.sendPong(roomIdentifier, seat, data);
+      } else if (data.type === 'axis') {
         const axis = Number(data.axis) || 0;
         this.registry.updateAxis(roomIdentifier, seat, axis);
       } else if (data.type === 'forfeit') {
@@ -382,7 +385,8 @@ export class WSServer {
         const session = this.registry.getSession(roomIdentifier);
         if (!session) return;
         const winnerSeat: 'P1' | 'P2' = seat === 'P1' ? 'P2' : 'P1';
-        const winnerSide = seatToSide(session.model.state.playerAtEnd, winnerSeat);
+        // Guard against tests or edge cases where model.state may be undefined
+        const winnerSide = seatToSide((session.model.state as any)?.playerAtEnd, winnerSeat);
         // Stop runner to cease frames, then report and broadcast the result.
         try {
           this.runner.stop(session);
@@ -414,6 +418,30 @@ export class WSServer {
     }
   }
 
+  private sendPong(
+    roomIdentifier: string,
+    seat: 'P1' | 'P2',
+    payload: { clientSentAt?: number },
+  ): void {
+    const session = this.registry.getSession(roomIdentifier);
+    if (!session) return;
+    const player = session.players.get(seat);
+    const socket = player?.socket;
+    if (!socket) return;
+    const receivedAt = performance.now();
+    const message = {
+      type: 'PONG' as const,
+      clientSentAt: typeof payload.clientSentAt === 'number' ? payload.clientSentAt : 0,
+      serverReceivedAt: receivedAt,
+      serverSentAt: performance.now(),
+    };
+    try {
+      socket.send(JSON.stringify(message));
+    } catch (err) {
+      this.logger.warn({ err }, '[WSServer] Failed to send PONG');
+    }
+  }
+
   private handleClose(roomIdentifier: string, seat: 'P1' | 'P2'): void {
     const session = this.registry.getSession(roomIdentifier);
     if (!session) return;
@@ -425,9 +453,40 @@ export class WSServer {
     const remainingP2 = session.players.get('P2');
 
     if (!remainingP1 && !remainingP2) {
-      this.logger.info({ roomIdentifier }, '[WSServer] Room empty, cleaning up');
-      this.runner.stop(session);
-      this.registry.clearSession(roomIdentifier);
+      // Both players have disconnected (or quit) nearly simultaneously.
+      // Declare the LAST quitter (current 'seat') as the winner to avoid tournament lock.
+      const winnerSeat: 'P1' | 'P2' = seat;
+      // Guard against cases where model.state may be undefined (e.g., mocked sessions in tests)
+      const winnerSide = seatToSide((session.model.state as any)?.playerAtEnd, winnerSeat);
+
+      this.logger.info(
+        { roomIdentifier, winnerSeat, winnerSide },
+        '[WSServer] Both players absent, awarding win to last quitter',
+      );
+      try {
+        this.runner.stop(session);
+      } catch {}
+
+      (async () => {
+        try {
+          const summary = await this.reporter.report(session, { winner: winnerSide });
+          this.broadcaster.notifyMatchEnd(session, 'forfeit', winnerSide, summary);
+          try {
+            for (const p of session.players.values()) {
+              try {
+                p.socket?.close(1000, 'match-ended');
+              } catch {}
+            }
+          } catch {}
+        } catch (error) {
+          this.logger.error({ error }, '[WSServer] Failed to finalize double-quit fallback result');
+          this.broadcaster.notifyMatchEnd(session, 'error');
+        } finally {
+          try {
+            this.registry.clearSession(roomIdentifier);
+          } catch {}
+        }
+      })().catch(() => void 0);
       return;
     }
 

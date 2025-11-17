@@ -67,12 +67,7 @@ export function handleSwapSidesNow(
   const last = hist[hist.length - 1];
   if (last?.winner) {
     const winnerRow = last.winner as TableEnd;
-    return announceAndPause(
-      hud,
-      `${names[winnerRow]} won the game, swapping side!`,
-      messageMs,
-      blockInputForFn,
-    );
+    return announceAndPause(hud, `Swapping side!`, messageMs, blockInputForFn);
   }
   return 0;
 }
