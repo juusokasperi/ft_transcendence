@@ -26,8 +26,16 @@ export type SideSwapDeps = {
 
 export type SideSwapController = {
   getRowsMirrored(): boolean;
-  handlePhaseTransition(prevPhase: GameState['phase'], s: GameState, matchSnap?: MatchSnapshot): void;
-  handleSwapEvent(prevPhase: GameState['phase'] | null, s: GameState, matchSnap?: MatchSnapshot): void;
+  handlePhaseTransition(
+    prevPhase: GameState['phase'],
+    s: GameState,
+    matchSnap?: MatchSnapshot,
+  ): void;
+  handleSwapEvent(
+    prevPhase: GameState['phase'] | null,
+    s: GameState,
+    matchSnap?: MatchSnapshot,
+  ): void;
 };
 
 export function createSideSwapController(deps: SideSwapDeps): SideSwapController {

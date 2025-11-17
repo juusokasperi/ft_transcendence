@@ -13,7 +13,7 @@
     @apply pointer-events-auto flex flex-col gap-3;
   }
   .pong-touch-btn {
-    @apply pointer-events-auto flex h-11 w-11 items-center justify-center rounded-full border border-white/20 bg-white/10 text-lg font-semibold text-white shadow-[0_8px_24px_rgba(0,0,0,0.5)] backdrop-blur-md active:scale-95 select-none;
+    @apply pointer-events-auto flex h-11 w-11 select-none items-center justify-center rounded-full border border-white/20 bg-white/10 text-lg font-semibold text-white shadow-[0_8px_24px_rgba(0,0,0,0.5)] backdrop-blur-md active:scale-95;
     touch-action: none;
     -webkit-user-select: none;
     user-select: none;

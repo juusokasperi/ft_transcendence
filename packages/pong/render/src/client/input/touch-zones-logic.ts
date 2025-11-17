@@ -67,4 +67,3 @@ export function readTouchAxes(): {
     rightAxisTouch: clampAxis(axisP2),
   };
 }
-

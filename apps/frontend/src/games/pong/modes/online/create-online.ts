@@ -191,9 +191,13 @@ export function createOnlineApp(
       const now = performance.now();
       playbackDelayMs += (desiredPlaybackDelayMs - playbackDelayMs) * PLAYBACK_EASING;
       const targetTime = now - playbackDelayMs;
-      const { snap, ref, hasPrev, prevT: prevTSync, currT: currTSync } = frameBuffer.sync(
-        targetTime,
-      );
+      const {
+        snap,
+        ref,
+        hasPrev,
+        prevT: prevTSync,
+        currT: currTSync,
+      } = frameBuffer.sync(targetTime);
       prevT = prevTSync;
       currT = currTSync;
       const alpha = hasPrev ? clamp01((now - prevT) / Math.max(1, currT - prevT)) : 1;
@@ -450,7 +454,7 @@ export function createOnlineApp(
           Bounces.scheduleServe(dir);
         }
       }
-        if (prevPhaseBefore && s.phase !== prevPhaseBefore) {
+      if (prevPhaseBefore && s.phase !== prevPhaseBefore) {
         const entered = detectEnteredServe(prevPhaseBefore, s.phase);
         if (entered) {
           onEnteredServe(entered, {

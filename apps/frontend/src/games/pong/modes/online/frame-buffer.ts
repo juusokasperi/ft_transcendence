@@ -113,4 +113,3 @@ export function createFrameBuffer(initialTickMs: number): FrameBuffer {
     getTickMs,
   };
 }
-

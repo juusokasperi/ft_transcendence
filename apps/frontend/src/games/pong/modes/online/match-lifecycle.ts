@@ -70,9 +70,7 @@ export function createMatchLifecycle(deps: MatchLifecycleDeps): MatchLifecycle {
       }
       const secs = remain / 1000;
       const text =
-        secs >= 10
-          ? `Match starts in ${Math.ceil(secs)}s`
-          : `Match starts in ${secs.toFixed(1)}s`;
+        secs >= 10 ? `Match starts in ${Math.ceil(secs)}s` : `Match starts in ${secs.toFixed(1)}s`;
       deps.hud.flashMessage(text, 500);
     };
     tick();
