@@ -2,7 +2,7 @@ import { orbitCameraFor } from '@pong/render';
 import type { DomScoreboardAPI, AbstractMesh } from '@pong/render';
 import type { GameState } from '@pong/game-logic';
 import type { MatchSnapshot } from '@pong/shared';
-import type { ArcRotateCamera } from '@babylonjs/core/Cameras/arcRotateCamera';
+import type { ArcRotateCamera } from '@pong/render';
 import type { FrameBuffer } from './frame-buffer';
 import { handleSwapSidesNow } from '../shared/utils';
 import { applyOnlineSideSwap } from './swap-helpers';

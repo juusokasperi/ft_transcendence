@@ -33,6 +33,7 @@ export { createBounces } from './client/visuals/bounce/bounces';
 export { FXManager } from './client/fx/manager';
 export { createPaddleAnimator } from './client/visuals/animate-paddle';
 export type { AbstractMesh } from '@babylonjs/core/Meshes/abstractMesh';
+export type { ArcRotateCamera } from '@babylonjs/core/Cameras/arcRotateCamera';
 
 // ── UI / HUD ──────────────────────────────────────────────────────────────────
 export { createScoreboard } from './client/ui/scoreboard';
