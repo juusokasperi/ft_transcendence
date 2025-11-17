@@ -81,7 +81,6 @@ export function createVolumeUI(bus: AudioCommandBus, initialVolume = 1): VolumeU
     const rect = boundCanvas.getBoundingClientRect();
     const margin = 8;
     const h = btn.offsetHeight || 0;
-    const w = btn.offsetWidth || 0;
     btn.style.left = rect.left + margin + 'px';
     if (mobile) {
       btn.style.top = rect.top + margin + 'px';

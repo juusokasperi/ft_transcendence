@@ -15,7 +15,7 @@ import type { PlayerSeat } from '@pong/render';
 import type { GameState } from '@pong/game-logic';
 import type { FrameEvents, MatchSnapshot } from '@pong/shared';
 import { SERVE_SELECT_TOTAL_MS, clamp01 } from '@pong/shared';
-import { handleSwapSidesNow, handleMatchOver, runServeSelectionIntro } from '../shared/utils';
+import { handleMatchOver, runServeSelectionIntro } from '../shared/utils';
 import { createHudCache, updateOnlineHUDIfChanged } from './hud-cache';
 import { createDisconnectOverlayManager, showMatchEndOverlay } from './ui-overlays';
 import { connectOnline, type OnlineClient } from './connect-online';
@@ -65,7 +65,6 @@ export function createOnlineApp(
     engine,
     engineDisposable,
     world,
-    bounds,
     hud,
     fx,
     audioKit,
