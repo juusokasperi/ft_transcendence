@@ -1,9 +1,10 @@
 networks:
   prod-private:
-    driver: bridge
-    internal: true
+    external: true
+    name: ft-transcendence-prod_prod-private
   prod-public:
-    driver: bridge
+    external: true
+    name: ft-transcendence-prod_prod-public
 
 volumes:
   elk_certs:
