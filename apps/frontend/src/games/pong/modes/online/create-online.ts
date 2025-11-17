@@ -33,6 +33,8 @@ import { createFrameBuffer } from './frame-buffer';
 import { createMatchLifecycle } from './match-lifecycle';
 import { createSideSwapController } from './side-swap-controller';
 import type { OnlineMatchSummary } from './types';
+import { createPaddlePrediction } from './paddle-prediction';
+import { createBallPrediction } from './ball-prediction';
 
 // Render/update cadence we expect from the authoritative node.
 const CLIENT_TICK_RATE_HZ = 60;
@@ -125,6 +127,14 @@ export function createOnlineApp(
   let playerAliases: { P1: string; P2: string } | null = null;
   let seatMap: { east: 'P1' | 'P2'; west: 'P1' | 'P2' } | null = null;
   const frameBuffer = createFrameBuffer(1000 / CLIENT_TICK_RATE_HZ);
+  const paddlePrediction = createPaddlePrediction({
+    seat: mySeat,
+    maxZ: bounds.halfWidthZ - bounds.paddleHalfDepthZ,
+  });
+  const ballPrediction = createBallPrediction({
+    halfWidthZ: bounds.halfWidthZ,
+    ballRadius: bounds.ballRadius,
+  });
   // Stable seat→material mapping so paddle colors follow players across swaps.
   const seatMaterials: { P1: any | null; P2: any | null } = { P1: null, P2: null };
   let seatMaterialsInitialized = false;
@@ -182,13 +192,18 @@ export function createOnlineApp(
 
   const loop = createLifecycle(engine, scene, {
     logicHz: CLIENT_TICK_RATE_HZ,
-    update: () => {
+    update: (dtMs) => {
       // Online: send seat-centric axis; server maps seats to ends.
       const seatAxes = readSeatAxes();
       const localAxis = mySeat === 'P1' ? seatAxes.P1Axis : seatAxes.P2Axis;
       net?.sendLocalAxis(localAxis);
 
       const now = performance.now();
+      const dtSec = Math.max(0, dtMs / 1000);
+      // Advance local paddle and ball prediction using fixed-step dt.
+      paddlePrediction.predict(dtSec, localAxis);
+      const predictedBall = ballPrediction.predict(dtSec);
+
       playbackDelayMs += (desiredPlaybackDelayMs - playbackDelayMs) * PLAYBACK_EASING;
       const targetTime = now - playbackDelayMs;
       const {
@@ -219,27 +234,50 @@ export function createOnlineApp(
         }
 
         const refState = ref ?? snap;
-        const ballX = hasPrev ? lerp(refState.ball.x, snap.ball.x, alpha) : snap.ball.x;
-        const ballVX = hasPrev
-          ? ((snap.ball.x - refState.ball.x) / Math.max(1, currT - prevT)) * 1000
-          : 0;
+
+        let ballX: number;
+        let ballZ: number;
+        let ballVX: number;
+
+        if (predictedBall) {
+          ballX = predictedBall.x;
+          ballZ = predictedBall.z;
+          ballVX = predictedBall.vx;
+        } else {
+          ballX = hasPrev ? lerp(refState.ball.x, snap.ball.x, alpha) : snap.ball.x;
+          ballVX = hasPrev
+            ? ((snap.ball.x - refState.ball.x) / Math.max(1, currT - prevT)) * 1000
+            : 0;
+          ballZ = hasPrev ? lerp(refState.ball.z, snap.ball.z, alpha) : snap.ball.z;
+        }
+
         const ballY = Bounces.update(ballX, ballVX);
 
-        ball.mesh.position.set(
-          ballX,
-          ballY,
-          hasPrev ? lerp(refState.ball.z, snap.ball.z, alpha) : snap.ball.z,
-        );
+        ball.mesh.position.set(ballX, ballY, ballZ);
 
         sfxDetectors.update(ballY);
 
         if (!paddleAnim.isAnimating()) {
-          const eastZ = hasPrev
+          const eastZBase = hasPrev
             ? lerp(refState.paddles.east.z, snap.paddles.east.z, alpha)
             : snap.paddles.east.z;
-          const westZ = hasPrev
+          const westZBase = hasPrev
             ? lerp(refState.paddles.west.z, snap.paddles.west.z, alpha)
             : snap.paddles.west.z;
+          let eastZ = eastZBase;
+          let westZ = westZBase;
+
+          const predictedZ = paddlePrediction.getPredictedZ();
+          if (predictedZ != null && snap.playerAtEnd) {
+            const seatAtEast = snap.playerAtEnd.east;
+            const seatAtWest = snap.playerAtEnd.west;
+            if (seatAtEast === mySeat) {
+              eastZ = predictedZ;
+            } else if (seatAtWest === mySeat) {
+              westZ = predictedZ;
+            }
+          }
+
           left.mesh.position.z = clampPaddleZ(eastZ);
           right.mesh.position.z = clampPaddleZ(westZ);
         }
@@ -358,6 +396,7 @@ export function createOnlineApp(
       return;
     }
     mySeat = net.mySeat;
+    paddlePrediction.reset(mySeat);
     // Show touch controls only for the local seat on mobile.
     setTouchSeatVisibility({
       P1: mySeat === 'P1',
@@ -371,6 +410,7 @@ export function createOnlineApp(
       console.log('[OnlineGame] Room state update:', state);
       if (state.seat === 'P1' || state.seat === 'P2') {
         mySeat = state.seat;
+        paddlePrediction.reset(mySeat);
         setTouchSeatVisibility({
           P1: mySeat === 'P1',
           P2: mySeat === 'P2',
@@ -437,6 +477,8 @@ export function createOnlineApp(
     const startPromise = net.awaitStart();
 
     net.onSnapshot((s, ev, matchSnap) => {
+      paddlePrediction.handleServerState(s, mySeat);
+      ballPrediction.handleServerState(s);
       const stateBestOf = (s as any)?.params?.bestOf;
       if (typeof stateBestOf === 'number') {
         lastKnownBestOf = stateBestOf;

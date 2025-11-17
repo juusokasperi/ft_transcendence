@@ -129,6 +129,7 @@ export class MatchRunner {
     });
 
     model.applyStep(result);
+    model.tick += 1;
 
     this.broadcaster.broadcastFrame(session);
 
