@@ -1,8 +1,10 @@
+
 networks:
   prod-private:
+    name: ft-transcendence-prod-private
     driver: bridge
-    internal: true
   prod-public:
+    name: ft-transcendence-prod-public
     driver: bridge
 
 volumes:
@@ -139,7 +141,7 @@ services:
       test:
        - CMD-SHELL
        - |
-         curl -s http://localhost:${KIBANA_PORT}/api/status | \
+         curl -s http://localhost:${KIBANA_PORT}/kibana/api/status | \
          grep -q '\"level\":\"available\"'
       interval: 10s
       timeout: 10s
@@ -190,7 +192,7 @@ services:
     ports:
       # Listens for GELF input here. The GELF driver can only send to host IPs,
       # not into containers => this port needs to be exposed
-      - '12201:12201/udp'
+      - '127.0.0.1:12201:12201/udp'
     networks:
       - prod-private
       - prod-public

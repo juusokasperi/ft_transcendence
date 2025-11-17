@@ -2,9 +2,11 @@ name: ft-transcendence-prod
 
 networks:
   prod-private:
+    name: ft-transcendence-prod-private
     driver: bridge
     internal: true
   prod-public:
+    name: ft-transcendence-prod-public
     driver: bridge
 
 volumes:
@@ -257,8 +259,6 @@ services:
       <<: *prod-env
     networks:
       - prod-private
-    ports:
-      - '55550:55550'
     depends_on:
       redis:
         condition: service_healthy
