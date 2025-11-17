@@ -18,13 +18,12 @@ type TournamentPageProps = {
 
 // Moved ChatToggleButton to a shared component for reuse
 
-const TournamentPage: React.FC<TournamentPageProps> = ({ onBack, focusTournamentId = null }) => {
+const TournamentPage: React.FC<TournamentPageProps> = ({ focusTournamentId = null }) => {
   const {
     user,
     userReady,
     navigate,
     connectionReady,
-    loadingTournaments,
     availableTournaments,
     activeTournamentId,
     activeTournamentName,
@@ -104,7 +103,6 @@ const TournamentPage: React.FC<TournamentPageProps> = ({ onBack, focusTournament
         <SurfaceCard className="p-6 shadow-2xl">
           <TournamentPageHeader
             isDetailView={isDetailView}
-            displayTournamentId={activeTournamentId}
             displayTournamentName={activeTournamentName}
             tournamentStatus={tournamentStatus}
             connectionReady={connectionReady}
