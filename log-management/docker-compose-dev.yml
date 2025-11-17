@@ -22,6 +22,15 @@ services:
       - SERVER_REWRITEBASEPATH=false
       - SERVER_BASEPATH
       - SERVER_PUBLICBASEURL=${FRONTEND_URL}
+    healthcheck:
+      test:
+       - CMD-SHELL
+       - |
+         curl -s http://localhost:${KIBANA_PORT}/api/status | \
+         grep -q '\"level\":\"available\"'
+      interval: 10s
+      timeout: 10s
+      retries: 120
     networks:
       - devnet
 

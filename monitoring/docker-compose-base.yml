@@ -1,8 +1,9 @@
 networks:
   prod-private:
+    name: ft-transcendence-prod-private
     driver: bridge
-    internal: true
   prod-public:
+    name: ft-transcendence-prod-public
     driver: bridge
 
 volumes:
