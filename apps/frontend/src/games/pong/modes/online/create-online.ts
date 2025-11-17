@@ -67,6 +67,7 @@ export function createOnlineApp(
     engine,
     engineDisposable,
     world,
+    bounds,
     hud,
     fx,
     audioKit,
