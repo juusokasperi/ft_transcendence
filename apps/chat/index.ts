@@ -186,8 +186,13 @@ async function handleConnection(socket: ChatSocket, _request: ChatRequest) {
   const client: Client = { id, uuid: '', socket, blocked: new Set() };
   const authenticated = await handleAuth(client, token, clients);
   if (!authenticated) return;
+  clients.set(id, client);
+
+  fastify.log.info({ clientId: id }, '[CHAT] Client connected');
+  socket.send(JSON.stringify({ type: 'connected', clientId: id }));
 
   // blocked list from backend for this user
+  void (async () => {
   try {
     const blockedUsernames = await fetchBlockedUsernames(token);
     client.blocked = new Set(blockedUsernames);
@@ -204,12 +209,8 @@ async function handleConnection(socket: ChatSocket, _request: ChatRequest) {
     );
   } catch (err) {
     fastify.log.error({ err, clientId: id }, '[CHAT] Failed to hydrate blocked users');
-  }
+  }})();
 
-  clients.set(id, client);
-
-  fastify.log.info({ clientId: id }, '[CHAT] Client connected');
-  socket.send(JSON.stringify({ type: 'connected', clientId: id }));
 
   socket.on('message', async (raw: SocketRawData) => {
     let data: any;
@@ -218,6 +219,15 @@ async function handleConnection(socket: ChatSocket, _request: ChatRequest) {
     } catch {
       fastify.log.warn({ clientId: id }, '[CHAT] Invalid message');
       return;
+    }
+
+    const messageTypes = new Set(['chat', 'privateMessage', 'tournamentMsg']);
+    if (messageTypes.has(data.type)) {
+      const msg = data.message;
+      if (msg.length > 250) {
+        socket.send(JSON.stringify({ type: 'error', message: 'Message too long. Maximum length is 250 characters.' }));
+        return;
+      }
     }
 
     switch (data.type) {
@@ -316,14 +326,6 @@ async function handleConnection(socket: ChatSocket, _request: ChatRequest) {
           });
           return;
         }
-        /*if (!client.channel) return;
-        broadcast(
-          {
-            type: 'tournamentMsg',
-            message,
-          },
-          client.channel,
-        );*/
         return;
       }
 

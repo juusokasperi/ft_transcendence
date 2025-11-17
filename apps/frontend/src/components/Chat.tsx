@@ -62,6 +62,7 @@ export default function Chat({ onClose, channel, isOpen = true }: ChatProps) {
 
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
+  const inputRef = useRef<HTMLInputElement | null>(null);
   const wasOpenRef = useRef(isOpen);
   const lastSeenPrivateMessageCountRef = useRef(0);
   const privateMessageCount = useMemo(
@@ -104,6 +105,14 @@ export default function Chat({ onClose, channel, isOpen = true }: ChatProps) {
       setPendingNavId(null);
     }
   }, [isOpen]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    if (!cooldown) {
+      // input may not exist yet during render, defer briefly if needed
+      inputRef.current?.focus();
+    }
+  }, [isOpen, cooldown]);
 
   // ---------- websocket events handled in ChatContext ----------
 
@@ -163,6 +172,8 @@ export default function Chat({ onClose, channel, isOpen = true }: ChatProps) {
         setDmTarget(null);
       }
       setInput('');
+      // make sure focus returns to input after sending (so user can continue typing)
+      setTimeout(() => inputRef.current?.focus(), 0);
       return;
     }
 
@@ -183,6 +194,8 @@ export default function Chat({ onClose, channel, isOpen = true }: ChatProps) {
     switch (action) {
       case 'Send private message':
         setDmTarget(targetUser);
+        // focus input when opening DM
+        setTimeout(() => inputRef.current?.focus(), 0);
         break;
       case 'Block user':
         try {
@@ -261,7 +274,7 @@ export default function Chat({ onClose, channel, isOpen = true }: ChatProps) {
       aria-label={`Live Chat (${displayChannel})`}
       aria-hidden={!isOpen}
       data-state={isOpen ? 'open' : 'closed'}
-      className={`fixed inset-x-3 bottom-3 z-[70] flex h-[85vh] max-h-[calc(100vh-1.5rem)] flex-col overflow-hidden rounded-2xl border border-white/20 text-white shadow-2xl backdrop-blur-md transition duration-200 ease-out sm:inset-auto sm:bottom-6 sm:left-auto sm:right-6 sm:h-[40rem] sm:w-[36rem] ${panelStateCls} bg-gray-900/20`}
+      className={`fixed inset-x-3 bottom-3 z-[70] flex h-[85vh] max-h-[calc(100vh-1.5rem)] flex-col overflow-hidden rounded-2xl border border-white/20 text-white shadow-2xl backdrop-blur-md transition duration-200 ease-out sm:inset-auto sm:bottom-6 sm:left-auto sm:right-6 sm:h-[40rem] sm:w-[36rem] w-full max-w-[36rem] ${panelStateCls} bg-gray-900/20`}
     >
       {/* Header */}
       <div className="flex items-center justify-between border-b border-white/20 px-3 py-2">
@@ -287,7 +300,10 @@ export default function Chat({ onClose, channel, isOpen = true }: ChatProps) {
       {/* Body */}
       <div className="flex min-h-0 flex-1 flex-col sm:flex-row">
         {/* Messages */}
-        <div ref={scrollRef} className="min-h-0 flex-1 space-y-2 overflow-y-auto p-3 text-sm">
+        <div
+          ref={scrollRef}
+          className="min-h-0 flex-1 space-y-2 overflow-y-auto overflow-x-hidden p-3 text-sm"
+        >
           {messages.map((msg, idx) => {
             if (msg.system) {
               if (msg.inviteId && pendingInvites.has(msg.inviteId)) {
@@ -334,11 +350,11 @@ export default function Chat({ onClose, channel, isOpen = true }: ChatProps) {
             return (
               <div
                 key={idx}
-                className={`flex items-center justify-between rounded px-2 py-1 ${containerClass}`}
+                className={`flex items-start justify-between rounded px-2 py-1 ${containerClass}`}
               >
-                <div>
+                <div className="min-w-0">
                   <span className="font-semibold">{msg.from}</span>
-                  <span className="ml-2">{msg.message}</span>
+                  <span className="ml-2 break-words whitespace-pre-wrap">{msg.message}</span>
                   {isPrivate && <span className="ml-2 text-xs italic">(DM)</span>}
                 </div>
 
@@ -399,6 +415,7 @@ export default function Chat({ onClose, channel, isOpen = true }: ChatProps) {
         )}
 
         <input
+          ref={inputRef}
           className="flex-1 bg-transparent px-3 py-2 text-sm outline-none"
           value={input}
           onChange={(e) => {
