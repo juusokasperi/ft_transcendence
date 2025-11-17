@@ -1,0 +1,50 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="180 135 665 825">
+
+<defs>
+  <mask id="cut-off-stick">
+    <rect x="0" y="0" width="2000" height="2000" fill="white"/>
+    <rect x="480" y="540" width="60" height="100" fill="black"/>
+  </mask>	
+</defs>
+
+  <!-- Bottom base (little base under the base) -->
+  <path d="M 200 820 L 200 880 Q 200 950 260 950 L 764 950 Q 824 950 824 880 L 824 820"
+        fill="none"
+        stroke="#33b5e5"
+        stroke-width="24"
+        stroke-linejoin="round"/>
+
+  <!-- Main platform with perspective (smaller at top) -->
+  <path d="M 280 520 Q 280 500 300 500 L 724 500 Q 744 500 744 520 L 824 820 Q 824 860 764 860 L 260 860 Q 200 860 200 820 Z"
+        fill="none"
+        stroke="#33b5e5"
+        stroke-width="24"
+        stroke-linejoin="round"/>
+
+  <!-- Joystick stick -->
+  <path d="M 472 330 L 472 620 Q 472 650 492 660 Q 512 670 532 660 Q 552 650 552 620 L 552 330"
+        fill="none"
+        stroke="#a855f7"
+        stroke-width="24"
+        stroke-linecap="round"
+        stroke-linejoin="round"/>
+
+  <!-- Joystick base -->
+  <ellipse cx="510" cy="670" rx="70" ry="55"
+           fill="none"
+           mask="url(#cut-off-stick)"
+           stroke="#a855f7"
+           stroke-width="24"/>
+
+  <!-- Joystick top ball -->
+  <circle cx="512" cy="240" r="90"
+          fill="none"
+          stroke="#fbbf24"
+          stroke-width="24"/>
+
+  <!-- Button -->
+  <ellipse cx="660" cy="780" rx="50" ry="30"
+           fill="none"
+           stroke="#a855f7"
+           stroke-width="24"/>
+</svg>
