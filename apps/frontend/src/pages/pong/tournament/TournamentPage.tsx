@@ -10,6 +10,7 @@ import PlayingView from '../shared/components/PlayingView';
 import { useTournamentPageController } from './hooks/useTournamentPageController';
 import PageContainer from '../shared/components/PageContainer';
 import PageSection from '../shared/components/PageSection';
+import { Spinner } from '@ft/spinner';
 type TournamentPageProps = {
   onBack?: () => void;
   focusTournamentId?: number | null;
@@ -17,13 +18,12 @@ type TournamentPageProps = {
 
 // Moved ChatToggleButton to a shared component for reuse
 
-const TournamentPage: React.FC<TournamentPageProps> = ({ onBack, focusTournamentId = null }) => {
+const TournamentPage: React.FC<TournamentPageProps> = ({ focusTournamentId = null }) => {
   const {
     user,
     userReady,
     navigate,
     connectionReady,
-    loadingTournaments,
     availableTournaments,
     activeTournamentId,
     activeTournamentName,
@@ -57,6 +57,7 @@ const TournamentPage: React.FC<TournamentPageProps> = ({ onBack, focusTournament
   // Participants sit alone in detail view; keep it single-column as well.
   const overviewSectionClass = 'mt-4 grid gap-6';
   const detailsSectionClass = 'mt-4 grid gap-4';
+  const isTournamentNameLoading = Boolean(isDetailView && headerLoading && !activeTournamentName);
 
   if (userReady && !user) {
     return (
@@ -84,13 +85,24 @@ const TournamentPage: React.FC<TournamentPageProps> = ({ onBack, focusTournament
     return <PlayingView canvasRef={canvasRef} onQuit={handleQuitMatch} />;
   }
 
+  if (isTournamentNameLoading) {
+    return (
+      <PageContainer>
+        <PageSection>
+          <div className="flex h-64 items-center justify-center">
+            <Spinner size={64} color="#A855F7" aria-label="Loading tournament" />
+          </div>
+        </PageSection>
+      </PageContainer>
+    );
+  }
+
   return (
     <PageContainer>
       <PageSection>
         <SurfaceCard className="p-6 shadow-2xl">
           <TournamentPageHeader
             isDetailView={isDetailView}
-            displayTournamentId={activeTournamentId}
             displayTournamentName={activeTournamentName}
             tournamentStatus={tournamentStatus}
             connectionReady={connectionReady}
