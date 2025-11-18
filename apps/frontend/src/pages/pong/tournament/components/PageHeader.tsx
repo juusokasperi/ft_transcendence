@@ -7,7 +7,6 @@ import ConfirmDialog from '../../../../components/ConfirmDialog';
 
 export type TournamentPageHeaderProps = {
   isDetailView: boolean;
-  displayTournamentId: number | null;
   displayTournamentName: string | null;
   tournamentStatus?: string | null;
   connectionReady: boolean;
@@ -18,7 +17,6 @@ export type TournamentPageHeaderProps = {
 
 const TournamentPageHeader: React.FC<TournamentPageHeaderProps> = ({
   isDetailView,
-  displayTournamentId,
   displayTournamentName,
   tournamentStatus,
   connectionReady,
@@ -28,13 +26,8 @@ const TournamentPageHeader: React.FC<TournamentPageHeaderProps> = ({
 }) => {
   const detailTitle = (() => {
     if (!isDetailView) return '';
-    if (displayTournamentName) {
-      return displayTournamentName;
-    }
-    if (displayTournamentId !== null) {
-      return `Tournament #${displayTournamentId}`;
-    }
-    return 'Tournament lobby';
+    if (displayTournamentName) return displayTournamentName;
+    return 'Pong Tournament';
   })();
 
   const [confirmOpen, setConfirmOpen] = useState(false);

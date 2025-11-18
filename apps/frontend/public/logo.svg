@@ -3,8 +3,9 @@
 <defs>
   <mask id="cut-off-stick">
     <rect x="0" y="0" width="2000" height="2000" fill="white"/>
-    <rect x="480" y="540" width="60" height="100" fill="black"/>
-  </mask>	
+    <!-- <rect x="465" y="540" width="95" height="120" fill="black"/> -->
+    <rect x="450" y="440" width="125" height="250" fill="black"/>
+  </mask>
 </defs>
 
   <!-- Bottom base (little base under the base) -->
@@ -19,6 +20,7 @@
         fill="none"
         stroke="#33b5e5"
         stroke-width="24"
+	mask="url(#cut-off-stick)"
         stroke-linejoin="round"/>
 
   <!-- Joystick stick -->
@@ -30,7 +32,7 @@
         stroke-linejoin="round"/>
 
   <!-- Joystick base -->
-  <ellipse cx="510" cy="670" rx="70" ry="55"
+  <ellipse cx="511" cy="670" rx="100" ry="55"
            fill="none"
            mask="url(#cut-off-stick)"
            stroke="#a855f7"
