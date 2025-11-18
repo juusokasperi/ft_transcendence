@@ -1,16 +1,17 @@
-import type { ClientInfo, MatchMode, PendingMatch } from '../types/types.ts';
+import { ClientState, type ClientInfo, type MatchMode, type PendingMatch } from '../types/types.ts';
 import { v4 as uuid } from 'uuid';
 import { JOIN_TOKEN_TTL_SECONDS, ALLOCATOR_URL } from './config.ts';
 import { log } from '@utils/logger';
 import axios from 'axios';
 import { isAuthenticated } from '../auth/auth.ts';
 import { handleHandoff } from './pendingHandoffs.ts';
+import { setClientState } from './state.ts';
 
 export interface TournamentMatchContext {
   tournamentId: number;
   tournamentMatchId: number;
   tournamentStage: 'semifinal' | 'final' | 'bronze';
-  participants?: Array<{ participantId: number; userUuid: string; alias?: string }>;
+  participants?: Array<{ participantId: number; userUuid: string }>;
 }
 
 const MMR_BUCKET_SIZE = 50;
@@ -85,6 +86,8 @@ export function tryMatchQueue(pendingMatches: Map<string, PendingMatch>) {
 export function handleLeaveQueue(client: ClientInfo) {
   if (removeFromQueue(client.id)) {
     client.socket.send(JSON.stringify({ type: 'QUEUE_LEFT' }));
+
+    setClientState(client, ClientState.IDLE, 'left_queue');
     log('Client left queue', { uuid: client.uuid, totalBuckets: buckets.size });
   }
 }
@@ -103,6 +106,7 @@ export async function handleJoinQueue(client: ClientInfo) {
     totalBuckets: buckets.size,
   });
   client.socket.send(JSON.stringify({ type: 'QUEUE_JOINED' }));
+  setClientState(client, ClientState.IN_QUEUE, 'joined_queue');
 }
 
 export function addToPendingMatches(
@@ -122,13 +126,17 @@ export function addToPendingMatches(
       accepted: Array.from(accepted),
     });
     if (accepted.has(a.id)) returnToQueue(a);
+    else setClientState(a, ClientState.IDLE, 'match_timeout');
     if (accepted.has(b.id)) returnToQueue(b);
+    else setClientState(b, ClientState.IDLE, 'match_timeout');
   }, 15000);
 
   pendingMatches.set(matchId, { a, b, accepted, timer });
   log('Match found awaiting confirmation', { matchId, players: [a.uuid, b.uuid] });
   const msgA = { type: 'MATCH_FOUND', matchId, opponent: { username: b.username, mmr: b.mmr } };
   const msgB = { type: 'MATCH_FOUND', matchId, opponent: { username: a.username, mmr: a.mmr } };
+  setClientState(a, ClientState.PENDING_MATCH_ACCEPTANCE, 'match_pending');
+  setClientState(b, ClientState.PENDING_MATCH_ACCEPTANCE, 'match_pending');
   a.socket.send(JSON.stringify(msgA));
   b.socket.send(JSON.stringify(msgB));
 }
@@ -141,6 +149,7 @@ export function handleAcceptMatch(
   const match = pendingMatches.get(matchId);
   if (!match) return;
   match.accepted.add(client.id);
+  setClientState(client, ClientState.AWAITING_HANDOFF, 'match_accepted');
   log(`Match accepted`, { matchId, uuid: client.uuid });
   if (match.accepted.has(match.a.id) && match.accepted.has(match.b.id)) {
     clearTimeout(match.timer);
@@ -169,6 +178,7 @@ export function handleDeclineMatch(
   if (!match) return;
   const msg = { type: 'MATCH_DECLINED', matchId };
   log(`Player declined match`, { matchId, uuid: client.uuid });
+  setClientState(client, ClientState.IDLE, 'match_declined');
   if (match.a.id !== client.id) {
     match.a.socket.send(JSON.stringify(msg));
     returnToQueue(match.a);
@@ -237,6 +247,9 @@ export async function createMatch(
     };
     a.socket.send(JSON.stringify(msg));
     b.socket.send(JSON.stringify(msg));
+
+    setClientState(a, ClientState.IDLE, 'handoff_failed_allocator');
+    setClientState(b, ClientState.IDLE, 'handoff_failed_allocator');
     return;
   }
 
@@ -244,6 +257,7 @@ export async function createMatch(
 
   [a, b].forEach((player, idx) => {
     const side = idx === 0 ? 'west' : 'east';
+    setClientState(player, ClientState.HANDOFF_TO_GAME, 'handoff_initiated');
     player.socket.send(
       JSON.stringify({
         type: 'HANDOFF',
@@ -299,6 +313,7 @@ function cleanupBucket(bucketId: number) {
  */
 function returnToQueue(client: ClientInfo) {
   if (!isAuthenticated(client)) return;
+  setClientState(client, ClientState.IN_QUEUE, 'returned_to_queue');
 
   const bucketId = Math.floor(client.mmr / MMR_BUCKET_SIZE);
   if (!buckets.has(bucketId)) buckets.set(bucketId, []);

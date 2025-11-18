@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { WebSocket } from 'ws';
-import type { ClientInfo } from '../types/types';
+import { ClientState, type ClientInfo } from '../types/types';
 import type { TournamentMatchesReadyMessage } from '@pong/shared/protocol/net';
 
 const axiosMocks = {
@@ -53,6 +53,7 @@ function makeClient(overrides: Partial<ClientInfo> = {}): TestClient {
     uuid: overrides.uuid ?? 'uuid-1',
     authenticated: overrides.authenticated ?? true,
     lastRateLimitNotice: overrides.lastRateLimitNotice ?? Date.now(),
+    state: overrides.state ?? ClientState.IDLE,
     joinedAt: overrides.joinedAt ?? Date.now(),
     tournamentId: overrides.tournamentId,
     tournamentParticipantId: overrides.tournamentParticipantId,

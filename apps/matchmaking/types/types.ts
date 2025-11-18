@@ -1,5 +1,15 @@
 import type { WebSocket } from 'ws';
 
+export enum ClientState {
+  IDLE,
+  IN_QUEUE,
+  PENDING_MATCH_ACCEPTANCE,
+  IN_TOURNAMENT,
+  IN_INVITE_LOBBY,
+  AWAITING_HANDOFF,
+  HANDOFF_TO_GAME,
+}
+
 export interface ClientInfo {
   id: string;
   mmr: number;
@@ -13,6 +23,7 @@ export interface ClientInfo {
   authenticated: boolean;
   joinedAt: number;
   lastRateLimitNotice: number;
+  state: ClientState;
 }
 
 export interface PendingMatch {
