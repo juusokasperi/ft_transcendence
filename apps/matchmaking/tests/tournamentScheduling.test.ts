@@ -54,6 +54,7 @@ function makeClient(overrides: Partial<ClientInfo> = {}): TestClient {
     authenticated: overrides.authenticated ?? true,
     lastRateLimitNotice: overrides.lastRateLimitNotice ?? Date.now(),
     state: overrides.state ?? ClientState.IDLE,
+    previousState: overrides.state ?? undefined,
     joinedAt: overrides.joinedAt ?? Date.now(),
     tournamentId: overrides.tournamentId,
     tournamentParticipantId: overrides.tournamentParticipantId,
