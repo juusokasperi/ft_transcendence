@@ -85,15 +85,25 @@ export function tryMatchQueue(pendingMatches: Map<string, PendingMatch>) {
 
 export function handleLeaveQueue(client: ClientInfo) {
   if (removeFromQueue(client.id)) {
-    client.socket.send(JSON.stringify({ type: 'QUEUE_LEFT' }));
+    const targetState = client.previousState ?? ClientState.IDLE;
+    client.previousState = undefined;
 
-    setClientState(client, ClientState.IDLE, 'left_queue');
-    log('Client left queue', { uuid: client.uuid, totalBuckets: buckets.size });
+    setClientState(client, targetState, 'left_queue');
+    client.socket.send(JSON.stringify({ type: 'QUEUE_LEFT' }));
+    log('Client left queue', { uuid: client.uuid, targetState: ClientState[targetState] });
   }
+}
+
+export async function handleJoinConfirm(client: ClientInfo) {
+  if (client.state === ClientState.IN_TOURNAMENT || client.state === ClientState.IN_INVITE_LOBBY) {
+    client.previousState = client.state;
+  }
+  handleJoinQueue(client);
 }
 
 export async function handleJoinQueue(client: ClientInfo) {
   if (!isAuthenticated(client)) return;
+
   client.joinedAt = Date.now();
   const bucketId = Math.floor(client.mmr / MMR_BUCKET_SIZE);
   if (!buckets.has(bucketId)) buckets.set(bucketId, []);

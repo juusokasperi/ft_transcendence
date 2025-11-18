@@ -24,6 +24,7 @@ export interface ClientInfo {
   joinedAt: number;
   lastRateLimitNotice: number;
   state: ClientState;
+  previousState: ClientState | undefined;
 }
 
 export interface PendingMatch {

@@ -26,7 +26,7 @@ import {
   handleTournamentStateUpdated,
   restoreTournamentMembership,
 } from './utils/scheduledMatches.ts';
-import { handleJoinQueue } from './utils/queue.ts';
+import { handleJoinQueue, handleJoinConfirm } from './utils/queue.ts';
 import { handleAdmitConfirmed } from './utils/pendingHandoffs.ts';
 import { registerMetrics } from '@utils/metrics';
 import { log, createFastifyLoggerConfig } from '@utils/logger';
@@ -97,6 +97,7 @@ async function handleConnection(socket: WebSocket, req: FastifyRequest) {
     authenticated: false,
     lastRateLimitNotice: Date.now() - 5000,
     state: ClientState.IDLE,
+    previousState: undefined,
   };
   log(`Client connected, validating.`, { clientId: client.id });
   const authenticated = await handleAuth(client, token, clients);
@@ -128,7 +129,7 @@ async function handleConnection(socket: WebSocket, req: FastifyRequest) {
         else sendJoinConfirm(client);
         break;
       case 'CONFIRM_JOIN':
-        if (client.state !== ClientState.IN_QUEUE) handleJoinQueue(client);
+        if (client.state !== ClientState.IN_QUEUE) handleJoinConfirm(client);
         break;
       case 'LEAVE_QUEUE':
         if (client.state === ClientState.IN_QUEUE) handleLeaveQueue(client);

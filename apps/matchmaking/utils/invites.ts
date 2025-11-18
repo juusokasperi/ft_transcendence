@@ -72,9 +72,11 @@ function destroyInviteLobby(lobbyId: string) {
 
   if (lobby.timer) clearTimeout(lobby.timer);
   if (lobby.player1Client) {
+    const client = lobby.player1Client;
     try {
-      setClientState(lobby.player1Client, ClientState.IDLE, 'invite_lobby_destroyed');
-      lobby.player1Client.socket.send(
+      if (client.state === ClientState.IN_QUEUE) client.previousState = undefined;
+      else setClientState(client, ClientState.IDLE, 'invite_lobby_destroyed');
+      client.socket.send(
         JSON.stringify({
           type: 'INVITE_MATCH_FAILED',
           reason: 'Opponent did not join in time',
@@ -85,9 +87,11 @@ function destroyInviteLobby(lobbyId: string) {
     }
   }
   if (lobby.player2Client) {
+    const client = lobby.player2Client;
     try {
-      setClientState(lobby.player2Client, ClientState.IDLE, 'invite_lobby_destroyed');
-      lobby.player2Client.socket.send(
+      if (client.state === ClientState.IN_QUEUE) client.previousState = undefined;
+      else setClientState(client, ClientState.IDLE, 'invite_lobby_destroyed');
+      client.socket.send(
         JSON.stringify({
           type: 'INVITE_MATCH_FAILED',
           reason: 'Opponent did not join in time',
