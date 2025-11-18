@@ -110,7 +110,7 @@ async function handleConnection(socket: WebSocket, req: FastifyRequest) {
     return;
   }
 
-  void restoreTournamentMembership(client, clients);
+  void await restoreTournamentMembership(client, clients);
 
   socket.on('message', async (raw: RawData) => {
     if (await isRateLimited(client, rateLimiter)) return;
