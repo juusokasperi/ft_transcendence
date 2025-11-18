@@ -199,7 +199,7 @@ services:
     ports:
       # Listens for GELF input here. The GELF driver can only send to host IPs,
       # not into containers => this port needs to be exposed
-      - '127.0.0.1:12201:12201/udp'
+      - '12201:12201/udp'
     networks:
       - prod-private
       - prod-public
