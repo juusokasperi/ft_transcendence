@@ -198,6 +198,12 @@ export async function createMatch(
   options?: { tournament?: TournamentMatchContext },
 ) {
   const matchId = uuid();
+
+  if (mode !== 'ranked') {
+    removeFromQueue(a.id);
+    removeFromQueue(b.id);
+  }
+
   const randomSeed = Math.floor(Math.random() * 0x100000000);
   const simulationStartTick = Date.now() + 5000;
 
