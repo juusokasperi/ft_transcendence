@@ -125,7 +125,10 @@ async function handleConnection(socket: WebSocket, req: FastifyRequest) {
     switch (data.type) {
       case 'JOIN_QUEUE':
         if (client.state === ClientState.IDLE) handleJoinQueue(client);
-        else sendJoinQueueError(client);
+        else sendJoinConfirm(client);
+        break;
+      case 'CONFIRM_JOIN':
+        if (client.state !== ClientState.IN_QUEUE) handleJoinQueue(client);
         break;
       case 'LEAVE_QUEUE':
         if (client.state === ClientState.IN_QUEUE) handleLeaveQueue(client);
@@ -180,21 +183,15 @@ async function handleConnection(socket: WebSocket, req: FastifyRequest) {
   });
 }
 
-function sendJoinQueueError(client: ClientInfo) {
-  if (client.state === ClientState.IN_TOURNAMENT) {
+function sendJoinConfirm(client: ClientInfo) {
+  if (client.state === ClientState.IN_TOURNAMENT || client.state === ClientState.IN_INVITE_LOBBY) {
+    const message = ClientState.IN_TOURNAMENT
+      ? 'You are in an active tournament. Do you still wish to join the public queue?'
+      : 'You are in an invite-only lobby, waiting for your opponent. Do you still wish to join the public queue?';
     client.socket.send(
       JSON.stringify({
-        type: 'ERROR',
-        code: 'IN_TOURNAMENT_LOBBY',
-        message: 'You are in an active tournament. Quit or finish it before joining matchmaking.',
-      }),
-    );
-  } else if (client.state === ClientState.IN_INVITE_LOBBY) {
-    client.socket.send(
-      JSON.stringify({
-        type: 'ERROR',
-        code: 'IN_INVITE_LOBBY',
-        message: 'You are in an invite-only lobby. You cannot join the public queue.',
+        type: 'CONFIRM_REQUIRED',
+        message,
       }),
     );
   } else {

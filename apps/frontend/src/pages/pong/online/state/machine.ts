@@ -27,8 +27,7 @@ type Action =
   | { type: 'allocatorError' }
   | { type: 'authError' }
   | { type: 'ratelimitError' }
-  | { type: 'inTournamentLobbyError' }
-  | { type: 'inInviteLobbyError' }
+  | { type: 'confirmationRequired' }
   | { type: 'startPlaying' }
   | { type: 'endMatch'; payload?: MatchEndPayload }
   | { type: 'showPostMatch'; summary: import('./types').OnlineMatchSummary }
@@ -109,10 +108,7 @@ export function reducer(state: OnlineState, action: Action): OnlineState {
     case 'ratelimitError':
       return state;
 
-    case 'inTournamentLobbyError':
-      return state;
-
-    case 'inInviteLobbyError':
+    case 'confirmationRequired':
       return state;
 
     case 'startPlaying':

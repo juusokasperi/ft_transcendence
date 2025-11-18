@@ -10,6 +10,7 @@ import SurfaceCard from '../shared/components/SurfaceCard';
 import StatusBadge from './components/StatusBadge';
 import QueueControls from './components/QueueControls';
 import MatchFoundPanel from './components/MatchFoundPanel';
+import ConfirmDialog from '../../../components/ConfirmDialog';
 import PostMatchOnlineView from './components/PostMatchOnlineView';
 import { useBodyClass } from '../shared/hooks/useBodyClass';
 
@@ -33,6 +34,7 @@ const OnlineGame: React.FC = () => {
   const { enqueueSnackbar } = useSnackbar();
   const location = useLocation();
 
+  const [confirmation, setConfirmation] = useState<{ message: string } | null>(null);
   const [connectKey, setConnectKey] = useState(0);
   const queueElapsed = useQueueTimer(state.status);
   const matchmakingEnabled =
@@ -106,30 +108,9 @@ const OnlineGame: React.FC = () => {
     [enqueueSnackbar],
   );
 
-  const handleInTournamentLobby = useCallback(
-    (message?: string) => {
-      enqueueSnackbar({
-        message:
-          message ??
-          'You are in an active tournament. Quit or finish it before joining matchmaking.',
-        variant: 'error',
-      });
-      setTimeout(() => {
-        navigate('/pong/tournaments');
-      }, 1500);
-    },
-    [enqueueSnackbar, navigate],
-  );
-
-  const handleInInviteLobby = useCallback(
-    (message?: string) => {
-      enqueueSnackbar({
-        message: message ?? 'Your scheduled opponent has 15 seconds to join the lobby.',
-        variant: 'error',
-      });
-    },
-    [enqueueSnackbar],
-  );
+  const handleConfirmation = useCallback((message?: string) => {
+    setConfirmation({ message: message ?? 'Confirmation required' });
+  }, []);
 
   const handleAuthError = useCallback(
     async (message?: string) => {
@@ -150,19 +131,19 @@ const OnlineGame: React.FC = () => {
     [axios, enqueueSnackbar, navigate],
   );
 
-  const { joinQueue, leaveQueue, acceptMatch, declineMatch, reconnect } = useMatchmakingClient({
-    dispatch,
-    connectKey,
-    requestReconnect: () => setConnectKey((key) => key + 1),
-    enabled: matchmakingEnabled,
-    onAuthError: handleAuthError,
-    onAllocatorError: handleAllocatorError,
-    onRatelimit: handleRatelimit,
-    onInTournamentLobby: handleInTournamentLobby,
-    onInInviteLobby: handleInInviteLobby,
-    onMatchTimeout: handleMatchTimeout,
-    onMatchDeclined: handleMatchDeclined,
-  });
+  const { joinQueue, leaveQueue, acceptMatch, declineMatch, reconnect, confirmJoin } =
+    useMatchmakingClient({
+      dispatch,
+      connectKey,
+      requestReconnect: () => setConnectKey((key) => key + 1),
+      enabled: matchmakingEnabled,
+      onAuthError: handleAuthError,
+      onAllocatorError: handleAllocatorError,
+      onRatelimit: handleRatelimit,
+      onConfirmation: handleConfirmation,
+      onMatchTimeout: handleMatchTimeout,
+      onMatchDeclined: handleMatchDeclined,
+    });
 
   const bootstrapConfig = useBootstrapConfig(state);
 
@@ -268,6 +249,15 @@ const OnlineGame: React.FC = () => {
     declineMatch(state.matchId);
   }, [declineMatch, dispatch, state.matchId]);
 
+  const handleConfirmJoin = useCallback(() => {
+    confirmJoin();
+    setConfirmation(null);
+  }, [confirmJoin]);
+
+  const handleCancelJoin = useCallback(() => {
+    setConfirmation(null);
+  }, []);
+
   if (userReady && !user) {
     return (
       <PageContainer>
@@ -349,6 +339,14 @@ const OnlineGame: React.FC = () => {
                 onDecline={handleDeclineMatch}
               />
             ) : null}
+
+            <ConfirmDialog
+              open={Boolean(confirmation)}
+              title="Join Queue?"
+              description={confirmation?.message ?? ''}
+              onConfirm={handleConfirmJoin}
+              onCancel={handleCancelJoin}
+            />
           </SurfaceCard>
         </div>
       </PageSection>
