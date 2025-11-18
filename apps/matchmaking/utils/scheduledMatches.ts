@@ -888,7 +888,6 @@ export async function handleCreateTournament(
     if (activePayload) {
       client.tournamentId = activePayload.tournament.id;
       client.tournamentParticipantId = activePayload.participant.id;
-      client.tournamentAlias = activePayload.participant.alias;
       subscribeClientToTournament(activePayload.tournament.id, client);
 
       sendToClient(client, {
@@ -903,7 +902,6 @@ export async function handleCreateTournament(
 
     client.tournamentId = undefined;
     client.tournamentParticipantId = undefined;
-    client.tournamentAlias = undefined;
 
     const tournamentRes = await axios.post(
       `${API_URL}/api/tournaments`,
@@ -917,7 +915,7 @@ export async function handleCreateTournament(
 
     const tournamentId = (tournamentRes.data as { id: number }).id;
 
-    const alias = data.alias?.trim() || client.username;
+    const alias = client.username.slice(0, 64);
     const participantRes = await axios.post(
       `${API_URL}/api/tournaments/${tournamentId}/participants`,
       {
@@ -932,7 +930,6 @@ export async function handleCreateTournament(
 
     client.tournamentId = tournamentId;
     client.tournamentParticipantId = participant.id;
-    client.tournamentAlias = participant.alias;
     subscribeClientToTournament(tournamentId, client);
 
     await syncTournamentState(tournamentId, client, clients);
@@ -969,7 +966,7 @@ export async function handleJoinTournament(
   if (!token) return;
 
   const headers = { Authorization: `Bearer ${token}` };
-  const alias = (data.alias?.trim() || client.username).slice(0, 64);
+  const alias = client.username.slice(0, 64);
 
   try {
     const response = await axios.post(
@@ -986,7 +983,6 @@ export async function handleJoinTournament(
 
     client.tournamentId = tournamentId;
     client.tournamentParticipantId = participant.id;
-    client.tournamentAlias = participant.alias;
     subscribeClientToTournament(tournamentId, client);
 
     await syncTournamentState(tournamentId, client, clients);
@@ -1050,7 +1046,6 @@ export async function handleLeaveTournament(client: ClientInfo, clients: Map<str
     unsubscribeClientFromTournament(tournamentId, client.id);
     client.tournamentId = undefined;
     client.tournamentParticipantId = undefined;
-    client.tournamentAlias = undefined;
 
     log('Tournament membership cleared', {
       uuid: client.uuid,
@@ -1222,7 +1217,6 @@ export async function restoreTournamentMembership(
 
     client.tournamentId = tournament.id;
     client.tournamentParticipantId = participant.id;
-    client.tournamentAlias = participant.alias;
 
     subscribeClientToTournament(tournament.id, client);
 

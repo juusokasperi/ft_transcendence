@@ -19,17 +19,21 @@ export {
   readIntent,
   setControlsMirrored,
   toggleControlsMirrored,
+  readSeatAxes,
   blockInputFor,
   setBindingProfile,
   overrideBindings,
   setLocalSeatInputDisabled,
 } from './client/input/aggregate';
+export type { TouchSeatVisibility } from './client/input/touch-zones';
+export { setTouchSeatVisibility } from './client/input/aggregate';
 
 // ── FX / Visuals ───────────────────────────────────────────────────────────────
 export { createBounces } from './client/visuals/bounce/bounces';
 export { FXManager } from './client/fx/manager';
 export { createPaddleAnimator } from './client/visuals/animate-paddle';
 export type { AbstractMesh } from '@babylonjs/core/Meshes/abstractMesh';
+export type { ArcRotateCamera } from '@babylonjs/core/Cameras/arcRotateCamera';
 
 // ── UI / HUD ──────────────────────────────────────────────────────────────────
 export { createScoreboard } from './client/ui/scoreboard';
@@ -55,3 +59,6 @@ export { DefaultAudioManifest } from './client/audio/manifest';
 export { unlockOnInteraction, resumeAudioContext } from './client/audio/loader';
 export { applyFrameEventsToAudio } from './app/events-to-audio';
 export type { Scene } from '@babylonjs/core/scene';
+
+// ── Platform utils ────────────────────────────────────────────────────────────
+export { isMobile } from './client/utils/platform';

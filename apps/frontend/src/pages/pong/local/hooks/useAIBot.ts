@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import { setLocalSeatInputDisabled } from '@pong/render';
+import { setLocalSeatInputDisabled, setTouchSeatVisibility } from '@pong/render';
 import type { BotDifficulty } from '../../../../games/pong/ai/bot-controller';
 import type { PongRuntimeHandle } from './usePongRuntime';
 
@@ -38,6 +38,7 @@ export function useAIBot({
       }
       // Ensure local input is re-enabled on unmount
       setLocalSeatInputDisabled(null);
+      setTouchSeatVisibility({ P1: true, P2: true });
     };
   }, []);
 
@@ -55,6 +56,8 @@ export function useAIBot({
       }
       // Re-enable local input when AI is not active
       setLocalSeatInputDisabled(null);
+      // Show both touch columns when AI is not active
+      setTouchSeatVisibility({ P1: true, P2: true });
       return;
     }
 
@@ -64,6 +67,12 @@ export function useAIBot({
 
     // While AI is active, disable local control for its seat
     setLocalSeatInputDisabled(botSeat);
+    // Only show touch controls for the human seat
+    const humanSeat: 'P1' | 'P2' = botSeat === 'P1' ? 'P2' : 'P1';
+    setTouchSeatVisibility({
+      P1: humanSeat === 'P1',
+      P2: humanSeat === 'P2',
+    });
 
     if (botRef.current) {
       botRef.current.setDifficulty(difficulty);

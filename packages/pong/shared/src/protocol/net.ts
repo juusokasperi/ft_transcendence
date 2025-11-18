@@ -191,7 +191,6 @@ export type InfoMessage = {
 export type JoinQueueRequest = {
   type: 'JOIN_QUEUE';
   preferredSide?: 'west' | 'east';
-  alias?: string;
 };
 
 export type LeaveQueueRequest = {
@@ -214,13 +213,11 @@ export type CreateTournamentRequest = {
   type: 'CREATE_TOURNAMENT';
   size: TournamentSize;
   name?: string;
-  alias?: string;
 };
 
 export type JoinTournamentRequest = {
   type: 'JOIN_TOURNAMENT';
   tournamentId: string;
-  alias?: string;
 };
 
 export type LeaveTournamentRequest = {

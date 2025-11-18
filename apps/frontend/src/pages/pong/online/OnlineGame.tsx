@@ -199,12 +199,9 @@ const OnlineGame: React.FC = () => {
     autoExitDelayMs: 3000,
   });
 
-  const handleJoinQueue = useCallback(
-    (alias?: string) => {
-      joinQueue(alias);
-    },
-    [joinQueue],
-  );
+  const handleJoinQueue = useCallback(() => {
+    joinQueue();
+  }, [joinQueue]);
 
   const handleLeaveQueue = useCallback(() => {
     leaveQueue();
