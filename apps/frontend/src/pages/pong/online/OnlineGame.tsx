@@ -342,7 +342,7 @@ const OnlineGame: React.FC = () => {
 
             <ConfirmDialog
               open={Boolean(confirmation)}
-              title="Join Queue?"
+              title="Join matchmaking queue?"
               description={confirmation?.message ?? ''}
               onConfirm={handleConfirmJoin}
               onCancel={handleCancelJoin}

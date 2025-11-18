@@ -186,8 +186,8 @@ async function handleConnection(socket: WebSocket, req: FastifyRequest) {
 function sendJoinConfirm(client: ClientInfo) {
   if (client.state === ClientState.IN_TOURNAMENT || client.state === ClientState.IN_INVITE_LOBBY) {
     const message = ClientState.IN_TOURNAMENT
-      ? 'You are in an active tournament. Do you still wish to join the public queue?'
-      : 'You are in an invite-only lobby, waiting for your opponent. Do you still wish to join the public queue?';
+      ? 'You are in an active tournament. Continue?'
+      : 'You are in an invite-only lobby, waiting for your opponent. Continue?';
     client.socket.send(
       JSON.stringify({
         type: 'CONFIRM_REQUIRED',
