@@ -11,7 +11,7 @@ export interface TournamentMatchContext {
   tournamentId: number;
   tournamentMatchId: number;
   tournamentStage: 'semifinal' | 'final' | 'bronze';
-  participants?: Array<{ participantId: number; userUuid: string }>;
+  participants?: Array<{ participantId: number; userUuid: string; alias?: string }>;
 }
 
 const MMR_BUCKET_SIZE = 50;
