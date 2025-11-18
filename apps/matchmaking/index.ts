@@ -124,7 +124,10 @@ async function handleConnection(socket: WebSocket, req: FastifyRequest) {
     }
     switch (data.type) {
       case 'JOIN_QUEUE':
-        if (client.state === ClientState.IDLE) handleJoinQueue(client);
+        if (client.state === ClientState.IDLE)
+          handleJoinQueue(client);
+        else
+          sendJoinQueueError(client);
         break;
       case 'LEAVE_QUEUE':
         if (client.state === ClientState.IN_QUEUE) handleLeaveQueue(client);
@@ -177,6 +180,31 @@ async function handleConnection(socket: WebSocket, req: FastifyRequest) {
     removeFromQueue(id);
     clients.delete(id);
   });
+}
+
+function sendJoinQueueError(client: ClientInfo) {
+  if (client.state === ClientState.IN_TOURNAMENT) {
+    client.socket.send(
+      JSON.stringify({
+        type: 'ERROR',
+        code: 'IN_TOURNAMENT_LOBBY',
+        message: 'You are in an active tournament. Quit or finish it before joining matchmaking.',
+      }),
+    );
+  } else if (client.state === ClientState.IN_INVITE_LOBBY) {
+    client.socket.send(
+      JSON.stringify({
+        type: 'ERROR',
+        code: 'IN_INVITE_LOBBY',
+        message: 'You are in an invite-only lobby. You cannot join the public queue.',
+      }),
+    );
+  } else {
+    log('Client tried to join queue from unhandled state', {
+      clientId: client.id,
+      state: client.state,
+    });
+  }
 }
 
 app.addHook('onClose', async () => {

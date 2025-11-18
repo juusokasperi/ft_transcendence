@@ -8,6 +8,8 @@ type Handlers = {
   onAuthError: (message?: string) => void;
   onAllocatorError: (message?: string) => void;
   onRatelimit: (message?: string) => void;
+  onInTournamentLobby: (message?: string) => void;
+  onInInviteLobby: (message?: string) => void;
   onMatchTimeout?: () => void;
   onMatchDeclined?: () => void;
 };
@@ -20,6 +22,8 @@ type UseMatchmakingClientArgs = {
   onAuthError: (message?: string) => void;
   onAllocatorError: (message?: string) => void;
   onRatelimit: (message?: string) => void;
+  onInTournamentLobby: (message?: string) => void;
+  onInInviteLobby: (message?: string) => void;
   onMatchTimeout?: () => void;
   onMatchDeclined?: () => void;
 };
@@ -32,6 +36,8 @@ export function useMatchmakingClient({
   onAuthError,
   onAllocatorError,
   onRatelimit,
+  onInTournamentLobby,
+  onInInviteLobby,
   onMatchTimeout,
   onMatchDeclined,
 }: UseMatchmakingClientArgs) {
@@ -40,6 +46,8 @@ export function useMatchmakingClient({
     onAuthError,
     onAllocatorError,
     onRatelimit,
+    onInTournamentLobby,
+    onInInviteLobby,
     onMatchTimeout,
     onMatchDeclined,
   });
@@ -55,10 +63,21 @@ export function useMatchmakingClient({
       onAuthError,
       onAllocatorError,
       onRatelimit,
+      onInTournamentLobby,
+      onInInviteLobby,
       onMatchTimeout,
       onMatchDeclined,
     };
-  }, [dispatch, onAuthError, onAllocatorError, onRatelimit, onMatchTimeout, onMatchDeclined]);
+  }, [
+    dispatch,
+    onAuthError,
+    onAllocatorError,
+    onRatelimit,
+    onInTournamentLobby,
+    onInInviteLobby,
+    onMatchTimeout,
+    onMatchDeclined,
+  ]);
 
   useEffect(() => {
     requestReconnectRef.current = requestReconnect;
@@ -133,6 +152,12 @@ export function useMatchmakingClient({
             } else if (msg.code === 'RATELIMIT') {
               handlers.dispatch({ type: 'ratelimitError' });
               handlers.onRatelimit(msg.message);
+            } else if (msg.code === 'IN_TOURNAMENT_LOBBY') {
+              handlers.dispatch({ type: 'inTournamentLobbyError' });
+              handlers.onInTournamentLobby(msg.message);
+            } else if (msg.code === 'IN_INVITE_LOBBY') {
+              handlers.dispatch({ type: 'inInviteLobbyError' });
+              handlers.onInInviteLobby(msg.message);
             }
 
             break;

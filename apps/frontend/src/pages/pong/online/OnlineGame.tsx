@@ -106,6 +106,31 @@ const OnlineGame: React.FC = () => {
     [enqueueSnackbar],
   );
 
+  const handleInTournamentLobby = useCallback(
+    (message?: string) => {
+      enqueueSnackbar({
+        message:
+          message ??
+          'You are in an active tournament. Quit or finish it before joining matchmaking.',
+        variant: 'error',
+      });
+      setTimeout(() => {
+        navigate('/pong/tournaments');
+      }, 1500);
+    },
+    [enqueueSnackbar, navigate],
+  );
+
+  const handleInInviteLobby = useCallback(
+    (message?: string) => {
+      enqueueSnackbar({
+        message: message ?? 'Your scheduled opponent has 15 seconds to join the lobby.',
+        variant: 'error',
+      });
+    },
+    [enqueueSnackbar],
+  );
+
   const handleAuthError = useCallback(
     async (message?: string) => {
       const fallbackMessage = message ?? 'Authentication error. Please sign in again.';
@@ -133,6 +158,8 @@ const OnlineGame: React.FC = () => {
     onAuthError: handleAuthError,
     onAllocatorError: handleAllocatorError,
     onRatelimit: handleRatelimit,
+    onInTournamentLobby: handleInTournamentLobby,
+    onInInviteLobby: handleInInviteLobby,
     onMatchTimeout: handleMatchTimeout,
     onMatchDeclined: handleMatchDeclined,
   });
