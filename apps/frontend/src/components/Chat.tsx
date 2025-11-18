@@ -48,6 +48,7 @@ export default function Chat({ onClose, channel, isOpen = true }: ChatProps) {
     declineInvite,
     inviteAcceptedSignal,
     acknowledgeInviteAcceptedSignal,
+    lastSeenPrivateMessageCountRef,
   } = useChatContext();
   const displayChannel = activeChannel || channel;
 
@@ -64,7 +65,6 @@ export default function Chat({ onClose, channel, isOpen = true }: ChatProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const inputRef = useRef<HTMLInputElement | null>(null);
   const wasOpenRef = useRef(isOpen);
-  const lastSeenPrivateMessageCountRef = useRef(0);
   const privateMessageCount = useMemo(
     () =>
       messages.reduce(
@@ -274,7 +274,7 @@ export default function Chat({ onClose, channel, isOpen = true }: ChatProps) {
       aria-label={`Live Chat (${displayChannel})`}
       aria-hidden={!isOpen}
       data-state={isOpen ? 'open' : 'closed'}
-      className={`fixed inset-x-3 bottom-3 z-[70] flex h-[85vh] max-h-[calc(100vh-1.5rem)] flex-col overflow-hidden rounded-2xl border border-white/20 text-white shadow-2xl backdrop-blur-md transition duration-200 ease-out sm:inset-auto sm:bottom-6 sm:left-auto sm:right-6 sm:h-[40rem] sm:w-[36rem] w-full max-w-[36rem] ${panelStateCls} bg-gray-900/20`}
+      className={`fixed inset-x-3 bottom-3 z-[70] flex w-[36rem] max-w-[calc(100vw-1.5rem)] h-[40rem] max-h-[calc(100vh-1.5rem)] flex-col overflow-hidden rounded-2xl border border-white/20 text-white shadow-2xl backdrop-blur-md transition duration-200 ease-out sm:inset-auto sm:bottom-6 sm:left-auto sm:right-6 ${panelStateCls} bg-gray-900/20`}
     >
       {/* Header */}
       <div className="flex items-center justify-between border-b border-white/20 px-3 py-2">
