@@ -110,7 +110,7 @@ async function handleConnection(socket: WebSocket, req: FastifyRequest) {
     return;
   }
 
-  void await restoreTournamentMembership(client, clients);
+  void (await restoreTournamentMembership(client, clients));
 
   socket.on('message', async (raw: RawData) => {
     if (await isRateLimited(client, rateLimiter)) return;
@@ -124,10 +124,8 @@ async function handleConnection(socket: WebSocket, req: FastifyRequest) {
     }
     switch (data.type) {
       case 'JOIN_QUEUE':
-        if (client.state === ClientState.IDLE)
-          handleJoinQueue(client);
-        else
-          sendJoinQueueError(client);
+        if (client.state === ClientState.IDLE) handleJoinQueue(client);
+        else sendJoinQueueError(client);
         break;
       case 'LEAVE_QUEUE':
         if (client.state === ClientState.IN_QUEUE) handleLeaveQueue(client);
