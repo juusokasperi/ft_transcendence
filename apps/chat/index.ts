@@ -193,24 +193,24 @@ async function handleConnection(socket: ChatSocket, _request: ChatRequest) {
 
   // blocked list from backend for this user
   void (async () => {
-  try {
-    const blockedUsernames = await fetchBlockedUsernames(token);
-    client.blocked = new Set(blockedUsernames);
-    fastify.log.debug(
-      { clientId: id, blockedCount: blockedUsernames.length },
-      '[CHAT] Hydrated blocked users from API',
-    );
+    try {
+      const blockedUsernames = await fetchBlockedUsernames(token);
+      client.blocked = new Set(blockedUsernames);
+      fastify.log.debug(
+        { clientId: id, blockedCount: blockedUsernames.length },
+        '[CHAT] Hydrated blocked users from API',
+      );
 
-    socket.send(
-      JSON.stringify({
-        type: 'blockedList',
-        usernames: blockedUsernames,
-      }),
-    );
-  } catch (err) {
-    fastify.log.error({ err, clientId: id }, '[CHAT] Failed to hydrate blocked users');
-  }})();
-
+      socket.send(
+        JSON.stringify({
+          type: 'blockedList',
+          usernames: blockedUsernames,
+        }),
+      );
+    } catch (err) {
+      fastify.log.error({ err, clientId: id }, '[CHAT] Failed to hydrate blocked users');
+    }
+  })();
 
   socket.on('message', async (raw: SocketRawData) => {
     let data: any;
@@ -225,7 +225,12 @@ async function handleConnection(socket: ChatSocket, _request: ChatRequest) {
     if (messageTypes.has(data.type)) {
       const msg = data.message;
       if (msg.length > 250) {
-        socket.send(JSON.stringify({ type: 'error', message: 'Message too long. Maximum length is 250 characters.' }));
+        socket.send(
+          JSON.stringify({
+            type: 'error',
+            message: 'Message too long. Maximum length is 250 characters.',
+          }),
+        );
         return;
       }
     }
