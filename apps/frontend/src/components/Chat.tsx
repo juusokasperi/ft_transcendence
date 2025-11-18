@@ -274,7 +274,7 @@ export default function Chat({ onClose, channel, isOpen = true }: ChatProps) {
       aria-label={`Live Chat (${displayChannel})`}
       aria-hidden={!isOpen}
       data-state={isOpen ? 'open' : 'closed'}
-      className={`fixed inset-x-3 bottom-3 z-[70] flex w-[36rem] max-w-[calc(100vw-1.5rem)] h-[40rem] max-h-[calc(100vh-1.5rem)] flex-col overflow-hidden rounded-2xl border border-white/20 text-white shadow-2xl backdrop-blur-md transition duration-200 ease-out sm:inset-auto sm:bottom-6 sm:left-auto sm:right-6 ${panelStateCls} bg-gray-900/20`}
+      className={`fixed inset-x-3 bottom-3 z-[70] flex h-[40rem] max-h-[calc(100vh-1.5rem)] w-[36rem] max-w-[calc(100vw-1.5rem)] flex-col overflow-hidden rounded-2xl border border-white/20 text-white shadow-2xl backdrop-blur-md transition duration-200 ease-out sm:inset-auto sm:bottom-6 sm:left-auto sm:right-6 ${panelStateCls} bg-gray-900/20`}
     >
       {/* Header */}
       <div className="flex items-center justify-between border-b border-white/20 px-3 py-2">
@@ -354,7 +354,7 @@ export default function Chat({ onClose, channel, isOpen = true }: ChatProps) {
               >
                 <div className="min-w-0">
                   <span className="font-semibold">{msg.from}</span>
-                  <span className="ml-2 break-words whitespace-pre-wrap">{msg.message}</span>
+                  <span className="ml-2 whitespace-pre-wrap break-words">{msg.message}</span>
                   {isPrivate && <span className="ml-2 text-xs italic">(DM)</span>}
                 </div>
 

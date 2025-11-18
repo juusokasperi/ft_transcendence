@@ -421,7 +421,7 @@ export function ChatProvider({ channel, children }: ChatProviderProps) {
       sendChatMessage,
       sendPayload,
       users,
-      lastSeenPrivateMessageCountRef
+      lastSeenPrivateMessageCountRef,
     ],
   );
 
