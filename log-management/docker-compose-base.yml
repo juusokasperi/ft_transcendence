@@ -66,7 +66,6 @@ services:
       - xpack.security.transport.ssl.certificate_authorities=certs/ca/ca.crt
       - xpack.security.transport.ssl.verification_mode=certificate
       - xpack.license.self_generated.type=${ES_LICENSE:-basic}
-      - bootstrap.memory_lock=false
       - indices.memory.index_buffer_size=10%
       - indices.queries.cache.size=5%
       - indices.fielddata.cache.size=10%
