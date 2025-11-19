@@ -188,8 +188,6 @@ services:
       - LS_JAVA_OPTS=-Xms256m -Xmx256m -XX:MaxDirectMemorySize=128M
       - xpack.monitoring.enabled=false
       - ELASTIC_HOSTS=https://elasticsearch:${ES_PORT:-9200}
-      - ELASTIC_USER=${ELASTIC_USER:-elastic}
-      - ELASTIC_PASSWORD=${ELASTIC_PASSWORD}
       - pipeline.workers=1
     mem_limit: 1024m
     healthcheck:
