@@ -288,6 +288,7 @@ export default function Chat({ onClose, channel, isOpen = true }: ChatProps) {
     ? 'pointer-events-auto opacity-100 translate-y-0 scale-100'
     : 'pointer-events-none opacity-0 translate-y-4 scale-[0.98]';
 
+
   return (
     <div
       ref={containerRef}
@@ -358,7 +359,7 @@ export default function Chat({ onClose, channel, isOpen = true }: ChatProps) {
               );
             }
 
-            if (msg.from && blocked.has(msg.from)) return null;
+            if (msg.fromUuid && blocked.has(msg.fromUuid)) return null;
 
             const isMe = msg.from === chatUsername;
             const isPrivate = msg.type === 'privateMessage' || msg.type === 'dm';
@@ -379,10 +380,10 @@ export default function Chat({ onClose, channel, isOpen = true }: ChatProps) {
                   {isPrivate && <span className="ml-2 text-xs italic">(DM)</span>}
                 </div>
 
-                {msg.from && msg.from !== chatUsername && (
+                {msg.fromUuid && msg.from && msg.from !== chatUsername && (
                   <SplitButton
                     targetUser={msg.from}
-                    isBlocked={blocked.has(msg.from)}
+                    isBlocked={blocked.has(msg.fromUuid)}
                     onAction={handleAction}
                   />
                 )}
