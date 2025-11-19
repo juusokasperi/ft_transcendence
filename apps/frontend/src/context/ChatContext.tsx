@@ -41,6 +41,7 @@ type ChatContextValue = {
   declineInvite: (inviteId: string) => void;
   inviteAcceptedSignal: number;
   acknowledgeInviteAcceptedSignal: () => void;
+  lastSeenPrivateMessageCountRef: React.MutableRefObject<number>;
 };
 
 const ChatContext = createContext<ChatContextValue | null>(null);
@@ -67,14 +68,14 @@ export function ChatProvider({ channel, children }: ChatProviderProps) {
   const [cooldown, setCooldown] = useState(false);
   const [sentCount, setSentCount] = useState(0);
   const [inviteAcceptedSignal, setInviteAcceptedSignal] = useState(0);
+  const lastSeenPrivateMessageCountRef = useRef(0);
+  const acknowledgeInviteAcceptedSignal = useCallback(() => {
+    setInviteAcceptedSignal(0);
+  }, []);
 
   useEffect(() => {
     blockedRef.current = blocked;
   }, [blocked]);
-
-  const acknowledgeInviteAcceptedSignal = useCallback(() => {
-    setInviteAcceptedSignal(0);
-  }, []);
 
   const resetChannelState = useCallback(() => {
     setMessages([]);
@@ -136,6 +137,12 @@ export function ChatProvider({ channel, children }: ChatProviderProps) {
       if (data.type === 'chat') {
         if (data.from && blockedRef.current.has(data.from)) return;
         setMessages((prev) => [...prev, { ...data, type: 'chat' }]);
+        return;
+      }
+      if (data.type === 'blockedList' && Array.isArray(data.usernames)) {
+        const newBlocked: Set<string> = new Set<string>(data.usernames);
+        blockedRef.current = newBlocked;
+        setBlocked(newBlocked);
         return;
       }
 
@@ -332,6 +339,7 @@ export function ChatProvider({ channel, children }: ChatProviderProps) {
       declineInvite,
       inviteAcceptedSignal,
       acknowledgeInviteAcceptedSignal,
+      lastSeenPrivateMessageCountRef,
     }),
     [
       acceptInvite,
@@ -348,6 +356,7 @@ export function ChatProvider({ channel, children }: ChatProviderProps) {
       sendChatMessage,
       sendPayload,
       users,
+      lastSeenPrivateMessageCountRef,
     ],
   );
 

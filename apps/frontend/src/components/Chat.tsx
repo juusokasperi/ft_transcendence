@@ -28,21 +28,9 @@ type ChatProps = {
   username?: string;
   channel: string;
   isOpen?: boolean;
-
-  // tournament data passed from TournamentPage
-  firstPlayer?: string | null;
-  secondPlayer?: string | null;
-  stage?: string | null;
 };
 
-export default function Chat({
-  onClose,
-  channel,
-  isOpen = true,
-  firstPlayer = null,
-  secondPlayer = null,
-  stage = null,
-}: ChatProps) {
+export default function Chat({ onClose, channel, isOpen = true }: ChatProps) {
   const { navigate, axios: authAxios } = useAppContext();
   const location = useLocation();
   const {
@@ -60,6 +48,7 @@ export default function Chat({
     declineInvite,
     inviteAcceptedSignal,
     acknowledgeInviteAcceptedSignal,
+    lastSeenPrivateMessageCountRef,
   } = useChatContext();
   const displayChannel = activeChannel || channel;
 
@@ -71,14 +60,11 @@ export default function Chat({
   const [profileOpen, setProfileOpen] = useState(false);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [pendingNavId, setPendingNavId] = useState<string | null>(null);
-  // Track last tournament announce we broadcasted to avoid duplicates
-  const lastTournamentSigRef = useRef<string | null>(null);
 
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
+  const inputRef = useRef<HTMLInputElement | null>(null);
   const wasOpenRef = useRef(isOpen);
-  const tournamentTimerRef = useRef<number | null>(null);
-  const lastSeenPrivateMessageCountRef = useRef(0);
   const shouldAutoScrollRef = useRef(true);
   const privateMessageCount = useMemo(
     () =>
@@ -113,13 +99,8 @@ export default function Chat({
     const wasOpen = wasOpenRef.current;
     wasOpenRef.current = isOpen;
     if (wasOpen && !isOpen) {
-      if (tournamentTimerRef.current) {
-        clearTimeout(tournamentTimerRef.current);
-        tournamentTimerRef.current = null;
-      }
       setInput('');
       setDmTarget(null);
-      lastTournamentSigRef.current = null;
       // close profile card when chat closes
       setProfileOpen(false);
       setProfileData(null);
@@ -129,38 +110,15 @@ export default function Chat({
     }
   }, [isOpen]);
 
-  // ---------- websocket events handled in ChatContext ----------
-
-  // Announce tournament match start when match participants/stage change
   useEffect(() => {
     if (!isOpen) return;
-    const sig =
-      firstPlayer && secondPlayer && stage ? `${firstPlayer}|${secondPlayer}|${stage}` : null;
-    if (!sig) return;
-    if (lastTournamentSigRef.current === sig) return;
-
-    if (tournamentTimerRef.current) {
-      clearTimeout(tournamentTimerRef.current);
-      tournamentTimerRef.current = null;
+    if (!cooldown) {
+      // input may not exist yet during render, defer briefly if needed
+      inputRef.current?.focus();
     }
-    tournamentTimerRef.current = window.setTimeout(() => {
-      const sent = sendPayload({
-        type: 'tournamentMsg',
-        message: `Match starting: ${firstPlayer} vs ${secondPlayer} (Stage: ${stage})`,
-      });
-      if (sent) {
-        lastTournamentSigRef.current = sig;
-      }
-      tournamentTimerRef.current = null;
-    }, 5000);
+  }, [isOpen, cooldown]);
 
-    return () => {
-      if (tournamentTimerRef.current) {
-        clearTimeout(tournamentTimerRef.current);
-        tournamentTimerRef.current = null;
-      }
-    };
-  }, [isOpen, firstPlayer, secondPlayer, stage, sendPayload]);
+  // ---------- websocket events handled in ChatContext ----------
 
   // autoscroll
   useEffect(() => {
@@ -225,12 +183,18 @@ export default function Chat({
     const text = input.trim();
     if (!text) return;
 
+    if (text.length > 250) {
+      addSystemMessage('⚠️ Message too long. Max 250 characters.');
+      return;
+    }
     const result = sendChatMessage(text, dmTarget ? { to: dmTarget } : undefined);
     if (result === 'sent') {
       if (dmTarget) {
         setDmTarget(null);
       }
       setInput('');
+      // make sure focus returns to input after sending (so user can continue typing)
+      setTimeout(() => inputRef.current?.focus(), 0);
       return;
     }
 
@@ -251,11 +215,25 @@ export default function Chat({
     switch (action) {
       case 'Send private message':
         setDmTarget(targetUser);
+        // focus input when opening DM
+        setTimeout(() => inputRef.current?.focus(), 0);
         break;
       case 'Block user':
+        try {
+          await authAxios.post('/api/blocked-users', { username: targetUser });
+        } catch (err) {
+          addSystemMessage(`Failed to block ${targetUser}`);
+          break;
+        }
         sendPayload({ type: 'blockUser', username: targetUser });
         break;
       case 'Unblock user':
+        try {
+          await authAxios.delete('/api/blocked-users', { data: { username: targetUser } });
+        } catch (err) {
+          addSystemMessage(`Failed to block ${targetUser}`);
+          break;
+        }
         sendPayload({ type: 'unblockUser', username: targetUser });
         break;
       case 'Invite to 1v1':
@@ -317,7 +295,7 @@ export default function Chat({
       aria-label={`Live Chat (${displayChannel})`}
       aria-hidden={!isOpen}
       data-state={isOpen ? 'open' : 'closed'}
-      className={`fixed inset-x-3 bottom-3 z-[70] flex h-[85vh] max-h-[calc(100vh-1.5rem)] flex-col overflow-hidden rounded-2xl border border-white/20 text-white shadow-2xl backdrop-blur-md transition duration-200 ease-out sm:inset-auto sm:bottom-6 sm:left-auto sm:right-6 sm:h-[40rem] sm:w-[36rem] ${panelStateCls} bg-gray-900/20`}
+      className={`fixed inset-x-3 bottom-3 z-[70] flex h-[40rem] max-h-[calc(100vh-1.5rem)] w-[36rem] max-w-[calc(100vw-1.5rem)] flex-col overflow-hidden rounded-2xl border border-white/20 text-white shadow-2xl backdrop-blur-md transition duration-200 ease-out sm:inset-auto sm:bottom-6 sm:left-auto sm:right-6 ${panelStateCls} bg-gray-900/20`}
     >
       {/* Header */}
       <div className="flex items-center justify-between border-b border-white/20 px-3 py-2">
@@ -346,6 +324,7 @@ export default function Chat({
         <div
           ref={scrollRef}
           className="custom-scrollbar min-h-0 flex-1 space-y-2 overflow-y-auto p-3 text-sm"
+          /* className="min-h-0 flex-1 space-y-2 overflow-y-auto overflow-x-hidden p-3 text-sm" */
         >
           {messages.map((msg, idx) => {
             if (msg.system) {
@@ -393,15 +372,15 @@ export default function Chat({
             return (
               <div
                 key={idx}
-                className={`flex items-center justify-between rounded px-2 py-1 ${containerClass}`}
+                className={`flex items-start justify-between rounded px-2 py-1 ${containerClass}`}
               >
-                <div>
+                <div className="min-w-0">
                   <span className="font-semibold">{msg.from}</span>
-                  <span className="ml-2">{msg.message}</span>
+                  <span className="ml-2 whitespace-pre-wrap break-words">{msg.message}</span>
                   {isPrivate && <span className="ml-2 text-xs italic">(DM)</span>}
                 </div>
 
-                {msg.from && msg.from !== chatUsername && !isPrivate && (
+                {msg.from && msg.from !== chatUsername && (
                   <SplitButton
                     targetUser={msg.from}
                     isBlocked={blocked.has(msg.from)}
@@ -458,9 +437,15 @@ export default function Chat({
         )}
 
         <input
+          ref={inputRef}
           className="flex-1 bg-transparent px-3 py-2 text-sm outline-none"
           value={input}
-          onChange={(e) => setInput(e.target.value)}
+          onChange={(e) => {
+            const text = e.target.value;
+            if (text.length <= 250) {
+              setInput(text);
+            }
+          }}
           onKeyDown={(e) => e.key === 'Enter' && sendMessage()}
           placeholder={dmTarget ? `Message to ${dmTarget}...` : 'Type a message...'}
           disabled={cooldown}

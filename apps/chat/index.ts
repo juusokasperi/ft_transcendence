@@ -14,6 +14,24 @@ const INVITE_TIMEOUT_MS = 60000; // 1 minute
 const PORT = Number(process.env.CHAT_PORT || 6262);
 const HOST = process.env.CHAT_HOST || '0.0.0.0';
 const isDev = process.env.NODE_ENV === 'development';
+const API_PORT = process.env.BACKEND_PORT;
+const API_SERVICE_URL = API_PORT ? `http://backend:${API_PORT}` : 'http://backend:3001';
+
+async function fetchBlockedUsernames(token: string): Promise<string[]> {
+  try {
+    const res = await fetch(`${API_SERVICE_URL}/api/blocked-users`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+    if (!res.ok) return [];
+    const data = (await res.json()) as string[];
+    if (!Array.isArray(data)) return [];
+    return data;
+  } catch {
+    return [];
+  }
+}
 
 function createLoggerOptions(isDev: boolean) {
   if (isDev) {
@@ -44,10 +62,23 @@ const fastify = Fastify({
 const clients = new Map<string, Client>();
 const pendingInvites = new Map<string, PendingInvite>();
 
-function broadcast(data: any, channel: string, excludeId?: string) {
+function broadcast(data: any, channel: string, excludeId?: string, sender?: Client) {
   const msg = JSON.stringify(data);
   clients.forEach((client) => {
     if (client.channel === channel && client.id !== excludeId) {
+      if (data.type === 'chat' && sender) {
+        const senderName = sender.username;
+        const targetName = client.username;
+
+        if (senderName && targetName) {
+          if (sender.blocked.has(targetName)) {
+            return;
+          }
+          if (client.blocked.has(senderName)) {
+            return;
+          }
+        }
+      }
       client.socket.send(msg);
     }
   });
@@ -182,11 +213,31 @@ async function handleConnection(socket: ChatSocket, _request: ChatRequest) {
   const client: Client = { id, uuid: '', socket, blocked: new Set() };
   const authenticated = await handleAuth(client, token, clients);
   if (!authenticated) return;
-
   clients.set(id, client);
 
   fastify.log.info({ clientId: id }, '[CHAT] Client connected');
   socket.send(JSON.stringify({ type: 'connected', clientId: id }));
+
+  // blocked list from backend for this user
+  void (async () => {
+    try {
+      const blockedUsernames = await fetchBlockedUsernames(token);
+      client.blocked = new Set(blockedUsernames);
+      fastify.log.debug(
+        { clientId: id, blockedCount: blockedUsernames.length },
+        '[CHAT] Hydrated blocked users from API',
+      );
+
+      socket.send(
+        JSON.stringify({
+          type: 'blockedList',
+          usernames: blockedUsernames,
+        }),
+      );
+    } catch (err) {
+      fastify.log.error({ err, clientId: id }, '[CHAT] Failed to hydrate blocked users');
+    }
+  })();
 
   socket.on('message', async (raw: SocketRawData) => {
     let data: any;
@@ -195,6 +246,20 @@ async function handleConnection(socket: ChatSocket, _request: ChatRequest) {
     } catch {
       fastify.log.warn({ clientId: id }, '[CHAT] Invalid message');
       return;
+    }
+
+    const messageTypes = new Set(['chat', 'privateMessage', 'tournamentMsg']);
+    if (messageTypes.has(data.type)) {
+      const msg = data.message;
+      if (msg.length > 250) {
+        socket.send(
+          JSON.stringify({
+            type: 'error',
+            message: 'Message too long. Maximum length is 250 characters.',
+          }),
+        );
+        return;
+      }
     }
 
     switch (data.type) {
@@ -222,6 +287,8 @@ async function handleConnection(socket: ChatSocket, _request: ChatRequest) {
             message: data.message,
           },
           client.channel,
+          undefined,
+          client,
         );
         return;
       case 'privateMessage': {
@@ -266,22 +333,34 @@ async function handleConnection(socket: ChatSocket, _request: ChatRequest) {
         client.blocked.delete(data.username);
         socket.send(JSON.stringify({ type: 'userUnblocked', username: data.username }));
         return;
+
       case 'tournamentMsg': {
-        if (!client.channel) return;
+        const { message, recipients } = data;
+        if (!message) return;
+
         fastify.log.info(
-          { channel: client.channel, msg: data.message },
-          '[CHAT] broadcast tournament message',
+          { channel: client.channel, msg: message, recipients },
+          '[CHAT] tournament message',
         );
 
-        broadcast(
-          {
+        // If recipients list is provided, send ONLY to those users
+        if (Array.isArray(recipients) && recipients.length > 0) {
+          const msg = JSON.stringify({
             type: 'tournamentMsg',
-            message: data.message,
-          },
-          client.channel,
-        );
+            message,
+          });
+
+          clients.forEach((c) => {
+            if (!c.uuid) return;
+            if (recipients.includes(c.uuid)) {
+              c.socket.send(msg);
+            }
+          });
+          return;
+        }
         return;
       }
+
       case 'inviteUser':
         if (!client.username) {
           socket.send(JSON.stringify({ type: 'error', message: 'You must set a username first' }));
@@ -303,6 +382,21 @@ async function handleConnection(socket: ChatSocket, _request: ChatRequest) {
             JSON.stringify({
               type: 'error',
               message: `User ${data.username} has blocked you.`,
+            }),
+          );
+          return;
+        }
+
+        const alreadyPending = Array.from(pendingInvites.values()).some(
+          (invite) =>
+            invite.fromUserUuid === client.uuid && invite.toUserUuid === targetClient.uuid,
+        );
+
+        if (alreadyPending) {
+          socket.send(
+            JSON.stringify({
+              type: 'error',
+              message: `You already have a pending invite with ${targetClient.username}.`,
             }),
           );
           return;
@@ -413,7 +507,7 @@ async function handleConnection(socket: ChatSocket, _request: ChatRequest) {
           if (result.status === 'INVITER_UNAVAILABLE') {
             errorMessage = `${invite.fromUsername} is no longer available.`;
           } else if (result.status === 'INVITEE_UNAVAILABLE') {
-            errorMessage = 'You are already in another match.';
+            errorMessage = 'You are already in another match/tournament.';
           } else if (result.message) {
             errorMessage = result.message;
           }
