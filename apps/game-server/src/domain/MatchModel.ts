@@ -35,6 +35,7 @@ export class MatchModel {
   readonly initialServer: TableEnd;
 
   state: GameState;
+  tick = 0;
   lastEvents: ServerEvents = {} as ServerEvents;
   lastSnapshot?: MatchSnapshot;
   started = false;

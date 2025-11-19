@@ -16,6 +16,7 @@ export type AppConfig = {
   matchSecret: string;
   tickHz: number;
   minStartDelayMs: number;
+  lagCompensationMs: number;
   reconnectGraceMs: ReconnectGraceConfig;
 };
 
@@ -62,9 +63,14 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
     matchSecret: env.MATCH_SECRET || 'fix-this',
     tickHz,
     minStartDelayMs,
+    lagCompensationMs: parseNumber(env.GAME_SERVER_LAG_COMP_MS, 30, 'GAME_SERVER_LAG_COMP_MS'),
     reconnectGraceMs: {
       casualMs: casualGrace,
       tournamentMs: tournamentGrace,
     },
   };
 }
+
+// give paddles a small, server‑side forgiveness window so that if the ball would hit them within
+// a few milliseconds after this tick, we treat that collision as happening at the end of the current
+// tick, effectively "rewinding" the ball slightly in the defender’s favor

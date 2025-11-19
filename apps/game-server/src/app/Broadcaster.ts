@@ -104,6 +104,7 @@ export class Broadcaster {
         state: model.state,
         events: model.lastEvents,
         match: model.lastSnapshot,
+        tick: model.tick,
         axis,
       };
 

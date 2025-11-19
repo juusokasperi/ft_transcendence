@@ -11,6 +11,7 @@ const REUSABLE_EVENTS: FrameEvents = {} as FrameEvents;
 export function handleSteps(
   state: GameState,
   dt: number,
+  lagCompensationSec: number = 0,
 ): { next: GameState; events: FrameEvents } {
   // Start from a shallow copy to avoid accidental mutations of the input state
   let s = { ...state };
@@ -34,7 +35,7 @@ export function handleSteps(
   if (isRallyPhase(s.phase)) {
     // Mutate a cloned ball once per frame to reduce GC churn
     const ball = { ...s.ball };
-    stepBallTOIInPlace(s, ball, dt, events);
+    stepBallTOIInPlace(s, ball, dt, events, lagCompensationSec);
     s = { ...s, ball };
     // Check for goal → freeze ball & enter pause to next game
     s = maybeScoreAndFreeze(s, events);
