@@ -22,7 +22,6 @@ vi.mock('../../utils/url', () => ({
   wsUrl: () => 'ws://localhost:6262/chat',
 }));
 
-
 import { RealtimeSocketProvider } from '../../context/RealtimeSocketContext';
 import { PresenceProvider } from '../../context/PresenceContext';
 import { ChatProvider } from '../../context/ChatContext';
@@ -31,9 +30,7 @@ import Friends from '../../pages/Friends';
 const TestWrapper = ({ children }: { children: React.ReactNode }) => (
   <RealtimeSocketProvider>
     <PresenceProvider>
-      <ChatProvider channel="Lobby">
-        {children}
-      </ChatProvider>
+      <ChatProvider channel="Lobby">{children}</ChatProvider>
     </PresenceProvider>
   </RealtimeSocketProvider>
 );
@@ -43,7 +40,7 @@ describe('Friends input sanitization', () => {
     render(
       <TestWrapper>
         <Friends />
-      </TestWrapper>
+      </TestWrapper>,
     );
     // open the "Add" tab which contains the input
     const addTab = screen.getByRole('button', { name: /Add/i });
@@ -62,7 +59,7 @@ describe('Friends input sanitization', () => {
     render(
       <TestWrapper>
         <Friends />
-      </TestWrapper>
+      </TestWrapper>,
     );
     const addTab = screen.getByRole('button', { name: /Add/i });
     fireEvent.click(addTab);
