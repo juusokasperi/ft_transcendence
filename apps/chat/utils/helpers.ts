@@ -1,4 +1,4 @@
-import { API_SERVICE_URL } from "./config";
+import { API_SERVICE_URL } from './config';
 import type { Client } from '../types.ts';
 
 export async function fetchBlockedUuids(token: string): Promise<string[]> {
@@ -17,7 +17,10 @@ export async function fetchBlockedUuids(token: string): Promise<string[]> {
   }
 }
 
-export function findClientByUsername(clients: Map<string, Client>, username: string): Client | undefined {
+export function findClientByUsername(
+  clients: Map<string, Client>,
+  username: string,
+): Client | undefined {
   return Array.from(clients.values()).find((client) => client.username === username);
 }
 

@@ -1,12 +1,12 @@
-import type { FastifyBaseLogger } from "fastify";
-import { MM_SERVICE_URL, INVITE_TIMEOUT_MS } from "./config";
-import type { Client, PendingInvite } from "../types";
-import { findClientByUuid } from "./helpers";
+import type { FastifyBaseLogger } from 'fastify';
+import { MM_SERVICE_URL, INVITE_TIMEOUT_MS } from './config';
+import type { Client, PendingInvite } from '../types';
+import { findClientByUuid } from './helpers';
 
 export async function createInviteMatch(
   player1Uuid: string,
   player2Uuid: string,
-  log: FastifyBaseLogger
+  log: FastifyBaseLogger,
 ): Promise<{
   status: 'SUCCESS' | 'INVITER_UNAVAILABLE' | 'INVITEE_UNAVAILABLE' | 'ERROR';
   message?: string;
@@ -61,8 +61,7 @@ export function cleanupExpiredInvites(
   pendingInvites: Map<string, PendingInvite>,
   clients: Map<string, Client>,
   log: FastifyBaseLogger,
-)
- {
+) {
   const now = Date.now();
   const expired: string[] = [];
 

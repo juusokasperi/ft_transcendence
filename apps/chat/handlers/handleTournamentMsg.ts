@@ -15,10 +15,7 @@ export function handleTournamentMsg(
   const { message, recipients } = payload;
   if (!message) return;
 
-  log.info(
-    { channel: client.channel, msg: message, recipients },
-    '[CHAT] tournament message',
-  );
+  log.info({ channel: client.channel, msg: message, recipients }, '[CHAT] tournament message');
 
   // If recipients list is provided, send ONLY to those users
   if (Array.isArray(recipients) && recipients.length > 0) {

@@ -1,6 +1,6 @@
-import type { FastifyBaseLogger } from "fastify";
-import type { Client } from "../types";
-import { broadcast } from "../utils/broadcast";
+import type { FastifyBaseLogger } from 'fastify';
+import type { Client } from '../types';
+import { broadcast } from '../utils/broadcast';
 import { findClientByUsername } from '../utils/helpers.ts';
 
 export function handleChat(
@@ -10,10 +10,7 @@ export function handleChat(
   log: FastifyBaseLogger,
 ): void {
   if (!client.channel) return;
-  log.debug(
-    { channel: client.channel, from: client.username },
-    '[CHAT] broadcast message',
-  );
+  log.debug({ channel: client.channel, from: client.username }, '[CHAT] broadcast message');
   broadcast(
     {
       type: 'chat',

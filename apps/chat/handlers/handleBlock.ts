@@ -1,7 +1,7 @@
-import type { FastifyBaseLogger } from "fastify";
-import type { Client } from "../types";
-import { findClientByUsername } from "../utils/helpers";
-import { fetchBlockedUuids } from "../utils/helpers";
+import type { FastifyBaseLogger } from 'fastify';
+import type { Client } from '../types';
+import { findClientByUsername } from '../utils/helpers';
+import { fetchBlockedUuids } from '../utils/helpers';
 
 export function handleBlockUser(
   clients: Map<string, Client>,
