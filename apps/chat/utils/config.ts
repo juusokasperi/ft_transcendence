@@ -15,3 +15,5 @@ export const API_PORT = Number(process.env.BACKEND_PORT!);
 export const API_SERVICE_URL = `http://backend:${API_PORT}`;
 export const isDev = process.env.NODE_ENV === 'development';
 export const SECRET = process.env.SECRET!;
+
+export const INVITE_TIMEOUT_MS = 60000; // 1 minute
