@@ -1,8 +1,9 @@
 import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
-import type { InviteLobby, ClientInfo } from '../types/types.ts';
+import { ClientState, type InviteLobby, type ClientInfo } from '../types/types.ts';
 import { log } from '@utils/logger';
 import { v4 as uuid } from 'uuid';
 import { createMatch } from './queue.ts';
+import { setClientState } from './state.ts';
 
 const inviteMatches = new Map<string, InviteLobby>(); // lobbyId -> inviteLobby
 const playerToInviteLobby = new Map<string, InviteLobby>(); // playerId -> inviteLobby
@@ -71,8 +72,11 @@ function destroyInviteLobby(lobbyId: string) {
 
   if (lobby.timer) clearTimeout(lobby.timer);
   if (lobby.player1Client) {
+    const client = lobby.player1Client;
     try {
-      lobby.player1Client.socket.send(
+      if (client.state === ClientState.IN_QUEUE) client.previousState = undefined;
+      else setClientState(client, ClientState.IDLE, 'invite_lobby_destroyed');
+      client.socket.send(
         JSON.stringify({
           type: 'INVITE_MATCH_FAILED',
           reason: 'Opponent did not join in time',
@@ -83,8 +87,11 @@ function destroyInviteLobby(lobbyId: string) {
     }
   }
   if (lobby.player2Client) {
+    const client = lobby.player2Client;
     try {
-      lobby.player2Client.socket.send(
+      if (client.state === ClientState.IN_QUEUE) client.previousState = undefined;
+      else setClientState(client, ClientState.IDLE, 'invite_lobby_destroyed');
+      client.socket.send(
         JSON.stringify({
           type: 'INVITE_MATCH_FAILED',
           reason: 'Opponent did not join in time',
@@ -121,6 +128,8 @@ export async function handleInviteLobbyJoin(client: ClientInfo) {
 
   if (isPlayer1) lobby.player1Client = client;
   else lobby.player2Client = client;
+
+  setClientState(client, ClientState.IN_INVITE_LOBBY, 'joined_invite_lobby');
 
   const bothConnected = lobby.player1Client && lobby.player2Client;
 

@@ -142,8 +142,7 @@ export function updateGoogleUser(profile: {
                          ELSE avatar   END,
         email     = CASE WHEN (email    IS NULL OR email    = '')
                          THEN COALESCE(?, email)
-                         ELSE email    END,
-        last_seen = CURRENT_TIMESTAMP
+                         ELSE email    END
       WHERE google_id = ?
     `,
       )
@@ -168,8 +167,7 @@ export function linkGoogleToUser(uuid: string, googleId: string, picture?: strin
           WHEN (avatar IS NULL OR avatar = '')
             THEN COALESCE(?, avatar)
           ELSE avatar
-        END,
-        last_seen = CURRENT_TIMESTAMP
+        END
       WHERE uuid = ? AND google_id IS NULL
     `,
       )
@@ -322,7 +320,7 @@ export function getUserStats(uuid: string): UserStats | null;
 export function getUserStats(uuid?: string): UserStats[] | UserStats | null {
   const baseQuery = `
 		SELECT
-			u.username, u.uuid, u.avatar, u.ranking, u.created_at, u.last_seen,
+			u.username, u.uuid, u.avatar, u.ranking, u.created_at,
 			COUNT(m.id) as total_matches,
 			COUNT(CASE
 				WHEN (mp.team_number = 1 AND m.team_1_score > m.team_2_score)
@@ -331,11 +329,7 @@ export function getUserStats(uuid?: string): UserStats[] | UserStats | null {
 			COUNT(CASE
 				WHEN (mp.team_number = 1 AND m.team_1_score < m.team_2_score)
 				  OR (mp.team_number = 2 AND m.team_2_score < m.team_1_score)
-				THEN 1 END) as losses,
-			CASE
-				WHEN u.last_seen >= datetime('now', '-5 minutes') THEN 1
-				ELSE 0
-			END as online
+				THEN 1 END) as losses
 			FROM Users u
 			LEFT JOIN MatchPlayers mp on u.uuid = mp.user_uuid
 			LEFT JOIN Matches m on mp.match_id = m.id
@@ -363,7 +357,6 @@ export function getUserStats(uuid?: string): UserStats[] | UserStats | null {
       wins: result.wins,
       losses: result.losses,
       totalMatches: result.total_matches,
-      online: !!result.online,
     } as UserStats;
   }
 
@@ -387,23 +380,7 @@ export function getUserStats(uuid?: string): UserStats[] | UserStats | null {
     wins: dbUser.wins,
     losses: dbUser.losses,
     totalMatches: dbUser.total_matches,
-    online: !!dbUser.online,
   })) as UserStats[];
-}
-
-export function updateLastSeen(uuid: string, date?: Date): Boolean {
-  const timestamp = date || new Date();
-  const dateSqliteFormat = timestamp.toISOString().slice(0, 19).replace('T', ' ');
-  const result = db
-    .prepare(
-      `
-		UPDATE Users
-		SET last_seen = ?
-		WHERE uuid = ?
-		`,
-    )
-    .run(dateSqliteFormat, uuid);
-  return result.changes === 1;
 }
 
 export function getUserSettings(uuid: string): UserSettings | null {

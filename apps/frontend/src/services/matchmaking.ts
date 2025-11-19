@@ -101,6 +101,9 @@ export function createMatchmakingClient(
     declineMatch(matchId: string) {
       safeSend({ type: 'DECLINE_MATCH', matchId });
     },
+    confirmJoin() {
+      safeSend({ type: 'CONFIRM_JOIN' });
+    },
     createLobby(username: string) {
       safeSend({ type: 'createLobby', username });
     },

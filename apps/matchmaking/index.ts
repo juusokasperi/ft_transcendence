@@ -4,7 +4,7 @@ import type { FastifyReply, FastifyRequest } from 'fastify';
 import type { WebSocket, RawData } from 'ws';
 import { v4 as uuid } from 'uuid';
 import { PORT, REDIS_URL } from './utils/config.ts';
-import type { ClientInfo, PendingMatch } from './types/types.ts';
+import { ClientState, type ClientInfo, type PendingMatch } from './types/types.ts';
 import type { MatchmakingClientMessage } from '@pong/shared/protocol/net';
 import { extractToken, handleAuth } from './auth/auth.ts';
 import {
@@ -26,7 +26,7 @@ import {
   handleTournamentStateUpdated,
   restoreTournamentMembership,
 } from './utils/scheduledMatches.ts';
-import { handleJoinQueue } from './utils/queue.ts';
+import { handleJoinQueue, handleJoinConfirm } from './utils/queue.ts';
 import { handleAdmitConfirmed } from './utils/pendingHandoffs.ts';
 import { registerMetrics } from '@utils/metrics';
 import { log, createFastifyLoggerConfig } from '@utils/logger';
@@ -96,6 +96,8 @@ async function handleConnection(socket: WebSocket, req: FastifyRequest) {
     mmr: 1000,
     authenticated: false,
     lastRateLimitNotice: Date.now() - 5000,
+    state: ClientState.IDLE,
+    previousState: undefined,
   };
   log(`Client connected, validating.`, { clientId: client.id });
   const authenticated = await handleAuth(client, token, clients);
@@ -109,7 +111,7 @@ async function handleConnection(socket: WebSocket, req: FastifyRequest) {
     return;
   }
 
-  void restoreTournamentMembership(client, clients);
+  await restoreTournamentMembership(client, clients);
 
   socket.on('message', async (raw: RawData) => {
     if (await isRateLimited(client, rateLimiter)) return;
@@ -123,31 +125,39 @@ async function handleConnection(socket: WebSocket, req: FastifyRequest) {
     }
     switch (data.type) {
       case 'JOIN_QUEUE':
-        handleJoinQueue(client);
+        if (client.state === ClientState.IDLE) handleJoinQueue(client);
+        else sendJoinConfirm(client);
+        break;
+      case 'CONFIRM_JOIN':
+        if (client.state !== ClientState.IN_QUEUE) handleJoinConfirm(client);
         break;
       case 'LEAVE_QUEUE':
-        handleLeaveQueue(client);
+        if (client.state === ClientState.IN_QUEUE) handleLeaveQueue(client);
         break;
       case 'ACCEPT_MATCH':
-        handleAcceptMatch(data.matchId, client, pendingMatches);
+        if (client.state === ClientState.PENDING_MATCH_ACCEPTANCE)
+          handleAcceptMatch(data.matchId, client, pendingMatches);
         break;
       case 'DECLINE_MATCH':
-        handleDeclineMatch(data.matchId, client, pendingMatches);
+        if (client.state === ClientState.PENDING_MATCH_ACCEPTANCE)
+          handleDeclineMatch(data.matchId, client, pendingMatches);
         break;
       case 'CREATE_TOURNAMENT':
-        void handleCreateTournament(data, client, clients);
+        if (client.state === ClientState.IDLE) void handleCreateTournament(data, client, clients);
         break;
       case 'JOIN_TOURNAMENT':
-        void handleJoinTournament(data, client, clients);
+        if (client.state === ClientState.IDLE) void handleJoinTournament(data, client, clients);
         break;
       case 'LEAVE_TOURNAMENT':
-        void handleLeaveTournament(client, clients);
+        if (client.state === ClientState.IN_TOURNAMENT) void handleLeaveTournament(client, clients);
         break;
       case 'FORFEIT_TOURNAMENT':
-        void handleForfeitTournament(client, clients);
+        if (client.state === ClientState.IN_TOURNAMENT)
+          void handleForfeitTournament(client, clients);
         break;
       case 'ACCEPT_SCHEDULED':
-        void handleAcceptScheduled(data, client, clients);
+        if (client.state === ClientState.IN_TOURNAMENT)
+          void handleAcceptScheduled(data, client, clients);
         break;
       default:
         log('Unknown message', { type: (data as any).type ?? 'UNKNOWN' });
@@ -172,6 +182,25 @@ async function handleConnection(socket: WebSocket, req: FastifyRequest) {
     removeFromQueue(id);
     clients.delete(id);
   });
+}
+
+function sendJoinConfirm(client: ClientInfo) {
+  if (client.state === ClientState.IN_TOURNAMENT || client.state === ClientState.IN_INVITE_LOBBY) {
+    const message = ClientState.IN_TOURNAMENT
+      ? 'You are in an active tournament. Continue?'
+      : 'You are in an invite-only lobby, waiting for your opponent. Continue?';
+    client.socket.send(
+      JSON.stringify({
+        type: 'CONFIRM_REQUIRED',
+        message,
+      }),
+    );
+  } else {
+    log('Client tried to join queue from unhandled state', {
+      clientId: client.id,
+      state: client.state,
+    });
+  }
 }
 
 app.addHook('onClose', async () => {

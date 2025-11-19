@@ -11,7 +11,7 @@ import type {
   TournamentMatchesReadyMessage,
 } from '@pong/shared/protocol/net';
 import { createMatch } from './queue.ts';
-import type { ClientInfo } from '../types/types.ts';
+import { ClientState, type ClientInfo } from '../types/types.ts';
 import { log } from '@utils/logger';
 import {
   API_URL,
@@ -21,6 +21,7 @@ import {
   TOURNAMENT_REMINDER_DELAY_MS,
 } from './config.ts';
 import * as Config from './config.ts';
+import { setClientState } from './state.ts';
 
 // Some tests partially mock the config module and may omit certain exports.
 // Safely resolve absence auto-win delay with a sensible default to avoid
@@ -984,6 +985,7 @@ export async function handleJoinTournament(
     client.tournamentId = tournamentId;
     client.tournamentParticipantId = participant.id;
     subscribeClientToTournament(tournamentId, client);
+    setClientState(client, ClientState.IN_TOURNAMENT, 'joined_tournament');
 
     await syncTournamentState(tournamentId, client, clients);
 
@@ -1046,6 +1048,7 @@ export async function handleLeaveTournament(client: ClientInfo, clients: Map<str
     unsubscribeClientFromTournament(tournamentId, client.id);
     client.tournamentId = undefined;
     client.tournamentParticipantId = undefined;
+    setClientState(client, ClientState.IDLE, 'left_tournament');
 
     log('Tournament membership cleared', {
       uuid: client.uuid,
@@ -1218,6 +1221,7 @@ export async function restoreTournamentMembership(
     client.tournamentId = tournament.id;
     client.tournamentParticipantId = participant.id;
 
+    setClientState(client, ClientState.IN_TOURNAMENT, 'restored_tournament_membership');
     subscribeClientToTournament(tournament.id, client);
 
     log('Restored active tournament membership for client', {

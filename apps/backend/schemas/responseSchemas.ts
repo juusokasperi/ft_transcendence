@@ -56,7 +56,6 @@ export const UsersSchema = {
     wins: { type: 'integer' },
     losses: { type: 'integer' },
     totalMatches: { type: 'integer' },
-    online: { type: 'boolean' },
   },
 };
 

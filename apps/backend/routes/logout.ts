@@ -1,12 +1,9 @@
 import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
-import { updateLastSeen } from '../db/queries/users.ts';
 import { deleteRefreshTokensByUser } from '../db/queries/refreshTokens.ts';
 import { authPreHandler, tokenUuidCheck } from '../hooks/auth.ts';
 import { logoutSchema } from '../schemas/authSchemas.ts';
 import { ACCESS_TOKEN_COOKIE_NAME, REFRESH_TOKEN_COOKIE_NAME } from '../utils/config.ts';
 
-// Sets user's last_seen status back 10 minutes, making them
-// appear offline.
 export async function logoutRoutes(app: FastifyInstance) {
   app.post(
     '/',
@@ -17,12 +14,6 @@ export async function logoutRoutes(app: FastifyInstance) {
     async (req: FastifyRequest, res: FastifyReply) => {
       try {
         const uuid = req.user!.uuid;
-        const tenMinutesAgo = new Date(Date.now() - 10 * 60 * 1000);
-        const result = updateLastSeen(uuid, tenMinutesAgo);
-        if (!result) {
-          res.status(500).send({ message: 'Failed to logout user' });
-          return;
-        }
         deleteRefreshTokensByUser(uuid);
         res.clearCookie(ACCESS_TOKEN_COOKIE_NAME, { path: '/' });
         res.clearCookie(REFRESH_TOKEN_COOKIE_NAME, { path: '/' });

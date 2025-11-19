@@ -3,7 +3,6 @@ import { runMigrations } from '../db/migrations.ts';
 import {
   addUser,
   updateUserSettings,
-  updateLastSeen,
   getUserStats,
   updateUserRanking,
 } from '../db/queries/users.ts';
@@ -259,8 +258,3 @@ for (let i = 0; i < 3; i++) {
   if (ghostMatchPlayerId) upsertMatchPlayerStats(ghostMatchPlayerId, ghostStats);
 }
 deleteUser(uuidGhost);
-
-// Move Joe's and Bob's last_seen to 10 minutes ago, so they appear offline
-const tenMinutesAgo = new Date(Date.now() - 10 * 60 * 1000);
-updateLastSeen(uuidJoe, tenMinutesAgo);
-updateLastSeen(uuidBob, tenMinutesAgo);

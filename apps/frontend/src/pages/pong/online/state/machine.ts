@@ -27,6 +27,7 @@ type Action =
   | { type: 'allocatorError' }
   | { type: 'authError' }
   | { type: 'ratelimitError' }
+  | { type: 'confirmationRequired' }
   | { type: 'startPlaying' }
   | { type: 'endMatch'; payload?: MatchEndPayload }
   | { type: 'showPostMatch'; summary: import('./types').OnlineMatchSummary }
@@ -105,6 +106,9 @@ export function reducer(state: OnlineState, action: Action): OnlineState {
       return resetState(state, 'connecting');
 
     case 'ratelimitError':
+      return state;
+
+    case 'confirmationRequired':
       return state;
 
     case 'startPlaying':

@@ -17,12 +17,7 @@ vi.mock('../../utils/config.ts', () => ({
   REFRESH_TOKEN_COOKIE_NAME: 'refresh_token',
 }));
 
-// 2) Make updateLastSeen a no-op (preHandler requires it)
-vi.mock('../../hooks/updateLastSeen.ts', () => ({
-  updateLastSeenHandler: (_req: any, _res: any, done: any) => done(),
-}));
-
-// 3) Mock the DB queries INSIDE the factory (no top-level refs!)
+// 2) Mock the DB queries INSIDE the factory (no top-level refs!)
 vi.mock('../../db/queries/users.ts', () => {
   return {
     getUserByUuid: vi.fn(), // we will grab these later from the imported module
@@ -39,7 +34,7 @@ vi.mock('../../db/queries/users.ts', () => {
   };
 });
 
-// 4) Mock nodemailer utils
+// 3) Mock nodemailer utils
 vi.mock('../../utils/nodemailer/index.ts', () => ({
   sendEmailChangeEmail: vi.fn(),
 }));
@@ -120,7 +115,6 @@ describe('GET /api/users/me', () => {
       wins: 5,
       losses: 2,
       totalMatches: 7,
-      online: false,
     });
 
     const token = makeToken(USER_UUID);
