@@ -79,7 +79,7 @@ define ensure_builder
 			docker image tag  $(BUILDKIT_BASE_IMG) $(BUILDER_IMAGE); \
 		fi; \
 		echo ">> Creating buildx builder '$(BUILDER)' (image=$(BUILDER_IMAGE))"; \
-		docker buildx create --name $(BUILDER) --driver docker-container --driver-opt image=$(BUILDER_IMAGE) >/dev/null; \
+		docker buildx create --name $(BUILDER) --driver docker-container --driver-opt image=$(BUILDER_IMAGE) --buildkitd-config ./buildkitd.toml >/dev/null; \
 	fi
 	@docker buildx use $(BUILDER)
 endef
