@@ -83,7 +83,7 @@ services:
     environment:
       - GF_SECURITY_ADMIN_USER=${GRAFANA_ADMIN_USER}
       - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASS}
-      - GF_SERVER_ROOT_URL=${FRONTEND_URL}/grafana/
+      - GF_SERVER_ROOT_URL=http://localhost:${MONITORING_PORT:-8082}/grafana/
       - GF_SERVER_SERVE_FROM_SUB_PATH=true
       - GF_SECURITY_ALLOW_EMBEDDING=true
       - GF_SERVER_ENABLE_GZIP=true
