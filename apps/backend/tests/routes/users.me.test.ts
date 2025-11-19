@@ -34,6 +34,10 @@ vi.mock('../../db/queries/users.ts', () => {
   };
 });
 
+vi.mock('../../db/queries/tournamentParticipants.ts', () => ({
+  updateParticipantAliasesForUser: vi.fn(),
+}));
+
 // 3) Mock nodemailer utils
 vi.mock('../../utils/nodemailer/index.ts', () => ({
   sendEmailChangeEmail: vi.fn(),
@@ -41,6 +45,7 @@ vi.mock('../../utils/nodemailer/index.ts', () => ({
 
 // 4) Now import modules that use those mocks
 import * as usersQueries from '../../db/queries/users.ts';
+import * as tournamentParticipantQueries from '../../db/queries/tournamentParticipants.ts';
 import * as nodemailerUtils from '../../utils/nodemailer/index.ts';
 import { userRoutes } from '../../routes/users.ts';
 import { signAccessToken } from '../../utils/jwt.ts';
@@ -301,5 +306,52 @@ describe('POST /api/users/confirm-email/:token', () => {
 
     expect(res.statusCode).toBe(200);
     expect(res.json().success).toMatch(/Email successfully updated/i);
+  });
+});
+
+describe('PATCH /api/users/me (username)', () => {
+  const USER_UUID = '44444444-4444-4444-4444-444444444444';
+  const app = buildApp();
+
+  beforeAll(async () => {
+    await app.ready();
+  });
+
+  afterAll(async () => {
+    await app.close();
+    vi.restoreAllMocks();
+  });
+
+  it('updates username and tournament aliases', async () => {
+    (usersQueries.getUserStats as unknown as Mock).mockReturnValueOnce({
+      uuid: USER_UUID,
+      username: 'oldname',
+      avatar: null,
+      email: 'user@example.com',
+      tfa: false,
+      createdAt: '2024-01-01T00:00:00.000Z',
+      wins: 0,
+      losses: 0,
+    });
+    (usersQueries.getUserByUsername as unknown as Mock).mockReturnValueOnce(null);
+    (usersQueries.updateUsername as unknown as Mock).mockReturnValueOnce(true);
+    (
+      tournamentParticipantQueries.updateParticipantAliasesForUser as unknown as Mock
+    ).mockReturnValueOnce(true);
+    const token = makeToken(USER_UUID);
+
+    const res = await app.inject({
+      method: 'PATCH',
+      url: '/api/users/me',
+      headers: { cookie: `token=${token}` },
+      payload: { newUsername: 'newname' },
+    });
+
+    expect(res.statusCode).toBe(200);
+    expect(res.json().username).toBe('newname');
+    expect(tournamentParticipantQueries.updateParticipantAliasesForUser).toHaveBeenCalledWith(
+      USER_UUID,
+      'newname',
+    );
   });
 });

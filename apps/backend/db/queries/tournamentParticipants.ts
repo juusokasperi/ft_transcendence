@@ -148,3 +148,14 @@ export function removeTournamentParticipant(id: number): boolean {
     return false;
   }
 }
+
+export function updateParticipantAliasesForUser(userUuid: string, alias: string): boolean {
+  try {
+    const result = db
+      .prepare('UPDATE TournamentParticipants SET alias = ? WHERE user_uuid = ?')
+      .run(alias, userUuid);
+    return result.changes > 0;
+  } catch {
+    return false;
+  }
+}
