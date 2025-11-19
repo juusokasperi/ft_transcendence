@@ -308,6 +308,14 @@ export type FrameMessage = {
   state: any;
   events: any;
   match: MatchSnapshot;
+  /**
+   * Authoritative simulation tick index on the server.
+   */
+  tick: number;
+  /**
+   * Opponent's scalar input axis at this tick (from the recipient's POV).
+   */
+  axis?: number;
 };
 
 export type ResumeTokenMessage = {
