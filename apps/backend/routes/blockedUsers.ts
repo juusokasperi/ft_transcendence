@@ -2,7 +2,6 @@ import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { getBlockedUsernames, blockUser, unblockUser } from '../db/queries/blockedUsers.ts';
 import { getUser } from '../db/queries/users.ts';
 import { authPreHandler, tokenUuidCheck } from '../hooks/auth.ts';
-import { updateLastSeenHandler } from '../hooks/updateLastSeen.ts';
 import {
   getBlockedUsersSchema,
   blockUserSchema,
@@ -15,7 +14,7 @@ export async function blockedUsersRoutes(app: FastifyInstance) {
     '/',
     {
       schema: getBlockedUsersSchema,
-      preHandler: [authPreHandler, tokenUuidCheck, updateLastSeenHandler],
+      preHandler: [authPreHandler, tokenUuidCheck],
     },
     async (req: FastifyRequest, res: FastifyReply) => {
       try {
@@ -34,7 +33,7 @@ export async function blockedUsersRoutes(app: FastifyInstance) {
     '/',
     {
       schema: blockUserSchema,
-      preHandler: [authPreHandler, tokenUuidCheck, updateLastSeenHandler],
+      preHandler: [authPreHandler, tokenUuidCheck],
     },
     async (req: FastifyRequest, res: FastifyReply) => {
       try {
@@ -70,7 +69,7 @@ export async function blockedUsersRoutes(app: FastifyInstance) {
     '/',
     {
       schema: unblockUserSchema,
-      preHandler: [authPreHandler, tokenUuidCheck, updateLastSeenHandler],
+      preHandler: [authPreHandler, tokenUuidCheck],
     },
     async (req, res) => {
       try {
