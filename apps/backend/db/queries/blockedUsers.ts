@@ -1,20 +1,19 @@
 import db from '../client.ts';
 
-export function getBlockedUsernames(blockerUuid: string): string[] {
+export function getBlockedUuids(blockerUuid: string): string[] {
   try {
     const rows = db
       .prepare(
         `
-        SELECT u.username
-        FROM BlockedUsers b
-        JOIN Users u ON u.uuid = b.blocked_uuid
-        WHERE b.blocker_uuid = ?
+        SELECT blocked_uuid
+        FROM BlockedUsers
+        WHERE blocker_uuid = ?
         `,
       )
-      .all(blockerUuid) as { username: string }[];
+      .all(blockerUuid) as { blocked_uuid: string }[];
 
     if (!rows || rows.length === 0) return [];
-    return rows.map((row) => row.username);
+    return rows.map((row) => row.blocked_uuid);
   } catch (error) {
     return [];
   }
