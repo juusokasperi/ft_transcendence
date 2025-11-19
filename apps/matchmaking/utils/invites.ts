@@ -128,10 +128,9 @@ function validateInviteRequest(
       player2Uuid,
       tournamentId: inviteeTournamentMembership.tournamentId,
     });
-    const inviteeName = 'That player';
     return {
       status: 'INVITEE_UNAVAILABLE',
-      message: `${inviteeName} is currently participating in a tournament`,
+      message: 'That player is currently participating in a tournament',
     };
   }
 

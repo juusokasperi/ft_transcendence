@@ -324,7 +324,6 @@ export default function Chat({ onClose, channel, isOpen = true }: ChatProps) {
         <div
           ref={scrollRef}
           className="custom-scrollbar min-h-0 flex-1 space-y-2 overflow-y-auto p-3 text-sm"
-          /* className="min-h-0 flex-1 space-y-2 overflow-y-auto overflow-x-hidden p-3 text-sm" */
         >
           {messages.map((msg, idx) => {
             if (msg.system) {
