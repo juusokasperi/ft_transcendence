@@ -13,7 +13,9 @@ import { usePresence, type UserItem as UserItemBase } from './PresenceContext';
 
 export type ChatMessage = {
   from?: string;
+  fromUuid?: string;
   to?: string;
+  toUuid?: string;
   message: string;
   system?: boolean;
   type?: string;
@@ -135,24 +137,26 @@ export function ChatProvider({ channel, children }: ChatProviderProps) {
 
     const unsubscribe = subscribe((data: any) => {
       if (data.type === 'chat') {
-        if (data.from && blockedRef.current.has(data.from)) return;
+        if (data.fromUuid && blockedRef.current.has(data.fromUuid)) return;
         setMessages((prev) => [...prev, { ...data, type: 'chat' }]);
         return;
       }
-      if (data.type === 'blockedList' && Array.isArray(data.usernames)) {
-        const newBlocked: Set<string> = new Set<string>(data.usernames);
+      if (data.type === 'blockedList' && Array.isArray(data.uuids)) {
+        const newBlocked: Set<string> = new Set<string>(data.uuids);
         blockedRef.current = newBlocked;
         setBlocked(newBlocked);
         return;
       }
 
       if (data.type === 'privateMessage' || data.type === 'dm') {
-        if (data.from && blockedRef.current.has(data.from)) return;
+        if (data.fromUuid && blockedRef.current.has(data.fromUuid)) return;
         setMessages((prev) => [
           ...prev,
           {
             from: data.from,
+            fromUuid: data.fromUuid,
             to: data.to,
+            toUuid: data.toUuid,
             message: data.message,
             type: 'privateMessage',
           },
@@ -173,7 +177,7 @@ export function ChatProvider({ channel, children }: ChatProviderProps) {
       if (data.type === 'userBlocked') {
         setBlocked((prev) => {
           const copy = new Set(prev);
-          copy.add(data.username);
+          copy.add(data.uuid);
           return copy;
         });
         addSystemMessage(`You blocked ${data.username}`);
@@ -183,7 +187,7 @@ export function ChatProvider({ channel, children }: ChatProviderProps) {
       if (data.type === 'userUnblocked') {
         setBlocked((prev) => {
           const copy = new Set(prev);
-          copy.delete(data.username);
+          copy.delete(data.uuid);
           return copy;
         });
         addSystemMessage(`You unblocked ${data.username}`);
@@ -324,7 +328,7 @@ export function ChatProvider({ channel, children }: ChatProviderProps) {
     () =>
       presenceUsers.map((u) => ({
         ...u,
-        isBlocked: blocked.has(u.username),
+        isBlocked: blocked.has(u.userUuid),
       })),
     [blocked, presenceUsers],
   );
