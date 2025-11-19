@@ -3,8 +3,8 @@ import { Link, useLocation } from 'react-router-dom';
 import { useAppContext } from '../context/AppContext';
 import { useSidebar } from '../context/SidebarContext';
 import { FiMenu, FiX } from 'react-icons/fi';
-import logoImg from '../assets/logo.png';
 
+const logoImg = '/logo.svg';
 const baseLinks = [
   { label: 'Home', to: '/' },
   { label: 'Pong', to: '/pong' },
