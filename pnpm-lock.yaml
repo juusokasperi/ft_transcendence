@@ -207,12 +207,15 @@ importers:
 
   apps/chat:
     dependencies:
-      '@elastic/ecs-pino-format':
-        specifier: ^1.5.0
-        version: 1.5.0
       '@fastify/websocket':
         specifier: ^11.2.0
         version: 11.2.0
+      '@utils/logger':
+        specifier: workspace:*
+        version: link:../../packages/utils/logger
+      '@utils/metrics':
+        specifier: workspace:*
+        version: link:../../packages/utils/metrics
       dotenv:
         specifier: ^17.2.2
         version: 17.2.3
