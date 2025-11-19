@@ -58,6 +58,7 @@ function sendUserList(channel: string) {
     .filter((client) => client.channel === channel && client.username)
     .map((client) => ({
       userId: client.id,
+      userUuid: client.uuid,
       username: client.username!,
     }));
 
