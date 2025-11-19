@@ -213,6 +213,9 @@ importers:
       '@fastify/websocket':
         specifier: ^11.2.0
         version: 11.2.0
+      dotenv:
+        specifier: ^17.2.2
+        version: 17.2.3
       fastify:
         specifier: ^5.6.0
         version: 5.6.1
