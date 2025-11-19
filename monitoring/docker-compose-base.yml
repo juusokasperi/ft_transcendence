@@ -68,6 +68,7 @@ services:
 
   nginx-exporter:
     image: nginx/nginx-prometheus-exporter:1.5.0
+    restart: unless-stopped
     depends_on:
       nginx:
         condition: service_started
@@ -115,6 +116,7 @@ services:
   grafana-setup:
     build:
       context: ./monitoring/grafana-setup/
+    restart: no
     depends_on:
       grafana:
         condition: service_healthy

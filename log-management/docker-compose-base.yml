@@ -26,6 +26,7 @@ services:
         STACK_VERSION: ${ES_STACK_VERSION:-9.1.5}
     volumes:
       - elk_certs:/usr/share/elasticsearch/config/certs
+    restart: no
     user: '0'
     environment:
       - ELASTIC_PASSWORD=${ELASTIC_PASSWORD}
@@ -92,6 +93,7 @@ services:
   elasticsearch-post:
     build:
       context: ./log-management/elasticsearch-post/
+    restart: no
     volumes:
       - elk_certs:/usr/share/elk/config/certs
     environment:
@@ -158,6 +160,7 @@ services:
   kibana-post:
     build:
       context: ./log-management/kibana-post/
+    restart: no
     environment:
       - KIBANA_URL=http://kibana:${KIBANA_PORT:-5601}/kibana
       - ELASTIC_USER=${ELASTIC_USER:-elastic}
