@@ -84,7 +84,7 @@ const TournamentPageHeader: React.FC<TournamentPageHeaderProps> = ({
           <ConfirmDialog
             open={confirmOpen}
             title="Leave tournament?"
-            description="You will not be able to come back to this tournament and be declared forfeit."
+            description="You will not be able to come back to this tournament and be declared forfeit if you have matches to play."
             confirmLabel="Leave"
             cancelLabel="Stay"
             tone="danger"

@@ -164,7 +164,8 @@ const OnlineGame: React.FC = () => {
     onBootstrapFailed,
   );
 
-  const matchActive = state.status === 'starting' || state.status === 'playing';
+  const matchActive =
+    state.status === 'starting' || state.status === 'playing' || state.status === 'postmatch';
   const setMatchActive = useSetMatchActivity();
 
   useEffect(() => {
@@ -284,11 +285,13 @@ const OnlineGame: React.FC = () => {
   if (state.status === 'postmatch' && state.postMatchSummary) {
     return (
       <PageContainer>
-        <PageSection>
-          <PostMatchOnlineView
-            summary={state.postMatchSummary}
-            onBackToMenu={() => navigate('/pong')}
-          />
+        <PageSection className="flex min-h-[60vh] items-center justify-center">
+          <div className="w-full max-w-2xl">
+            <PostMatchOnlineView
+              summary={state.postMatchSummary}
+              onBackToMenu={() => navigate('/pong')}
+            />
+          </div>
         </PageSection>
       </PageContainer>
     );

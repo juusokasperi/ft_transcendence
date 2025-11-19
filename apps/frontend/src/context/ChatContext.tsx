@@ -239,7 +239,13 @@ export function ChatProvider({ channel, children }: ChatProviderProps) {
       }
 
       if (data.type === 'inviteCancelled') {
-        addSystemMessage(`${data.username} left the chat, invite cancelled`);
+        if ('reason' in data && typeof data.reason === 'string' && data.reason.length > 0) {
+          addSystemMessage(data.reason);
+        } else if (data.username) {
+          addSystemMessage(`${data.username} left the chat, invite cancelled`);
+        } else {
+          addSystemMessage(`Invite cancelled`);
+        }
         return;
       }
 
@@ -249,7 +255,7 @@ export function ChatProvider({ channel, children }: ChatProviderProps) {
       }
 
       if (data.type === 'error') {
-        addSystemMessage(`Error: ${data.message}`);
+        addSystemMessage(`${data.message}`);
       }
     });
 

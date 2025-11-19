@@ -65,6 +65,7 @@ export default function Chat({ onClose, channel, isOpen = true }: ChatProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const inputRef = useRef<HTMLInputElement | null>(null);
   const wasOpenRef = useRef(isOpen);
+  const shouldAutoScrollRef = useRef(true);
   const privateMessageCount = useMemo(
     () =>
       messages.reduce(
@@ -92,6 +93,9 @@ export default function Chat({ onClose, channel, isOpen = true }: ChatProps) {
   }, [isOpen]);
 
   useEffect(() => {
+    if (isOpen) {
+      shouldAutoScrollRef.current = true;
+    }
     const wasOpen = wasOpenRef.current;
     wasOpenRef.current = isOpen;
     if (wasOpen && !isOpen) {
@@ -121,8 +125,25 @@ export default function Chat({ onClose, channel, isOpen = true }: ChatProps) {
     if (!isOpen) return;
     const el = scrollRef.current;
     if (!el) return;
+    if (!shouldAutoScrollRef.current) return;
     el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' });
   }, [messages, isOpen]);
+
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+
+    const handleScroll = () => {
+      const distanceFromBottom = el.scrollHeight - (el.scrollTop + el.clientHeight);
+      shouldAutoScrollRef.current = distanceFromBottom < 48;
+    };
+
+    el.addEventListener('scroll', handleScroll);
+    handleScroll();
+    return () => {
+      el.removeEventListener('scroll', handleScroll);
+    };
+  }, []);
 
   useEffect(() => {
     if (isOpen) {
@@ -302,7 +323,7 @@ export default function Chat({ onClose, channel, isOpen = true }: ChatProps) {
         {/* Messages */}
         <div
           ref={scrollRef}
-          className="min-h-0 flex-1 space-y-2 overflow-y-auto overflow-x-hidden p-3 text-sm"
+          className="custom-scrollbar min-h-0 flex-1 space-y-2 overflow-y-auto p-3 text-sm"
         >
           {messages.map((msg, idx) => {
             if (msg.system) {
@@ -371,7 +392,7 @@ export default function Chat({ onClose, channel, isOpen = true }: ChatProps) {
         </div>
 
         {/* Sidebar */}
-        <div className="max-h-40 w-full flex-shrink-0 overflow-y-auto border-t border-white/20 bg-black/20 text-sm sm:max-h-none sm:w-28 sm:border-l sm:border-t-0 sm:bg-transparent">
+        <div className="custom-scrollbar max-h-40 w-full flex-shrink-0 overflow-y-auto border-t border-white/20 bg-black/20 text-sm sm:max-h-none sm:w-28 sm:border-l sm:border-t-0 sm:bg-transparent">
           <div className="border-b border-white/10 p-2 font-semibold">Users</div>
           {users.map((u) => (
             <div
