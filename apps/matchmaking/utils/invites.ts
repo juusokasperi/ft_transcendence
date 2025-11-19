@@ -9,6 +9,7 @@ import { log } from '@utils/logger';
 import { v4 as uuid } from 'uuid';
 import { createMatch } from './queue.ts';
 import { setClientState } from './state.ts';
+import { isUserInTournament } from './tournamentMembershipRegistry.ts';
 
 const inviteMatches = new Map<string, InviteLobby>(); // lobbyId -> inviteLobby
 const playerToInviteLobby = new Map<string, InviteLobby>(); // playerId -> inviteLobby
@@ -111,6 +112,31 @@ function validateInviteRequest(
     return {
       status: 'INVITEE_UNAVAILABLE',
       message: `${inviteeLobbyName} is already scheduled for another match`,
+    };
+  }
+
+  const inviterTournamentMembership = isUserInTournament(player1Uuid);
+  if (inviterTournamentMembership) {
+    log('Player 1 has active tournament membership during invite', {
+      player1Uuid,
+      tournamentId: inviterTournamentMembership.tournamentId,
+    });
+    return {
+      status: 'INVITER_UNAVAILABLE',
+      message: 'You are currently participating in a tournament',
+    };
+  }
+
+  const inviteeTournamentMembership = isUserInTournament(player2Uuid);
+  if (inviteeTournamentMembership) {
+    log('Player 2 has active tournament membership during invite', {
+      player2Uuid,
+      tournamentId: inviteeTournamentMembership.tournamentId,
+    });
+    const inviteeName = 'That player';
+    return {
+      status: 'INVITEE_UNAVAILABLE',
+      message: `${inviteeName} is currently participating in a tournament`,
     };
   }
 

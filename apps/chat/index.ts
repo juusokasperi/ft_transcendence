@@ -458,12 +458,7 @@ async function handleConnection(socket: ChatSocket, _request: ChatRequest) {
       case 'acceptInvite': {
         const invite = pendingInvites.get(data.inviteId);
         if (!invite) {
-          socket.send(
-            JSON.stringify({
-              type: 'error',
-              message: 'Invite not found or expired.',
-            }),
-          );
+          // Silently ignore; this invite may have been cancelled already.
           return;
         }
 
@@ -502,6 +497,25 @@ async function handleConnection(socket: ChatSocket, _request: ChatRequest) {
 
           fastify.log.info({ inviteId: data.inviteId }, '[CHAT] Match created successfully');
           pendingInvites.delete(data.inviteId);
+
+          // Cancel any other pending invites from this inviter since they are now busy.
+          const cancelled: string[] = [];
+          pendingInvites.forEach((otherInvite, otherInviteId) => {
+            if (otherInviteId === data.inviteId) return;
+            if (otherInvite.fromUserUuid === invite.fromUserUuid) {
+              const otherClient = findClientById(otherInvite.toUserUuid);
+              if (otherClient) {
+                otherClient.socket.send(
+                  JSON.stringify({
+                    type: 'inviteCancelled',
+                    reason: `${invite.fromUsername} started another match.`,
+                  }),
+                );
+              }
+              cancelled.push(otherInviteId);
+            }
+          });
+          cancelled.forEach((inviteIdToRemove) => pendingInvites.delete(inviteIdToRemove));
         } else {
           let errorMessage = 'Could not create match.';
           if (result.status === 'INVITER_UNAVAILABLE') {

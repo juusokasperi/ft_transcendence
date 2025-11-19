@@ -22,6 +22,11 @@ import {
 } from './config.ts';
 import * as Config from './config.ts';
 import { setClientState } from './state.ts';
+import {
+  clearTournamentMembership,
+  setTournamentMembership,
+  syncTournamentMembershipSnapshot,
+} from './tournamentMembershipRegistry.ts';
 import { cancelInviteLobbyForPlayerUuid, TOURNAMENT_INVITE_BLOCK_REASON } from './invites.ts';
 
 // Some tests partially mock the config module and may omit certain exports.
@@ -68,6 +73,19 @@ function cancelInviteIfNeeded(client: ClientInfo, context: string) {
       tournamentId: client.tournamentId,
     });
   }
+}
+
+function trackClientTournamentMembership(client: ClientInfo, tournamentId: number) {
+  if (!client.uuid) return;
+  setTournamentMembership(client.uuid, {
+    tournamentId,
+    participantId: client.tournamentParticipantId,
+  });
+}
+
+function clearClientTournamentMembership(client: ClientInfo) {
+  if (!client.uuid) return;
+  clearTournamentMembership(client.uuid);
 }
 
 function sendToClient(client: ClientInfo, payload: MatchmakingMessage) {
@@ -743,6 +761,15 @@ async function syncTournamentState(
         status: participant.status,
       })),
     };
+
+    syncTournamentMembershipSnapshot(
+      tournamentId,
+      state.participants.map((participant) => ({
+        userUuid: participant.userUuid,
+        participantId: participant.id,
+        status: participant.status,
+      })),
+    );
     broadcastToTournament(tournamentId, clients, lobbyMessage);
 
     const bracketMessage: TournamentBracketSnapshotMessage = {
@@ -945,6 +972,7 @@ export async function handleCreateTournament(
     client.tournamentId = tournamentId;
     client.tournamentParticipantId = participant.id;
     subscribeClientToTournament(tournamentId, client);
+    trackClientTournamentMembership(client, tournamentId);
 
     await syncTournamentState(tournamentId, client, clients);
   } catch (error) {
@@ -1001,6 +1029,7 @@ export async function handleJoinTournament(
     client.tournamentParticipantId = participant.id;
     subscribeClientToTournament(tournamentId, client);
     setClientState(client, ClientState.IN_TOURNAMENT, 'joined_tournament');
+    trackClientTournamentMembership(client, tournamentId);
 
     await syncTournamentState(tournamentId, client, clients);
 
@@ -1064,6 +1093,7 @@ export async function handleLeaveTournament(client: ClientInfo, clients: Map<str
     client.tournamentId = undefined;
     client.tournamentParticipantId = undefined;
     setClientState(client, ClientState.IDLE, 'left_tournament');
+    clearClientTournamentMembership(client);
 
     log('Tournament membership cleared', {
       uuid: client.uuid,
@@ -1127,6 +1157,11 @@ export async function handleForfeitTournament(
     }
 
     await syncTournamentState(tournamentId, client, clients);
+    unsubscribeClientFromTournament(tournamentId, client.id);
+    client.tournamentId = undefined;
+    client.tournamentParticipantId = undefined;
+    setClientState(client, ClientState.IDLE, 'left_tournament');
+    clearClientTournamentMembership(client);
   } catch (error) {
     handleTournamentApiError(client, error, 'Failed to forfeit tournament');
   }
@@ -1240,6 +1275,7 @@ export async function restoreTournamentMembership(
 
     setClientState(client, ClientState.IN_TOURNAMENT, 'restored_tournament_membership');
     subscribeClientToTournament(tournament.id, client);
+    trackClientTournamentMembership(client, tournament.id);
 
     log('Restored active tournament membership for client', {
       uuid: client.uuid,
