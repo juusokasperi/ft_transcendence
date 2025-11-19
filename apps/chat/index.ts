@@ -132,6 +132,32 @@ async function createInviteMatch(
   }
 }
 
+async function checkInviteAvailability(
+  player1Uuid: string,
+  player2Uuid: string,
+): Promise<{
+  status: 'SUCCESS' | 'INVITER_UNAVAILABLE' | 'INVITEE_UNAVAILABLE' | 'ERROR';
+  message?: string;
+}> {
+  try {
+    const response = await fetch(`${MM_SERVICE_URL}/invite-match?validateOnly=true`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ player1Uuid, player2Uuid }),
+    });
+
+    if (!response.ok) {
+      fastify.log.error({ status: response.status }, '[CHAT] Invite availability check failed');
+      return { status: 'ERROR', message: 'Matchmaking service error' };
+    }
+
+    return await response.json();
+  } catch (err) {
+    fastify.log.error({ err }, '[CHAT] Failed to check invite availability with MM service');
+    return { status: 'ERROR', message: 'Could not contact matchmaking service' };
+  }
+}
+
 function cleanupExpiredInvites() {
   const now = Date.now();
   const expired: string[] = [];
@@ -373,6 +399,27 @@ async function handleConnection(socket: ChatSocket, _request: ChatRequest) {
           );
           return;
         }
+
+        const availability = await checkInviteAvailability(client.uuid, targetClient.uuid);
+        if (availability.status !== 'SUCCESS') {
+          let errorMessage = availability.message ?? 'Could not send invite.';
+          if (availability.status === 'INVITER_UNAVAILABLE' && !availability.message) {
+            errorMessage = 'You are not available for invites right now.';
+          } else if (availability.status === 'INVITEE_UNAVAILABLE' && !availability.message) {
+            errorMessage = `${targetClient.username} is not available for invites.`;
+          }
+          socket.send(JSON.stringify({ type: 'error', message: errorMessage }));
+          fastify.log.info(
+            {
+              invitee: targetClient.username,
+              inviter: client.username,
+              status: availability.status,
+            },
+            '[CHAT] Invite blocked by matchmaking availability',
+          );
+          return;
+        }
+
         const inviteId = uuid();
         const invite: PendingInvite = {
           fromUserUuid: client.uuid,
@@ -409,12 +456,7 @@ async function handleConnection(socket: ChatSocket, _request: ChatRequest) {
       case 'acceptInvite': {
         const invite = pendingInvites.get(data.inviteId);
         if (!invite) {
-          socket.send(
-            JSON.stringify({
-              type: 'error',
-              message: 'Invite not found or expired.',
-            }),
-          );
+          // Silently ignore; this invite may have been cancelled already.
           return;
         }
 
@@ -453,12 +495,31 @@ async function handleConnection(socket: ChatSocket, _request: ChatRequest) {
 
           fastify.log.info({ inviteId: data.inviteId }, '[CHAT] Match created successfully');
           pendingInvites.delete(data.inviteId);
+
+          // Cancel any other pending invites from this inviter since they are now busy.
+          const cancelled: string[] = [];
+          pendingInvites.forEach((otherInvite, otherInviteId) => {
+            if (otherInviteId === data.inviteId) return;
+            if (otherInvite.fromUserUuid === invite.fromUserUuid) {
+              const otherClient = findClientById(otherInvite.toUserUuid);
+              if (otherClient) {
+                otherClient.socket.send(
+                  JSON.stringify({
+                    type: 'inviteCancelled',
+                    reason: `${invite.fromUsername} started another match.`,
+                  }),
+                );
+              }
+              cancelled.push(otherInviteId);
+            }
+          });
+          cancelled.forEach((inviteIdToRemove) => pendingInvites.delete(inviteIdToRemove));
         } else {
           let errorMessage = 'Could not create match.';
           if (result.status === 'INVITER_UNAVAILABLE') {
             errorMessage = `${invite.fromUsername} is no longer available.`;
           } else if (result.status === 'INVITEE_UNAVAILABLE') {
-            errorMessage = 'You are already in another match.';
+            errorMessage = 'You are already in another match/tournament.';
           } else if (result.message) {
             errorMessage = result.message;
           }
