@@ -6,6 +6,7 @@ export type UserItem = {
   userId: string;
   userUuid: string;
   username: string;
+  channel?: string;
 };
 
 type PresenceContextValue = {
@@ -38,6 +39,7 @@ export function PresenceProvider({ children }: PresenceProviderProps) {
                 userId: raw.userId ?? String(raw.username ?? Math.random()),
                 userUuid: raw.userUuid ?? raw.uuid ?? raw.userId ?? '',
                 username: raw.username ?? String(raw.userId ?? ''),
+                channel: raw.channel,
               };
         const key = normalized.username.trim();
         map.set(key, normalized);
@@ -67,7 +69,6 @@ export function PresenceProvider({ children }: PresenceProviderProps) {
         return;
       }
 
-      // Handle user joined
       if (data.type === 'userJoined') {
         setUsers((prev) => {
           const exists = prev.some((u) => u.username === data.username);
@@ -78,13 +79,13 @@ export function PresenceProvider({ children }: PresenceProviderProps) {
               userId: data.userId || data.username,
               userUuid: data.userUuid || data.userId || data.username,
               username: data.username,
+              channel: data.channel,
             },
           ];
         });
         return;
       }
 
-      // Handle user left
       if (data.type === 'userLeft') {
         setUsers((prev) => prev.filter((u) => u.username !== data.username));
         return;

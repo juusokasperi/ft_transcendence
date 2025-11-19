@@ -9,7 +9,7 @@ import React, {
 } from 'react';
 import { useAppContext } from './AppContext';
 import { useRealtimeSocket } from './RealtimeSocketContext';
-import { usePresence } from './PresenceContext';
+import { usePresence, type UserItem as UserItemBase } from './PresenceContext';
 
 export type ChatMessage = {
   from?: string;
@@ -20,10 +20,7 @@ export type ChatMessage = {
   inviteId?: string;
 };
 
-export type UserItem = {
-  userId: string;
-  userUuid: string;
-  username: string;
+export type UserItem = UserItemBase & {
   isBlocked?: boolean;
 };
 
@@ -245,7 +242,7 @@ export function ChatProvider({ channel, children }: ChatProviderProps) {
       }
 
       if (data.type === 'error') {
-        addSystemMessage(`⚠️ ${data.message}`);
+        addSystemMessage(`Error: ${data.message}`);
       }
     });
 
