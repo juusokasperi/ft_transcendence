@@ -1,9 +1,4 @@
-import type {
-  FastifyInstance,
-  FastifyRequest,
-  FastifyReply,
-  FastifyPluginOptions,
-} from 'fastify';
+import type { FastifyInstance, FastifyRequest, FastifyReply, FastifyPluginOptions } from 'fastify';
 import { ClientState, type InviteLobby, type ClientInfo } from '../types/types.ts';
 import { log } from '@utils/logger';
 import { v4 as uuid } from 'uuid';
@@ -17,7 +12,8 @@ const playerToInviteLobby = new Map<string, InviteLobby>(); // playerId -> invit
 const INVITE_TIMEOUT_MS = 15000; // 15s
 const LOBBY_TIMEOUT_MS = 15000;
 const DEFAULT_INVITE_FAILURE_REASON = 'Opponent did not join in time';
-export const TOURNAMENT_INVITE_BLOCK_REASON = 'Invite cancelled because a player joined a tournament';
+export const TOURNAMENT_INVITE_BLOCK_REASON =
+  'Invite cancelled because a player joined a tournament';
 
 type DestroyLobbyOptions = {
   reason?: string;
@@ -27,68 +23,67 @@ type InviteRouteOptions = FastifyPluginOptions & {
   getClientByUuid: (uuid: string) => ClientInfo | undefined;
 };
 
+type InviteRouteRequest = FastifyRequest<{
+  Body: { player1Uuid: string; player2Uuid: string };
+  Querystring: { validateOnly?: string };
+}>;
+
 export async function inviteRoute(app: FastifyInstance, opts: InviteRouteOptions) {
   const getClientByUuid = opts.getClientByUuid ?? (() => undefined);
 
   app.post<{
     Body: { player1Uuid: string; player2Uuid: string };
-    Querystring?: { validateOnly?: string };
-  }>(
-    '/',
-    async (req: FastifyRequest, res: FastifyReply) => {
-      const { player1Uuid, player2Uuid } = req.body as { player1Uuid: string; player2Uuid: string };
-      if (!player1Uuid || !player2Uuid) {
-        return res.code(400).send({
-          status: 'ERROR',
-          message: 'Missing player UUIDs',
-        });
-      }
+    Querystring: { validateOnly?: string };
+  }>('/', async (req: InviteRouteRequest, res: FastifyReply) => {
+    const { player1Uuid, player2Uuid } = req.body;
+    if (!player1Uuid || !player2Uuid) {
+      return res.code(400).send({
+        status: 'ERROR',
+        message: 'Missing player UUIDs',
+      });
+    }
 
-      const validationResult = validateInviteRequest(player1Uuid, player2Uuid, getClientByUuid);
+    const validationResult = validateInviteRequest(player1Uuid, player2Uuid, getClientByUuid);
 
-      if (validationResult) return res.send(validationResult);
+    if (validationResult) return res.send(validationResult);
 
-      const validateOnly =
-        typeof req.query?.validateOnly === 'string' && req.query.validateOnly === 'true';
-      if (validateOnly) {
-        log('Invite availability check succeeded', { player1Uuid, player2Uuid });
-        return res.send({ status: 'SUCCESS' });
-      }
+    const validateOnly = req.query.validateOnly === 'true';
+    if (validateOnly) {
+      log('Invite availability check succeeded', { player1Uuid, player2Uuid });
+      return res.send({ status: 'SUCCESS' });
+    }
 
-      const lobbyId = uuid();
-      const lobby: InviteLobby = {
-        lobbyId,
-        player1Uuid,
-        player2Uuid,
-        createdAt: Date.now(),
-      };
+    const lobbyId = uuid();
+    const lobby: InviteLobby = {
+      lobbyId,
+      player1Uuid,
+      player2Uuid,
+      createdAt: Date.now(),
+    };
 
-      lobby.timer = setTimeout(() => {
-        log('Invite match timeout, no player connected', { lobbyId });
-        destroyInviteLobby(lobbyId);
-      }, INVITE_TIMEOUT_MS);
+    lobby.timer = setTimeout(() => {
+      log('Invite match timeout, no player connected', { lobbyId });
+      destroyInviteLobby(lobbyId);
+    }, INVITE_TIMEOUT_MS);
 
-      inviteMatches.set(lobbyId, lobby);
-      playerToInviteLobby.set(player1Uuid, lobby);
-      playerToInviteLobby.set(player2Uuid, lobby);
+    inviteMatches.set(lobbyId, lobby);
+    playerToInviteLobby.set(player1Uuid, lobby);
+    playerToInviteLobby.set(player2Uuid, lobby);
 
-      log('Invite match created', { lobbyId, player1Uuid, player2Uuid });
+    log('Invite match created', { lobbyId, player1Uuid, player2Uuid });
 
-      return res.send({ status: 'SUCCESS', lobbyId });
-    },
-  );
+    return res.send({ status: 'SUCCESS', lobbyId });
+  });
 }
 
 function validateInviteRequest(
   player1Uuid: string,
   player2Uuid: string,
   getClientByUuid: (uuid: string) => ClientInfo | undefined,
-):
-  | {
-      status: 'INVITER_UNAVAILABLE' | 'INVITEE_UNAVAILABLE';
-      message: string;
-    }
-  | null {
+): {
+  status: 'INVITER_UNAVAILABLE' | 'INVITEE_UNAVAILABLE';
+  message: string;
+} | null {
   const inviterLobby = playerToInviteLobby.get(player1Uuid);
   if (inviterLobby) {
     log('Player 1 already in invite match map', {
