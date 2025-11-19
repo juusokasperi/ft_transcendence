@@ -4,32 +4,17 @@ import type { FastifyRequest } from 'fastify';
 import { v4 as uuid } from 'uuid';
 import { ecsFormat } from '@elastic/ecs-pino-format';
 import type { ChatSocket, Client, PendingInvite } from './types.ts';
-import { handleAuth, extractToken } from './auth.ts';
+import { handleAuth, extractToken } from './utils/auth.ts';
+import { fetchBlockedUuids, findClientByUsername, findClientByUuid } from './utils/helpers.ts';
 import {
   MM_SERVICE_URL,
   PORT,
   HOST,
   isDev,
-  API_SERVICE_URL
 } from './utils/config.ts';
+import { broadcast } from './utils/broadcast.ts';
 
 const INVITE_TIMEOUT_MS = 60000; // 1 minute
-
-async function fetchBlockedUsernames(token: string): Promise<string[]> {
-  try {
-    const res = await fetch(`${API_SERVICE_URL}/api/blocked-users`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
-    if (!res.ok) return [];
-    const data = (await res.json()) as string[];
-    if (!Array.isArray(data)) return [];
-    return data;
-  } catch {
-    return [];
-  }
-}
 
 function createLoggerOptions(isDev: boolean) {
   if (isDev) {
@@ -60,28 +45,6 @@ const fastify = Fastify({
 const clients = new Map<string, Client>();
 const pendingInvites = new Map<string, PendingInvite>();
 
-function broadcast(data: any, channel: string, excludeId?: string, sender?: Client) {
-  const msg = JSON.stringify(data);
-  clients.forEach((client) => {
-    if (client.channel === channel && client.id !== excludeId) {
-      if (data.type === 'chat' && sender) {
-        const senderName = sender.username;
-        const targetName = client.username;
-
-        if (senderName && targetName) {
-          if (sender.blocked.has(targetName)) {
-            return;
-          }
-          if (client.blocked.has(senderName)) {
-            return;
-          }
-        }
-      }
-      client.socket.send(msg);
-    }
-  });
-}
-
 function sendUserList(channel: string) {
   const users = Array.from(clients.values())
     .filter((client) => client.channel === channel && client.username)
@@ -98,13 +61,6 @@ function sendUserList(channel: string) {
   });
 }
 
-function findClientByUsername(username: string): Client | undefined {
-  return Array.from(clients.values()).find((client) => client.username === username);
-}
-
-function findClientById(userId: string): Client | undefined {
-  return Array.from(clients.values()).find((client) => client.uuid === userId);
-}
 
 async function createInviteMatch(
   player1Uuid: string,
@@ -171,8 +127,8 @@ function cleanupExpiredInvites() {
   expired.forEach((inviteId) => {
     const invite = pendingInvites.get(inviteId);
     if (invite) {
-      const fromClient = findClientById(invite.fromUserUuid);
-      const toClient = findClientById(invite.toUserUuid);
+      const fromClient = findClientByUuid(clients, invite.fromUserUuid);
+      const toClient = findClientByUuid(clients, invite.toUserUuid);
 
       if (fromClient) {
         fromClient.socket.send(
@@ -219,17 +175,17 @@ async function handleConnection(socket: ChatSocket, _request: ChatRequest) {
   // blocked list from backend for this user
   void (async () => {
     try {
-      const blockedUsernames = await fetchBlockedUsernames(token);
-      client.blocked = new Set(blockedUsernames);
+      const blockedUuids = await fetchBlockedUuids(token);
+      client.blocked = new Set(blockedUuids);
       fastify.log.debug(
-        { clientId: id, blockedCount: blockedUsernames.length },
+        { clientId: id, blockedCount: blockedUuids.length },
         '[CHAT] Hydrated blocked users from API',
       );
 
       socket.send(
         JSON.stringify({
           type: 'blockedList',
-          usernames: blockedUsernames,
+          uuids: blockedUuids,
         }),
       );
     } catch (err) {
@@ -268,7 +224,7 @@ async function handleConnection(socket: ChatSocket, _request: ChatRequest) {
       case 'joinChannel':
         client.channel = data.channel;
         fastify.log.info({ clientId: id, channel: data.channel }, '[CHAT] joined channel');
-        broadcast({ type: 'userJoined', userId: id, username: client.username }, data.channel, id);
+        broadcast({ type: 'userJoined', userId: id, username: client.username }, data.channel, clients, id);
         socket.send(JSON.stringify({ type: 'channelJoined', channel: data.channel }));
         sendUserList(data.channel);
         return;
@@ -282,15 +238,17 @@ async function handleConnection(socket: ChatSocket, _request: ChatRequest) {
           {
             type: 'chat',
             from: client.username,
+            fromUuid: client.uuid,
             message: data.message,
           },
           client.channel,
+          clients,
           undefined,
           client,
         );
         return;
       case 'privateMessage': {
-        const targetClient = findClientByUsername(data.to);
+        const targetClient = findClientByUsername(clients, data.to);
         if (!targetClient) {
           socket.send(
             JSON.stringify({
@@ -301,7 +259,7 @@ async function handleConnection(socket: ChatSocket, _request: ChatRequest) {
           return;
         }
 
-        if (targetClient.blocked.has(client.username!)) {
+        if (targetClient.blocked.has(client.uuid!)) {
           socket.send(
             JSON.stringify({
               type: 'error',
@@ -314,6 +272,7 @@ async function handleConnection(socket: ChatSocket, _request: ChatRequest) {
         const msg = {
           type: 'privateMessage',
           from: client.username,
+          fromUuid: client.uuid,
           message: data.message,
         };
 
@@ -323,14 +282,20 @@ async function handleConnection(socket: ChatSocket, _request: ChatRequest) {
         fastify.log.debug({ from: client.username, to: data.to }, '[CHAT] sent private message');
         return;
       }
-      case 'blockUser':
-        client.blocked.add(data.username);
-        socket.send(JSON.stringify({ type: 'userBlocked', username: data.username }));
+      case 'blockUser': {
+        const targetClient = findClientByUsername(clients, data.username);
+        if (!targetClient) return;
+        client.blocked.add(targetClient.uuid);
+        socket.send(JSON.stringify({ type: 'userBlocked', username: data.username, uuid: targetClient.uuid }));
         return;
-      case 'unblockUser':
-        client.blocked.delete(data.username);
-        socket.send(JSON.stringify({ type: 'userUnblocked', username: data.username }));
+      }
+      case 'unblockUser': {
+        const targetClient = findClientByUsername(clients, data.username);
+        if (!targetClient) return;
+        client.blocked.delete(targetClient.uuid);
+        socket.send(JSON.stringify({ type: 'userUnblocked', username: data.username, uuid: targetClient.uuid }));
         return;
+      }
 
       case 'tournamentMsg': {
         const { message, recipients } = data;
@@ -364,7 +329,7 @@ async function handleConnection(socket: ChatSocket, _request: ChatRequest) {
           socket.send(JSON.stringify({ type: 'error', message: 'You must set a username first' }));
           return;
         }
-        const targetClient = findClientByUsername(data.username);
+        const targetClient = findClientByUsername(clients, data.username);
         if (!targetClient || !targetClient.username) {
           socket.send(
             JSON.stringify({ type: 'error', message: `User ${data.username} not found` }),
@@ -375,7 +340,7 @@ async function handleConnection(socket: ChatSocket, _request: ChatRequest) {
           socket.send(JSON.stringify({ type: 'error', message: 'You cannot invite yourself' }));
           return;
         }
-        if (targetClient.blocked.has(client.username)) {
+        if (targetClient.blocked.has(client.uuid)) {
           socket.send(
             JSON.stringify({
               type: 'error',
@@ -470,7 +435,7 @@ async function handleConnection(socket: ChatSocket, _request: ChatRequest) {
           return;
         }
 
-        const inviter = findClientById(invite.fromUserUuid);
+        const inviter = findClientByUuid(clients, invite.fromUserUuid);
         if (!inviter) {
           socket.send(
             JSON.stringify({
@@ -501,7 +466,7 @@ async function handleConnection(socket: ChatSocket, _request: ChatRequest) {
           pendingInvites.forEach((otherInvite, otherInviteId) => {
             if (otherInviteId === data.inviteId) return;
             if (otherInvite.fromUserUuid === invite.fromUserUuid) {
-              const otherClient = findClientById(otherInvite.toUserUuid);
+              const otherClient = findClientByUuid(clients, otherInvite.toUserUuid);
               if (otherClient) {
                 otherClient.socket.send(
                   JSON.stringify({
@@ -539,7 +504,7 @@ async function handleConnection(socket: ChatSocket, _request: ChatRequest) {
 
         if (invite.toUserUuid !== client.uuid) return;
 
-        const inviter = findClientById(invite.fromUserUuid);
+        const inviter = findClientByUuid(clients, invite.fromUserUuid);
         if (inviter) {
           inviter.socket.send(
             JSON.stringify({
@@ -577,7 +542,7 @@ async function handleConnection(socket: ChatSocket, _request: ChatRequest) {
 
           const otherUserId =
             invite.fromUserUuid === client.uuid ? invite.toUserUuid : invite.fromUserUuid;
-          const otherClient = findClientById(otherUserId);
+          const otherClient = findClientByUuid(clients, otherUserId);
           if (otherClient) {
             otherClient.socket.send(
               JSON.stringify({ type: 'inviteCancelled', username: client.username }),
@@ -597,6 +562,7 @@ async function handleConnection(socket: ChatSocket, _request: ChatRequest) {
         username: client.username,
       },
       client.channel,
+      clients,
     );
     clients.delete(id);
     sendUserList(client.channel);
