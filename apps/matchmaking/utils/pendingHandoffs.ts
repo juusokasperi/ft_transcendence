@@ -1,6 +1,7 @@
-import type { MatchMode, ClientInfo } from '../types/types';
+import { ClientState, type MatchMode, type ClientInfo } from '../types/types.ts';
 import { handleJoinQueue } from './queue';
 import { log } from '@utils/logger';
+import { setClientState } from './state.ts';
 
 interface PendingHandoff {
   timers: Record<string, NodeJS.Timeout>;
@@ -31,12 +32,22 @@ export function handleHandoff(player: ClientInfo, roomIdentifier: string, mode?:
       );
       return;
     }
-    if (mode === 'tournament' || mode === 'invite') {
+    if (mode === 'tournament') {
+      setClientState(player, ClientState.IN_TOURNAMENT, 'handoff_failed_timeout_tournament');
       player.socket.send(
         JSON.stringify({
           type: 'HANDOFF_TIMEOUT',
           roomIdentifier,
           message: 'Failed to join scheduled match in time.',
+        }),
+      );
+    } else if (mode === 'invite') {
+      setClientState(player, ClientState.IDLE, 'handoff_failed_timeout_invite');
+      player.socket.send(
+        JSON.stringify({
+          type: 'HANDOFF_TIMEOUT',
+          roomIdentifier,
+          message: 'Failed to join match in time.',
         }),
       );
     } else {

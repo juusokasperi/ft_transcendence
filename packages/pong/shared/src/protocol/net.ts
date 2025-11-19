@@ -148,6 +148,11 @@ export type OnlineMatchSummary = {
   };
 };
 
+export type ConfirmRequiredMessage = {
+  type: 'CONFIRM_REQUIRED';
+  message: string;
+};
+
 export type MatchmakingMessage =
   | ConnectedMessage
   | QueueJoinedMessage
@@ -162,6 +167,7 @@ export type MatchmakingMessage =
   | TournamentBracketSnapshotMessage
   | TournamentMatchesReadyMessage
   | TournamentMatchCountdownMessage
+  | ConfirmRequiredMessage
   | ErrorMessage;
 
 export type JoinTokenClaims = {
@@ -235,6 +241,10 @@ export type AcceptScheduledRequest = {
   tournamentMatchId: number;
 };
 
+export type ConfirmJoinRequest = {
+  type: 'CONFIRM_JOIN';
+};
+
 export type MatchmakingClientMessage =
   | JoinQueueRequest
   | LeaveQueueRequest
@@ -244,7 +254,8 @@ export type MatchmakingClientMessage =
   | JoinTournamentRequest
   | LeaveTournamentRequest
   | ForfeitTournamentRequest
-  | AcceptScheduledRequest;
+  | AcceptScheduledRequest
+  | ConfirmJoinRequest;
 
 export type RoomState = 'WAITING_FOR_OPPONENT' | 'READY' | 'PLAYING';
 

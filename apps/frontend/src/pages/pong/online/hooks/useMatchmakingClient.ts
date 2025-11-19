@@ -8,6 +8,7 @@ type Handlers = {
   onAuthError: (message?: string) => void;
   onAllocatorError: (message?: string) => void;
   onRatelimit: (message?: string) => void;
+  onConfirmation: (message?: string) => void;
   onMatchTimeout?: () => void;
   onMatchDeclined?: () => void;
 };
@@ -20,6 +21,7 @@ type UseMatchmakingClientArgs = {
   onAuthError: (message?: string) => void;
   onAllocatorError: (message?: string) => void;
   onRatelimit: (message?: string) => void;
+  onConfirmation: (message?: string) => void;
   onMatchTimeout?: () => void;
   onMatchDeclined?: () => void;
 };
@@ -32,6 +34,7 @@ export function useMatchmakingClient({
   onAuthError,
   onAllocatorError,
   onRatelimit,
+  onConfirmation,
   onMatchTimeout,
   onMatchDeclined,
 }: UseMatchmakingClientArgs) {
@@ -40,6 +43,7 @@ export function useMatchmakingClient({
     onAuthError,
     onAllocatorError,
     onRatelimit,
+    onConfirmation,
     onMatchTimeout,
     onMatchDeclined,
   });
@@ -55,10 +59,19 @@ export function useMatchmakingClient({
       onAuthError,
       onAllocatorError,
       onRatelimit,
+      onConfirmation,
       onMatchTimeout,
       onMatchDeclined,
     };
-  }, [dispatch, onAuthError, onAllocatorError, onRatelimit, onMatchTimeout, onMatchDeclined]);
+  }, [
+    dispatch,
+    onAuthError,
+    onAllocatorError,
+    onRatelimit,
+    onConfirmation,
+    onMatchTimeout,
+    onMatchDeclined,
+  ]);
 
   useEffect(() => {
     requestReconnectRef.current = requestReconnect;
@@ -134,7 +147,9 @@ export function useMatchmakingClient({
               handlers.dispatch({ type: 'ratelimitError' });
               handlers.onRatelimit(msg.message);
             }
-
+            break;
+          case 'CONFIRM_REQUIRED':
+            handlers.onConfirmation(msg.message);
             break;
           case 'INFO':
             if (msg.message === 'New connection detected, closing this one') {
@@ -227,6 +242,10 @@ export function useMatchmakingClient({
     requestReconnect();
   }, [requestReconnect]);
 
+  const confirmJoin = useCallback(() => {
+    clientRef.current?.confirmJoin();
+  }, []);
+
   return {
     joinQueue,
     leaveQueue,
@@ -234,5 +253,6 @@ export function useMatchmakingClient({
     declineMatch,
     acceptInvite,
     reconnect,
+    confirmJoin,
   };
 }
