@@ -22,6 +22,7 @@ import {
 } from './config.ts';
 import * as Config from './config.ts';
 import { setClientState } from './state.ts';
+import { cancelInviteLobbyForPlayerUuid, TOURNAMENT_INVITE_BLOCK_REASON } from './invites.ts';
 
 // Some tests partially mock the config module and may omit certain exports.
 // Safely resolve absence auto-win delay with a sensible default to avoid
@@ -57,6 +58,16 @@ function findClientByUuid(clients: Map<string, ClientInfo>, uuid: string) {
     if (client.uuid === uuid) return client;
   }
   return undefined;
+}
+
+function cancelInviteIfNeeded(client: ClientInfo, context: string) {
+  if (cancelInviteLobbyForPlayerUuid(client.uuid, { reason: TOURNAMENT_INVITE_BLOCK_REASON })) {
+    log('Cancelled invite lobby before tournament action', {
+      uuid: client.uuid,
+      context,
+      tournamentId: client.tournamentId,
+    });
+  }
 }
 
 function sendToClient(client: ClientInfo, payload: MatchmakingMessage) {
@@ -879,6 +890,8 @@ export async function handleCreateTournament(
   const maxParticipants = data.size ?? 4;
   const tournamentName = data.name?.trim().slice(0, 128) || 'Pong Tournament';
 
+  cancelInviteIfNeeded(client, 'create_tournament');
+
   try {
     const activeRes = await axios.get(`${API_URL}/api/tournaments/my/active`, { headers });
     const activePayload = activeRes.data as null | {
@@ -968,6 +981,8 @@ export async function handleJoinTournament(
 
   const headers = { Authorization: `Bearer ${token}` };
   const alias = client.username.slice(0, 64);
+
+  cancelInviteIfNeeded(client, 'join_tournament');
 
   try {
     const response = await axios.post(
@@ -1217,6 +1232,8 @@ export async function restoreTournamentMembership(
     }
 
     const { tournament, participant } = payload;
+
+    cancelInviteIfNeeded(client, 'restore_tournament_membership');
 
     client.tournamentId = tournament.id;
     client.tournamentParticipantId = participant.id;

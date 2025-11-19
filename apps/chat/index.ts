@@ -102,6 +102,32 @@ async function createInviteMatch(
   }
 }
 
+async function checkInviteAvailability(
+  player1Uuid: string,
+  player2Uuid: string,
+): Promise<{
+  status: 'SUCCESS' | 'INVITER_UNAVAILABLE' | 'INVITEE_UNAVAILABLE' | 'ERROR';
+  message?: string;
+}> {
+  try {
+    const response = await fetch(`${MM_SERVICE_URL}/invite-match?validateOnly=true`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ player1Uuid, player2Uuid }),
+    });
+
+    if (!response.ok) {
+      fastify.log.error({ status: response.status }, '[CHAT] Invite availability check failed');
+      return { status: 'ERROR', message: 'Matchmaking service error' };
+    }
+
+    return await response.json();
+  } catch (err) {
+    fastify.log.error({ err }, '[CHAT] Failed to check invite availability with MM service');
+    return { status: 'ERROR', message: 'Could not contact matchmaking service' };
+  }
+}
+
 function cleanupExpiredInvites() {
   const now = Date.now();
   const expired: string[] = [];
@@ -277,6 +303,26 @@ async function handleConnection(socket: ChatSocket, _request: ChatRequest) {
               type: 'error',
               message: `User ${data.username} has blocked you.`,
             }),
+          );
+          return;
+        }
+
+        const availability = await checkInviteAvailability(client.uuid, targetClient.uuid);
+        if (availability.status !== 'SUCCESS') {
+          let errorMessage = availability.message ?? 'Could not send invite.';
+          if (availability.status === 'INVITER_UNAVAILABLE' && !availability.message) {
+            errorMessage = 'You are not available for invites right now.';
+          } else if (availability.status === 'INVITEE_UNAVAILABLE' && !availability.message) {
+            errorMessage = `${targetClient.username} is not available for invites.`;
+          }
+          socket.send(JSON.stringify({ type: 'error', message: errorMessage }));
+          fastify.log.info(
+            {
+              invitee: targetClient.username,
+              inviter: client.username,
+              status: availability.status,
+            },
+            '[CHAT] Invite blocked by matchmaking availability',
           );
           return;
         }

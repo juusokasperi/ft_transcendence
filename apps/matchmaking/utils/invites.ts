@@ -1,4 +1,9 @@
-import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
+import type {
+  FastifyInstance,
+  FastifyRequest,
+  FastifyReply,
+  FastifyPluginOptions,
+} from 'fastify';
 import { ClientState, type InviteLobby, type ClientInfo } from '../types/types.ts';
 import { log } from '@utils/logger';
 import { v4 as uuid } from 'uuid';
@@ -10,9 +15,24 @@ const playerToInviteLobby = new Map<string, InviteLobby>(); // playerId -> invit
 
 const INVITE_TIMEOUT_MS = 15000; // 15s
 const LOBBY_TIMEOUT_MS = 15000;
+const DEFAULT_INVITE_FAILURE_REASON = 'Opponent did not join in time';
+export const TOURNAMENT_INVITE_BLOCK_REASON = 'Invite cancelled because a player joined a tournament';
 
-export async function inviteRoute(app: FastifyInstance) {
-  app.post<{ Body: { player1Uuid: string; player2Uuid: string } }>(
+type DestroyLobbyOptions = {
+  reason?: string;
+};
+
+type InviteRouteOptions = FastifyPluginOptions & {
+  getClientByUuid: (uuid: string) => ClientInfo | undefined;
+};
+
+export async function inviteRoute(app: FastifyInstance, opts: InviteRouteOptions) {
+  const getClientByUuid = opts.getClientByUuid ?? (() => undefined);
+
+  app.post<{
+    Body: { player1Uuid: string; player2Uuid: string };
+    Querystring?: { validateOnly?: string };
+  }>(
     '/',
     async (req: FastifyRequest, res: FastifyReply) => {
       const { player1Uuid, player2Uuid } = req.body as { player1Uuid: string; player2Uuid: string };
@@ -23,19 +43,15 @@ export async function inviteRoute(app: FastifyInstance) {
         });
       }
 
-      if (playerToInviteLobby.has(player1Uuid)) {
-        log('Player 1 already in invite match map', { player1Uuid });
-        return res.send({
-          status: 'INVITER_UNAVAILABLE',
-          message: 'Inviter is already scheduled for another match',
-        });
-      }
-      if (playerToInviteLobby.has(player2Uuid)) {
-        log('Player 2 already in invite match map', { player2Uuid });
-        return res.send({
-          status: 'INVITEE_UNAVAILABLE',
-          message: 'Invitee is already scheduled for another match',
-        });
+      const validationResult = validateInviteRequest(player1Uuid, player2Uuid, getClientByUuid);
+
+      if (validationResult) return res.send(validationResult);
+
+      const validateOnly =
+        typeof req.query?.validateOnly === 'string' && req.query.validateOnly === 'true';
+      if (validateOnly) {
+        log('Invite availability check succeeded', { player1Uuid, player2Uuid });
+        return res.send({ status: 'SUCCESS' });
       }
 
       const lobbyId = uuid();
@@ -62,13 +78,95 @@ export async function inviteRoute(app: FastifyInstance) {
   );
 }
 
+function validateInviteRequest(
+  player1Uuid: string,
+  player2Uuid: string,
+  getClientByUuid: (uuid: string) => ClientInfo | undefined,
+):
+  | {
+      status: 'INVITER_UNAVAILABLE' | 'INVITEE_UNAVAILABLE';
+      message: string;
+    }
+  | null {
+  const inviterLobby = playerToInviteLobby.get(player1Uuid);
+  if (inviterLobby) {
+    log('Player 1 already in invite match map', {
+      player1Uuid,
+      inviterUsername: inviterLobby.player1Client?.username ?? inviterLobby.player2Client?.username,
+    });
+    return {
+      status: 'INVITER_UNAVAILABLE',
+      message: 'You already have a pending invite match',
+    };
+  }
+
+  const inviteeLobby = playerToInviteLobby.get(player2Uuid);
+  if (inviteeLobby) {
+    const inviteeLobbyName =
+      inviteeLobby.player1Client?.username ?? inviteeLobby.player2Client?.username ?? 'That player';
+    log('Player 2 already in invite match map', {
+      player2Uuid,
+      inviteeUsername: inviteeLobby.player1Client?.username ?? inviteeLobby.player2Client?.username,
+    });
+    return {
+      status: 'INVITEE_UNAVAILABLE',
+      message: `${inviteeLobbyName} is already scheduled for another match`,
+    };
+  }
+
+  const inviter = getClientByUuid(player1Uuid);
+  if (inviter && inviter.state === ClientState.IN_TOURNAMENT) {
+    log('Player 1 attempted invite while in tournament', {
+      player1Uuid,
+      tournamentId: inviter.tournamentId,
+      inviterUsername: inviter.username,
+    });
+    return {
+      status: 'INVITER_UNAVAILABLE',
+      message: 'You are currently participating in a tournament',
+    };
+  }
+
+  const invitee = getClientByUuid(player2Uuid);
+  const inviteeName = invitee?.username ?? 'That player';
+  if (invitee && invitee.state === ClientState.IN_TOURNAMENT) {
+    log('Player 2 attempted invite while in tournament', {
+      player2Uuid,
+      tournamentId: invitee.tournamentId,
+      inviteeUsername: invitee.username,
+    });
+    return {
+      status: 'INVITEE_UNAVAILABLE',
+      message:
+        inviteeName === 'That player'
+          ? 'That player is currently participating in a tournament'
+          : `${inviteeName} is currently participating in a tournament`,
+    };
+  }
+
+  return null;
+}
+
 export async function isInLobby(client: ClientInfo): Promise<boolean> {
   return playerToInviteLobby.has(client.uuid);
 }
 
-function destroyInviteLobby(lobbyId: string) {
+export function cancelInviteLobbyForPlayerUuid(
+  playerUuid: string,
+  options?: DestroyLobbyOptions,
+): boolean {
+  const lobby = playerToInviteLobby.get(playerUuid);
+  if (!lobby) return false;
+  destroyInviteLobby(lobby.lobbyId, options);
+  log('Cancelled invite lobby for player UUID', { playerUuid, lobbyId: lobby.lobbyId });
+  return true;
+}
+
+function destroyInviteLobby(lobbyId: string, options?: DestroyLobbyOptions) {
   const lobby = inviteMatches.get(lobbyId);
   if (!lobby) return;
+
+  const failureReason = options?.reason ?? DEFAULT_INVITE_FAILURE_REASON;
 
   if (lobby.timer) clearTimeout(lobby.timer);
   if (lobby.player1Client) {
@@ -79,7 +177,7 @@ function destroyInviteLobby(lobbyId: string) {
       client.socket.send(
         JSON.stringify({
           type: 'INVITE_MATCH_FAILED',
-          reason: 'Opponent did not join in time',
+          reason: failureReason,
         }),
       );
     } catch (err) {
@@ -94,7 +192,7 @@ function destroyInviteLobby(lobbyId: string) {
       client.socket.send(
         JSON.stringify({
           type: 'INVITE_MATCH_FAILED',
-          reason: 'Opponent did not join in time',
+          reason: failureReason,
         }),
       );
     } catch (err) {
@@ -105,7 +203,7 @@ function destroyInviteLobby(lobbyId: string) {
   playerToInviteLobby.delete(lobby.player1Uuid);
   playerToInviteLobby.delete(lobby.player2Uuid);
   inviteMatches.delete(lobbyId);
-  log('Invite lobby destroyed', { lobbyId });
+  log('Invite lobby destroyed', { lobbyId, reason: failureReason });
 }
 
 export async function handleInviteLobbyJoin(client: ClientInfo) {
@@ -123,6 +221,16 @@ export async function handleInviteLobbyJoin(client: ClientInfo) {
       clientUuid: client.uuid,
       lobbyId: lobby.lobbyId,
     });
+    return;
+  }
+
+  if (client.state === ClientState.IN_TOURNAMENT || client.tournamentId) {
+    log('Client in tournament attempted to join invite lobby', {
+      lobbyId: lobby.lobbyId,
+      uuid: client.uuid,
+      tournamentId: client.tournamentId,
+    });
+    destroyInviteLobby(lobby.lobbyId, { reason: TOURNAMENT_INVITE_BLOCK_REASON });
     return;
   }
 
@@ -188,6 +296,18 @@ async function allocateAndHandoffInvite(lobby: InviteLobby) {
   if (!lobby.player1Client || !lobby.player2Client) {
     log('Missing client in lobby during handoff', { lobbyId: lobby.lobbyId }, 'error');
     destroyInviteLobby(lobby.lobbyId);
+    return;
+  }
+
+  if (lobby.player1Client.tournamentId || lobby.player2Client.tournamentId) {
+    log('Cancelling invite lobby because participant is in a tournament', {
+      lobbyId: lobby.lobbyId,
+      player1Uuid: lobby.player1Client.uuid,
+      player2Uuid: lobby.player2Client.uuid,
+      player1TournamentId: lobby.player1Client.tournamentId,
+      player2TournamentId: lobby.player2Client.tournamentId,
+    });
+    destroyInviteLobby(lobby.lobbyId, { reason: TOURNAMENT_INVITE_BLOCK_REASON });
     return;
   }
 

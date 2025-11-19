@@ -68,8 +68,15 @@ const redisBridge = new MatchmakingRedisBridge(
 await redisBridge.init();
 const rateLimiter = new RedisTokenBucket(redis, 'mm:rl');
 
+function getClientByUuid(uuid: string) {
+  for (const client of clients.values()) {
+    if (client.uuid === uuid) return client;
+  }
+  return undefined;
+}
+
 // Route for creating invite match lobby
-await app.register(inviteRoute, { prefix: '/invite-match' });
+await app.register(inviteRoute, { prefix: '/invite-match', getClientByUuid });
 
 const queueTicker = setInterval(() => {
   tryMatchQueue(pendingMatches);
@@ -106,12 +113,12 @@ async function handleConnection(socket: WebSocket, req: FastifyRequest) {
 
   socket.send(JSON.stringify({ type: 'CONNECTED', clientId: id }));
 
+  await restoreTournamentMembership(client, clients);
+
   if (await isInLobby(client)) {
     await handleInviteLobbyJoin(client);
     return;
   }
-
-  await restoreTournamentMembership(client, clients);
 
   socket.on('message', async (raw: RawData) => {
     if (await isRateLimited(client, rateLimiter)) return;
