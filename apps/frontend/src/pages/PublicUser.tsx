@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useParams } from 'react-router-dom';
 import { useAppContext } from '../context/AppContext';
-import { useChatContext } from '../context/ChatContext';
+import { usePresence } from '../context/PresenceContext';
 import { AxiosError } from 'axios';
 import Navbar from '../components/Navbar';
 import { useSnackbar } from '../context/SnackbarContext';
@@ -40,16 +40,16 @@ const PublicUser: React.FC = () => {
   const [offset, setOffset] = useState(0);
   const pageSize = 5;
   const { axios, user, navigate } = useAppContext();
-  const { users: chatUsers } = useChatContext();
+  const { users: presenceUsers } = usePresence();
   const { enqueueSnackbar } = useSnackbar();
 
   const profileWithOnline = useMemo(() => {
     if (!profile) return undefined;
     return {
       ...profile,
-      online: !!chatUsers.find((u) => u.userUuid === profile.uuid),
+      online: !!presenceUsers.find((u) => u.userUuid === profile.uuid),
     };
-  }, [profile, chatUsers]);
+  }, [presenceUsers, profile]);
 
   const fetchFriendship = async () => {
     try {
@@ -69,7 +69,7 @@ const PublicUser: React.FC = () => {
       const response = await axios.get<UserStats>(`/api/users/${uuid}`);
       const fetchedProfile = response.data;
       fetchedProfile.avatar = resolveAvatarUrl(fetchedProfile.avatar, axios.defaults.baseURL);
-      fetchedProfile.online = !!chatUsers.find((u) => u.userUuid === fetchedProfile.uuid);
+      fetchedProfile.online = !!presenceUsers.find((u) => u.userUuid === fetchedProfile.uuid);
 
       setProfile(fetchedProfile);
     } catch (err) {

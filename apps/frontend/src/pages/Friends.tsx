@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { validateEmail, validateUsername } from '../utils/validation';
 import { useAppContext } from '../context/AppContext';
-import { useChatContext } from '../context/ChatContext';
+import { usePresence } from '../context/PresenceContext';
 import { AxiosError } from 'axios';
 import { resolveAvatarUrl } from '../utils/avatarUrl';
 import { useSnackbar } from '../context/SnackbarContext';
@@ -56,18 +56,18 @@ const Friends: React.FC = () => {
   const [offlineFriends, setOfflineFriends] = useState<Friend[]>([]);
 
   const { axios } = useAppContext();
-  const { users: chatUsers } = useChatContext();
+  const { users: presenceUsers } = usePresence();
   const { enqueueSnackbar } = useSnackbar();
   const [friendError, setFriendError] = useState<string | null>(null);
 
   // Derive online status from open chat connection
   const friendsWithOnline: Friend[] = useMemo(() => {
-    const onlineUuids = new Set(chatUsers.map((user) => user.userUuid));
+    const onlineUuids = new Set(presenceUsers.map((user) => user.userUuid));
     return friends.map((friend) => ({
       ...friend,
       online: onlineUuids.has(friend.uuid),
     }));
-  }, [friends, chatUsers]);
+  }, [friends, presenceUsers]);
 
   // Add friend
   const handleAddFriend = async (e: React.FormEvent) => {

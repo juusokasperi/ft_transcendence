@@ -7,10 +7,9 @@ import React, {
   useRef,
   useState,
 } from 'react';
-import { wsUrl } from '../utils/url';
 import { useAppContext } from './AppContext';
-
-const WS_URL = wsUrl('/chat');
+import { useRealtimeSocket } from './RealtimeSocketContext';
+import { usePresence } from './PresenceContext';
 
 export type ChatMessage = {
   from?: string;
@@ -59,28 +58,29 @@ export function ChatProvider({ channel, children }: ChatProviderProps) {
   const userUuid = user?.uuid ?? null;
   const chatUsername = user?.username ?? 'Player';
 
-  const wsRef = useRef<WebSocket | null>(null);
+  const { send, readyState, subscribe } = useRealtimeSocket();
+  const { users: presenceUsers } = usePresence();
+
   const cooldownTimeoutRef = useRef<number | null>(null);
 
   const [messages, setMessages] = useState<ChatMessage[]>([]);
-  const [users, setUsers] = useState<UserItem[]>([]);
   const [pendingInvites, setPendingInvites] = useState<Map<string, string>>(new Map());
   const [blocked, setBlocked] = useState<Set<string>>(new Set());
   const blockedRef = useRef(blocked);
   const [cooldown, setCooldown] = useState(false);
   const [sentCount, setSentCount] = useState(0);
   const [inviteAcceptedSignal, setInviteAcceptedSignal] = useState(0);
-  const acknowledgeInviteAcceptedSignal = useCallback(() => {
-    setInviteAcceptedSignal(0);
-  }, []);
 
   useEffect(() => {
     blockedRef.current = blocked;
   }, [blocked]);
 
+  const acknowledgeInviteAcceptedSignal = useCallback(() => {
+    setInviteAcceptedSignal(0);
+  }, []);
+
   const resetChannelState = useCallback(() => {
     setMessages([]);
-    setUsers([]);
     setPendingInvites(new Map());
     setBlocked(new Set());
     setSentCount(0);
@@ -98,15 +98,15 @@ export function ChatProvider({ channel, children }: ChatProviderProps) {
   }, [resetChannelState, userUuid]);
 
   useEffect(() => {
+    if (!channel || readyState !== WebSocket.OPEN) return;
+    send({ type: 'joinChannel', channel });
+  }, [channel, readyState, send]);
+
+  useEffect(() => {
     return () => {
       if (cooldownTimeoutRef.current) {
         clearTimeout(cooldownTimeoutRef.current);
         cooldownTimeoutRef.current = null;
-      }
-      if (wsRef.current) {
-        try {
-          wsRef.current.close();
-        } catch {}
       }
     };
   }, []);
@@ -132,61 +132,10 @@ export function ChatProvider({ channel, children }: ChatProviderProps) {
     setMessages((prev) => [...prev, { system: true, message, ...extras }]);
   }, []);
 
-  const normalizeUsers = useCallback(
-    (list: Array<any>): UserItem[] => {
-      const map = new Map<string, UserItem>();
-      for (const raw of list) {
-        if (!raw) continue;
-        const normalized =
-          typeof raw === 'string'
-            ? { userId: raw, userUuid: raw, username: raw }
-            : {
-                userId: raw.userId ?? String(raw.username ?? Math.random()),
-                userUuid: raw.userUuid ?? raw.uuid ?? raw.userId ?? '',
-                username: raw.username ?? String(raw.userId ?? ''),
-              };
-        const key = normalized.username.trim();
-        map.set(key, { ...normalized, isBlocked: blockedRef.current.has(key) });
-      }
-      if (!map.has(chatUsername)) {
-        map.set(chatUsername, {
-          userId: 'self',
-          userUuid: userUuid ?? 'self',
-          username: chatUsername,
-          isBlocked: blockedRef.current.has(chatUsername),
-        });
-      }
-      return Array.from(map.values());
-    },
-    [chatUsername],
-  );
-
   useEffect(() => {
     if (!userUuid || !channel) return;
 
-    const ws = new WebSocket(WS_URL);
-    wsRef.current = ws;
-
-    ws.onopen = () => {
-      //console.debug('[ChatContext] websocket open', { channel });
-      ws.send(JSON.stringify({ type: 'setName', username: chatUsername }));
-      ws.send(JSON.stringify({ type: 'joinChannel', channel }));
-    };
-
-    ws.onmessage = (ev) => {
-      let data: any;
-      try {
-        data = JSON.parse(ev.data);
-      } catch {
-        console.warn('[CHAT] malformed message', ev.data);
-        return;
-      }
-
-      if (data.type === 'userList' && Array.isArray(data.users)) {
-        setUsers(normalizeUsers(data.users));
-        return;
-      }
-
+    const unsubscribe = subscribe((data: any) => {
       if (data.type === 'chat') {
         if (data.from && blockedRef.current.has(data.from)) return;
         setMessages((prev) => [...prev, { ...data, type: 'chat' }]);
@@ -223,9 +172,6 @@ export function ChatProvider({ channel, children }: ChatProviderProps) {
           copy.add(data.username);
           return copy;
         });
-        setUsers((prev) =>
-          prev.map((u) => (u.username === data.username ? { ...u, isBlocked: true } : u)),
-        );
         addSystemMessage(`You blocked ${data.username}`);
         return;
       }
@@ -236,9 +182,6 @@ export function ChatProvider({ channel, children }: ChatProviderProps) {
           copy.delete(data.username);
           return copy;
         });
-        setUsers((prev) =>
-          prev.map((u) => (u.username === data.username ? { ...u, isBlocked: false } : u)),
-        );
         addSystemMessage(`You unblocked ${data.username}`);
         return;
       }
@@ -261,7 +204,6 @@ export function ChatProvider({ channel, children }: ChatProviderProps) {
       }
 
       if (data.type === 'inviteGame') {
-        //console.debug('[ChatContext] inviteGame received', data);
         setPendingInvites((prev) => new Map(prev).set(data.inviteId, data.from));
         addSystemMessage(`Game invite from ${data.from}`, { inviteId: data.inviteId });
         return;
@@ -273,7 +215,6 @@ export function ChatProvider({ channel, children }: ChatProviderProps) {
       }
 
       if (data.type === 'inviteAccepted') {
-        //console.debug('[ChatContext] inviteAccepted received');
         addSystemMessage(`Invite accepted. Joining game.`, { type: 'inviteAccepted' });
         setInviteAcceptedSignal(Date.now());
         return;
@@ -306,49 +247,41 @@ export function ChatProvider({ channel, children }: ChatProviderProps) {
       if (data.type === 'error') {
         addSystemMessage(`⚠️ ${data.message}`);
       }
-    };
+    });
 
-    ws.onclose = () => {
-      //console.debug('[ChatContext] websocket closed', { channel });
-      wsRef.current = null;
-    };
+    return unsubscribe;
+  }, [addSystemMessage, channel, chatUsername, subscribe, userUuid]);
 
-    return () => {
-      //console.debug('[ChatContext] cleanup closing websocket', { channel });
-      try {
-        ws.close();
-      } catch {}
-    };
-  }, [addSystemMessage, channel, chatUsername, normalizeUsers, userUuid]);
-
-  const sendPayload = useCallback((payload: Record<string, unknown>) => {
-    const ws = wsRef.current;
-    if (!ws || ws.readyState !== WebSocket.OPEN) return false;
-    //console.debug('[ChatContext] sendPayload', payload);
-    ws.send(JSON.stringify(payload));
-    return true;
-  }, []);
+  const sendPayload = useCallback(
+    (payload: Record<string, unknown>) => {
+      return send(payload);
+    },
+    [send],
+  );
 
   const sendChatMessage = useCallback(
     (message: string, options?: { to?: string }) => {
       const text = message.trim();
       if (!text) return 'empty';
-      const ws = wsRef.current;
-      if (!ws || ws.readyState !== WebSocket.OPEN) return 'disconnected';
+
+      if (readyState !== WebSocket.OPEN) return 'disconnected';
 
       if (!tryConsumeSendSlot()) {
         addSystemMessage("Slow down — you're sending messages too fast. Wait 2s.");
         return 'cooldown';
       }
 
-      if (options?.to) {
-        ws.send(JSON.stringify({ type: 'privateMessage', to: options.to, message: text }));
-      } else {
-        ws.send(JSON.stringify({ type: 'chat', message: text }));
+      const payload = options?.to
+        ? { type: 'privateMessage', to: options.to, message: text }
+        : { type: 'chat', message: text };
+
+      if (!send(payload)) {
+        return 'disconnected';
       }
+
       return 'sent';
     },
-    [addSystemMessage, tryConsumeSendSlot],
+    [addSystemMessage, readyState, send, tryConsumeSendSlot],
   );
 
   const acceptInvite = useCallback(
@@ -375,6 +308,15 @@ export function ChatProvider({ channel, children }: ChatProviderProps) {
       });
     },
     [sendPayload],
+  );
+
+  const users: UserItem[] = useMemo(
+    () =>
+      presenceUsers.map((u) => ({
+        ...u,
+        isBlocked: blocked.has(u.username),
+      })),
+    [blocked, presenceUsers],
   );
 
   const value = useMemo<ChatContextValue>(
