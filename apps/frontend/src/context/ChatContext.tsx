@@ -143,13 +143,6 @@ export function ChatProvider({ channel, children }: ChatProviderProps) {
         const newBlocked: Set<string> = new Set<string>(data.usernames);
         blockedRef.current = newBlocked;
         setBlocked(newBlocked);
-        setUsers((prev) =>
-          prev.map((u) =>
-            newBlocked.has(u.username)
-              ? { ...u, isBlocked: true }
-              : { ...u, isBlocked: u.isBlocked },
-          ),
-        );
         return;
       }
 
