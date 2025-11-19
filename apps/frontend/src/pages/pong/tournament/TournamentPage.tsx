@@ -10,6 +10,7 @@ import PlayingView from '../shared/components/PlayingView';
 import { useTournamentPageController } from './hooks/useTournamentPageController';
 import PageContainer from '../shared/components/PageContainer';
 import PageSection from '../shared/components/PageSection';
+import TournamentChatAnnouncer from './components/TournamentChatAnnouncer';
 import { Spinner } from '@ft/spinner';
 type TournamentPageProps = {
   onBack?: () => void;
@@ -51,6 +52,12 @@ const TournamentPage: React.FC<TournamentPageProps> = ({ focusTournamentId = nul
   } = useTournamentPageController({ focusTournamentId });
 
   const currentUserUuid = user?.uuid ?? null;
+  const firstPlayer = pendingMatch?.participants?.at(0)?.alias ?? null;
+  const secondPlayer = pendingMatch?.participants?.at(1)?.alias ?? null;
+  const stage = pendingMatch?.stage ?? null;
+  const participantUuids =
+    pendingMatch?.participants?.map((p) => p.userUuid).filter((id): id is string => Boolean(id)) ??
+    [];
   const hasActiveTournament = activeTournamentId !== null;
   const shouldShowOverlay = matchPhase === 'starting' || matchPhase === 'playing';
   // Only the lobby is shown on the main page; use a single-column layout there.
@@ -142,6 +149,15 @@ const TournamentPage: React.FC<TournamentPageProps> = ({ focusTournamentId = nul
               currentParticipantId={currentParticipantId}
               forfeitedParticipantIds={forfeitedParticipantIds}
             />
+
+            {hasActiveTournament && pendingMatch && (
+              <TournamentChatAnnouncer
+                firstPlayer={firstPlayer}
+                secondPlayer={secondPlayer}
+                stage={stage}
+                participantUuids={participantUuids}
+              />
+            )}
             {hasActiveTournament && tournamentStatus !== 'completed' && (
               <TournamentDirectedMatchesPanel
                 matches={latestReadyMatches}
