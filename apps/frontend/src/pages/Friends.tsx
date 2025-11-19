@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { validateEmail, validateUsername } from '../utils/validation';
 import { useAppContext } from '../context/AppContext';
+import { usePresence } from '../context/PresenceContext';
 import { AxiosError } from 'axios';
 import { resolveAvatarUrl } from '../utils/avatarUrl';
 import { useSnackbar } from '../context/SnackbarContext';
@@ -16,6 +17,7 @@ type Friend = {
   avatar: string;
   online: boolean;
 };
+type FriendApi = Omit<Friend, 'online'>;
 
 const tabs = [
   { key: 'all', label: 'All', description: 'Entire roster' },
@@ -49,13 +51,23 @@ const Friends: React.FC = () => {
   const [pendingSent, setPendingSent] = useState<FriendRequest[]>([]);
   const [pendingReceived, setPendingReceived] = useState<FriendRequest[]>([]);
 
-  const [friends, setFriends] = useState<Friend[]>([]);
+  const [friends, setFriends] = useState<FriendApi[]>([]);
   const [onlineFriends, setOnlineFriends] = useState<Friend[]>([]);
   const [offlineFriends, setOfflineFriends] = useState<Friend[]>([]);
 
   const { axios } = useAppContext();
+  const { users: presenceUsers } = usePresence();
   const { enqueueSnackbar } = useSnackbar();
   const [friendError, setFriendError] = useState<string | null>(null);
+
+  // Derive online status from open chat connection
+  const friendsWithOnline: Friend[] = useMemo(() => {
+    const onlineUuids = new Set(presenceUsers.map((user) => user.userUuid));
+    return friends.map((friend) => ({
+      ...friend,
+      online: onlineUuids.has(friend.uuid),
+    }));
+  }, [friends, presenceUsers]);
 
   // Add friend
   const handleAddFriend = async (e: React.FormEvent) => {
@@ -110,7 +122,8 @@ const Friends: React.FC = () => {
 
   const fetchAllFriends = async () => {
     try {
-      const res = await axios.get<Friend[]>('/api/friends/');
+      const res = await axios.get<FriendApi[]>('/api/friends/');
+      console.log(res);
 
       const friendsWithAvatar = res.data.map((f) => ({
         ...f,
@@ -118,8 +131,6 @@ const Friends: React.FC = () => {
       }));
 
       setFriends(friendsWithAvatar);
-      setOnlineFriends(friendsWithAvatar.filter((f) => f.online));
-      setOfflineFriends(friendsWithAvatar.filter((f) => !f.online));
     } catch (err) {
       const axiosErr = err as AxiosError<{ message?: string }>;
       enqueueSnackbar({
@@ -200,6 +211,11 @@ const Friends: React.FC = () => {
       fetchAllFriends();
     }
   }, [activeTab]);
+
+  useEffect(() => {
+    setOnlineFriends(friendsWithOnline.filter((f) => f.online));
+    setOfflineFriends(friendsWithOnline.filter((f) => !f.online));
+  }, [friendsWithOnline]);
 
   const renderFriendList = (list: Friend[], emptyMessage: string, accent?: string) => (
     <div className="space-y-3">
@@ -296,7 +312,10 @@ const Friends: React.FC = () => {
                 <h2 className="text-xl font-semibold">All friends</h2>
                 <p className="text-sm text-slate-300/80">Everyone you follow and play with.</p>
               </div>
-              {renderFriendList(friends, 'No friends found yet. Invite someone to start playing!')}
+              {renderFriendList(
+                friendsWithOnline,
+                'No friends found yet. Invite someone to start playing!',
+              )}
             </div>
           )}
 

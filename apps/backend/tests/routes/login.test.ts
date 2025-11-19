@@ -23,7 +23,6 @@ vi.mock('../../utils/config.ts', () => ({
 
 const usersMock = vi.hoisted(() => ({
   getUserByEmail: vi.fn(),
-  updateLastSeen: vi.fn(),
   getUserStats: vi.fn(),
 }));
 vi.mock('../../db/queries/users.ts', () => usersMock);
@@ -81,7 +80,6 @@ describe('POST /api/login', () => {
       wins: 9,
       losses: 4,
       totalMatches: 13,
-      online: false,
     });
     await app.ready();
   });

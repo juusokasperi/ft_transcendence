@@ -43,5 +43,4 @@ export interface UserStats {
   wins: number;
   losses: number;
   totalMatches: number;
-  online: boolean;
 }

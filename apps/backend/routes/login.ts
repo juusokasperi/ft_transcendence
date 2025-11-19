@@ -1,10 +1,5 @@
 import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
-import {
-  getUserByEmail,
-  updateLastSeen,
-  getUserByUuid,
-  getUserStats,
-} from '../db/queries/users.ts';
+import { getUserByEmail, getUserByUuid, getUserStats } from '../db/queries/users.ts';
 import bcrypt from 'bcrypt';
 import { normalizeCredentials } from '../hooks/auth.ts';
 import { loginSchema, loginTwoFactorSchema } from '../schemas/authSchemas.ts';
@@ -71,8 +66,6 @@ export async function loginRoutes(app: FastifyInstance) {
           return;
         }
 
-        updateLastSeen(userInDb.uuid);
-
         let issued;
         try {
           issued = issueTokensForUser(userForToken);
@@ -138,7 +131,6 @@ export async function loginRoutes(app: FastifyInstance) {
           return;
         }
 
-        updateLastSeen(user.uuid);
         let issued;
         try {
           issued = issueTokensForUser({ username: user.username, uuid: user.uuid });
