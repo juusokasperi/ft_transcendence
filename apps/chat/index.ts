@@ -5,17 +5,15 @@ import { v4 as uuid } from 'uuid';
 import { ecsFormat } from '@elastic/ecs-pino-format';
 import type { ChatSocket, Client, PendingInvite } from './types.ts';
 import { handleAuth, extractToken } from './auth.ts';
+import {
+  MM_SERVICE_URL,
+  PORT,
+  HOST,
+  isDev,
+  API_SERVICE_URL
+} from './utils/config.ts';
 
-const MATCHMAKING_PORT = process.env.MATCHMAKING_PORT;
-const MM_SERVICE_URL = MATCHMAKING_PORT
-  ? `http://matchmaking-service:${MATCHMAKING_PORT}`
-  : 'http://matchmaking-service:4242';
 const INVITE_TIMEOUT_MS = 60000; // 1 minute
-const PORT = Number(process.env.CHAT_PORT || 6262);
-const HOST = process.env.CHAT_HOST || '0.0.0.0';
-const isDev = process.env.NODE_ENV === 'development';
-const API_PORT = process.env.BACKEND_PORT;
-const API_SERVICE_URL = API_PORT ? `http://backend:${API_PORT}` : 'http://backend:3001';
 
 async function fetchBlockedUsernames(token: string): Promise<string[]> {
   try {
