@@ -79,7 +79,7 @@ define ensure_builder
 			docker image tag  $(BUILDKIT_BASE_IMG) $(BUILDER_IMAGE); \
 		fi; \
 		echo ">> Creating buildx builder '$(BUILDER)' (image=$(BUILDER_IMAGE))"; \
-		docker buildx create --name $(BUILDER) --driver docker-container --driver-opt image=$(BUILDER_IMAGE) --buildkitd-config ./buildkitd.toml >/dev/null; \
+		docker buildx create --name $(BUILDER) --driver docker-container --driver-opt image=$(BUILDER_IMAGE) --buildkitd-flags '--worker.oci.max-parallelism=4' >/dev/null; \
 	fi
 	@docker buildx use $(BUILDER)
 endef
@@ -360,7 +360,7 @@ builder-init:
 					docker image pull $(BUILDKIT_BASE_IMG) >/dev/null; \
 					docker image tag  $(BUILDKIT_BASE_IMG) $(BUILDER_IMAGE); \
 			fi; \
-			docker buildx create --name $(BUILDER) --driver docker-container --driver-opt image=$(BUILDER_IMAGE) --use; \
+			docker buildx create --name $(BUILDER) --driver docker-container --driver-opt image=$(BUILDER_IMAGE) --buildkitd-flags '--worker.oci.max-parallelism=4' --use; \
 	fi
 
 builder-use:
