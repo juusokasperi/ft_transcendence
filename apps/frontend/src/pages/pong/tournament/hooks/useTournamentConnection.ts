@@ -173,12 +173,12 @@ export function useTournamentConnection({
     };
   }, [debugLog, onSnackbar, userReady, userUuid]);
 
-  const createTournament = useCallback((size: number, name?: string, alias?: string) => {
-    socketRef.current?.createTournament(size as any, name, alias);
+  const createTournament = useCallback((size: number, name?: string) => {
+    socketRef.current?.createTournament(size as any, name);
   }, []);
 
-  const joinTournament = useCallback((id: number | string, alias?: string) => {
-    socketRef.current?.joinTournament(id, alias);
+  const joinTournament = useCallback((id: number | string) => {
+    socketRef.current?.joinTournament(id);
   }, []);
 
   const leaveTournament = useCallback((id: number | string) => {

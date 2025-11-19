@@ -20,6 +20,7 @@ export type StepOnceArgs = {
   dt: number;
   tickHz: number;
   controller: MatchController;
+  lagCompensationSec?: number;
 };
 
 export type StepResult = {
@@ -28,10 +29,17 @@ export type StepResult = {
   snapshot: MatchSnapshot;
 };
 
-export function stepOnce({ state, intent, dt, tickHz, controller }: StepOnceArgs): StepResult {
+export function stepOnce({
+  state,
+  intent,
+  dt,
+  tickHz,
+  controller,
+  lagCompensationSec,
+}: StepOnceArgs): StepResult {
   const withPaddles = stepPaddles(state, intent, dt);
   const prevPhase = withPaddles.phase;
-  const stepped = handleSteps(withPaddles, dt);
+  const stepped = handleSteps(withPaddles, dt, lagCompensationSec ?? 0);
   let nextState = stepped.next;
 
   if (prevPhase !== 'pauseBtwPoints' && nextState.phase === 'pauseBtwPoints') {

@@ -126,9 +126,11 @@ export class MatchRunner {
       intent,
       state: model.state,
       tickHz: this.config.tickHz,
+      lagCompensationSec: this.config.lagCompensationMs / 1000,
     });
 
     model.applyStep(result);
+    model.tick += 1;
 
     this.broadcaster.broadcastFrame(session);
 

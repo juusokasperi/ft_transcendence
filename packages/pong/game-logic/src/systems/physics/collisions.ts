@@ -14,6 +14,7 @@ export function stepBallTOIInPlace(
   ball: { x: number; z: number; vx: number; vz: number },
   dt: number,
   events: FrameEvents,
+  lagCompensationSec: number = 0,
 ): void {
   let remaining = dt;
 
@@ -37,6 +38,9 @@ export function stepBallTOIInPlace(
   for (let iter = 0; iter < MAX_TOI_ITERS && remaining > 0; iter++) {
     const { x, z, vx, vz } = ball;
 
+    const lag = Math.max(0, Math.min(lagCompensationSec, 0.1));
+    const horizon = remaining + lag;
+
     // Candidate times
     const tNorth = timeTo(+zMax, z, vz);
     const tSouth = timeTo(-zMax, z, vz);
@@ -50,15 +54,23 @@ export function stepBallTOIInPlace(
     const candidates: Hit[] = [];
     if (tNorth <= remaining) candidates.push({ kind: 'north', t: tNorth });
     if (tSouth <= remaining) candidates.push({ kind: 'south', t: tSouth });
-    if (tLeft <= remaining) {
+    if (tLeft <= horizon) {
       const zHit = z + vz * tLeft;
       if (Math.abs(zHit - s.paddles.east.z) <= halfDepth)
-        candidates.push({ kind: 'left', t: tLeft, zHit });
+        candidates.push({
+          kind: 'left',
+          t: Math.min(tLeft, remaining),
+          zHit,
+        });
     }
-    if (tRight <= remaining) {
+    if (tRight <= horizon) {
       const zHit = z + vz * tRight;
       if (Math.abs(zHit - s.paddles.west.z) <= halfDepth)
-        candidates.push({ kind: 'right', t: tRight, zHit });
+        candidates.push({
+          kind: 'right',
+          t: Math.min(tRight, remaining),
+          zHit,
+        });
     }
 
     // Choose earliest

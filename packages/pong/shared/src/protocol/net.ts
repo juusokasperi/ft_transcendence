@@ -191,7 +191,6 @@ export type InfoMessage = {
 export type JoinQueueRequest = {
   type: 'JOIN_QUEUE';
   preferredSide?: 'west' | 'east';
-  alias?: string;
 };
 
 export type LeaveQueueRequest = {
@@ -214,13 +213,11 @@ export type CreateTournamentRequest = {
   type: 'CREATE_TOURNAMENT';
   size: TournamentSize;
   name?: string;
-  alias?: string;
 };
 
 export type JoinTournamentRequest = {
   type: 'JOIN_TOURNAMENT';
   tournamentId: string;
-  alias?: string;
 };
 
 export type LeaveTournamentRequest = {
@@ -300,6 +297,14 @@ export type FrameMessage = {
   state: any;
   events: any;
   match: MatchSnapshot;
+  /**
+   * Authoritative simulation tick index on the server.
+   */
+  tick: number;
+  /**
+   * Opponent's scalar input axis at this tick (from the recipient's POV).
+   */
+  axis?: number;
 };
 
 export type ResumeTokenMessage = {
