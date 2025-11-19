@@ -10,7 +10,6 @@ import {
 } from '../db/queries/friends.ts';
 import { getUser } from '../db/queries/users.ts';
 import { authPreHandler, tokenUuidCheck } from '../hooks/auth.ts';
-import { updateLastSeenHandler } from '../hooks/updateLastSeen.ts';
 import {
   friendsSchema,
   pendingSchema,
@@ -26,7 +25,7 @@ export async function friendsRoutes(app: FastifyInstance) {
     '/',
     {
       schema: friendsSchema,
-      preHandler: [authPreHandler, tokenUuidCheck, updateLastSeenHandler],
+      preHandler: [authPreHandler, tokenUuidCheck],
     },
     async (req: FastifyRequest, res: FastifyReply) => {
       try {
@@ -64,7 +63,7 @@ export async function friendsRoutes(app: FastifyInstance) {
     '/pending/received',
     {
       schema: pendingSchema,
-      preHandler: [authPreHandler, tokenUuidCheck, updateLastSeenHandler],
+      preHandler: [authPreHandler, tokenUuidCheck],
     },
     async (req: FastifyRequest, res: FastifyReply) => {
       try {
@@ -83,7 +82,7 @@ export async function friendsRoutes(app: FastifyInstance) {
     '/pending/sent',
     {
       schema: pendingSchema,
-      preHandler: [authPreHandler, tokenUuidCheck, updateLastSeenHandler],
+      preHandler: [authPreHandler, tokenUuidCheck],
     },
     async (req: FastifyRequest, res: FastifyReply) => {
       try {
@@ -102,7 +101,7 @@ export async function friendsRoutes(app: FastifyInstance) {
     '/respond/:senderUuid',
     {
       schema: respondFriendSchema,
-      preHandler: [authPreHandler, tokenUuidCheck, updateLastSeenHandler],
+      preHandler: [authPreHandler, tokenUuidCheck],
     },
     async (req: FastifyRequest, res: FastifyReply) => {
       try {
@@ -123,7 +122,7 @@ export async function friendsRoutes(app: FastifyInstance) {
     '/',
     {
       schema: sendFriendSchema,
-      preHandler: [authPreHandler, tokenUuidCheck, updateLastSeenHandler],
+      preHandler: [authPreHandler, tokenUuidCheck],
     },
     async (req: FastifyRequest, res: FastifyReply) => {
       try {
@@ -149,7 +148,7 @@ export async function friendsRoutes(app: FastifyInstance) {
     '/:user2Uuid',
     {
       schema: deleteFriendSchema,
-      preHandler: [authPreHandler, tokenUuidCheck, updateLastSeenHandler],
+      preHandler: [authPreHandler, tokenUuidCheck],
     },
     async (req: FastifyRequest, res: FastifyReply) => {
       try {
