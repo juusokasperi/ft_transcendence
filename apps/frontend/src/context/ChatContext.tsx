@@ -249,7 +249,7 @@ export function ChatProvider({ channel, children }: ChatProviderProps) {
       }
 
       if (data.type === 'error') {
-        addSystemMessage(`Error: ${data.message}`);
+        addSystemMessage(`${data.message}`);
       }
     });
 
