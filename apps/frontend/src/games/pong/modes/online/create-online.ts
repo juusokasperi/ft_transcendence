@@ -584,6 +584,8 @@ export function createOnlineApp(
     clearWaitingForOpponentTimeout();
     matchEnded = true;
     frameBuffer.reset();
+    // Ensure we drop any resume tokens for this room when leaving.
+    clearStoredResumeTokens(cfg.roomIdentifier);
 
     // Clean up disconnect overlay
     hideDisconnectOverlay();
@@ -605,6 +607,8 @@ export function createOnlineApp(
 
   const giveUp = () => {
     try {
+      // Do not allow resume after an intentional forfeit.
+      clearStoredResumeTokens(cfg.roomIdentifier);
       // Intentionally forfeit the match; server will end it.
       net?.forfeit?.();
     } catch {}
