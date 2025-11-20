@@ -35,13 +35,13 @@ export function createReconnector({
     const nowSec = Math.floor(Date.now() / 1000);
     const resume = getLatestResume();
     if (!resume || resume.expSec <= nowSec) {
-      console.warn('[OnlineGame] No valid resume token available; aborting reconnect');
+      //console.warn('[OnlineGame] No valid resume token available; aborting reconnect');
       return;
     }
     const delay = Math.min(Math.max(500, prevDelayMs * 2 || 500), 4000);
     const remainingMs = Math.max(0, (resume.expSec - nowSec) * 1000);
     if (delay > remainingMs) {
-      console.warn('[OnlineGame] Resume token nearly expired; aborting reconnect');
+      //console.warn('[OnlineGame] Resume token nearly expired; aborting reconnect');
       return;
     }
     reconnectTimer = window.setTimeout(() => {
