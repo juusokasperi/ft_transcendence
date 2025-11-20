@@ -350,6 +350,21 @@ export type GameServerControlMessage =
   | MatchEndMessage
   | PongMessage;
 
+export const CLOSE_CODES = {
+  ROOM_NOT_FOUND: 4404,
+  MISSING_TOKEN: 4401,
+  INVALID_TOKEN: 4401,
+  TOKEN_REUSED: 4403,
+  PLAYER_NOT_AUTHORIZED: 4403,
+  SEAT_OCCUPIED: 4402,
+  SIDE_MISMATCH: 4403,
+  JOIN_WINDOW_EXPIRED: 4408,
+  MATCH_FINISHED: 4410,
+  SERVER_ERROR: 1011,
+};
+
+
+
 // Types that were in blueprint but not implemented:
 
 // export type MatchmakingClientMessage = JoinQueueRequest | ReadyMessage;
