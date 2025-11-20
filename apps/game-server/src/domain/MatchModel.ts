@@ -2,6 +2,7 @@ import { createMatchController, tableTennisRules } from '@pong/game-logic';
 import type { GameState } from '@pong/game-logic';
 import type { MatchSnapshot, TableEnd } from '@pong/shared';
 import { pickInitialServer } from '@pong/shared';
+import { PADDLE_HITBOX_PADDING_Z } from '@pong/shared';
 import type { RoomReservation } from './MatchTypes.ts';
 import type { MatchController, StepResult, ServerEvents } from './TickEngine.ts';
 
@@ -22,6 +23,7 @@ function createBounds(): GameState['bounds'] {
     halfLengthX: 1.37,
     halfWidthZ: 0.7625,
     paddleHalfDepthZ: 0.075,
+    paddleCollisionHalfDepthZ: 0.075 + PADDLE_HITBOX_PADDING_Z,
     leftPaddleX: -1.37,
     rightPaddleX: 1.37,
     ballRadius: 0.02,

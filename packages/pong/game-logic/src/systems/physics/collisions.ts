@@ -22,7 +22,8 @@ export function stepBallTOIInPlace(
   const zMax = s.bounds.halfWidthZ - s.bounds.ballRadius;
   const clampMin = -zMax;
   const clampMax = +zMax;
-  const halfDepth = s.bounds.paddleHalfDepthZ + s.bounds.ballRadius;
+  const collisionHalfDepth = s.bounds.paddleCollisionHalfDepthZ ?? s.bounds.paddleHalfDepthZ ?? 0;
+  const halfDepth = collisionHalfDepth + s.bounds.ballRadius;
   const leftPlane = s.bounds.leftPaddleX + s.bounds.ballRadius;
   const rightPlane = s.bounds.rightPaddleX - s.bounds.ballRadius;
 
