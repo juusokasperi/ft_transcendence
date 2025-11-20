@@ -9,7 +9,6 @@ import {
   getUserByUuid,
   updateUsername,
   updatePassword,
-  updateEmail,
   markEmailChange,
   confirmEmailChange,
   updateAvatar,
@@ -29,7 +28,6 @@ import { sendDeleteEmail, sendEmailChangeEmail } from '../utils/nodemailer/index
 import { normalizeCredentials } from '../hooks/auth.ts';
 import { UPLOAD_DIR } from '../utils/config.ts';
 import {
-  getAllUsersSchema,
   getUserSchema,
   getMeSchema,
   userDeleteSchema,

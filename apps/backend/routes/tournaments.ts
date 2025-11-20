@@ -30,7 +30,6 @@ import {
   addTournamentMatchPlayer,
   createTournamentMatch,
   getTournamentMatchById,
-  getTournamentMatchByRoundAndPosition,
   linkTournamentMatchResult,
   getTournamentMatchPlayerById,
   listTournamentMatchPlayers,
