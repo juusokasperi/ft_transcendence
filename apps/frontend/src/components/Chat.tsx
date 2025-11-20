@@ -358,7 +358,7 @@ export default function Chat({ onClose, channel, isOpen = true }: ChatProps) {
               );
             }
 
-            if (msg.from && blocked.has(msg.from)) return null;
+            if (msg.fromUuid && blocked.has(msg.fromUuid)) return null;
 
             const isMe = msg.from === chatUsername;
             const isPrivate = msg.type === 'privateMessage' || msg.type === 'dm';
@@ -379,10 +379,10 @@ export default function Chat({ onClose, channel, isOpen = true }: ChatProps) {
                   {isPrivate && <span className="ml-2 text-xs italic">(DM)</span>}
                 </div>
 
-                {msg.from && msg.from !== chatUsername && (
+                {msg.fromUuid && msg.from && msg.from !== chatUsername && (
                   <SplitButton
                     targetUser={msg.from}
-                    isBlocked={blocked.has(msg.from)}
+                    isBlocked={blocked.has(msg.fromUuid)}
                     onAction={handleAction}
                   />
                 )}

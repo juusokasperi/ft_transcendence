@@ -17,10 +17,7 @@ export default defineConfig({
         ...builtinModules,
         ...builtinModules.map((m) => `node:${m}`), // include node: prefix variants
         /^@fastify\//, // externalize all @fastify/* packages
-        /^@elastic\//, // externalize elastic packages
         'fastify',
-        'pino',
-        'pino-pretty',
         'jsonwebtoken',
         'uuid',
         'ws',
