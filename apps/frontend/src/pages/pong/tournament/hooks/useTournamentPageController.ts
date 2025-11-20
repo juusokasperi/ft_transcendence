@@ -391,7 +391,10 @@ export function useTournamentPageController(
         const { findAnyStoredResumeCandidate } = await import(
           '../../../../games/pong/modes/online/resume'
         );
-        const candidate = findAnyStoredResumeCandidate();
+        const candidate = findAnyStoredResumeCandidate({
+          tournamentOnly: true,
+          tournamentId: activeTournamentId,
+        });
         if (!candidate) return;
 
         // Seed a synthetic handoff so the lifecycle hook boots the game. Seat and joinToken
