@@ -68,6 +68,13 @@ const proxyWithRetry = async (
   for (let attempt = 0; attempt <= maxRetries; ++attempt) {
     try {
       await new Promise<void>((resolve, reject) => {
+        const onSocketError = (err: Error) => {
+          socket.off('error', onSocketError);
+          reject(err);
+        };
+
+        socket.once('error', onSocketError);
+
         proxy.ws(
           req,
           socket,
@@ -79,6 +86,7 @@ const proxyWithRetry = async (
             },
           },
           (err) => {
+            socket.off('error', onSocketError);
             if (err) reject(err);
             else resolve();
           },
@@ -135,6 +143,7 @@ app.server.on('upgrade', async (req: IncomingMessage, socket: Duplex, head: Buff
   const resumeClaims = resumeToken ? validateResume(resumeToken, roomId) : null;
   const joinClaims = !resumeClaims && joinToken ? validateJoin(joinToken, roomId) : null;
 
+  app.log.info({ resumeClaims, joinClaims }, '[Gateway] Upgrade connection started');
   if (!resumeClaims && !joinClaims) {
     app.log.info({ roomId }, '[Gateway] Unauthorized attempt');
     socket.write('HTTP/1.1 4401 Unauthorized\r\nConnection: close\r\n\r\n');
