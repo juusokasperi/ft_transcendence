@@ -473,8 +473,6 @@ See also: [Incident runbook](#incident-runbook-quick-checks) for operator-focuse
 export type JoinQueueRequest = {
   /** Game mode the player wants to join. Only "ranked" for now. */
   mode: 'ranked';
-  /** Optional geographic region or shard name (e.g., "eu-central"). 2..32 chars. */
-  region?: string;
   /** Auth token from site login (opaque JWT string). Max ~4096 chars. */
   authenticationToken: string;
   /** Optional matchmaking rating for pairing. Integer, e.g., 0..5000. */
@@ -507,8 +505,6 @@ export type JoinTokenClaims = {
   roomIdentifier: string;
   /** Side assignment. */
   side: 'west' | 'east';
-  /** Optional target region/shard. */
-  region?: string;
   /** Provisional start tick. Node sets the authoritative start tick and announces it via START. */
   simulationStartTick: number;
   /** Issued-at time (epoch seconds). Maps to JWT "iat". */
@@ -524,7 +520,6 @@ export type AllocateRequest = {
   /** Stable match identifier. Also used as idempotency key. */
   idempotencyKey: string; // e.g., matchId, 16..64 chars
   mode: 'ranked';
-  region: string; // e.g., "eu-central"
   players: ReadonlyArray<{ playerIdentifier: string; side: 'west' | 'east' }>;
   randomSeed: number; // unsigned 32-bit
   simulationStartTick: number; // may be provisional; node sets final startTick

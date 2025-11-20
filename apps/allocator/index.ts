@@ -27,7 +27,6 @@ app.post(
         request.body as {
           idempotencyKey: string;
           mode: 'ranked' | 'tournament' | 'invite';
-          region: string;
           players: Array<{
             playerIdentifier: string;
             side: 'west' | 'east';
