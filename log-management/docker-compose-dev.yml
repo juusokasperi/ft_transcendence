@@ -19,12 +19,24 @@ services:
     ports:
       - ${KIBANA_PORT}:5601
     environment:
-      - SERVER_BASEPATH=
+      - SERVER_REWRITEBASEPATH=false
+      - SERVER_BASEPATH
       - SERVER_PUBLICBASEURL=${FRONTEND_URL}
+    healthcheck:
+      test:
+       - CMD-SHELL
+       - |
+         curl -s http://localhost:${KIBANA_PORT}/api/status | \
+         grep -q '\"level\":\"available\"'
+      interval: 10s
+      timeout: 10s
+      retries: 120
     networks:
       - devnet
 
   kibana-post:
+    environment:
+      - KIBANA_URL=http://kibana:${KIBANA_PORT:-5601}
     networks:
       - devnet
 
