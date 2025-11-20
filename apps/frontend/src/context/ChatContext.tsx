@@ -58,7 +58,7 @@ export function ChatProvider({ channel, children }: ChatProviderProps) {
   const userUuid = user?.uuid ?? null;
   const chatUsername = user?.username ?? 'Player';
 
-  const { send, readyState, subscribe } = useRealtimeSocket();
+  const { send, isConnected, subscribe, readyState } = useRealtimeSocket();
   const { users: presenceUsers } = usePresence();
 
   const cooldownTimeoutRef = useRef<number | null>(null);
@@ -98,9 +98,9 @@ export function ChatProvider({ channel, children }: ChatProviderProps) {
   }, [resetChannelState, userUuid]);
 
   useEffect(() => {
-    if (!channel || readyState !== WebSocket.OPEN) return;
+    if (!channel || !isConnected) return;
     send({ type: 'joinChannel', channel });
-  }, [channel, readyState, send]);
+  }, [channel, isConnected, send]);
 
   useEffect(() => {
     return () => {
@@ -295,7 +295,7 @@ export function ChatProvider({ channel, children }: ChatProviderProps) {
 
       return 'sent';
     },
-    [addSystemMessage, readyState, send, tryConsumeSendSlot],
+    [addSystemMessage, send, tryConsumeSendSlot, readyState],
   );
 
   const acceptInvite = useCallback(
