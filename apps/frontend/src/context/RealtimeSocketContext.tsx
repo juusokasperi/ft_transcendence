@@ -16,6 +16,7 @@ type RealtimeSocketContextValue = {
   send: (payload: Record<string, unknown>) => boolean;
   subscribe: (handler: (data: any) => void) => () => void;
   readyState: number;
+  isConnected: boolean;
 };
 
 const RealtimeSocketContext = createContext<RealtimeSocketContextValue | null>(null);
@@ -32,16 +33,22 @@ export function RealtimeSocketProvider({ children }: RealtimeSocketProviderProps
   const wsRef = useRef<WebSocket | null>(null);
   const messageHandlersRef = useRef<Set<(data: any) => void>>(new Set());
   const [readyState, setReadyState] = useState<number>(WebSocket.CONNECTING);
+  const [isConnected, setIsConnected] = useState(false);
 
   useEffect(() => {
-    if (!userUuid) return;
+    if (!userUuid) {
+      wsRef.current?.close();
+      wsRef.current = null;
+      setIsConnected(false);
+      setReadyState(WebSocket.CLOSED);
+      return;
+    }
 
     const ws = new WebSocket(WS_URL);
     wsRef.current = ws;
 
     ws.onopen = () => {
-      setReadyState(WebSocket.OPEN);
-      ws.send(JSON.stringify({ type: 'setName', username }));
+      setReadyState(ws.readyState);
     };
 
     ws.onmessage = (ev) => {
@@ -50,6 +57,12 @@ export function RealtimeSocketProvider({ children }: RealtimeSocketProviderProps
         data = JSON.parse(ev.data);
       } catch {
         console.warn('[RealtimeSocket] malformed message', ev.data);
+        return;
+      }
+
+      if (data.type === 'blockedList') {
+        setIsConnected(true);
+        ws.send(JSON.stringify({ type: 'setName', username }));
         return;
       }
 
@@ -64,10 +77,12 @@ export function RealtimeSocketProvider({ children }: RealtimeSocketProviderProps
     };
 
     ws.onerror = (err) => {
+      setReadyState(ws.readyState);
       console.error('[RealtimeSocket] WebSocket error:', err);
     };
 
     ws.onclose = () => {
+      setIsConnected(false);
       setReadyState(WebSocket.CLOSED);
       wsRef.current = null;
     };
@@ -79,12 +94,15 @@ export function RealtimeSocketProvider({ children }: RealtimeSocketProviderProps
     };
   }, [userUuid, username]);
 
-  const send = useCallback((payload: Record<string, unknown>) => {
-    const ws = wsRef.current;
-    if (!ws || ws.readyState !== WebSocket.OPEN) return false;
-    ws.send(JSON.stringify(payload));
-    return true;
-  }, []);
+  const send = useCallback(
+    (payload: Record<string, unknown>) => {
+      const ws = wsRef.current;
+      if (!ws || !isConnected) return false;
+      ws.send(JSON.stringify(payload));
+      return true;
+    },
+    [isConnected],
+  );
 
   const subscribe = useCallback((handler: (data: any) => void) => {
     messageHandlersRef.current.add(handler);
@@ -98,8 +116,9 @@ export function RealtimeSocketProvider({ children }: RealtimeSocketProviderProps
       send,
       subscribe,
       readyState,
+      isConnected,
     }),
-    [send, subscribe, readyState],
+    [send, subscribe, readyState, isConnected],
   );
 
   return <RealtimeSocketContext.Provider value={value}>{children}</RealtimeSocketContext.Provider>;
