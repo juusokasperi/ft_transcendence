@@ -21,8 +21,11 @@ export function readJwtExpSec(token: string): number | null {
   return Number.isFinite(exp) ? exp : null;
 }
 
-function makeResumeKey(roomIdentifier: string, sessionIdentifier: string): string {
-  return `${RESUME_STORE_PREFIX}${roomIdentifier}:${sessionIdentifier}`;
+function makeResumeKey(roomIdentifier: string, sessionIdentifier: string, jti?: string): string {
+  // Include jti so we can cache more than one token per session.
+  return `${RESUME_STORE_PREFIX}${roomIdentifier}:${sessionIdentifier}${
+    jti ? `:${jti}` : ''
+  }`;
 }
 
 export function clearResumeForRoom(roomIdentifier: string): void {
@@ -45,14 +48,16 @@ export function saveResumeTokenToSession(token: string, expectedRoom: string): v
   const payload = parseJwtPayload(token);
   const room = String(payload?.roomIdentifier || '');
   const session = String(payload?.sessionIdentifier || '');
+  const jti = String(payload?.jti || '');
   const exp = Number(payload?.exp);
   if (!room || !session || !Number.isFinite(exp)) return;
   if (room !== expectedRoom) return; // do not persist cross-room tokens
   try {
-    // Garbage collect expired tokens for this room
+    // Garbage collect expired tokens for this room and keep only a small set of freshest tokens.
     const nowSec = Math.floor(Date.now() / 1000);
     const prefix = `${RESUME_STORE_PREFIX}${room}:`;
     const toRemove: string[] = [];
+    const validEntries: Array<{ key: string; expSec: number }> = [];
     for (let i = 0; i < sessionStorage.length; i++) {
       const k = sessionStorage.key(i);
       if (k && k.startsWith(prefix)) {
@@ -64,6 +69,7 @@ export function saveResumeTokenToSession(token: string, expectedRoom: string): v
           }
           const parsed = JSON.parse(raw);
           if (typeof parsed?.expSec === 'number' && parsed.expSec <= nowSec) toRemove.push(k);
+          else if (typeof parsed?.expSec === 'number') validEntries.push({ key: k, expSec: parsed.expSec });
         } catch {
           toRemove.push(k);
         }
@@ -71,8 +77,14 @@ export function saveResumeTokenToSession(token: string, expectedRoom: string): v
     }
     toRemove.forEach((k) => sessionStorage.removeItem(k));
 
-    const key = makeResumeKey(room, session);
+    // Add the new token and then enforce a small cap (keep the newest 3 by exp).
+    const key = makeResumeKey(room, session, jti || undefined);
     sessionStorage.setItem(key, JSON.stringify({ token, expSec: exp }));
+
+    validEntries.push({ key, expSec: exp });
+    validEntries.sort((a, b) => b.expSec - a.expSec);
+    const excess = validEntries.slice(3);
+    excess.forEach(({ key: k }) => sessionStorage.removeItem(k));
   } catch {
     // ignore storage errors (quota, privacy, etc.)
   }

@@ -159,8 +159,12 @@ export async function connectOnline(
       // Track the currently active socket so we can swap it during reconnects.
       let ws: WebSocket = gameWs;
 
-      // Latest resume token from server. Decoded exp guides reconnect cutoff.
-      let latestResume: { token: string; expSec: number } | null = stored ?? null;
+      // Latest resume token from server (fresh for this connection).
+      // If we connected with a resume token, that one is consumed; wait for rotation.
+      let latestResume: { token: string; expSec: number } | null = usedResumeAtConnect
+        ? null
+        : stored ?? null;
+      let hasFreshResumeToken = Boolean(latestResume);
 
       // Decode JWT payload safely (base64url), return exp as seconds if present.
       const readJwtExp = readJwtExpSec;
@@ -291,7 +295,10 @@ export async function connectOnline(
             // Keep the latest token and decode its expiration.
             const token = String(data.token || '');
             const expSec = readJwtExp(token);
-            if (expSec) latestResume = { token, expSec };
+            if (expSec) {
+              latestResume = { token, expSec };
+              hasFreshResumeToken = true;
+            }
             // Persist token for page refresh within grace window.
             saveResumeTokenToSession(token, roomIdentifier);
             break;
@@ -304,16 +311,29 @@ export async function connectOnline(
       // Install reconnector logic
       const { onCloseAfterOpen: _onCloseAfterOpen, stop: stopReconnector } = createReconnector({
         resolvedUrl,
-        getLatestResume: () => latestResume,
+        getLatestResume: () => (hasFreshResumeToken ? latestResume : null),
         getWs: () => ws,
         setWs: (next) => {
           ws = next;
         },
         attachHandlers,
         detachHandlers,
+        onResumeAccepted: () => {
+          // The token we just used is now consumed; wait for the next rotation.
+          hasFreshResumeToken = false;
+          latestResume = null;
+          clearResumeForRoom(roomIdentifier);
+        },
         onResumeOpen: (next) => {
           notifySelfReconnected(3000);
           startPingLoop(next);
+        },
+        onResumeGiveUp: (reason) => {
+          console.warn('[OnlineGame] Resume reconnect gave up:', reason);
+          hasFreshResumeToken = false;
+          latestResume = null;
+          clearResumeForRoom(roomIdentifier);
+          stopPingLoop();
         },
       });
       onCloseAfterOpen = _onCloseAfterOpen;

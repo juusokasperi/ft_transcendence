@@ -50,7 +50,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
   );
   const casualGrace = parseNumber(
     env.GAME_SERVER_CASUAL_GRACE_MS,
-    15000,
+    5000,
     'GAME_SERVER_CASUAL_GRACE_MS',
   );
 
