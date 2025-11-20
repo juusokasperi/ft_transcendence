@@ -8,7 +8,6 @@ export type MembershipInfo = {
 export function isMember(
   userUuid: string | null | undefined,
   participants: TournamentParticipantState[],
-  tournamentStatus: string,
 ): boolean {
   if (!userUuid) return false;
   // Keep membership even after completion so users can view final results

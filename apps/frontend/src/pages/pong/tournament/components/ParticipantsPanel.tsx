@@ -50,7 +50,7 @@ const TournamentParticipantsPanel: React.FC<TournamentParticipantsPanelProps> = 
                 {participant.alias}
                 {(String(participant.status).toLowerCase() === 'forfeited' ||
                   forfeitedParticipantIds?.has(participant.participantId)) && (
-                  <span className="ml-1 text-rose-300/80">(forfeit)</span>
+                  <span className="ml-1 text-rose-300/80"> FORFEITED</span>
                 )}
               </span>
               <span className="text-xs uppercase tracking-[0.2em] text-white/40">

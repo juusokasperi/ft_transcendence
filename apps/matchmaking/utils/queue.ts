@@ -229,7 +229,6 @@ export async function createMatch(
     allocatorRes = await axios.post(`${ALLOCATOR_URL}/allocate`, {
       idempotencyKey: matchId,
       mode,
-      region: 'default',
       players: [
         {
           playerIdentifier: a.uuid,

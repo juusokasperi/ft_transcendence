@@ -110,7 +110,7 @@ const TournamentDirectedMatchesPanel: React.FC<TournamentDirectedMatchesPanelPro
                       <span>
                         {participant.alias}
                         {forfeitedParticipantIds?.has(participant.participantId) && (
-                          <span className="ml-1 text-rose-300/80">(forfeit)</span>
+                          <span className="ml-1 text-rose-300/80"> FORFEITED</span>
                         )}{' '}
                         · {participant.teamNumber === 1 ? 'West' : 'East'}
                       </span>

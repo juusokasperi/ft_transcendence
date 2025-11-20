@@ -2,9 +2,10 @@ import type { FastifyError, FastifyReply, FastifyRequest } from 'fastify';
 
 export const prettierErrorMessages = (
   error: FastifyError,
-  request: FastifyRequest,
+  _request: FastifyRequest,
   res: FastifyReply,
 ) => {
+  void _request;
   if (error.validation) {
     const friendlyErrors = error.validation.map((err: any) => {
       const field = err.instancePath.replace('/body/', '').replace('/', '');

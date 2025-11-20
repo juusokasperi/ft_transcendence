@@ -131,19 +131,18 @@ const OnlineGame: React.FC = () => {
     [axios, enqueueSnackbar, navigate],
   );
 
-  const { joinQueue, leaveQueue, acceptMatch, declineMatch, reconnect, confirmJoin } =
-    useMatchmakingClient({
-      dispatch,
-      connectKey,
-      requestReconnect: () => setConnectKey((key) => key + 1),
-      enabled: matchmakingEnabled,
-      onAuthError: handleAuthError,
-      onAllocatorError: handleAllocatorError,
-      onRatelimit: handleRatelimit,
-      onConfirmation: handleConfirmation,
-      onMatchTimeout: handleMatchTimeout,
-      onMatchDeclined: handleMatchDeclined,
-    });
+  const { joinQueue, leaveQueue, acceptMatch, declineMatch, confirmJoin } = useMatchmakingClient({
+    dispatch,
+    connectKey,
+    requestReconnect: () => setConnectKey((key) => key + 1),
+    enabled: matchmakingEnabled,
+    onAuthError: handleAuthError,
+    onAllocatorError: handleAllocatorError,
+    onRatelimit: handleRatelimit,
+    onConfirmation: handleConfirmation,
+    onMatchTimeout: handleMatchTimeout,
+    onMatchDeclined: handleMatchDeclined,
+  });
 
   const bootstrapConfig = useBootstrapConfig(state);
 

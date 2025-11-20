@@ -98,13 +98,6 @@ export async function handleAuth(
   return true;
 }
 
-function isUserAlreadyConnected(uuid: string, clients: Map<string, ClientInfo>): boolean {
-  for (const client of clients.values()) {
-    if (client.uuid === uuid && client.authenticated) return true;
-  }
-  return false;
-}
-
 function findExistingClient(
   uuid: string,
   clients: Map<string, ClientInfo>,

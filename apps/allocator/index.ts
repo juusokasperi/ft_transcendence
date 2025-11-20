@@ -23,11 +23,10 @@ app.post(
   },
   async (request: FastifyRequest, reply: FastifyReply) => {
     try {
-      const { idempotencyKey, mode, region, players, randomSeed, simulationStartTick, tournament } =
+      const { idempotencyKey, mode, players, randomSeed, simulationStartTick, tournament } =
         request.body as {
           idempotencyKey: string;
           mode: 'ranked' | 'tournament' | 'invite';
-          region: string;
           players: Array<{
             playerIdentifier: string;
             side: 'west' | 'east';
@@ -55,7 +54,7 @@ app.post(
       const nodeScores = await redis.hgetall('game-node:scores');
       let bestScore = Infinity;
       let bestNodeInfo = null;
-      for (const [nodeId, value] of Object.entries(nodeScores)) {
+      for (const [, value] of Object.entries(nodeScores)) {
         const nodeInfo = JSON.parse(value as string);
         if (typeof nodeInfo.score === 'number' && nodeInfo.score < bestScore) {
           bestScore = nodeInfo.score;
@@ -155,7 +154,7 @@ app.post(
   },
 );
 
-app.listen({ port: PORT, host: '0.0.0.0' }, (err: Error | null, address: string) => {
+app.listen({ port: PORT, host: '0.0.0.0' }, (err: Error | null) => {
   if (err) throw err;
   log(`Server started on port ${PORT}`);
 });

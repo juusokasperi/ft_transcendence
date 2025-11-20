@@ -1,6 +1,6 @@
 import type { Scene } from '@babylonjs/core/scene';
 import { LastCreatedAudioEngine } from '@babylonjs/core/AudioV2/abstractAudio/audioEngineV2';
-import type { AudioManifest, SfxAsset } from './manifest';
+import type { AudioManifest } from './manifest';
 import { SfxPool } from './sfx-pool';
 
 export type PreloadResult = {

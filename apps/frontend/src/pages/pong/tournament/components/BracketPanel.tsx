@@ -55,7 +55,7 @@ const TournamentBracketPanel: React.FC<TournamentBracketPanelProps> = ({
                       {player.alias ?? 'TBD'}
                       {(String(player.status).toLowerCase() === 'forfeited' ||
                         forfeitedParticipantIds?.has(player.participantId)) && (
-                        <span className="ml-1 text-rose-300/80">(forfeit)</span>
+                        <span className="ml-1 text-rose-300/80"> FORFEITED</span>
                       )}
                     </span>
                     <span className="w-8 text-center font-mono text-lg font-bold tabular-nums">

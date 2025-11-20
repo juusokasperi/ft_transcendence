@@ -1,17 +1,13 @@
-import type { Scene } from '@babylonjs/core/scene';
 import { CreateStreamingSoundAsync } from '@babylonjs/core/AudioV2/abstractAudio/audioEngineV2';
 import type { StreamingSound } from '@babylonjs/core/AudioV2/abstractAudio/streamingSound';
 import type { MusicAsset } from './manifest';
 
 export class MusicPlayer {
-  private scene: Scene;
   private current: StreamingSound | null = null;
   private currentId: string | null = null;
   private endListeners = new Set<() => void>();
 
-  constructor(scene: Scene) {
-    this.scene = scene;
-  }
+  constructor() {}
 
   get nowPlaying(): string | null {
     return this.currentId;
@@ -20,10 +16,7 @@ export class MusicPlayer {
   async play(asset: MusicAsset, opts?: { volume?: number; loop?: boolean; fadeMs?: number }) {
     const vol = opts?.volume ?? asset.volume ?? 0.6;
     const loop = opts?.loop ?? asset.loop ?? true;
-    // Fade not currently supported per-sound in V2 without exposing subnodes; play at target volume
-    const _fadeMs = Math.max(0, opts?.fadeMs ?? 0);
-
-    await this.stop(_fadeMs);
+    await this.stop();
 
     const s = await CreateStreamingSoundAsync(asset.id, asset.url, {
       autoplay: false,
@@ -59,7 +52,7 @@ export class MusicPlayer {
     return () => this.endListeners.delete(fn);
   }
 
-  async stop(fadeMs = 200) {
+  async stop() {
     if (!this.current) return;
     const s = this.current;
     this.current = null;

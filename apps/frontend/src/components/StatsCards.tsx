@@ -100,7 +100,7 @@ export const PieChartCard: React.FC<PieChartCardProps> = ({ label, accent, data,
               stroke="rgba(255, 255, 255, 0.3)"
               filter="url(#pieShadow)"
             >
-              {data.map((entry, index) => (
+              {data.map((_, index) => (
                 <Cell key={`cell-${index}`} fill={COLORS[index]} />
               ))}
             </Pie>

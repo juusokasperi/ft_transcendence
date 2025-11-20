@@ -115,6 +115,7 @@ export class ReconnectManager {
   }
 
   onReconnect(session: MatchSession, seat: 'P1' | 'P2'): void {
+    void seat;
     session.model.cancelDisconnectGrace();
     this.broadcaster.notifyOpponentReconnected(session);
     if (session.model.started) {

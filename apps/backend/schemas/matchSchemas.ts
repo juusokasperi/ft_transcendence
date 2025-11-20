@@ -1,8 +1,6 @@
 import { ErrorResponseSchema } from './responseSchemas.ts';
 import {
   MatchSchema,
-  TournamentIDSchema,
-  TournamentStageSchema,
   UuidSchema,
   MatchPlayerStatsArraySchema,
   UserStatsSchema,

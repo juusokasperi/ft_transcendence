@@ -53,7 +53,8 @@ export function tokenUuidCheck(req: FastifyRequest, res: FastifyReply, done: Fun
 }
 
 // Normalizes credentials if present in request
-export function normalizeCredentials(req: FastifyRequest, res: FastifyReply, done: Function) {
+export function normalizeCredentials(req: FastifyRequest, _res: FastifyReply, done: Function) {
+  void _res;
   if (typeof req.body !== 'object' || req.body === null) done();
 
   const body = req.body as Record<string, unknown>;
@@ -87,7 +88,7 @@ export function matchAuthPreHandler(req: FastifyRequest, res: FastifyReply, done
     return;
   }
   try {
-    const payload = jwt.verify(token, MATCH_SECRET); // (optionally: as any as JWTPayload)
+    jwt.verify(token, MATCH_SECRET); // (optionally: as any as JWTPayload)
     done();
   } catch {
     res.status(401).send({ message: 'Invalid or expired match service token' });

@@ -113,7 +113,7 @@ app.log.info(
   `\x1b[0;33mSwagger API documentation served at http://localhost:${BACKEND_PORT}/docs\x1b[0m`,
 );
 
-app.listen({ host: BACKEND_HOST, port: BACKEND_PORT }, function (err, address) {
+app.listen({ host: BACKEND_HOST, port: BACKEND_PORT }, function (err) {
   if (err) {
     app.log.error(err);
     process.exit(1);

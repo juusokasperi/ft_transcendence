@@ -1,7 +1,6 @@
 import type {
   TournamentMatchCountdownStatus,
   TournamentMatchesReadyMessage,
-  TournamentMatchState,
 } from '../net/messageTypes';
 
 export type TournamentSummary = {

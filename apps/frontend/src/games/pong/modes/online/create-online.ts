@@ -86,7 +86,6 @@ export function createOnlineApp(
   const {
     scene,
     paddles: { left, right },
-    table,
     ball,
   } = world;
 
@@ -114,7 +113,6 @@ export function createOnlineApp(
   // --- Net state -------------------------------------------------------------------
   let net: OnlineClient | null = null;
   let mySeat: PlayerSeat = 'P1';
-  let latest: GameState | null = null;
   const eventQueue: FrameEvents[] = [];
   let prevPhase: GameState['phase'] | null = null;
   let didBootFX = false;

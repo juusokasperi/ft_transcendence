@@ -30,7 +30,7 @@ export class AudioManager {
   constructor(scene: Scene, manifest: AudioManifest) {
     this.scene = scene;
     this.manifest = manifest;
-    this.music = new MusicPlayer(scene);
+    this.music = new MusicPlayer();
   }
 
   /** Resume AudioContext and preload SFX with concurrency limit. */
@@ -72,7 +72,7 @@ export class AudioManager {
 
   dispose() {
     this.unobserve();
-    this.runAsync(this.music.stop(0), 'music.stop(dispose)');
+    this.runAsync(this.music.stop(), 'music.stop(dispose)');
     for (const p of Object.values(this.pools)) {
       try {
         p.dispose();
@@ -156,7 +156,8 @@ export class AudioManager {
   }
 
   private onMusicStop(cmd: MusicStopCommand): Promise<void> | void {
-    return this.music.stop(cmd.fadeMs);
+    void cmd;
+    return this.music.stop();
   }
 }
 
