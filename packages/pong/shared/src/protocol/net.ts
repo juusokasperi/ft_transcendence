@@ -180,7 +180,6 @@ export type JoinTokenClaims = {
   sub: string;
   side: 'west' | 'east';
   simulationStartTick: number;
-  region?: string;
 } & Partial<TournamentContext>;
 
 export type ErrorMessage = {
