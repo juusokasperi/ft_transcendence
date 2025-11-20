@@ -169,7 +169,7 @@ export async function connectOnline(
       // If we connected with a resume token, that one is consumed; wait for rotation.
       let latestResume: { token: string; expSec: number } | null = usedResumeAtConnect
         ? null
-        : stored ?? null;
+        : (stored ?? null);
       let hasFreshResumeToken = Boolean(latestResume);
 
       // Decode JWT payload safely (base64url), return exp as seconds if present.
