@@ -122,6 +122,11 @@ export function useTournamentPageController(
     focusTournamentId,
     debugLog,
     onError: (msg) => enqueueSnackbar({ message: msg, variant: 'error' }),
+    onMissingTournament: (missingId) => {
+      enqueueSnackbar({ message: 'Tournament not found.', variant: 'warning' });
+      debugLog('detail:not-found', { tournamentId: missingId });
+      navigate('/pong/tournaments', { replace: true });
+    },
     getActiveTournamentId: useCallback(() => storeRef.current.activeTournamentId, []),
     dispatch,
   });
