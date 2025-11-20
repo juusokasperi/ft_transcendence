@@ -5,6 +5,7 @@ import TournamentBracketPanel from './components/BracketPanel';
 import TournamentDirectedMatchesPanel from './components/DirectedMatchesPanel';
 import TournamentLobbyPanel from './components/LobbyPanel';
 import TournamentPageHeader from './components/PageHeader';
+import ConfirmDialog from '../../../components/ConfirmDialog';
 import SurfaceCard from '../shared/components/SurfaceCard';
 import PlayingView from '../shared/components/PlayingView';
 import { useTournamentPageController } from './hooks/useTournamentPageController';
@@ -49,6 +50,9 @@ const TournamentPage: React.FC<TournamentPageProps> = ({ focusTournamentId = nul
     headerLoading,
     currentParticipantId,
     forfeitedParticipantIds,
+    resumePromptOpen,
+    handleResumePromptConfirm,
+    handleResumePromptDismiss,
   } = useTournamentPageController({ focusTournamentId });
 
   const currentUserUuid = user?.uuid ?? null;
@@ -172,6 +176,17 @@ const TournamentPage: React.FC<TournamentPageProps> = ({ focusTournamentId = nul
           </section>
         )}
       </PageSection>
+
+      <ConfirmDialog
+        open={resumePromptOpen}
+        title="Resume previous online match?"
+        description="You have a resumable online match. Continue to tournaments and clear the resume token, or cancel to keep it."
+        confirmLabel="Continue to tournaments"
+        cancelLabel="Cancel"
+        onConfirm={handleResumePromptConfirm}
+        onCancel={handleResumePromptDismiss}
+        tone="warning"
+      />
     </PageContainer>
   );
 };

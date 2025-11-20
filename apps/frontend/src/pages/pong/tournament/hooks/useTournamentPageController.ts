@@ -63,6 +63,9 @@ type TournamentControllerReturn = {
   headerRefreshHandler: () => Promise<void> | void;
   currentParticipantId: number | null;
   forfeitedParticipantIds: Set<number>;
+  resumePromptOpen: boolean;
+  handleResumePromptConfirm: () => void;
+  handleResumePromptDismiss: () => void;
 };
 
 type UseTournamentPageControllerOptions = {
@@ -339,6 +342,8 @@ export function useTournamentPageController(
   }, []);
 
   const skipAutoResumeRef = useRef(false);
+  const [resumePromptOpen, setResumePromptOpen] = useState(false);
+  const resumeRoomIdRef = useRef<string | null>(null);
 
   const { handleQuitMatch: handleQuitMatchInner } = useMatchLifecycle({
     matchPhase,
@@ -370,6 +375,34 @@ export function useTournamentPageController(
     handleQuitMatchInner();
   }, [debugLog, handoff?.roomIdentifier, handleQuitMatchInner]);
 
+  const handleResumePromptConfirm = useCallback(() => {
+    const roomId = resumeRoomIdRef.current;
+    if (roomId) {
+      (async () => {
+        try {
+          const { clearStoredResumeTokens } = await import(
+            '../../../../games/pong/modes/online/resume'
+          );
+          clearStoredResumeTokens(roomId);
+          debugLog('auto-resume:dismissed', { roomIdentifier: roomId });
+        } catch {}
+      })();
+    }
+    resumeRoomIdRef.current = null;
+    setResumePromptOpen(false);
+  }, [debugLog]);
+
+  const handleResumePromptDismiss = useCallback(() => {
+    // Keep the token intact but stop auto-resume attempts for this session.
+    skipAutoResumeRef.current = true;
+    const roomId = resumeRoomIdRef.current;
+    setResumePromptOpen(false);
+    resumeRoomIdRef.current = null;
+    if (roomId) {
+      debugLog('auto-resume:cancelled', { roomIdentifier: roomId });
+    }
+  }, [debugLog]);
+
   // Auto-resume support: if the user lands on a tournament detail view while having
   // a valid resume token in sessionStorage (from an in-progress match), automatically
   // bootstrap the game using that token. This mirrors the OnlineGame behavior, but is
@@ -382,33 +415,45 @@ export function useTournamentPageController(
     // Do not interfere if we are already starting/playing or have a live handoff
     if (matchPhase === 'starting' || matchPhase === 'playing') return;
     if (handoff) return;
+    if (resumePromptOpen) return;
     if (skipAutoResumeRef.current) return;
 
     // Find any stored resume token; tokens are short-lived and cleared on match end/forfeit,
     // so the presence of a token strongly indicates an in-progress match.
     (async () => {
       try {
-        const { findAnyStoredResumeCandidate } = await import(
+        const { findAnyStoredResumeCandidate, isTournamentRoom } = await import(
           '../../../../games/pong/modes/online/resume'
         );
         const candidate = findAnyStoredResumeCandidate();
         if (!candidate) return;
 
-        // Seed a synthetic handoff so the lifecycle hook boots the game. Seat and joinToken
-        // are placeholders; the online bootstrap will switch to resume mode using the token
-        // stored for this room.
-        setHandoff({
-          matchId: 'resume',
-          roomIdentifier: candidate.roomIdentifier,
-          gameServerWSUrl: `/g/${candidate.roomIdentifier}`,
-          joinToken: '',
-          randomSeed: 0,
-          side: 'east',
-        });
-        setMatchPhase('starting');
-        debugLog('auto-resume:attempt', {
+        // Auto-resume tournament matches; prompt only for non-tournament 1v1 tokens.
+        if (isTournamentRoom(candidate.roomIdentifier)) {
+          setHandoff({
+            matchId: 'resume',
+            roomIdentifier: candidate.roomIdentifier,
+            gameServerWSUrl: `/g/${candidate.roomIdentifier}`,
+            joinToken: '',
+            randomSeed: 0,
+            side: 'east',
+          });
+          setMatchPhase('starting');
+          debugLog('auto-resume:attempt', {
+            tournamentId: activeTournamentId,
+            roomIdentifier: candidate.roomIdentifier,
+            source: 'tournament',
+          });
+          return;
+        }
+
+        // Prompt the user before clearing the resume token and staying on tournaments.
+        resumeRoomIdRef.current = candidate.roomIdentifier;
+        setResumePromptOpen(true);
+        debugLog('auto-resume:prompt', {
           tournamentId: activeTournamentId,
           roomIdentifier: candidate.roomIdentifier,
+          source: 'online',
         });
       } catch (err) {
         // Fail silently; auto-resume is best-effort
@@ -428,6 +473,7 @@ export function useTournamentPageController(
     tournamentStatus,
     user,
     userReady,
+    resumePromptOpen,
   ]);
 
   return {
@@ -460,5 +506,8 @@ export function useTournamentPageController(
     headerRefreshHandler,
     currentParticipantId,
     forfeitedParticipantIds: store.forfeitedParticipantIds,
+    resumePromptOpen,
+    handleResumePromptConfirm,
+    handleResumePromptDismiss,
   };
 }

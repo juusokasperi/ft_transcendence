@@ -1,5 +1,6 @@
 const RESUME_STORE_PREFIX = 'pong:resume:';
 const SUPPRESS_KEY = 'pong:resume:suppressUntilMs';
+const TOURNAMENT_ROOM_PREFIX = 'pong:resume:tournament:';
 
 export function parseJwtPayload(token: string): any | null {
   try {
@@ -26,6 +27,37 @@ function makeResumeKey(roomIdentifier: string, sessionIdentifier: string, jti?: 
   return `${RESUME_STORE_PREFIX}${roomIdentifier}:${sessionIdentifier}${jti ? `:${jti}` : ''}`;
 }
 
+function makeTournamentKey(roomIdentifier: string): string {
+  return `${TOURNAMENT_ROOM_PREFIX}${roomIdentifier}`;
+}
+
+export function markTournamentRoom(roomIdentifier: string): void {
+  if (typeof sessionStorage === 'undefined') return;
+  try {
+    sessionStorage.setItem(makeTournamentKey(roomIdentifier), '1');
+  } catch {
+    // ignore
+  }
+}
+
+export function isTournamentRoom(roomIdentifier: string): boolean {
+  if (typeof sessionStorage === 'undefined') return false;
+  try {
+    return sessionStorage.getItem(makeTournamentKey(roomIdentifier)) === '1';
+  } catch {
+    return false;
+  }
+}
+
+export function clearTournamentRoomMark(roomIdentifier: string): void {
+  if (typeof sessionStorage === 'undefined') return;
+  try {
+    sessionStorage.removeItem(makeTournamentKey(roomIdentifier));
+  } catch {
+    // ignore
+  }
+}
+
 export function clearResumeForRoom(roomIdentifier: string): void {
   if (typeof sessionStorage === 'undefined') return;
   try {
@@ -36,6 +68,7 @@ export function clearResumeForRoom(roomIdentifier: string): void {
       if (k && k.startsWith(prefix)) toRemove.push(k);
     }
     toRemove.forEach((k) => sessionStorage.removeItem(k));
+    clearTournamentRoomMark(roomIdentifier);
   } catch {
     // ignore
   }

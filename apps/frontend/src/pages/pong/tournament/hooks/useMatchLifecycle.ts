@@ -34,6 +34,18 @@ export function useMatchLifecycle({
   const rejoinTimerRef = useRef<number | null>(null);
   const refreshTimerRef = useRef<number | null>(null);
   const teardownInProgressRef = useRef(false);
+  const markTournamentRoom = useCallback((roomId: string) => {
+    (async () => {
+      try {
+        const { markTournamentRoom } = await import(
+          '../../../../games/pong/modes/online/resume'
+        );
+        markTournamentRoom(roomId);
+      } catch {
+        /* ignore */
+      }
+    })();
+  }, []);
 
   useLayoutEffect(() => {
     if (matchPhase !== 'starting' && matchPhase !== 'playing') return;
@@ -151,6 +163,9 @@ export function useMatchLifecycle({
           return;
         }
         appRef.current = app;
+        if (handoff?.roomIdentifier) {
+          markTournamentRoom(handoff.roomIdentifier);
+        }
         setMatchPhase('playing');
       } catch (error) {
         enqueueSnackbar({ message: 'Failed to start tournament match', variant: 'error' });
@@ -168,6 +183,7 @@ export function useMatchLifecycle({
     handoff,
     matchPhase,
     performMatchTeardown,
+    markTournamentRoom,
     setMatchPhase,
   ]);
 
