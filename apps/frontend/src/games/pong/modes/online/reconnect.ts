@@ -24,6 +24,8 @@ export function createReconnector({
   detachHandlers,
   onResumeOpen,
   onPermanentClose,
+  onResumeAccepted,
+  onResumeGiveUp,
 }: Deps) {
   let reconnectTimer: number | null = null;
   let stopped = false;
