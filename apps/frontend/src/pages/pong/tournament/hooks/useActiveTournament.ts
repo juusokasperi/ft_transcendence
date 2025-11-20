@@ -8,6 +8,7 @@ type Options = {
   focusTournamentId: number | null;
   debugLog: (e: string, p?: Record<string, unknown>) => void;
   onError: (msg: string) => void;
+  onMissingTournament?: (id: number) => void;
   getActiveTournamentId: () => number | null;
   dispatch: (
     action:
@@ -33,6 +34,7 @@ export function useActiveTournament({
   focusTournamentId,
   debugLog,
   onError,
+  onMissingTournament,
   getActiveTournamentId,
   dispatch,
 }: Options) {
@@ -46,6 +48,10 @@ export function useActiveTournament({
   useEffect(() => {
     onErrorRef.current = onError;
   }, [onError]);
+  const onMissingTournamentRef = useRef(onMissingTournament);
+  useEffect(() => {
+    onMissingTournamentRef.current = onMissingTournament;
+  }, [onMissingTournament]);
 
   const resetActiveTournamentState = useCallback(() => {
     dispatch({ type: 'resetActiveTournamentState' });
@@ -105,11 +111,20 @@ export function useActiveTournament({
           matches: snapshot.matches.length,
         });
       } catch (error) {
+        const status = (error as any)?.response?.status;
         debugLog('refresh-tournament-state:error', {
           tournamentId: getActiveIdRef.current(),
           error,
         });
-        onErrorRef.current('Failed to refresh tournament state');
+        if (status === 404) {
+          resetActiveTournamentState();
+          dispatch({ type: 'setActiveTournamentId', payload: null });
+          focusStateRef.current = null;
+          onMissingTournamentRef.current?.(activeTournamentId);
+          debugLog('refresh-tournament-state:not-found', { tournamentId: activeTournamentId });
+        } else {
+          onErrorRef.current('Failed to refresh tournament state');
+        }
       } finally {
         setRefreshing(false);
       }

@@ -387,7 +387,7 @@ export function createOnlineApp(
       net = await connectOnline(cfg);
     }
     if (!net) {
-      console.warn('[OnlineGame] Unable to establish network connection');
+      //console.warn('[OnlineGame] Unable to establish network connection');
       try {
         cfg.onMatchEnd?.('bootstrap_failed', undefined, null);
       } catch {}

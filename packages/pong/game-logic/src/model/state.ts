@@ -77,6 +77,8 @@ export type GameState = {
     halfLengthX: number; // table half-length along X
     halfWidthZ: number; // table half-width along Z
     paddleHalfDepthZ: number; // half-size of paddle along Z
+    /** Physics-only half-depth used for collisions; can be > visual paddle depth for forgiveness. */
+    paddleCollisionHalfDepthZ?: number;
     leftPaddleX: number; // world X
     rightPaddleX: number; // world X
     ballRadius: number;

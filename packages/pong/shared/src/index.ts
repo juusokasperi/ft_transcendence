@@ -1,5 +1,6 @@
 export type { TableEnd, WallSide } from './domain/ids';
 export { SERVE_SELECT_TOTAL_MS } from './domain/timing';
+export { PADDLE_HITBOX_PADDING_Z } from './domain/physics';
 
 export type { GameRules, MatchRules, Ruleset } from './domain/rules';
 export { sideOpposite } from './domain/rules';
