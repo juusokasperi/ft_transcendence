@@ -59,6 +59,7 @@ import {
 import { generateAuthenticatorSecret, verifyTotpToken } from '../utils/twoFactor.ts';
 import { getMatchesWithPlayersForUser } from '../db/queries/matches.ts';
 import { getTotalStatsForUser } from '../db/queries/matchPlayerStats.ts';
+import { updateParticipantAliasesForUser } from '../db/queries/tournamentParticipants.ts';
 
 export async function userRoutes(app: FastifyInstance) {
   // Get all users
@@ -239,6 +240,7 @@ export async function userRoutes(app: FastifyInstance) {
 
         const updateResult = updateUsername(uuid, newUsername);
         if (!updateResult) return res.status(400).send({ message: 'Update failed' });
+        updateParticipantAliasesForUser(uuid, newUsername);
         user.username = newUsername;
         res.status(200).send(user);
       } catch (error) {
