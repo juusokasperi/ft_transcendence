@@ -42,7 +42,6 @@ export function createSideSwapController(deps: SideSwapDeps): SideSwapController
   let rowsMirrored = false;
   let spinningUntilMs = 0;
   let betweenHalfFired = false;
-  let pendingBetweenSwap = false;
   let betweenSwapApplied = false;
 
   const snapshotForHud = (matchSnap?: MatchSnapshot): MatchSnapshot => {
@@ -77,7 +76,6 @@ export function createSideSwapController(deps: SideSwapDeps): SideSwapController
       );
       spinningUntilMs = until;
       betweenHalfFired = false;
-      pendingBetweenSwap = false;
       betweenSwapApplied = false;
       const now = performance.now();
       const spinMs = Math.max(0, until - now);
@@ -90,8 +88,6 @@ export function createSideSwapController(deps: SideSwapDeps): SideSwapController
               rowsMirrored = applyOnlineSideSwap(deps.leftMesh, deps.rightMesh, rowsMirrored);
               betweenSwapApplied = true;
             }
-            // If the server event came earlier and we deferred, it's now fulfilled.
-            pendingBetweenSwap = false;
           },
         });
       }
@@ -119,9 +115,6 @@ export function createSideSwapController(deps: SideSwapDeps): SideSwapController
         // Half happened but swap not yet applied (race) — apply now.
         rowsMirrored = applyOnlineSideSwap(deps.leftMesh, deps.rightMesh, rowsMirrored);
         betweenSwapApplied = true;
-      } else {
-        // Defer until onHalf; ensures alignment.
-        pendingBetweenSwap = true;
       }
     } else {
       const until = handleSwapSidesNow(
@@ -134,7 +127,6 @@ export function createSideSwapController(deps: SideSwapDeps): SideSwapController
       // Track active spin window to align any subsequent events like between-games flow
       spinningUntilMs = until;
       betweenHalfFired = false;
-      pendingBetweenSwap = false;
       betweenSwapApplied = false;
       const spinMs = Math.max(0, until - now);
       if (spinMs > 0) {

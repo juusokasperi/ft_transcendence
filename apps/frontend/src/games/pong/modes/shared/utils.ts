@@ -58,6 +58,7 @@ export function handleSwapSidesNow(
   blockInputForFn: (ms: number) => void,
   messageMs = 3200,
 ): number {
+  void names;
   const isMidGame = prevPhase === 'rally';
   if (isMidGame) {
     return announceAndPause(hud, 'Swapping mid-game for decisive game', messageMs, blockInputForFn);
@@ -66,7 +67,6 @@ export function handleSwapSidesNow(
   const hist = snap.gamesHistory || [];
   const last = hist[hist.length - 1];
   if (last?.winner) {
-    const winnerRow = last.winner as TableEnd;
     return announceAndPause(hud, `Swapping side!`, messageMs, blockInputForFn);
   }
   return 0;
