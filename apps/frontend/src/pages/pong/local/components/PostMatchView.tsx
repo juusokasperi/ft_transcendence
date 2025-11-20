@@ -1,5 +1,4 @@
 import React from 'react';
-import type { GameHistoryEntry } from '@pong/shared';
 import type { MatchSummary } from '../types';
 import PlayButton from './PlayButton';
 import Card from './Card';

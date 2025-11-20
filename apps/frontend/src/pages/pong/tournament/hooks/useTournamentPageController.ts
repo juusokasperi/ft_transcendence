@@ -136,7 +136,6 @@ export function useTournamentPageController(
   const activeTournamentId = store.activeTournamentId;
   const activeTournamentName = store.activeTournamentName;
   const tournamentStatus = store.tournamentStatus;
-  const maxParticipants = store.maxParticipants;
   const headerLoading = store.activeTournamentId !== null ? refreshing : loadingTournaments;
   const [handoff, setHandoff] = useState<ActiveHandoff | null>(null);
   const [tournamentName, setTournamentNameState] = useState('');

@@ -276,7 +276,7 @@ const Profile: React.FC = () => {
     }
 
     try {
-      const res = await axios.patch('/api/users/me/email', {
+      await axios.patch('/api/users/me/email', {
         newEmail: email,
       });
       enqueueSnackbar({

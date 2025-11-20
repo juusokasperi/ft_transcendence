@@ -1,4 +1,3 @@
-import { useEffect } from 'react';
 import type React from 'react';
 import { useMatchOverEvent } from '../../shared/hooks/useMatchOverEvent';
 import type { MatchSummary } from '../types';

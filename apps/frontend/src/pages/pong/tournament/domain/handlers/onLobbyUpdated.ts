@@ -31,7 +31,7 @@ export function onLobbyUpdated(
   } catch {}
 
   // Membership + routing
-  const member = isMember(ctx.userUuid, msg.participants, msg.status);
+  const member = isMember(ctx.userUuid, msg.participants);
   const previousActiveId = ctx.getActiveTournamentId();
   if (member) {
     const changedToThisTournament = previousActiveId !== msg.tournamentId;

@@ -46,7 +46,11 @@ export class GameServer {
       logger: this.logger,
     });
 
-    const onMatchComplete = (session: MatchSession, _summary: OnlineMatchSummary | null, winner?: 'east' | 'west') => {
+    const onMatchComplete = (
+      session: MatchSession,
+      _summary: OnlineMatchSummary | null,
+      winner?: 'east' | 'west',
+    ) => {
       void _summary;
       const room = session.reservation.roomIdentifier;
       this.logger.info({ room, winner }, '[GameServer] Match finished');

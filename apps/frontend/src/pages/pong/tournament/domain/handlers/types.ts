@@ -1,12 +1,4 @@
-import type {
-  TournamentMatchState,
-  TournamentParticipantState,
-  TournamentMatchesReadyMessage,
-  TournamentMatchCountdownMessage,
-  HandoffMessage,
-  HandoffTimeoutMessage,
-  MatchmakingMessage,
-} from '../../net/messageTypes';
+import type { TournamentMatchState, TournamentParticipantState } from '../../net/messageTypes';
 import type {
   ActiveHandoff,
   CountdownSnapshot,
