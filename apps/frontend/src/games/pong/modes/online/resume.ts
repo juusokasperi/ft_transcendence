@@ -23,9 +23,7 @@ export function readJwtExpSec(token: string): number | null {
 
 function makeResumeKey(roomIdentifier: string, sessionIdentifier: string, jti?: string): string {
   // Include jti so we can cache more than one token per session.
-  return `${RESUME_STORE_PREFIX}${roomIdentifier}:${sessionIdentifier}${
-    jti ? `:${jti}` : ''
-  }`;
+  return `${RESUME_STORE_PREFIX}${roomIdentifier}:${sessionIdentifier}${jti ? `:${jti}` : ''}`;
 }
 
 export function clearResumeForRoom(roomIdentifier: string): void {
@@ -69,7 +67,8 @@ export function saveResumeTokenToSession(token: string, expectedRoom: string): v
           }
           const parsed = JSON.parse(raw);
           if (typeof parsed?.expSec === 'number' && parsed.expSec <= nowSec) toRemove.push(k);
-          else if (typeof parsed?.expSec === 'number') validEntries.push({ key: k, expSec: parsed.expSec });
+          else if (typeof parsed?.expSec === 'number')
+            validEntries.push({ key: k, expSec: parsed.expSec });
         } catch {
           toRemove.push(k);
         }

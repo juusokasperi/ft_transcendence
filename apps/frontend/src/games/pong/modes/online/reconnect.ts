@@ -1,12 +1,14 @@
 export type ResumeSnapshot = { token: string; expSec: number } | null;
 
 type Deps = {
+  isPermanentClose: (code: number) => boolean;
   resolvedUrl: string;
   getLatestResume: () => ResumeSnapshot;
   getWs: () => WebSocket;
   setWs: (ws: WebSocket) => void;
   attachHandlers: (socket: WebSocket) => void;
   detachHandlers: (socket: WebSocket) => void;
+  onPermanentClose: () => void;
   onResumeAccepted?: () => void;
   onResumeOpen?: (next: WebSocket) => void;
   onResumeGiveUp?: (reason: 'missing-token' | 'rejected' | 'expired') => void;
@@ -14,12 +16,16 @@ type Deps = {
 
 export function createReconnector({
   resolvedUrl,
+  isPermanentClose,
   getLatestResume,
   getWs,
   setWs,
   attachHandlers,
   detachHandlers,
   onResumeOpen,
+  onPermanentClose,
+  onResumeAccepted,
+  onResumeGiveUp,
 }: Deps) {
   let reconnectTimer: number | null = null;
   let stopped = false;
@@ -87,6 +93,7 @@ export function createReconnector({
           const policyClose = isPolicyClose(evt.code);
           if (policyClose || preOpenFailures >= 3) {
             giveUp('rejected');
+            console.log('[OnlineGame] Rejected, returninng.');
             return;
           }
           // Try again with backoff while token valid
@@ -103,6 +110,11 @@ export function createReconnector({
 
   const onCloseAfterOpen = function (this: WebSocket, evt: CloseEvent) {
     // 4403 indicates expected replace during resume; ignore.
+    if (isPermanentClose(evt.code)) {
+      stop();
+      onPermanentClose();
+      return;
+    }
     if (evt.code === 4403) return;
     // Begin reconnect attempts if a resume token exists.
     if (getLatestResume()) {

@@ -15,20 +15,9 @@ import { reconnectGraceMs } from '../../domain/Policies.ts';
 import { seatToSide } from '../../domain/Policies.ts';
 import type { ResultReporter } from '../../app/ResultReporter.ts';
 import { RedisTokenBucket } from '@utils/rate-limiter';
+import { CLOSE_CODES } from '@pong/shared/protocol/net';
 
 type JoinClaims = VerifiedJoinTokenClaims;
-
-const CLOSE_CODES = {
-  ROOM_NOT_FOUND: 4404,
-  MISSING_TOKEN: 4401,
-  INVALID_TOKEN: 4401,
-  TOKEN_REUSED: 4403,
-  PLAYER_NOT_AUTHORIZED: 4403,
-  SEAT_OCCUPIED: 4402,
-  SIDE_MISMATCH: 4403,
-  JOIN_WINDOW_EXPIRED: 4408,
-  SERVER_ERROR: 1011,
-};
 
 export class WSServer {
   private readonly config: AppConfig;
@@ -243,6 +232,11 @@ export class WSServer {
       return;
     }
 
+    // Ensure the match is not already finished before allowing a resume.
+    if (session.model.resultSubmitting || session.model.resultSubmitted) {
+      connection.close(CLOSE_CODES.MATCH_FINISHED, 'match-finished');
+      return;
+    }
     // Resolve the reconnecting player's seat from reservation; player may have been
     // detached on disconnect, so it might not exist in the session map.
     const expected = session.reservation.expectedPlayers.get(claims.sub);

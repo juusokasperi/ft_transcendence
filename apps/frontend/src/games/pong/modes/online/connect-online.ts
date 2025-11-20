@@ -15,9 +15,11 @@ export {
   findAnyStoredResumeCandidate,
 } from './resume';
 import { createReconnector } from './reconnect';
+import { CLOSE_CODES } from '@pong/shared/protocol/net';
 
 // Render/update cadence we expect from the authoritative node.
 const CLIENT_TICK_RATE_HZ = 60;
+const PERMANENT_CLOSE_CODES = new Set(Object.values(CLOSE_CODES));
 
 export type StartSignal = {
   startAtEpochMs: number;
@@ -107,6 +109,10 @@ export async function connectOnline(
         if (usedResumeAtConnect) clearResumeForRoom(roomIdentifier);
         fail(new Error(`WebSocket closed (${evt.code})`));
       }
+      if (PERMANENT_CLOSE_CODES.has(evt.code)) {
+        clearResumeForRoom(roomIdentifier);
+        fail(new Error(`WebSocket closed (${evt.code})`));
+      }
     });
 
     gameWs.addEventListener('open', () => {
@@ -163,7 +169,7 @@ export async function connectOnline(
       // If we connected with a resume token, that one is consumed; wait for rotation.
       let latestResume: { token: string; expSec: number } | null = usedResumeAtConnect
         ? null
-        : stored ?? null;
+        : (stored ?? null);
       let hasFreshResumeToken = Boolean(latestResume);
 
       // Decode JWT payload safely (base64url), return exp as seconds if present.
@@ -311,6 +317,7 @@ export async function connectOnline(
       // Install reconnector logic
       const { onCloseAfterOpen: _onCloseAfterOpen, stop: stopReconnector } = createReconnector({
         resolvedUrl,
+        isPermanentClose: (code) => PERMANENT_CLOSE_CODES.has(code),
         getLatestResume: () => (hasFreshResumeToken ? latestResume : null),
         getWs: () => ws,
         setWs: (next) => {
@@ -318,6 +325,10 @@ export async function connectOnline(
         },
         attachHandlers,
         detachHandlers,
+        onPermanentClose: () => {
+          matchEndListeners.forEach((cb) => cb('connection_closed', undefined, null));
+          clearResumeForRoom(roomIdentifier);
+        },
         onResumeAccepted: () => {
           // The token we just used is now consumed; wait for the next rotation.
           hasFreshResumeToken = false;
