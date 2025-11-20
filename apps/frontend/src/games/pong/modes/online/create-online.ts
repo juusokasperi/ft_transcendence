@@ -584,6 +584,8 @@ export function createOnlineApp(
     clearWaitingForOpponentTimeout();
     matchEnded = true;
     frameBuffer.reset();
+    // Ensure we drop any resume tokens for this room when leaving.
+    clearStoredResumeTokens(cfg.roomIdentifier);
 
     // Clean up disconnect overlay
     hideDisconnectOverlay();
