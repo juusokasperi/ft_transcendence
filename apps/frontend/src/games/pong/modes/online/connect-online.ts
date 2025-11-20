@@ -313,7 +313,10 @@ export async function connectOnline(
               hasFreshResumeToken = true;
             }
             // Persist token for page refresh within grace window.
-            saveResumeTokenToSession(token, roomIdentifier);
+            saveResumeTokenToSession(token, roomIdentifier, {
+              isTournament: data.isTournament ?? false,
+              tournamentId: data.tournamentId,
+            });
             break;
           default:
             console.warn('[OnlineGame] Unknown message type');
