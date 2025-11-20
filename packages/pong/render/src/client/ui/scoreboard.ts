@@ -203,7 +203,8 @@ export function createScoreboard(): DomScoreboardAPI {
     deuce.style.top = rect.top + 6 + 'px';
   };
 
-  const setGames = (history: GameHistoryEntry[], bestOf: number, cgIndex?: number) => {
+  const setGames = (history: GameHistoryEntry[], _bestOf: number, cgIndex?: number) => {
+    void _bestOf;
     renderBoxesRow(rightTop, 'east', history, cgIndex);
     renderBoxesRow(rightBottom, 'west', history, cgIndex);
     setPoints(lastPoints.east, lastPoints.west);

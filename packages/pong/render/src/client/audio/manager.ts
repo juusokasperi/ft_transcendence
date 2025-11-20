@@ -72,7 +72,7 @@ export class AudioManager {
 
   dispose() {
     this.unobserve();
-    this.runAsync(this.music.stop(0), 'music.stop(dispose)');
+    this.runAsync(this.music.stop(), 'music.stop(dispose)');
     for (const p of Object.values(this.pools)) {
       try {
         p.dispose();
