@@ -129,7 +129,6 @@ export function createScoreboard(): DomScoreboardAPI {
     container: HTMLElement,
     who: 'east' | 'west',
     history: GameHistoryEntry[],
-    bestOf: number,
     currentGameIndex?: number,
   ) {
     container.textContent = '';
@@ -205,8 +204,8 @@ export function createScoreboard(): DomScoreboardAPI {
   };
 
   const setGames = (history: GameHistoryEntry[], bestOf: number, cgIndex?: number) => {
-    renderBoxesRow(rightTop, 'east', history, bestOf, cgIndex);
-    renderBoxesRow(rightBottom, 'west', history, bestOf, cgIndex);
+    renderBoxesRow(rightTop, 'east', history, cgIndex);
+    renderBoxesRow(rightBottom, 'west', history, cgIndex);
     setPoints(lastPoints.east, lastPoints.west);
   };
 
