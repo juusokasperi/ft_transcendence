@@ -24,7 +24,7 @@ export default function SplitButton({ targetUser, isBlocked, onAction }: SplitBu
     : ['Send private message', 'Block user', 'Invite to 1v1', 'View profile'];
 
   const handleMenuItemClick = (
-    event: React.MouseEvent<HTMLLIElement, MouseEvent>,
+    _event: React.MouseEvent<HTMLLIElement, MouseEvent>,
     index: number,
   ) => {
     setOpen(false);
@@ -38,8 +38,9 @@ export default function SplitButton({ targetUser, isBlocked, onAction }: SplitBu
     setOpen((prevOpen) => !prevOpen);
   };
 
-  const handleClose = (event: Event | React.MouseEvent) => {
-    if (anchorRef.current && anchorRef.current.contains(event.target as Node)) {
+  const handleClose = (_event: Event | React.MouseEvent) => {
+    const target = (_event as { target?: EventTarget | null })?.target;
+    if (anchorRef.current && target && anchorRef.current.contains(target as Node)) {
       return;
     }
     setOpen(false);
