@@ -60,7 +60,7 @@ export function RealtimeSocketProvider({ children }: RealtimeSocketProviderProps
         return;
       }
 
-      if (data.type === 'connected') {
+      if (data.type === 'blockedList') {
         setIsConnected(true);
         ws.send(JSON.stringify({ type: 'setName', username }));
         return;
