@@ -1,8 +1,10 @@
+
 networks:
   prod-private:
+    name: ft-transcendence-prod-private
     driver: bridge
-    internal: true
   prod-public:
+    name: ft-transcendence-prod-public
     driver: bridge
 
 volumes:
@@ -24,6 +26,7 @@ services:
         STACK_VERSION: ${ES_STACK_VERSION:-9.1.5}
     volumes:
       - elk_certs:/usr/share/elasticsearch/config/certs
+    restart: no
     user: '0'
     environment:
       - ELASTIC_PASSWORD=${ELASTIC_PASSWORD}
@@ -64,6 +67,10 @@ services:
       - xpack.security.transport.ssl.certificate_authorities=certs/ca/ca.crt
       - xpack.security.transport.ssl.verification_mode=certificate
       - xpack.license.self_generated.type=${ES_LICENSE:-basic}
+      - indices.memory.index_buffer_size=10%
+      - indices.queries.cache.size=5%
+      - indices.fielddata.cache.size=10%
+      - indices.breaker.total.limit=50%
     mem_limit: 1536m
     healthcheck:
       test:
@@ -73,7 +80,7 @@ services:
           -u ${ELASTIC_USER:-elastic}:${ELASTIC_PASSWORD:-changeme} \
           "https://localhost:${ES_PORT:-9200}/_cluster/health?wait_for_status=yellow&timeout=5s" \
           > /dev/null
-      interval: 5s
+      interval: 10s
       timeout: 10s
       retries: 120
     depends_on:
@@ -86,6 +93,7 @@ services:
   elasticsearch-post:
     build:
       context: ./log-management/elasticsearch-post/
+    restart: no
     volumes:
       - elk_certs:/usr/share/elk/config/certs
     environment:
@@ -128,12 +136,19 @@ services:
       - SERVER_BASEPATH=/kibana
       - SERVER_PUBLICBASEURL=http://localhost:${MONITORING_PORT:-8082}/kibana
       - SERVER_REWRITEBASEPATH=true
+      - NODE_OPTIONS=--max-old-space-size=512
+      - xpack.monitoring.enabled=false
+      - xpack.ml.enabled=false
+      - xpack.graph.enabled=false
+      - xpack.reporting.enabled=false
+      - xpack.spaces.enabled=false
+      - xpack.canvas.enabled=false
     mem_limit: 1024m
     healthcheck:
       test:
        - CMD-SHELL
        - |
-         curl -s http://localhost:${KIBANA_PORT}/api/status | \
+         curl -s http://localhost:${KIBANA_PORT}/kibana/api/status | \
          grep -q '\"level\":\"available\"'
       interval: 10s
       timeout: 10s
@@ -145,8 +160,9 @@ services:
   kibana-post:
     build:
       context: ./log-management/kibana-post/
+    restart: no
     environment:
-      - KIBANA_URL=http://kibana:${KIBANA_PORT:-5601}
+      - KIBANA_URL=http://kibana:${KIBANA_PORT:-5601}/kibana
       - ELASTIC_USER=${ELASTIC_USER:-elastic}
       - ELASTIC_PASSWORD=${ELASTIC_PASSWORD}
     networks:
@@ -169,11 +185,10 @@ services:
     environment:
       - ELASTIC_USER=${ELASTIC_USER}
       - ELASTIC_PASSWORD=${ELASTIC_PASSWORD}
-      - LS_JAVA_OPTS=-Xms512m -Xmx512m -XX:MaxDirectMemorySize=256M
+      - LS_JAVA_OPTS=-Xms256m -Xmx256m -XX:MaxDirectMemorySize=128M
       - xpack.monitoring.enabled=false
       - ELASTIC_HOSTS=https://elasticsearch:${ES_PORT:-9200}
-      - ELASTIC_USER=${ELASTIC_USER:-elastic}
-      - ELASTIC_PASSWORD=${ELASTIC_PASSWORD}
+      - pipeline.workers=1
     mem_limit: 1024m
     healthcheck:
       test: ["CMD-SHELL", "curl -fs http://localhost:9600/_node/stats || exit 1"]
