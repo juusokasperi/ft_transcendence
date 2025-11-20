@@ -249,6 +249,8 @@ const Profile: React.FC = () => {
         variant: 'success',
       });
       setUsernameError(null);
+      await axios.post('/api/auth/refresh').catch(() => {});
+      window.location.reload();
       return true;
     } catch (err: any) {
       const axiosErr = err as AxiosError<{ error?: string; message?: string }>;

@@ -28,6 +28,7 @@ const mocks = vi.hoisted(() => ({
   deleteRefreshTokensByUser: vi.fn(),
   purgeExpiredRefreshTokens: vi.fn(),
   issueTokensForUser: vi.fn(),
+  getUserByUuid: vi.fn(),
 }));
 
 vi.mock('../../db/queries/refreshTokens.ts', () => ({
@@ -41,6 +42,10 @@ vi.mock('../../db/queries/refreshTokens.ts', () => ({
 
 vi.mock('../../utils/authTokens.ts', () => ({
   issueTokensForUser: mocks.issueTokensForUser,
+}));
+
+vi.mock('../../db/queries/users.ts', () => ({
+  getUserByUuid: mocks.getUserByUuid,
 }));
 
 import { refreshRoutes } from '../../routes/refresh.ts';
@@ -80,6 +85,7 @@ describe('POST /api/auth/refresh', () => {
     const refreshToken = signRefreshToken(payload);
     const hashed = createHash('sha256').update(refreshToken).digest('hex');
 
+    mocks.getUserByUuid.mockReturnValue({ uuid: payload.uuid, username: 'fresh-alice' });
     mocks.getRefreshToken.mockReturnValue({
       token_id: payload.tokenId,
       user_uuid: payload.uuid,
@@ -105,7 +111,7 @@ describe('POST /api/auth/refresh', () => {
     expect(mocks.deleteRefreshToken).toHaveBeenCalledWith(payload.tokenId);
     expect(mocks.issueTokensForUser).toHaveBeenCalledWith({
       uuid: payload.uuid,
-      username: payload.username,
+      username: 'fresh-alice',
     });
     const tokenCookie = parseCookie(res.headers['set-cookie'], ACCESS_COOKIE);
     const refreshCookie = parseCookie(res.headers['set-cookie'], REFRESH_COOKIE);
@@ -118,6 +124,7 @@ describe('POST /api/auth/refresh', () => {
     const refreshToken = signRefreshToken(payload);
     const hashed = createHash('sha256').update(refreshToken).digest('hex');
 
+    mocks.getUserByUuid.mockReturnValue({ uuid: payload.uuid, username: 'fresh-bob' });
     mocks.getRefreshToken.mockReturnValue({
       token_id: payload.tokenId,
       user_uuid: payload.uuid,
@@ -142,6 +149,7 @@ describe('POST /api/auth/refresh', () => {
     const payload = { uuid: 'user-3', username: 'cara', tokenId: 'token-789' };
     const refreshToken = signRefreshToken(payload);
 
+    mocks.getUserByUuid.mockReturnValue({ uuid: payload.uuid, username: 'fresh-cara' });
     mocks.getRefreshToken.mockReturnValue({
       token_id: payload.tokenId,
       user_uuid: payload.uuid,
@@ -164,5 +172,30 @@ describe('POST /api/auth/refresh', () => {
     const res = await app.inject({ method: 'POST', url: '/api/auth/refresh' });
     expect(res.statusCode).toBe(401);
     expect(mocks.getRefreshToken).not.toHaveBeenCalled();
+  });
+
+  it('returns 401 when user record missing', async () => {
+    const payload = { uuid: 'user-4', username: 'dana', tokenId: 'token-246' };
+    const refreshToken = signRefreshToken(payload);
+    const hashed = createHash('sha256').update(refreshToken).digest('hex');
+
+    mocks.getUserByUuid.mockReturnValue(undefined);
+    mocks.getRefreshToken.mockReturnValue({
+      token_id: payload.tokenId,
+      user_uuid: payload.uuid,
+      hashed_token: hashed,
+      expires_at: new Date(Date.now() + 60_000).toISOString(),
+      created_at: new Date().toISOString(),
+    });
+
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/auth/refresh',
+      cookies: { [REFRESH_COOKIE]: refreshToken },
+    });
+
+    expect(res.statusCode).toBe(401);
+    expect(mocks.issueTokensForUser).not.toHaveBeenCalled();
+    expect(mocks.deleteRefreshToken).toHaveBeenCalledWith(payload.tokenId);
   });
 });

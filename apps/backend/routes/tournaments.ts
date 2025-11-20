@@ -500,20 +500,47 @@ export async function tournamentRoutes(app: FastifyInstance) {
         const { tournamentId } = req.params as { tournamentId: number };
         const body = req.body as {
           alias: string;
-          userUuid?: string | null;
           seed?: number | null;
           status?: string;
         };
+        const requesterUuid = (req.user as { uuid?: string } | undefined)?.uuid;
+        if (!requesterUuid) {
+          res.statusCode = 401;
+          res.send({ message: 'Authentication required' });
+          return;
+        }
 
         const tournament = getTournamentById(tournamentId);
         if (!tournament) return res.status(404).send({ message: 'Tournament not found' });
 
         const currentParticipants = listTournamentParticipants(tournamentId);
+        if (currentParticipants.some((participant) => participant.userUuid === requesterUuid)) {
+          res.statusCode = 409;
+          res.send({ message: 'You are already registered for this tournament' });
+          return;
+        }
+
+        const activeMembership = findUserActiveTournament(requesterUuid);
+        if (activeMembership && activeMembership.tournament.id !== tournamentId) {
+          res.statusCode = 409;
+          res.send({
+            message: 'You already have a tournament in progress',
+            tournamentId: activeMembership.tournament.id,
+          });
+          return;
+        }
+
         const maxParticipants = tournament.maxParticipants ?? 4;
         if (currentParticipants.length >= maxParticipants)
           return res.status(409).send({ message: 'Tournament already has maximum participants' });
 
-        const participant = createTournamentParticipant({ tournamentId, ...body });
+        const participant = createTournamentParticipant({
+          tournamentId,
+          alias: body.alias,
+          seed: body.seed,
+          status: body.status,
+          userUuid: requesterUuid,
+        });
         if (!participant)
           return res
             .status(409)
@@ -554,22 +581,36 @@ export async function tournamentRoutes(app: FastifyInstance) {
           alias?: string;
           seed?: number | null;
           status?: string;
-          userUuid?: string | null;
         };
+        const requesterUuid = (req.user as { uuid?: string } | undefined)?.uuid;
+        if (!requesterUuid) {
+          res.statusCode = 401;
+          res.send({ message: 'Authentication required' });
+          return;
+        }
         const existing = getTournamentParticipantById(participantId);
         if (!existing || existing.tournamentId !== tournamentId)
           return res.status(404).send({ message: 'Participant not found for tournament' });
-        const updated = updateTournamentParticipant(participantId, body);
+        if (existing.userUuid !== requesterUuid) {
+          res.statusCode = 403;
+          res.send({ message: 'You are not allowed to update this participant' });
+          return;
+        }
+
+        const updates: { alias?: string; seed?: number | null; status?: string } = {};
+        if (Object.prototype.hasOwnProperty.call(body, 'alias')) updates.alias = body.alias;
+        if (Object.prototype.hasOwnProperty.call(body, 'seed')) updates.seed = body.seed ?? null;
+        if (Object.prototype.hasOwnProperty.call(body, 'status')) updates.status = body.status;
+
+        const updated = updateTournamentParticipant(participantId, updates);
         if (!updated)
           return res
             .status(409)
             .send({ message: 'Unable to update participant with provided data' });
 
         // If participant unlinked or forfeited mid-tournament, try to auto-resolve any ready match
-        const userUnlinked =
-          Object.prototype.hasOwnProperty.call(body, 'userUuid') && body.userUuid === null;
         const wasForfeited = body.status === 'forfeited';
-        if (userUnlinked || wasForfeited) {
+        if (wasForfeited) {
           const sweep = resolveOrphanedReadyMatches(tournamentId);
           if (sweep.readyMatches.length) {
             await notifyMatchesReady(tournamentId, sweep.readyMatches);
@@ -597,9 +638,20 @@ export async function tournamentRoutes(app: FastifyInstance) {
           tournamentId: number;
           participantId: number;
         };
+        const requesterUuid = (req.user as { uuid?: string } | undefined)?.uuid;
+        if (!requesterUuid) {
+          res.statusCode = 401;
+          res.send({ message: 'Authentication required' });
+          return;
+        }
         const existing = getTournamentParticipantById(participantId);
         if (!existing || existing.tournamentId !== tournamentId)
           return res.status(404).send({ message: 'Participant not found for tournament' });
+        if (existing.userUuid !== requesterUuid) {
+          res.statusCode = 403;
+          res.send({ message: 'You are not allowed to remove this participant' });
+          return;
+        }
 
         const tournament = getTournamentById(tournamentId);
         if (!tournament) return res.status(404).send({ message: 'Tournament not found' });
@@ -698,12 +750,23 @@ export async function tournamentRoutes(app: FastifyInstance) {
           tournamentId: number;
           participantId: number;
         };
+        const requesterUuid = (req.user as { uuid?: string } | undefined)?.uuid;
+        if (!requesterUuid) {
+          res.statusCode = 401;
+          res.send({ message: 'Authentication required' });
+          return;
+        }
 
         const tournament = getTournamentById(tournamentId);
         if (!tournament) return res.status(404).send({ message: 'Tournament not found' });
         const participant = getTournamentParticipantById(participantId);
         if (!participant || participant.tournamentId !== tournamentId)
           return res.status(404).send({ message: 'Participant not found for tournament' });
+        if (participant.userUuid !== requesterUuid) {
+          res.statusCode = 403;
+          res.send({ message: 'You are not allowed to forfeit this participant' });
+          return;
+        }
 
         const progression = forfeitParticipantInTournament(tournamentId, participantId);
 
@@ -752,7 +815,7 @@ export async function tournamentRoutes(app: FastifyInstance) {
     '/:tournamentId/matches',
     {
       schema: createMatchSchema,
-      preHandler: [authPreHandler],
+      preHandler: [matchAuthPreHandler],
     },
     async (req, res) => {
       try {
@@ -780,7 +843,7 @@ export async function tournamentRoutes(app: FastifyInstance) {
     '/:tournamentId/matches/:matchId',
     {
       schema: updateMatchSchema,
-      preHandler: [authPreHandler],
+      preHandler: [matchAuthPreHandler],
     },
     async (req, res) => {
       try {
@@ -856,7 +919,7 @@ export async function tournamentRoutes(app: FastifyInstance) {
     '/:tournamentId/matches/:matchId/players',
     {
       schema: clearMatchPlayersSchema,
-      preHandler: [authPreHandler],
+      preHandler: [matchAuthPreHandler],
     },
     async (req, res) => {
       try {
@@ -879,7 +942,7 @@ export async function tournamentRoutes(app: FastifyInstance) {
     '/:tournamentId/matches/:matchId/players',
     {
       schema: addMatchPlayerSchema,
-      preHandler: [authPreHandler],
+      preHandler: [matchAuthPreHandler],
     },
     async (req, res) => {
       try {
@@ -903,7 +966,7 @@ export async function tournamentRoutes(app: FastifyInstance) {
     '/:tournamentId/matches/:matchId/players/:matchPlayerId',
     {
       schema: deleteMatchPlayerSchema,
-      preHandler: [authPreHandler],
+      preHandler: [matchAuthPreHandler],
     },
     async (req, res) => {
       try {

@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeAll, afterAll, beforeEach, vi, type Mock } from 'vitest';
 import fastify from 'fastify';
 import cookie from '@fastify/cookie';
+import jwt from 'jsonwebtoken';
 
 vi.mock('../../utils/config.ts', () => ({
   MATCH_SECRET: 'match-secret',
@@ -76,8 +77,15 @@ function buildApp() {
   return app;
 }
 
+const TEST_USER_UUID = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa';
+
 const makeAuthHeader = () => ({
-  authorization: `Bearer ${signAccessToken({ uuid: 'user-1', username: 'tester' })}`,
+  authorization: `Bearer ${signAccessToken({ uuid: TEST_USER_UUID, username: 'tester' })}`,
+});
+
+const MATCH_SECRET = 'match-secret';
+const makeMatchAuthHeader = () => ({
+  authorization: `Bearer ${jwt.sign({ service: 'test-suite' }, MATCH_SECRET, { expiresIn: '1h' })}`,
 });
 
 const sampleTournament = {
@@ -96,7 +104,7 @@ const sampleTournament = {
 const sampleParticipant = {
   id: 10,
   tournamentId: 1,
-  userUuid: null,
+  userUuid: TEST_USER_UUID,
   alias: 'PlayerOne',
   seed: null,
   status: 'pending',
@@ -182,7 +190,7 @@ describe('Tournament routes', () => {
 
     expect(res.statusCode).toBe(201);
     expect(res.json()).toEqual(sampleTournament);
-    expect(tournamentQueries.findUserActiveTournament).toHaveBeenCalledWith('user-1');
+    expect(tournamentQueries.findUserActiveTournament).toHaveBeenCalledWith(TEST_USER_UUID);
     expect(tournamentQueries.createTournament).toHaveBeenCalledWith({
       name: 'Cup',
       description: '',
@@ -317,20 +325,72 @@ describe('Tournament routes', () => {
 
     expect(res.statusCode).toBe(201);
     expect(res.json()).toEqual({ participant: sampleParticipant });
-    expect(participantQueries.createTournamentParticipant).toHaveBeenCalledWith({
-      tournamentId: 1,
-      alias: 'PlayerOne',
-    });
+    expect(participantQueries.createTournamentParticipant).toHaveBeenCalledWith(
+      expect.objectContaining({
+        tournamentId: 1,
+        alias: 'PlayerOne',
+        userUuid: TEST_USER_UUID,
+      }),
+    );
     expect(tournamentQueries.updateTournamentStatus).not.toHaveBeenCalled();
     expect(notifyMatchesReady).not.toHaveBeenCalled();
+  });
+
+  it('POST /api/tournaments/:id/participants rejects duplicate registration', async () => {
+    (tournamentQueries.getTournamentById as Mock).mockReturnValue(sampleTournament);
+    (participantQueries.listTournamentParticipants as Mock).mockReturnValue([sampleParticipant]);
+
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/tournaments/1/participants',
+      headers: makeAuthHeader(),
+      body: { alias: 'PlayerOne' },
+    });
+
+    expect(res.statusCode).toBe(409);
+    expect(participantQueries.createTournamentParticipant).not.toHaveBeenCalled();
+  });
+
+  it('POST /api/tournaments/:id/participants rejects when user has another active tournament', async () => {
+    (tournamentQueries.getTournamentById as Mock).mockReturnValue(sampleTournament);
+    (participantQueries.listTournamentParticipants as Mock).mockReturnValue([]);
+    (tournamentQueries.findUserActiveTournament as Mock).mockReturnValue({
+      tournament: { ...sampleTournament, id: 99 },
+      participantId: 999,
+    });
+
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/tournaments/1/participants',
+      headers: makeAuthHeader(),
+      body: { alias: 'PlayerOne' },
+    });
+
+    expect(res.statusCode).toBe(409);
+    expect(participantQueries.createTournamentParticipant).not.toHaveBeenCalled();
   });
 
   it('POST /api/tournaments/:id/participants auto-activates at capacity', async () => {
     const draftTournament = { ...sampleTournament, status: 'draft' };
     const existingParticipants = [
-      { ...sampleParticipant, id: 2, alias: 'Alpha' },
-      { ...sampleParticipant, id: 3, alias: 'Bravo' },
-      { ...sampleParticipant, id: 4, alias: 'Charlie' },
+      {
+        ...sampleParticipant,
+        id: 2,
+        alias: 'Alpha',
+        userUuid: 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb',
+      },
+      {
+        ...sampleParticipant,
+        id: 3,
+        alias: 'Bravo',
+        userUuid: 'cccccccc-cccc-cccc-cccc-cccccccccccc',
+      },
+      {
+        ...sampleParticipant,
+        id: 4,
+        alias: 'Charlie',
+        userUuid: 'dddddddd-dddd-dddd-dddd-dddddddddddd',
+      },
     ];
     const afterAdd = [...existingParticipants, sampleParticipant];
 
@@ -363,6 +423,13 @@ describe('Tournament routes', () => {
     expect(tournamentQueries.updateTournamentStatus).toHaveBeenCalledWith(1, 'active');
     expect(orchestrator.generateSingleEliminationBracket).toHaveBeenCalledWith(1);
     expect(notifyMatchesReady).toHaveBeenCalledWith(1, sampleBracketSummary.readyMatches);
+    expect(participantQueries.createTournamentParticipant).toHaveBeenCalledWith(
+      expect.objectContaining({
+        tournamentId: 1,
+        alias: 'PlayerFour',
+        userUuid: TEST_USER_UUID,
+      }),
+    );
   });
 
   it('PATCH /api/tournaments/:id/participants/:participantId updates participant', async () => {
@@ -386,7 +453,25 @@ describe('Tournament routes', () => {
     });
   });
 
+  it('PATCH /api/tournaments/:id/participants/:participantId returns 403 for other users', async () => {
+    (participantQueries.getTournamentParticipantById as Mock).mockReturnValue({
+      ...sampleParticipant,
+      userUuid: 'someone-else',
+    });
+
+    const res = await app.inject({
+      method: 'PATCH',
+      url: '/api/tournaments/1/participants/10',
+      headers: makeAuthHeader(),
+      body: { status: 'accepted' },
+    });
+
+    expect(res.statusCode).toBe(403);
+    expect(participantQueries.updateTournamentParticipant).not.toHaveBeenCalled();
+  });
+
   it('DELETE /api/tournaments/:id/participants/:participantId removes participant', async () => {
+    (tournamentQueries.getTournamentById as Mock).mockReturnValue(sampleTournament);
     (participantQueries.getTournamentParticipantById as Mock).mockReturnValue(sampleParticipant);
     (participantQueries.listTournamentParticipants as Mock).mockReturnValue([sampleParticipant]);
     (matchQueries.listTournamentMatches as Mock).mockReturnValue([]);
@@ -406,6 +491,24 @@ describe('Tournament routes', () => {
     expect(participantQueries.removeTournamentParticipant).toHaveBeenCalledWith(10);
     expect(tournamentQueries.updateTournamentStatus).toHaveBeenCalledWith(1, 'cancelled');
     expect(notifyTournamentStateUpdated).toHaveBeenCalledWith(1);
+  });
+
+  it('DELETE /api/tournaments/:id/participants/:participantId returns 403 for other users', async () => {
+    (participantQueries.getTournamentParticipantById as Mock).mockReturnValue({
+      ...sampleParticipant,
+      userUuid: 'someone-else',
+    });
+    (participantQueries.listTournamentParticipants as Mock).mockReturnValue([sampleParticipant]);
+    (matchQueries.listTournamentMatches as Mock).mockReturnValue([]);
+
+    const res = await app.inject({
+      method: 'DELETE',
+      url: '/api/tournaments/1/participants/10',
+      headers: makeAuthHeader(),
+    });
+
+    expect(res.statusCode).toBe(403);
+    expect(participantQueries.removeTournamentParticipant).not.toHaveBeenCalled();
   });
 
   it('DELETE /api/tournaments/:id/participants/:participantId keeps tournament active when others remain', async () => {
@@ -432,6 +535,22 @@ describe('Tournament routes', () => {
     expect(notifyTournamentStateUpdated).toHaveBeenCalledWith(1);
   });
 
+  it('POST /api/tournaments/:id/participants/:participantId/forfeit returns 403 for other users', async () => {
+    (tournamentQueries.getTournamentById as Mock).mockReturnValue(sampleTournament);
+    (participantQueries.getTournamentParticipantById as Mock).mockReturnValue({
+      ...sampleParticipant,
+      userUuid: 'someone-else',
+    });
+
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/tournaments/1/participants/10/forfeit',
+      headers: makeAuthHeader(),
+    });
+
+    expect(res.statusCode).toBe(403);
+  });
+
   it('GET /api/tournaments/:id/matches/:matchId/players returns assignments', async () => {
     (matchQueries.getTournamentMatchById as Mock).mockReturnValue(sampleMatch);
     (matchQueries.listTournamentMatchPlayers as Mock).mockReturnValue([sampleMatchPlayer]);
@@ -450,7 +569,7 @@ describe('Tournament routes', () => {
     const res = await app.inject({
       method: 'DELETE',
       url: '/api/tournaments/1/matches/99/players',
-      headers: makeAuthHeader(),
+      headers: makeMatchAuthHeader(),
     });
 
     expect(res.statusCode).toBe(204);
@@ -464,6 +583,16 @@ describe('Tournament routes', () => {
 
     expect(res.statusCode).toBe(200);
     expect(res.json()).toEqual([sampleMatch]);
+  });
+
+  it('POST /api/tournaments/:id/matches requires match token', async () => {
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/tournaments/1/matches',
+      body: { roundNumber: 1, roundPosition: 1 },
+    });
+
+    expect(res.statusCode).toBe(401);
   });
 
   it('PATCH /api/tournaments/:id/matches/:matchId triggers bracket progression', async () => {
@@ -488,7 +617,7 @@ describe('Tournament routes', () => {
     const res = await app.inject({
       method: 'PATCH',
       url: '/api/tournaments/1/matches/5',
-      headers: makeAuthHeader(),
+      headers: makeMatchAuthHeader(),
       body: { matchId: 123, setCompleted: true },
     });
 
@@ -503,7 +632,7 @@ describe('Tournament routes', () => {
     const res = await app.inject({
       method: 'POST',
       url: '/api/tournaments/1/matches',
-      headers: makeAuthHeader(),
+      headers: makeMatchAuthHeader(),
       body: { roundNumber: 1, roundPosition: 1 },
     });
 
@@ -526,7 +655,7 @@ describe('Tournament routes', () => {
     const res = await app.inject({
       method: 'PATCH',
       url: '/api/tournaments/1/matches/99',
-      headers: makeAuthHeader(),
+      headers: makeMatchAuthHeader(),
       body: { status: 'in_progress' },
     });
 
@@ -544,7 +673,7 @@ describe('Tournament routes', () => {
     const res = await app.inject({
       method: 'POST',
       url: '/api/tournaments/1/matches/99/players',
-      headers: makeAuthHeader(),
+      headers: makeMatchAuthHeader(),
       body: { participantId: 10, teamNumber: 1 },
     });
 
@@ -561,7 +690,7 @@ describe('Tournament routes', () => {
     const res = await app.inject({
       method: 'DELETE',
       url: '/api/tournaments/1/matches/99/players/7',
-      headers: makeAuthHeader(),
+      headers: makeMatchAuthHeader(),
     });
 
     expect(res.statusCode).toBe(204);
