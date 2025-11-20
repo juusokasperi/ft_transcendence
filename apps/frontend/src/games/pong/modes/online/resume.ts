@@ -185,6 +185,7 @@ export function findAnyStoredResumeCandidate(options?: {
         const roomIdentifier = parts[0] ?? '';
         if (!roomIdentifier) continue;
         if (options?.tournamentOnly && !isTournament) continue;
+        if (!options?.tournamentOnly && isTournament) continue;
         if (options?.tournamentId && tournamentId !== options.tournamentId) continue;
         const candidate = { roomIdentifier, token, expSec, isTournament, tournamentId };
         if (!best || expSec > best.expSec) best = candidate;
