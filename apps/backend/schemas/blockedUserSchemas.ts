@@ -13,7 +13,7 @@ export const getBlockedUsersSchema = {
   response: {
     200: {
       type: 'array',
-      items: UsernameSchema,
+      items: UuidSchema,
     },
     400: ErrorResponseSchema,
     500: ErrorResponseSchema,

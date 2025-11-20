@@ -1,5 +1,5 @@
 import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
-import { getBlockedUsernames, blockUser, unblockUser } from '../db/queries/blockedUsers.ts';
+import { getBlockedUuids, blockUser, unblockUser } from '../db/queries/blockedUsers.ts';
 import { getUser } from '../db/queries/users.ts';
 import { authPreHandler, tokenUuidCheck } from '../hooks/auth.ts';
 import {
@@ -19,7 +19,7 @@ export async function blockedUsersRoutes(app: FastifyInstance) {
     async (req: FastifyRequest, res: FastifyReply) => {
       try {
         const uuid = req.user!.uuid;
-        const blocked = getBlockedUsernames(uuid);
+        const blocked = getBlockedUuids(uuid);
         if (!blocked) return res.status(500).send({ message: 'Failed to get blocked users' });
         return res.status(200).send(blocked);
       } catch (error) {
