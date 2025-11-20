@@ -41,7 +41,11 @@ export function clearResumeForRoom(roomIdentifier: string): void {
   }
 }
 
-export function saveResumeTokenToSession(token: string, expectedRoom: string): void {
+export function saveResumeTokenToSession(
+  token: string,
+  expectedRoom: string,
+  meta?: { isTournament?: boolean; tournamentId?: number },
+): void {
   if (typeof sessionStorage === 'undefined') return;
   const payload = parseJwtPayload(token);
   const room = String(payload?.roomIdentifier || '');
@@ -78,7 +82,15 @@ export function saveResumeTokenToSession(token: string, expectedRoom: string): v
 
     // Add the new token and then enforce a small cap (keep the newest 3 by exp).
     const key = makeResumeKey(room, session, jti || undefined);
-    sessionStorage.setItem(key, JSON.stringify({ token, expSec: exp }));
+    sessionStorage.setItem(
+      key,
+      JSON.stringify({
+        token,
+        expSec: exp,
+        isTournament: meta?.isTournament ?? false,
+        tournamentId: meta?.tournamentId ?? null,
+      }),
+    );
 
     validEntries.push({ key, expSec: exp });
     validEntries.sort((a, b) => b.expSec - a.expSec);
@@ -126,10 +138,15 @@ export function clearStoredResumeTokens(roomIdentifier: string): void {
   clearResumeForRoom(roomIdentifier);
 }
 
-export function findAnyStoredResumeCandidate(): {
+export function findAnyStoredResumeCandidate(options?: {
+  tournamentOnly?: boolean;
+  tournamentId?: number;
+}): {
   roomIdentifier: string;
   token: string;
   expSec: number;
+  isTournament: boolean;
+  tournamentId?: number;
 } | null {
   if (typeof sessionStorage === 'undefined') return null;
   try {
@@ -143,7 +160,13 @@ export function findAnyStoredResumeCandidate(): {
   }
   const prefix = RESUME_STORE_PREFIX;
   const nowSec = Math.floor(Date.now() / 1000);
-  let best: { roomIdentifier: string; token: string; expSec: number } | null = null;
+  let best: {
+    roomIdentifier: string;
+    token: string;
+    expSec: number;
+    isTournament: boolean;
+    tournamentId?: number;
+  } | null = null;
   try {
     for (let i = 0; i < sessionStorage.length; i++) {
       const k = sessionStorage.key(i);
@@ -154,12 +177,17 @@ export function findAnyStoredResumeCandidate(): {
         const parsed = JSON.parse(raw);
         const token = String(parsed?.token || '');
         const expSec = Number(parsed?.expSec);
+        const isTournament = Boolean(parsed?.isTournament);
+        const tournamentId = parsed?.tournamentId;
         if (!token || !Number.isFinite(expSec) || expSec <= nowSec) continue;
         // Extract roomIdentifier from key: pong:resume:<room>:<session>
         const parts = k.substring(prefix.length).split(':');
         const roomIdentifier = parts[0] ?? '';
         if (!roomIdentifier) continue;
-        if (!best || expSec > best.expSec) best = { roomIdentifier, token, expSec };
+        if (options?.tournamentOnly && !isTournament) continue;
+        if (options?.tournamentId && tournamentId !== options.tournamentId) continue;
+        const candidate = { roomIdentifier, token, expSec, isTournament, tournamentId };
+        if (!best || expSec > best.expSec) best = candidate;
       } catch {
         sessionStorage.removeItem(k);
       }
