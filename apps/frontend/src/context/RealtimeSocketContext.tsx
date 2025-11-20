@@ -36,7 +36,13 @@ export function RealtimeSocketProvider({ children }: RealtimeSocketProviderProps
   const [isConnected, setIsConnected] = useState(false);
 
   useEffect(() => {
-    if (!userUuid) return;
+    if (!userUuid) {
+      wsRef.current?.close();
+      wsRef.current = null;
+      setIsConnected(false);
+      setReadyState(WebSocket.CLOSED);
+      return;
+    }
 
     const ws = new WebSocket(WS_URL);
     wsRef.current = ws;
