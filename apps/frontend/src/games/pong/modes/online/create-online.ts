@@ -175,6 +175,13 @@ export function createOnlineApp(
 
   const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
 
+  const applyPlayerNames = () => {
+    if (!playerAliases) return;
+    names = { east: playerAliases.P1, west: playerAliases.P2 };
+    hud.setPlayerNames(names.east, names.west);
+    didSetPlayerNames = true;
+  };
+
   const sideSwap = createSideSwapController({
     hud,
     camera: world.camera,
@@ -225,10 +232,7 @@ export function createOnlineApp(
         // Set HUD names once we know player aliases.
         // Keep rows pinned to player identity: east → P1, west → P2.
         if (!didSetPlayerNames && playerAliases !== null) {
-          const aliases = playerAliases; // TypeScript hint
-          names = { east: aliases.P1, west: aliases.P2 };
-          hud.setPlayerNames(names.east, names.west);
-          didSetPlayerNames = true;
+          applyPlayerNames();
         }
 
         const refState = ref ?? snap;
@@ -425,6 +429,7 @@ export function createOnlineApp(
             P2: aliasP2 ?? playerAliases?.P2 ?? 'Player 2',
           };
           didSetPlayerNames = false;
+          applyPlayerNames();
         }
       }
 
@@ -447,6 +452,7 @@ export function createOnlineApp(
           P2: payload.players.P2?.alias ?? 'Player 2',
         };
         didSetPlayerNames = false;
+        applyPlayerNames();
       }
     });
 
