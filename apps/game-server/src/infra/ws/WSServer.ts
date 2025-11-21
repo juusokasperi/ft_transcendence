@@ -450,7 +450,6 @@ export class WSServer {
     const remainingP2 = session.players.get('P2');
 
     if (!remainingP1 && !remainingP2) {
-      this.logger.info('BOTH PLAYERS HAVE DISCONNECTED');
       // Both players have disconnected (or quit) nearly simultaneously.
       // Declare the LAST quitter (current 'seat') as the winner to avoid tournament lock.
       const winnerSeat: 'P1' | 'P2' = seat;
