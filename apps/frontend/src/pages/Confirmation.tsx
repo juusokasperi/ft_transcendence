@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
 import { useAppContext } from '../context/AppContext';
 import { useSnackbar } from '../context/SnackbarContext';
@@ -8,11 +8,15 @@ const Confirmation = () => {
   const { axios, navigate } = useAppContext();
   const { enqueueSnackbar } = useSnackbar();
   const [status, setStatus] = useState<'validating' | 'success' | 'error'>('validating');
-
+  const debugLog = useCallback((event: string, payload?: Record<string, unknown>) => {
+    if (import.meta.env?.DEV) {
+      console.debug(`[Confirmation Token] ${event}`, payload ?? {});
+    }
+  }, []);
   useEffect(() => {
     const confirmAccount = async () => {
       try {
-        console.log(confirmationToken);
+        debugLog(confirmationToken);
         await axios.post(`/api/signup/validate/${confirmationToken}`);
 
         setStatus('success');
