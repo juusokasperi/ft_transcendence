@@ -21,6 +21,13 @@ import { CLOSE_CODES } from '@pong/shared/protocol/net';
 const CLIENT_TICK_RATE_HZ = 60;
 const PERMANENT_CLOSE_CODES = new Set(Object.values(CLOSE_CODES));
 
+const debugLog = (...args: unknown[]) => {
+  if (import.meta.env?.DEV) {
+    // eslint-disable-next-line no-console
+    console.debug('[OnlineGame]', ...args);
+  }
+};
+
 export type StartSignal = {
   startAtEpochMs: number;
   randomSeed: number;
@@ -69,7 +76,7 @@ export async function connectOnline(
 ): Promise<OnlineClient> {
   const { serverUrl, matchId, seat, joinToken, roomIdentifier } = cfg;
   const resolvedUrl = serverUrl.startsWith('ws') ? serverUrl : wsUrl(serverUrl);
-  console.log(
+  debugLog(
     '[OnlineGame] Connecting to server:',
     resolvedUrl,
     'room:',
@@ -99,7 +106,7 @@ export async function connectOnline(
     const fail = (reason: unknown) => {
       if (settled) return;
       settled = true;
-      console.error('[OnlineGame] WebSocket failed before open:', reason);
+      debugLog('[OnlineGame] WebSocket failed before open:', reason);
       try {
         gameWs.close();
       } catch {
@@ -124,7 +131,7 @@ export async function connectOnline(
 
     gameWs.addEventListener('open', () => {
       settled = true;
-      console.log('[OnlineGame] WebSocket connection opened');
+      debugLog('[OnlineGame] WebSocket connection opened');
 
       let lastSentAxis = 0;
       const snapshotListeners = new Set<
@@ -235,7 +242,7 @@ export async function connectOnline(
         try {
           data = JSON.parse(ev.data as string);
         } catch (err) {
-          console.warn('[OnlineGame] Failed to parse message', err);
+          debugLog('[OnlineGame] Failed to parse message', err);
           return;
         }
 
@@ -252,7 +259,7 @@ export async function connectOnline(
             break;
           }
           case 'ROOM_STATE':
-            console.debug('[OnlineGame] Room state message', data);
+            debugLog('[OnlineGame] Room state message', data);
             roomStateListeners.forEach((cb) => cb(data as RoomStateMessage));
             // If we rejoined mid-match (or server won't resend START), synthesize a START
             // from the room state so awaitStart() can resolve and the game can bootstrap.
@@ -286,15 +293,15 @@ export async function connectOnline(
             notifyStart(payload);
             break;
           case 'OPPONENT_DISCONNECTED':
-            console.log('[OnlineGame] Opponent disconnected, grace period:', data.gracePeriodMs);
+            debugLog('[OnlineGame] Opponent disconnected, grace period:', data.gracePeriodMs);
             opponentDisconnectedListeners.forEach((cb) => cb(data.gracePeriodMs));
             break;
           case 'OPPONENT_RECONNECTED':
-            console.log('[OnlineGame] Opponent reconnected');
+            debugLog('[OnlineGame] Opponent reconnected');
             opponentReconnectedListeners.forEach((cb) => cb());
             break;
           case 'MATCH_END':
-            console.log('[OnlineGame] Match ended:', data.reason, data.winner);
+            debugLog('[OnlineGame] Match ended:', data.reason, data.winner);
             matchEndListeners.forEach((cb) => cb(data.reason, data.winner, data.summary ?? null));
             // Clear stored resume tokens for this room to avoid stale entries after match end.
             clearResumeForRoom(roomIdentifier);
@@ -319,7 +326,7 @@ export async function connectOnline(
             });
             break;
           default:
-            console.warn('[OnlineGame] Unknown message type');
+            debugLog('[OnlineGame] Unknown message type');
             break;
         }
       };
@@ -409,12 +416,12 @@ export async function connectOnline(
           try {
             if (ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify({ type: 'forfeit' }));
             // After forfeiting, we don't want to allow resume.
-            console.log('[OnlineGame] Clearing resume token');
+            debugLog('[OnlineGame] Clearing resume token');
             clearResumeForRoom(roomIdentifier);
           } catch {}
         },
         disconnect() {
-          console.log('[OnlineGame] Disconnecting WebSocket');
+          debugLog('[OnlineGame] Disconnecting WebSocket');
           stopReconnector();
           stopPingLoop();
           startResolvers.length = 0;

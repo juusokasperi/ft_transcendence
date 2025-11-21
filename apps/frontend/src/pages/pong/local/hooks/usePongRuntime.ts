@@ -3,6 +3,13 @@ import type { Observation } from '../../../../games/pong/ai/bot-controller';
 import type { Preferences } from '../../../../games/pong/modes/shared/preferences';
 import type { UserSettings } from '../utils/storage';
 
+const debugLog = (...args: unknown[]) => {
+  if (import.meta.env?.DEV) {
+    // eslint-disable-next-line no-console
+    console.debug('[OnlineGame]', ...args);
+  }
+};
+
 export type PongRuntimeHandle = {
   destroy(): void;
   observe?: () => Observation;
@@ -65,7 +72,7 @@ export function usePongRuntime({
         runtimeRef.current = app;
         setReady(true);
       } catch (error) {
-        console.error('[usePongRuntime] Failed to start Pong', error);
+        debugLog('[usePongRuntime] Failed to start Pong', error);
         runtimeRef.current = null;
         setReady(false);
         onBootstrapFailed?.(error);

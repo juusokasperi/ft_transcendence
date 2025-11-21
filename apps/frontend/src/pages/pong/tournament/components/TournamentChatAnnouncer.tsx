@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useCallback } from 'react';
 import { useChatContext } from 'apps/frontend/src/context/ChatContext';
 
 type TournamentChatAnnouncerProps = {
@@ -16,6 +16,11 @@ const TournamentChatAnnouncer: React.FC<TournamentChatAnnouncerProps> = ({
 }) => {
   const { sendPayload } = useChatContext();
   const lastSigRef = useRef<string | null>(null);
+  const debugLog = useCallback((event: string, payload?: Record<string, unknown>) => {
+    if (import.meta.env?.DEV) {
+      console.debug(`[Tournament Announcer] ${event}`, payload ?? {});
+    }
+  }, []);
 
   useEffect(() => {
     if (!firstPlayer || !secondPlayer || !stage) return;
@@ -31,7 +36,7 @@ const TournamentChatAnnouncer: React.FC<TournamentChatAnnouncerProps> = ({
       message: `Match starting: ${firstPlayer} vs ${secondPlayer} (Stage: ${stage})`,
       recipients: participantUuids,
     });
-    console.log('TournamentChatAnnouncer sent:', sent, 'for sig:', sig);
+    debugLog(sig, sent);
 
     if (sent) {
       lastSigRef.current = sig;

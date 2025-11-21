@@ -4,13 +4,20 @@ type EnvSource = Record<string, string | undefined>;
 
 const env: EnvSource = import.meta.env ?? {};
 
+const debugLog = (...args: unknown[]) => {
+  if (import.meta.env?.DEV) {
+    // eslint-disable-next-line no-console
+    console.debug('[OnlineGame]', ...args);
+  }
+};
+
 const numberFromEnv = (key: string, fallback: number) => {
   const raw = env[key];
   if (!raw) return fallback;
   const parsed = Number.parseInt(raw, 10);
   if (Number.isNaN(parsed)) {
     if (import.meta.env?.DEV) {
-      console.warn(
+      debugLog(
         `[config] Invalid numeric value for ${key}: "${raw}". Falling back to ${fallback}.`,
       );
     }

@@ -14,6 +14,13 @@ type Deps = {
   onResumeGiveUp?: (reason: 'missing-token' | 'rejected' | 'expired') => void;
 };
 
+const debugLog = (...args: unknown[]) => {
+  if (import.meta.env?.DEV) {
+    // eslint-disable-next-line no-console
+    console.debug('[OnlineGame]', ...args);
+  }
+};
+
 export function createReconnector({
   resolvedUrl,
   isPermanentClose,
@@ -64,7 +71,7 @@ export function createReconnector({
     }
     reconnectTimer = window.setTimeout(() => {
       try {
-        console.log('[OnlineGame] Attempting resume reconnect');
+        debugLog('[OnlineGame] Attempting resume reconnect');
         const next = new WebSocket(resolvedUrl, ['resume', resume.token]);
         let opened = false;
         next.addEventListener('open', () => {
@@ -73,7 +80,7 @@ export function createReconnector({
           try {
             onResumeAccepted?.();
           } catch {}
-          console.log('[OnlineGame] Resume reconnect successful');
+          debugLog('[OnlineGame] Resume reconnect successful');
           // Swap sockets and handlers
           const old = getWs();
           detachHandlers(old);

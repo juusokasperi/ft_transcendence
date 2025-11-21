@@ -123,8 +123,6 @@ const Friends: React.FC = () => {
   const fetchAllFriends = async () => {
     try {
       const res = await axios.get<FriendApi[]>('/api/friends/');
-      console.log(res);
-
       const friendsWithAvatar = res.data.map((f) => ({
         ...f,
         avatar: resolveAvatarUrl(f.avatar, axios.defaults.baseURL),

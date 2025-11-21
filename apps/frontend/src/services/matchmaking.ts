@@ -18,6 +18,13 @@ type MatchmakingClientLifecycleHandlers = {
 const READY_STATE_OPEN = WebSocket.OPEN;
 const READY_STATE_CONNECTING = WebSocket.CONNECTING;
 
+const debugLog = (...args: unknown[]) => {
+  if (import.meta.env?.DEV) {
+    // eslint-disable-next-line no-console
+    console.debug('[OnlineGame]', ...args);
+  }
+};
+
 function serialize(payload: unknown) {
   return JSON.stringify(payload);
 }
@@ -68,7 +75,7 @@ export function createMatchmakingClient(
       try {
         socket.send(serialized);
       } catch (error) {
-        console.warn('[matchmaking] failed to send payload', error);
+        debugLog('[matchmaking] failed to send payload', error);
       }
       return;
     }
@@ -78,7 +85,7 @@ export function createMatchmakingClient(
       return;
     }
 
-    console.warn('[matchmaking] dropping message because socket is not open', {
+    debugLog('[matchmaking] dropping message because socket is not open', {
       readyState: state,
       payload,
     });
