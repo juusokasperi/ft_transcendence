@@ -1,3 +1,4 @@
+import { EventEmitter } from 'events';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import type { IncomingMessage } from 'http';
 
@@ -10,7 +11,7 @@ type UpgradeHandler = (
 type WriteMock = ReturnType<typeof vi.fn<(payload: string) => void>>;
 type DestroyMock = ReturnType<typeof vi.fn<() => void>>;
 
-interface FakeSocket {
+interface FakeSocket extends EventEmitter {
   write: WriteMock;
   destroy: DestroyMock;
 }
@@ -102,10 +103,10 @@ vi.mock('@pong/shared/auth/tokenSign', () => ({
 }));
 
 function createSocket(): FakeSocket {
-  return {
-    write: vi.fn<(payload: string) => void>(),
-    destroy: vi.fn<() => void>(),
-  };
+  const socket = new EventEmitter() as FakeSocket;
+  socket.write = vi.fn<(payload: string) => void>();
+  socket.destroy = vi.fn<() => void>();
+  return socket;
 }
 
 async function importGateway(): Promise<UpgradeHandler> {
