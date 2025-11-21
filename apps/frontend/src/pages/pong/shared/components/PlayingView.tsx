@@ -13,6 +13,13 @@ type Orientation = 'portrait' | 'landscape';
 const PAD_X = 0.2;
 const PAD_Z = 0.2;
 
+const debugLog = (...args: unknown[]) => {
+  if (import.meta.env?.DEV) {
+    // eslint-disable-next-line no-console
+    console.debug('[OnlineGame]', ...args);
+  }
+};
+
 function defaultWorldAspect(): number {
   const framedX = TABLE_LENGTH_X / 2 + PAD_X;
   const framedZ = TABLE_WIDTH_Z / 2 + PAD_Z;
@@ -137,7 +144,7 @@ export const PlayingView: React.FC<PlayingViewProps> = ({
       // Silently ignore fullscreen errors on unsupported/mobile browsers.
       if (import.meta.env?.DEV) {
         // eslint-disable-next-line no-console
-        console.warn('[PlayingView] Failed to enter fullscreen', error);
+        debugLog('[PlayingView] Failed to enter fullscreen', error);
       }
     }
   };
