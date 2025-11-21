@@ -88,7 +88,13 @@ export class Broadcaster {
       this.logger.warn('[Broadcaster] Invalid seat for resume token');
       return;
     }
-    safeSend(player.socket, { type: 'RESUME_TOKEN', token }, this.logger);
+    const message = {
+      type: 'RESUME_TOKEN',
+      token,
+      isTournament: Boolean(session.reservation.tournament),
+      tournamentId: session.reservation.tournament?.tournamentId,
+    };
+    safeSend(player.socket, message, this.logger);
   }
 
   broadcastFrame(session: MatchSession): void {

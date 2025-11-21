@@ -368,27 +368,29 @@ export function createOnlineApp(
     playbackDelayMs = clampPlaybackDelay(BASE_PLAYBACK_DELAY_MS);
     desiredPlaybackDelayMs = playbackDelayMs;
 
-    // If we have a valid stored resume token for this room, auto-resume immediately.
-    const candidate = getStoredResumeCandidate(cfg.roomIdentifier);
-    if (candidate) {
-      try {
+    try {
+      // If we have a valid stored resume token for this room, auto-resume immediately.
+      const candidate = getStoredResumeCandidate(cfg.roomIdentifier);
+      if (candidate) {
         isResumeMode = true;
         net = await connectOnline(cfg, { resumeCandidate: candidate });
-      } catch (err) {
+      } else if (cfg.joinToken) {
+        isResumeMode = false;
+        net = await connectOnline(cfg);
+      }
+    } catch (err) {
+      if (isResumeMode) {
         // Clear invalid token and attempt a normal join if possible.
         clearStoredResumeTokens(cfg.roomIdentifier);
-        try {
-          if (cfg.joinToken) {
+        if (cfg.joinToken) {
+          try {
             isResumeMode = false;
             net = await connectOnline(cfg);
+          } catch {
+            // handled by the !net check below
           }
-        } catch {
-          // handled below
         }
       }
-    } else {
-      isResumeMode = false;
-      net = await connectOnline(cfg);
     }
     if (!net) {
       //console.warn('[OnlineGame] Unable to establish network connection');
@@ -584,8 +586,6 @@ export function createOnlineApp(
     clearWaitingForOpponentTimeout();
     matchEnded = true;
     frameBuffer.reset();
-    // Ensure we drop any resume tokens for this room when leaving.
-    clearStoredResumeTokens(cfg.roomIdentifier);
 
     // Clean up disconnect overlay
     hideDisconnectOverlay();

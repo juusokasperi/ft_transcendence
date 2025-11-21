@@ -93,7 +93,6 @@ export function createReconnector({
           const policyClose = isPolicyClose(evt.code);
           if (policyClose || preOpenFailures >= 3) {
             giveUp('rejected');
-            console.log('[OnlineGame] Rejected, returninng.');
             return;
           }
           // Try again with backoff while token valid

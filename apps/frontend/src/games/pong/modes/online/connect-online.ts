@@ -81,10 +81,17 @@ export async function connectOnline(
   );
   // If caller provided a resume candidate, try resume-first; else fall back to join.
   const stored = options.resumeCandidate ?? null;
-  const initialProtocols = stored
-    ? (['resume', stored.token] as const)
-    : (['bearer', joinToken] as const);
+  const initialProtocols: [string, string] | null = stored
+    ? stored.token
+      ? ['resume', stored.token]
+      : null
+    : joinToken
+      ? ['bearer', joinToken]
+      : null;
   const usedResumeAtConnect = Boolean(stored);
+  if (!initialProtocols) {
+    return Promise.reject(new Error('Missing token for WebSocket connection'));
+  }
   const gameWs = new WebSocket(resolvedUrl, initialProtocols as unknown as string[]);
 
   return await new Promise<OnlineClient>((resolve, reject) => {
@@ -306,7 +313,10 @@ export async function connectOnline(
               hasFreshResumeToken = true;
             }
             // Persist token for page refresh within grace window.
-            saveResumeTokenToSession(token, roomIdentifier);
+            saveResumeTokenToSession(token, roomIdentifier, {
+              isTournament: data.isTournament ?? false,
+              tournamentId: data.tournamentId,
+            });
             break;
           default:
             console.warn('[OnlineGame] Unknown message type');

@@ -379,6 +379,17 @@ export function useTournamentPageController(
     if (!userReady || !user) return;
     if (activeTournamentId === null) return;
     if (tournamentStatus === 'completed') return;
+
+    const isOnDetailRoute = locationRef.current === `/pong/tournaments/${activeTournamentId}`;
+    if (!isOnDetailRoute) {
+      debugLog('auto-resume:skip', {
+        reason: 'not-on-detail-route',
+        currentPath: locationRef.current,
+        expectedPath: `/pong/tournaments/${activeTournamentId}`,
+      });
+      return;
+    }
+
     // Do not interfere if we are already starting/playing or have a live handoff
     if (matchPhase === 'starting' || matchPhase === 'playing') return;
     if (handoff) return;
@@ -391,8 +402,21 @@ export function useTournamentPageController(
         const { findAnyStoredResumeCandidate } = await import(
           '../../../../games/pong/modes/online/resume'
         );
-        const candidate = findAnyStoredResumeCandidate();
+        const candidate = findAnyStoredResumeCandidate({
+          tournamentOnly: true,
+          tournamentId: activeTournamentId,
+        });
         if (!candidate) return;
+
+        const stillOnDetailRoute =
+          locationRef.current === `/pong/tournaments/${activeTournamentId}`;
+        if (!stillOnDetailRoute) {
+          debugLog('auto-resume:skip', {
+            reason: 'navigated-away-during-import',
+            currentPath: locationRef.current,
+          });
+          return;
+        }
 
         // Seed a synthetic handoff so the lifecycle hook boots the game. Seat and joinToken
         // are placeholders; the online bootstrap will switch to resume mode using the token
@@ -428,6 +452,7 @@ export function useTournamentPageController(
     tournamentStatus,
     user,
     userReady,
+    location.pathname,
   ]);
 
   return {

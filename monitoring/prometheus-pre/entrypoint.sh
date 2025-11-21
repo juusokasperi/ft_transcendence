@@ -28,7 +28,7 @@ scrape_configs:
           "game-gateway:${GATEWAY_PORT}",
           "matchmaking-service:${MATCHMAKING_PORT}",
           "scorer:${SCORER_PORT}",
-          "chat:${CHAT_PORT}",
+          "chat-service:${CHAT_PORT}",
           "game-server:${GAME_SERVER_HTTP}",
           "game-server-2:${GAME_SERVER_HTTP}"
         ]

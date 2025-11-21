@@ -320,6 +320,8 @@ export type FrameMessage = {
 export type ResumeTokenMessage = {
   type: 'RESUME_TOKEN';
   token: string;
+  isTournament?: boolean;
+  tournamentId?: number;
 };
 
 export type PongMessage = {
