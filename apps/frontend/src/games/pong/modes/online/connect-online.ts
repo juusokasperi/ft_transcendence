@@ -357,6 +357,7 @@ export async function connectOnline(
           startPingLoop(next);
         },
         onResumeGiveUp: (reason) => {
+          void reason;
           hasFreshResumeToken = false;
           latestResume = null;
           clearResumeForRoom(roomIdentifier);
