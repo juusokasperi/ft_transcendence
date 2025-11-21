@@ -47,6 +47,13 @@ interface PongInstance {
   giveUp?(): void;
 }
 
+const debugLog = (...args: unknown[]) => {
+  if (import.meta.env?.DEV) {
+    // eslint-disable-next-line no-console
+    console.debug('[OnlineGame]', ...args);
+  }
+};
+
 export function createOnlineApp(
   canvas: HTMLCanvasElement,
   cfg: {
@@ -175,6 +182,13 @@ export function createOnlineApp(
 
   const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
 
+  const applyPlayerNames = () => {
+    if (!playerAliases) return;
+    names = { east: playerAliases.P1, west: playerAliases.P2 };
+    hud.setPlayerNames(names.east, names.west);
+    didSetPlayerNames = true;
+  };
+
   const sideSwap = createSideSwapController({
     hud,
     camera: world.camera,
@@ -225,10 +239,7 @@ export function createOnlineApp(
         // Set HUD names once we know player aliases.
         // Keep rows pinned to player identity: east → P1, west → P2.
         if (!didSetPlayerNames && playerAliases !== null) {
-          const aliases = playerAliases; // TypeScript hint
-          names = { east: aliases.P1, west: aliases.P2 };
-          hud.setPlayerNames(names.east, names.west);
-          didSetPlayerNames = true;
+          applyPlayerNames();
         }
 
         const refState = ref ?? snap;
@@ -356,7 +367,7 @@ export function createOnlineApp(
   });
 
   async function start() {
-    console.log('[OnlineGame] Starting online game with config:', cfg);
+    debugLog('[OnlineGame] Starting online game with config:', cfg);
     matchEnded = false;
     clearWaitingForOpponentTimeout();
     blockInputFor(SERVE_SELECT_TOTAL_MS + 200);
@@ -364,30 +375,32 @@ export function createOnlineApp(
     playbackDelayMs = clampPlaybackDelay(BASE_PLAYBACK_DELAY_MS);
     desiredPlaybackDelayMs = playbackDelayMs;
 
-    // If we have a valid stored resume token for this room, auto-resume immediately.
-    const candidate = getStoredResumeCandidate(cfg.roomIdentifier);
-    if (candidate) {
-      try {
+    try {
+      // If we have a valid stored resume token for this room, auto-resume immediately.
+      const candidate = getStoredResumeCandidate(cfg.roomIdentifier);
+      if (candidate) {
         isResumeMode = true;
         net = await connectOnline(cfg, { resumeCandidate: candidate });
-      } catch (err) {
+      } else if (cfg.joinToken) {
+        isResumeMode = false;
+        net = await connectOnline(cfg);
+      }
+    } catch (err) {
+      if (isResumeMode) {
         // Clear invalid token and attempt a normal join if possible.
         clearStoredResumeTokens(cfg.roomIdentifier);
-        try {
-          if (cfg.joinToken) {
+        if (cfg.joinToken) {
+          try {
             isResumeMode = false;
             net = await connectOnline(cfg);
+          } catch {
+            // handled by the !net check below
           }
-        } catch {
-          // handled below
         }
       }
-    } else {
-      isResumeMode = false;
-      net = await connectOnline(cfg);
     }
     if (!net) {
-      //console.warn('[OnlineGame] Unable to establish network connection');
+      //debugLog('[OnlineGame] Unable to establish network connection');
       try {
         cfg.onMatchEnd?.('bootstrap_failed', undefined, null);
       } catch {}
@@ -400,12 +413,12 @@ export function createOnlineApp(
       P1: mySeat === 'P1',
       P2: mySeat === 'P2',
     });
-    console.log('[OnlineGame] Connected. My seat:', mySeat);
+    debugLog('[OnlineGame] Connected. My seat:', mySeat);
 
     void audioKit.start();
 
     net.onRoomState((state) => {
-      console.log('[OnlineGame] Room state update:', state);
+      debugLog('[OnlineGame] Room state update:', state);
       if (state.seat === 'P1' || state.seat === 'P2') {
         mySeat = state.seat;
         paddlePrediction.reset(mySeat);
@@ -425,6 +438,7 @@ export function createOnlineApp(
             P2: aliasP2 ?? playerAliases?.P2 ?? 'Player 2',
           };
           didSetPlayerNames = false;
+          applyPlayerNames();
         }
       }
 
@@ -447,22 +461,23 @@ export function createOnlineApp(
           P2: payload.players.P2?.alias ?? 'Player 2',
         };
         didSetPlayerNames = false;
+        applyPlayerNames();
       }
     });
 
     // Handle opponent disconnect events
     net.onOpponentDisconnected((gracePeriodMs: number) => {
-      console.log('[OnlineGame] Opponent disconnected, grace period:', gracePeriodMs);
+      debugLog('[OnlineGame] Opponent disconnected, grace period:', gracePeriodMs);
       showDisconnectOverlay(gracePeriodMs);
     });
 
     net.onOpponentReconnected(() => {
-      console.log('[OnlineGame] Opponent reconnected');
+      debugLog('[OnlineGame] Opponent reconnected');
       hideDisconnectOverlay();
     });
 
     net.onMatchEnd((reason, winner, summaryFromNet = null) => {
-      console.log('[OnlineGame] Match ended:', reason, 'winner:', winner);
+      debugLog('[OnlineGame] Match ended:', reason, 'winner:', winner);
       finalizeMatch(reason, winner, summaryFromNet);
     });
 
@@ -545,7 +560,7 @@ export function createOnlineApp(
     const tickMs = 1000 / Math.max(1, startInfo.tickRateHz || CLIENT_TICK_RATE_HZ);
     frameBuffer.setTickMs(tickMs);
     if (startInfo.randomSeed !== cfg.randomSeed) {
-      console.warn('[OnlineGame] Server randomSeed differs from handoff seed', {
+      debugLog('[OnlineGame] Server randomSeed differs from handoff seed', {
         handoff: cfg.randomSeed,
         server: startInfo.randomSeed,
       });
@@ -557,23 +572,23 @@ export function createOnlineApp(
         P1: startInfo.players.P1?.alias || 'Player 1',
         P2: startInfo.players.P2?.alias || 'Player 2',
       };
-      console.log('[OnlineGame] Player aliases from server:', playerAliases);
+      debugLog('[OnlineGame] Player aliases from server:', playerAliases);
     }
 
     const waitMs = Math.max(0, startInfo.startAtEpochMs - Date.now());
     if (waitMs > 0) {
       startStartCountdown(startInfo.startAtEpochMs);
-      console.log(`[OnlineGame] Waiting ${waitMs}ms for server start tick`);
+      debugLog(`[OnlineGame] Waiting ${waitMs}ms for server start tick`);
       await new Promise<void>((resolve) => setTimeout(resolve, waitMs));
     }
     stopStartCountdown();
 
     loop.start();
-    console.log('[OnlineGame] Game loop started');
+    debugLog('[OnlineGame] Game loop started');
   }
 
   const destroy = () => {
-    console.log('[OnlineGame] Destroying online game');
+    debugLog('[OnlineGame] Destroying online game');
 
     clearWaitingForOpponentTimeout();
     matchEnded = true;
@@ -599,6 +614,8 @@ export function createOnlineApp(
 
   const giveUp = () => {
     try {
+      // Do not allow resume after an intentional forfeit.
+      clearStoredResumeTokens(cfg.roomIdentifier);
       // Intentionally forfeit the match; server will end it.
       net?.forfeit?.();
     } catch {}

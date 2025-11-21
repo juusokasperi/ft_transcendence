@@ -11,6 +11,13 @@ type Options = {
   dispatch: (action: { type: 'setAvailableTournaments'; payload: TournamentSummary[] }) => void;
 };
 
+const debugLog = (...args: unknown[]) => {
+  if (import.meta.env?.DEV) {
+    // eslint-disable-next-line no-console
+    console.debug('[OnlineGame]', ...args);
+  }
+};
+
 export function useTournamentList({
   axios,
   userReady,
@@ -36,7 +43,7 @@ export function useTournamentList({
       });
       if (import.meta.env?.DEV) {
         // eslint-disable-next-line no-console
-        console.debug('[TournamentList] load', {
+        debugLog('[TournamentList] load', {
           raw: rawList.length,
           filtered: filtered.length,
           sample: filtered[0] ?? null,

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
 import { useAppContext } from '../context/AppContext';
 import { useSnackbar } from '../context/SnackbarContext';
@@ -8,12 +8,16 @@ const Confirmation = () => {
   const { axios, navigate } = useAppContext();
   const { enqueueSnackbar } = useSnackbar();
   const [status, setStatus] = useState<'validating' | 'success' | 'error'>('validating');
-
+  const debugLog = useCallback((event: string, payload?: Record<string, unknown>) => {
+    if (import.meta.env?.DEV) {
+      console.debug(`[Confirmation Token] ${event}`, payload ?? {});
+    }
+  }, []);
   useEffect(() => {
-    const confirmAccount = async () => {
+    const confirmAccount = async (token: string) => {
       try {
-        console.log(confirmationToken);
-        await axios.post(`/api/signup/validate/${confirmationToken}`);
+        debugLog('confirmAccount:start', { token });
+        await axios.post(`/api/signup/validate/${token}`);
 
         setStatus('success');
         enqueueSnackbar({
@@ -34,9 +38,9 @@ const Confirmation = () => {
     };
 
     if (confirmationToken) {
-      confirmAccount();
+      confirmAccount(confirmationToken);
     }
-  }, [confirmationToken, axios, navigate]);
+  }, [confirmationToken, axios, navigate, enqueueSnackbar, debugLog]);
 
   return (
     <div className="flex h-screen items-center justify-center">

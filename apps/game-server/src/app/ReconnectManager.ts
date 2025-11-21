@@ -117,6 +117,18 @@ export class ReconnectManager {
   onReconnect(session: MatchSession, seat: 'P1' | 'P2'): void {
     void seat;
     session.model.cancelDisconnectGrace();
+    const hasBothPlayers = Boolean(session.players.get('P1') && session.players.get('P2'));
+
+    // If the match never started (e.g., a player refreshed during countdown), reschedule start.
+    if (!session.model.started && hasBothPlayers) {
+      this.logger.info(
+        { room: session.reservation.roomIdentifier },
+        '[ReconnectManager] Rescheduling start after reconnect',
+      );
+      this.runner.scheduleStart(session);
+      return;
+    }
+
     this.broadcaster.notifyOpponentReconnected(session);
     if (session.model.started) {
       this.runner.resume(session);

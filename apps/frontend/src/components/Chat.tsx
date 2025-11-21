@@ -10,6 +10,12 @@ import type { AxiosInstance } from 'axios';
 import { useChatContext } from '../context/ChatContext';
 import type { UserStats } from '@utils/types';
 
+const debugLog = (...args: unknown[]) => {
+  if (import.meta.env?.DEV) {
+    console.debug('[OnlineGame]', ...args);
+  }
+};
+
 async function fetchUserByUsername(
   axios: AxiosInstance,
   targetUser: string,
@@ -18,7 +24,7 @@ async function fetchUserByUsername(
     const res = await axios.get(`/api/users/${targetUser}`);
     return res.data;
   } catch (err) {
-    console.error('Error fetching user:', err);
+    debugLog('Error fetching user:', err);
     return null;
   }
 }
@@ -163,11 +169,9 @@ export default function Chat({ onClose, channel, isOpen = true }: ChatProps) {
 
   useEffect(() => {
     if (!inviteAcceptedSignal) return;
-    //console.debug('[ChatUI] inviteAcceptedSignal detected', { inviteAcceptedSignal });
     let cancelled = false;
     const timer = window.setTimeout(() => {
       if (cancelled) return;
-      //console.debug('[ChatUI] navigating to /pong/online after invite acceptance');
       navigate('/pong/online', { state: { timestamp: Date.now() } });
       onClose();
       acknowledgeInviteAcceptedSignal();
@@ -254,7 +258,7 @@ export default function Chat({ onClose, channel, isOpen = true }: ChatProps) {
 
             setProfileData(user ?? null);
           } catch (err) {
-            console.error('Error fetching profile:', err);
+            debugLog('Error fetching profile:', err);
             addSystemMessage(`Failed to load profile for ${targetUser}`);
             setProfileData(null);
           } finally {

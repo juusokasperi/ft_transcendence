@@ -118,7 +118,7 @@ export default async function googleSign(app: FastifyInstance) {
       picture?: string;
       email_verified?: boolean;
     };
-    app.log.info({ profile }, 'Google profile:');
+    // app.log.info({ profile }, 'Google profile:');
 
     if (!profile.sub) {
       return reply.status(400).send({ error: 'no_sub' });

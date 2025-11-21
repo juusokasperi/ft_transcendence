@@ -1,4 +1,5 @@
 import axios from 'axios';
+import jwt from 'jsonwebtoken';
 import type {
   AcceptScheduledRequest,
   CreateTournamentRequest,
@@ -15,6 +16,7 @@ import { ClientState, type ClientInfo } from '../types/types.ts';
 import { log } from '@utils/logger';
 import {
   API_URL,
+  MATCH_SECRET,
   TOURNAMENT_MATCH_AUTO_START_DELAY_MS,
   TOURNAMENT_MATCH_COUNTDOWN_INTERVAL_MS,
   TOURNAMENT_MAX_REMINDERS,
@@ -57,6 +59,11 @@ interface PendingTournamentMatch {
 
 const pendingTournamentMatches = new Map<number, PendingTournamentMatch>();
 const tournamentSubscribers = new Map<number, Set<string>>();
+
+function createMatchServiceToken() {
+  const now = Math.floor(Date.now() / 1000);
+  return jwt.sign({ service: 'matchmaking', iat: now, exp: now + 60 }, MATCH_SECRET);
+}
 
 function findClientByUuid(clients: Map<string, ClientInfo>, uuid: string) {
   for (const client of clients.values()) {
@@ -204,25 +211,12 @@ async function autoForfeitParticipant(
   participantId: number,
   clients: Map<string, ClientInfo>,
 ) {
-  const authClient = Array.from(clients.values()).find(
-    (c) => c.tournamentId === tournamentId && c.authenticated && c.siteToken,
-  );
-  if (!authClient) {
-    log(
-      'Auto-forfeit failed: no authenticated tournament client available for token',
-      { tournamentId, participantId },
-      'warn',
-    );
-    return;
-  }
-  const token = extractSiteToken(authClient);
-  if (!token) return;
-  const headers = { Authorization: `Bearer ${token}` };
+  const headers = { Authorization: `Bearer ${createMatchServiceToken()}` };
   try {
     log('Auto-forfeit participant due to absence', { tournamentId, participantId });
-    await axios.patch(
-      `${API_URL}/api/tournaments/${tournamentId}/participants/${participantId}`,
-      { status: 'forfeited' },
+    await axios.post(
+      `${API_URL}/api/tournaments/${tournamentId}/participants/${participantId}/auto-forfeit`,
+      {},
       { headers },
     );
     await requestTournamentSync(tournamentId, clients, 'state_updated');

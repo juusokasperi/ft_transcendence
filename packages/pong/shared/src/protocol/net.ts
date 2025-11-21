@@ -320,6 +320,8 @@ export type FrameMessage = {
 export type ResumeTokenMessage = {
   type: 'RESUME_TOKEN';
   token: string;
+  isTournament?: boolean;
+  tournamentId?: number;
 };
 
 export type PongMessage = {
@@ -350,41 +352,15 @@ export type GameServerControlMessage =
   | MatchEndMessage
   | PongMessage;
 
-// Types that were in blueprint but not implemented:
-
-// export type MatchmakingClientMessage = JoinQueueRequest | ReadyMessage;
-
-// export type ReadyMessage = {
-//   type: 'READY';
-// };
-
-// export type StartMessage = {
-//   type: 'START';
-//   startTick: number;
-// };
-
-// export type InputMessage = {
-//   type: 'INPUT';
-//   tick: number;
-//   axis: number;
-// };
-
-// export type SnapShotMessage = {
-//   type: 'SNAPSHOT';
-//   tick: number;
-//   state: any; // ??
-// };
-
-// export type EndMessage = {
-//   type: 'END';
-//   reason: 'completed' | 'forfeit' | 'disconnect';
-//   winner?: 'west' | 'east';
-// };
-
-// export type GameServerClientMessage =
-//   | StartMessage
-//   | InputMessage
-//   | SnapShotMessage
-//   | EndMessage
-//   | MatchHandoff
-//   | PongMessage;
+export const CLOSE_CODES = {
+  ROOM_NOT_FOUND: 4404,
+  MISSING_TOKEN: 4401,
+  INVALID_TOKEN: 4401,
+  TOKEN_REUSED: 4403,
+  PLAYER_NOT_AUTHORIZED: 4403,
+  SEAT_OCCUPIED: 4402,
+  SIDE_MISMATCH: 4403,
+  JOIN_WINDOW_EXPIRED: 4408,
+  MATCH_FINISHED: 4410,
+  SERVER_ERROR: 1011,
+};

@@ -27,6 +27,13 @@ import PageContainer from '../shared/components/PageContainer';
 import PageSection from '../shared/components/PageSection';
 import { useSetMatchActivity } from '../../../context/MatchActivityContext';
 
+const debugLog = (...args: unknown[]) => {
+  if (import.meta.env?.DEV) {
+    // eslint-disable-next-line no-console
+    console.debug('[OnlineGame]', ...args);
+  }
+};
+
 const OnlineGame: React.FC = () => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const [state, dispatch] = useReducer(reducer, initialState);
@@ -121,7 +128,7 @@ const OnlineGame: React.FC = () => {
           setConnectKey((key) => key + 1);
           return;
         } catch (err) {
-          console.error('[OnlineGame] Failed to refresh auth token', err);
+          debugLog('[OnlineGame] Failed to refresh auth token', err);
         }
       }
 

@@ -34,7 +34,11 @@ export function RealtimeSocketProvider({ children }: RealtimeSocketProviderProps
   const messageHandlersRef = useRef<Set<(data: any) => void>>(new Set());
   const [readyState, setReadyState] = useState<number>(WebSocket.CONNECTING);
   const [isConnected, setIsConnected] = useState(false);
-
+  const debugLog = (...args: unknown[]) => {
+    if (import.meta.env?.DEV) {
+      console.debug('[OnlineGame]', ...args);
+    }
+  };
   useEffect(() => {
     if (!userUuid) {
       wsRef.current?.close();
@@ -56,7 +60,7 @@ export function RealtimeSocketProvider({ children }: RealtimeSocketProviderProps
       try {
         data = JSON.parse(ev.data);
       } catch {
-        console.warn('[RealtimeSocket] malformed message', ev.data);
+        debugLog('[RealtimeSocket] malformed message', ev.data);
         return;
       }
 
@@ -71,14 +75,14 @@ export function RealtimeSocketProvider({ children }: RealtimeSocketProviderProps
         try {
           handler(data);
         } catch (err) {
-          console.error('[RealtimeSocket] handler error:', err);
+          debugLog('[RealtimeSocket] handler error:', err);
         }
       });
     };
 
     ws.onerror = (err) => {
       setReadyState(ws.readyState);
-      console.error('[RealtimeSocket] WebSocket error:', err);
+      debugLog('[RealtimeSocket] WebSocket error:', err);
     };
 
     ws.onclose = () => {

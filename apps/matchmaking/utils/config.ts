@@ -4,7 +4,14 @@ import { log } from '@utils/logger';
 dotenv.config();
 
 // We have a script that ensures these are set in CI and production. We can get rid of this check if we want to.
-const REQUIRED = ['MATCHMAKING_PORT', 'SECRET', 'API_URL', 'ALLOCATOR_PORT', 'REDIS_PORT'] as const;
+const REQUIRED = [
+  'MATCHMAKING_PORT',
+  'SECRET',
+  'API_URL',
+  'ALLOCATOR_PORT',
+  'REDIS_PORT',
+  'MATCH_SECRET',
+] as const;
 for (const k of REQUIRED) {
   if (!process.env[k]) throw new Error(`Missing env: ${k}`);
 }
@@ -27,6 +34,7 @@ function numberFromEnv(name: string, defaultValue: number) {
 export const PORT = Number(process.env.MATCHMAKING_PORT!);
 export const SECRET = process.env.SECRET!;
 export const API_URL = process.env.API_URL!;
+export const MATCH_SECRET = process.env.MATCH_SECRET!;
 export const ALLOCATOR_URL = `http://allocator:${process.env.ALLOCATOR_PORT!}`;
 export const REDIS_URL = `redis://redis:${process.env.REDIS_PORT!}`;
 

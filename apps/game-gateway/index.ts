@@ -68,6 +68,13 @@ const proxyWithRetry = async (
   for (let attempt = 0; attempt <= maxRetries; ++attempt) {
     try {
       await new Promise<void>((resolve, reject) => {
+        const onSocketError = (err: Error) => {
+          socket.off('error', onSocketError);
+          reject(err);
+        };
+
+        socket.once('error', onSocketError);
+
         proxy.ws(
           req,
           socket,
@@ -79,6 +86,7 @@ const proxyWithRetry = async (
             },
           },
           (err) => {
+            socket.off('error', onSocketError);
             if (err) reject(err);
             else resolve();
           },
