@@ -357,7 +357,6 @@ export async function connectOnline(
           startPingLoop(next);
         },
         onResumeGiveUp: (reason) => {
-          console.warn('[OnlineGame] Resume reconnect gave up:', reason);
           hasFreshResumeToken = false;
           latestResume = null;
           clearResumeForRoom(roomIdentifier);
