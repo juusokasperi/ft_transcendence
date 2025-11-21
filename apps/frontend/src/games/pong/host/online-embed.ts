@@ -6,6 +6,13 @@ import type { OnlineMatchSummary } from '../modes/online/types';
 
 import { createPongApp } from '../index';
 
+const debugLog = (...args: unknown[]) => {
+  if (import.meta.env?.DEV) {
+    // eslint-disable-next-line no-console
+    console.debug('[OnlineGame]', ...args);
+  }
+};
+
 export async function bootstrapOnlinePong(
   canvas: HTMLCanvasElement,
   net: {
@@ -22,7 +29,7 @@ export async function bootstrapOnlinePong(
     ) => void;
   },
 ) {
-  console.info('[Pong] Initialising online host', {
+  debugLog('[Pong] Initialising online host', {
     matchId: net.matchId,
     room: net.roomIdentifier,
   });

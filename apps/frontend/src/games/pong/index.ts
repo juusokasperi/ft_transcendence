@@ -24,17 +24,24 @@ export type CreateAppOptions = {
   preferences?: Preferences;
 };
 
+const debugLog = (...args: unknown[]) => {
+  if (import.meta.env?.DEV) {
+    // eslint-disable-next-line no-console
+    console.debug('[OnlineGame]', ...args);
+  }
+};
+
 // Narrow public surface; only orchestrates the right mode.
 export async function createPongApp({ mode, canvas, net, preferences }: CreateAppOptions) {
   if (mode === 'local') {
     const { createLocalApp } = await import('./modes/local/local');
-    console.info('[Pong] Booting local mode');
+    debugLog('[Pong] Booting local mode');
     return createLocalApp(canvas, preferences);
   }
 
   if (mode === 'online') {
     const { createOnlineApp } = await import('./modes/online');
-    console.info('[Pong] Booting online mode', {
+    debugLog('[Pong] Booting online mode', {
       matchId: net?.matchId,
       roomIdentifier: net?.roomIdentifier,
     });

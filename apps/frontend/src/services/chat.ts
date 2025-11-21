@@ -7,6 +7,13 @@ export type ChatMessage =
   | { type: 'userLeft'; userId: string; username: string }
   | { type: 'chat'; from: string; message: string };
 
+const debugLog = (...args: unknown[]) => {
+  if (import.meta.env?.DEV) {
+    // eslint-disable-next-line no-console
+    console.debug('[OnlineGame]', ...args);
+  }
+};
+
 export function createChatClient(onMessage: (msg: ChatMessage) => void) {
   const socket = new WebSocket(wsUrl('/chat'));
 
@@ -14,7 +21,7 @@ export function createChatClient(onMessage: (msg: ChatMessage) => void) {
     try {
       onMessage(JSON.parse(ev.data) as ChatMessage);
     } catch {
-      console.warn('Malformed chat message', ev.data);
+      debugLog('Malformed chat message', ev.data);
     }
   });
 

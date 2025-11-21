@@ -18,6 +18,13 @@ type BotHandle = {
   setDifficulty: (difficulty: BotDifficulty) => void;
 };
 
+const debugLog = (...args: unknown[]) => {
+  if (import.meta.env?.DEV) {
+    // eslint-disable-next-line no-console
+    console.debug('[OnlineGame]', ...args);
+  }
+};
+
 export function useAIBot({
   enabled,
   playing,
@@ -95,7 +102,7 @@ export function useAIBot({
         bot.start();
         botRef.current = bot;
       } catch (error) {
-        console.error('[useAIBot] Failed to start AI bot', error);
+        debugLog('[useAIBot] Failed to start AI bot', error);
       }
     })();
 

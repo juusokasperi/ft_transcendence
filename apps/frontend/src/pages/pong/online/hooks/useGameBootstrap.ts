@@ -18,6 +18,13 @@ type GameInstance = {
   giveUp?: () => void;
 };
 
+const debugLog = (...args: unknown[]) => {
+  if (import.meta.env?.DEV) {
+    // eslint-disable-next-line no-console
+    console.debug('[OnlineGame]', ...args);
+  }
+};
+
 export function useGameBootstrap({
   canvasRef,
   active,
@@ -70,7 +77,7 @@ export function useGameBootstrap({
         appRef.current = instance;
         onStarted();
       } catch (error) {
-        console.error('[useGameBootstrap] Failed to bootstrap online pong', error);
+        debugLog('[useGameBootstrap] Failed to bootstrap online pong', error);
         onEnded({ reason: 'bootstrap_failed', summary: null });
       } finally {
         if (!cancelled) bootingRef.current = false;

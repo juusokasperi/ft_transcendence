@@ -17,6 +17,13 @@ export type LocalAudioKit = {
   dispose(): void; // full teardown
 };
 
+const debugLog = (...args: unknown[]) => {
+  if (import.meta.env?.DEV) {
+    // eslint-disable-next-line no-console
+    console.debug('[Audio]', ...args);
+  }
+};
+
 export function createLocalAudioKit(scene: Scene, canvas: HTMLCanvasElement): LocalAudioKit {
   const bus = createAudioBus();
   const manager = createAudioManager(scene, DefaultAudioManifest);
@@ -84,7 +91,7 @@ export function createLocalAudioKit(scene: Scene, canvas: HTMLCanvasElement): Lo
         await startPlaylist();
       } catch (e) {
         // eslint-disable-next-line no-console
-        console.warn('[LocalAudioKit] start failed:', e);
+        debugLog('[LocalAudioKit] start failed:', e);
       }
     },
     stop: () => stopPlaylist(),
