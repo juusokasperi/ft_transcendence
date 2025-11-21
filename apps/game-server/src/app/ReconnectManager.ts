@@ -93,7 +93,10 @@ export class ReconnectManager {
         '[ReconnectManager] Grace period expired, awarding win to remaining player',
       );
       try {
-        const summary = await this.reporter.report(session, { winner: winnerSide });
+        const summary = await this.reporter.report(session, {
+          winner: winnerSide,
+          reason: 'timeout',
+        });
         this.broadcaster.notifyMatchEnd(session, 'opponent_timeout', winnerSide, summary);
         // Close any remaining sockets to stop resume rotation and clean up.
         try {

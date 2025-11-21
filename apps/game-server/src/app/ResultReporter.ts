@@ -5,7 +5,7 @@ import type { MatchSession, PlayerConnectionState } from './RoomRegistry.ts';
 import type { FastifyBaseLogger } from '@utils/logger';
 import type { Seat, ExpectedPlayer } from '../domain/MatchTypes.ts';
 
-type MatchOverEvent = { winner?: string };
+type MatchOverEvent = { winner?: string; reason?: 'natural' | 'forfeit' | 'timeout' };
 
 type ResolvedPlayer = {
   seat: Seat;
@@ -58,8 +58,9 @@ export class ResultReporter {
       let westScore = gamesHistory.filter((g) => g.winner === 'west').length;
       let technicalGamesHistory = gamesHistory;
 
-      // Handle technical win (disconnect/forfeit) when no game history exists.
-      if (eastScore === 0 && westScore === 0 && matchOver.winner) {
+      // Handle technical win (disconnect/forfeit/timeout) by overriding game history.
+      // Only apply for non-natural completions to preserve legitimate match results.
+      if (matchOver.winner && matchOver.reason !== 'natural') {
         // matchOver.winner is a TABLE SIDE ('east' | 'west')
         const sideWinner =
           matchOver.winner === 'east' || matchOver.winner === 'west'

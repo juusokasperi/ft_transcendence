@@ -80,7 +80,7 @@ export function createMatchController(
     const events: {
       swapSidesNow?: true;
       gameOver?: { winner: TableEnd; gameIndex: number };
-      matchOver?: { winner: TableEnd };
+      matchOver?: { winner: TableEnd; reason: 'natural' | 'forfeit' | 'timeout' };
     } = {};
 
     // Deciding-game mid swap at threshold → flip players’ ends now.
@@ -190,7 +190,7 @@ export function createMatchController(
           p1Won ? (p1AtEastNow ? 'east' : 'west') : p1AtEastNow ? 'west' : 'east'
         ) as TableEnd;
 
-        events.matchOver = { winner: matchWinner };
+        events.matchOver = { winner: matchWinner, reason: 'natural' };
         game = {
           ...game,
           phase: 'matchOver',

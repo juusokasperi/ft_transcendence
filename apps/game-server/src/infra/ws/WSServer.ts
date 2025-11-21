@@ -387,7 +387,10 @@ export class WSServer {
         } catch {}
         (async () => {
           try {
-            const summary = await this.reporter.report(session, { winner: winnerSide });
+            const summary = await this.reporter.report(session, {
+              winner: winnerSide,
+              reason: 'forfeit',
+            });
             this.broadcaster.notifyMatchEnd(session, 'forfeit', winnerSide, summary);
             // Proactively close player sockets to stop resume rotations and cleanly end session.
             try {
@@ -447,6 +450,7 @@ export class WSServer {
     const remainingP2 = session.players.get('P2');
 
     if (!remainingP1 && !remainingP2) {
+      this.logger.info('BOTH PLAYERS HAVE DISCONNECTED');
       // Both players have disconnected (or quit) nearly simultaneously.
       // Declare the LAST quitter (current 'seat') as the winner to avoid tournament lock.
       const winnerSeat: 'P1' | 'P2' = seat;
@@ -463,7 +467,10 @@ export class WSServer {
 
       (async () => {
         try {
-          const summary = await this.reporter.report(session, { winner: winnerSide });
+          const summary = await this.reporter.report(session, {
+            winner: winnerSide,
+            reason: 'forfeit',
+          });
           this.broadcaster.notifyMatchEnd(session, 'forfeit', winnerSide, summary);
           try {
             for (const p of session.players.values()) {
