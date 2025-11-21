@@ -154,7 +154,6 @@ export function createMatchLifecycle(deps: MatchLifecycleDeps): MatchLifecycle {
 
     waitingTimeout = window.setTimeout(() => {
       waitingTimeout = null;
-      //console.warn('[OnlineGame] Opponent missing before start; finishing match early');
       finalizeMatch('opponent_timeout', winnerSide, null);
       try {
         deps.disconnectNet();

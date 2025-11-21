@@ -8,7 +8,6 @@ import { createPongApp } from '../index';
 
 const debugLog = (...args: unknown[]) => {
   if (import.meta.env?.DEV) {
-    // eslint-disable-next-line no-console
     console.debug('[OnlineGame]', ...args);
   }
 };

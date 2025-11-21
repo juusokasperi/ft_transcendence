@@ -23,7 +23,6 @@ const PERMANENT_CLOSE_CODES = new Set(Object.values(CLOSE_CODES));
 
 const debugLog = (...args: unknown[]) => {
   if (import.meta.env?.DEV) {
-    // eslint-disable-next-line no-console
     console.debug('[OnlineGame]', ...args);
   }
 };
@@ -357,7 +356,7 @@ export async function connectOnline(
           startPingLoop(next);
         },
         onResumeGiveUp: (reason) => {
-          void reason;
+          debugLog('[OnlineGame] Resume reconnect gave up:', reason);
           hasFreshResumeToken = false;
           latestResume = null;
           clearResumeForRoom(roomIdentifier);

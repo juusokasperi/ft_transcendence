@@ -26,6 +26,11 @@ const TwoFactorSettings: React.FC<TwoFactorSettingsProps> = ({ axios, user, setU
   const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
   const [confirmDisableOpen, setConfirmDisableOpen] = useState(false);
   const { enqueueSnackbar } = useSnackbar();
+  const debugLog = (...args: unknown[]) => {
+    if (import.meta.env?.DEV) {
+      console.debug('[OnlineGame]', ...args);
+    }
+  };
 
   const enabled = Boolean(user?.tfaEnabled);
 
@@ -34,7 +39,7 @@ const TwoFactorSettings: React.FC<TwoFactorSettingsProps> = ({ axios, user, setU
       const url = await QRCode.toDataURL(otpauthUrl);
       setQrDataUrl(url);
     } catch (error) {
-      console.error('Failed to generate QR code', error);
+      debugLog('Failed to generate QR code', error);
       setQrDataUrl(null);
     }
   };
