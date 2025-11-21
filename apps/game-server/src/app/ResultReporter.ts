@@ -73,16 +73,23 @@ export class ResultReporter {
         const seatWinner: Seat = sideWinner === 'east' ? playerAtEnd.east : playerAtEnd.west;
         const playerSpaceWinner: 'east' | 'west' = seatWinner === 'P1' ? 'east' : 'west';
 
-        const technicalScore = reservation.tournament ? 3 : 2;
-        eastScore = playerSpaceWinner === 'east' ? technicalScore : 0;
-        westScore = playerSpaceWinner === 'west' ? technicalScore : 0;
+        const targetScore = 3; // best-of-5
+        const currentWinnerScore = playerSpaceWinner === 'east' ? eastScore : westScore;
+        const currentLoserScore = playerSpaceWinner === 'east' ? westScore : eastScore;
+        const minimumWinnerScore = Math.max(targetScore, currentLoserScore + 1); // winner needs to have at least 1 more point than loser
+        const gamesNeeded = Math.max(0, minimumWinnerScore - currentWinnerScore);
 
-        technicalGamesHistory = Array.from({ length: technicalScore }, (_, index) => ({
-          gameIndex: index + 1,
-          east: playerSpaceWinner === 'east' ? 11 : 0, // east row == P1
-          west: playerSpaceWinner === 'west' ? 11 : 0, // west row == P2
-          winner: playerSpaceWinner,
-        }));
+        if (gamesNeeded > 0) {
+          eastScore = playerSpaceWinner === 'east' ? targetScore : eastScore;
+          westScore = playerSpaceWinner === 'west' ? targetScore : westScore;
+          const technicalGames = Array.from({ length: gamesNeeded }, (_, index) => ({
+            gameIndex: gamesHistory.length + index + 1,
+            east: playerSpaceWinner === 'east' ? 11 : 0,
+            west: playerSpaceWinner === 'west' ? 11 : 0,
+            winner: playerSpaceWinner,
+          }));
+          technicalGamesHistory = [...gamesHistory, ...technicalGames];
+        }
       }
 
       const token = this.signToken();
