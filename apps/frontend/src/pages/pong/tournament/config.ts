@@ -17,9 +17,7 @@ const numberFromEnv = (key: string, fallback: number) => {
   const parsed = Number.parseInt(raw, 10);
   if (Number.isNaN(parsed)) {
     if (import.meta.env?.DEV) {
-      debugLog(
-        `[config] Invalid numeric value for ${key}: "${raw}". Falling back to ${fallback}.`,
-      );
+      debugLog(`[config] Invalid numeric value for ${key}: "${raw}". Falling back to ${fallback}.`);
     }
     return fallback;
   }
