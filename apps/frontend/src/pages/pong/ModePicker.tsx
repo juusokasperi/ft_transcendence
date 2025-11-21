@@ -1,13 +1,19 @@
 // apps/frontend/src/pages/pong/ModePicker.tsx
 import React, { useEffect } from 'react';
+import ConfirmDialog from '../../components/ConfirmDialog';
 import { Card, PlayButton } from './local/components';
 import PageContainer from './shared/components/PageContainer';
 import PageHeader from './shared/components/PageHeader';
 import PageSection from './shared/components/PageSection';
 import { preloadLocalPong } from './local/hooks/usePongRuntime';
 import { preloadOnlinePong } from './online/hooks/useGameBootstrap';
+import { useOnlineEntryGuard } from './useOnlineEntryGuard';
 
 const ModePicker: React.FC = () => {
+  const { handleOnlineClick, confirmDialogProps, isBusy } = useOnlineEntryGuard({
+    onPreload: preloadOnlinePong,
+  });
+
   useEffect(() => {
     const run = () => {
       preloadLocalPong();
@@ -57,6 +63,8 @@ const ModePicker: React.FC = () => {
               responsiveCompact
               onMouseEnter={() => preloadOnlinePong()}
               onFocus={() => preloadOnlinePong()}
+              onClick={handleOnlineClick}
+              disabled={isBusy}
             >
               PLAY ONLINE
             </PlayButton>
@@ -75,6 +83,7 @@ const ModePicker: React.FC = () => {
           </nav>
         </Card>
       </PageSection>
+      <ConfirmDialog {...confirmDialogProps} />
     </PageContainer>
   );
 };

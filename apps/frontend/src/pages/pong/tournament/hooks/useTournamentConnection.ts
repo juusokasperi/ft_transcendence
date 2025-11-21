@@ -185,5 +185,9 @@ export function useTournamentConnection({
     socketRef.current?.leaveTournament(id);
   }, []);
 
-  return { createTournament, joinTournament, leaveTournament } as const;
+  const acceptScheduled = useCallback((matchId: number) => {
+    socketRef.current?.acceptScheduled(matchId);
+  }, []);
+
+  return { createTournament, joinTournament, leaveTournament, acceptScheduled } as const;
 }

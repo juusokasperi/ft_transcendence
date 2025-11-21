@@ -148,6 +148,7 @@ export function useTournamentPageController(
     setTournamentNameState(value.slice(0, TOURNAMENT_NAME_MAX_LENGTH));
   }, []);
   // Match lifecycle timers handled inside useMatchLifecycle
+  const redirectConsumedRef = useRef(false);
 
   // matchPhase is kept in reducer state
 
@@ -263,15 +264,16 @@ export function useTournamentPageController(
 
   const getCurrentTournamentId = useCallback(() => activeTournamentIdRef.current, []);
 
-  const { createTournament, joinTournament, leaveTournament } = useTournamentConnection({
-    userReady,
-    userUuid: user?.uuid ?? null,
-    onMessage: handleMessage,
-    onSnackbar: enqueueSnackbar,
-    debug: debugLog,
-    getActiveTournamentId: getCurrentTournamentId,
-    setConnectionReady: (ready) => dispatch({ type: 'setConnectionReady', payload: ready }),
-  });
+  const { createTournament, joinTournament, leaveTournament, acceptScheduled } =
+    useTournamentConnection({
+      userReady,
+      userUuid: user?.uuid ?? null,
+      onMessage: handleMessage,
+      onSnackbar: enqueueSnackbar,
+      debug: debugLog,
+      getActiveTournamentId: getCurrentTournamentId,
+      setConnectionReady: (ready) => dispatch({ type: 'setConnectionReady', payload: ready }),
+    });
 
   const handleCreateTournamentClick = useCallback(() => {
     createTournament(TOURNAMENT_SIZE, tournamentName);
@@ -339,6 +341,27 @@ export function useTournamentPageController(
   }, []);
 
   const skipAutoResumeRef = useRef(false);
+  const resumeAcceptRef = useRef<number | null>(null);
+
+  // If we reached the tournament page from the ModePicker "stay" action, force a
+  // snapshot refresh so we immediately receive any pending handoffs/countdowns.
+  useEffect(() => {
+    if (redirectConsumedRef.current) return;
+    try {
+      const raw = sessionStorage.getItem('pong:tournament:redirectOnStay');
+      if (!raw) return;
+      const parsed = JSON.parse(raw);
+      const tournamentId = Number(parsed?.tournamentId);
+      if (!Number.isFinite(tournamentId)) return;
+      redirectConsumedRef.current = true;
+      sessionStorage.removeItem('pong:tournament:redirectOnStay');
+      skipAutoResumeRef.current = false;
+      resumeAcceptRef.current = null;
+      void refreshTournamentState(tournamentId);
+    } catch {
+      // ignore malformed redirect hints
+    }
+  }, [refreshTournamentState]);
 
   const { handleQuitMatch: handleQuitMatchInner } = useMatchLifecycle({
     matchPhase,
@@ -369,6 +392,26 @@ export function useTournamentPageController(
     }
     handleQuitMatchInner();
   }, [debugLog, handoff?.roomIdentifier, handleQuitMatchInner]);
+
+  // If we re-entered from the "Stay" flow or saw a cancelled countdown, prompt the
+  // server to restart the countdown for the user's pending match.
+  useEffect(() => {
+    if (!pendingMatch || !user?.uuid) return;
+    const matchId = pendingMatch.tournamentMatchId;
+    const countdown = matchCountdowns.get(matchId);
+    const wasCancelled = countdown?.status === 'cancelled';
+
+    const isReturnFlow = redirectConsumedRef.current;
+    if (!wasCancelled && !isReturnFlow) return;
+    if (resumeAcceptRef.current === matchId) return;
+
+    resumeAcceptRef.current = matchId;
+    acceptScheduled(matchId);
+    debugLog('resume-match:accept-scheduled', {
+      matchId,
+      reason: wasCancelled ? 'countdown-cancelled' : 'return',
+    });
+  }, [acceptScheduled, debugLog, matchCountdowns, pendingMatch, user?.uuid]);
 
   // Auto-resume support: if the user lands on a tournament detail view while having
   // a valid resume token in sessionStorage (from an in-progress match), automatically

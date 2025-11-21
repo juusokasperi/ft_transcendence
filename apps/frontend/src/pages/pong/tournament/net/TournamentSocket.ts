@@ -36,4 +36,8 @@ export class TournamentSocket {
   leaveTournament(id: number | string) {
     this.client?.leaveTournament(id);
   }
+
+  acceptScheduled(matchId: number) {
+    this.client?.acceptScheduled(matchId);
+  }
 }
