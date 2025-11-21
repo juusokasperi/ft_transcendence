@@ -58,6 +58,7 @@ import { generateAuthenticatorSecret, verifyTotpToken } from '../utils/twoFactor
 import { getMatchesWithPlayersForUser } from '../db/queries/matches.ts';
 import { getTotalStatsForUser } from '../db/queries/matchPlayerStats.ts';
 import { updateParticipantAliasesForUser } from '../db/queries/tournamentParticipants.ts';
+import { cleanupTournamentParticipationForUser } from '../services/tournamentParticipantLifecycle.ts';
 
 export async function userRoutes(app: FastifyInstance) {
   // Get all users
@@ -207,6 +208,7 @@ export async function userRoutes(app: FastifyInstance) {
         const uuidForDelete = findUserToDeleteAndClear(token);
         if (!uuidForDelete || uuidForDelete !== uuid)
           return res.status(400).send({ message: 'Invalid or expired token.' });
+        await cleanupTournamentParticipationForUser(uuidForDelete);
         const deleteResult = deleteUser(uuidForDelete);
         if (!deleteResult) return res.status(500).send({ message: 'Failed to delete user' });
         res.status(204).send();
