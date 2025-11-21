@@ -3,7 +3,6 @@ import { useParams } from 'react-router-dom';
 import { useAppContext } from '../context/AppContext';
 import { useSnackbar } from '../context/SnackbarContext';
 
-
 const Confirmation = () => {
   const { confirmationToken } = useParams();
   const { axios, navigate } = useAppContext();
@@ -17,7 +16,7 @@ const Confirmation = () => {
   useEffect(() => {
     const confirmAccount = async () => {
       try {
-        debugLog(confirmationToken)
+        debugLog(confirmationToken);
         await axios.post(`/api/signup/validate/${confirmationToken}`);
 
         setStatus('success');
