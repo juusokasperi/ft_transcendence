@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
 import { useAppContext } from '../context/AppContext';
 import { usePresence } from '../context/PresenceContext';
@@ -42,6 +42,11 @@ const PublicUser: React.FC = () => {
   const { axios, user, navigate } = useAppContext();
   const { users: presenceUsers } = usePresence();
   const { enqueueSnackbar } = useSnackbar();
+  const debugLog = useCallback((event: string, payload?: Record<string, unknown>) => {
+    if (import.meta.env?.DEV) {
+      console.debug(`[Fetch Public User] ${event}`, payload ?? {});
+    }
+  }, []);
 
   const profileWithOnline = useMemo(() => {
     if (!profile) return undefined;
@@ -134,7 +139,7 @@ const PublicUser: React.FC = () => {
         fetchMatches();
         fetchFriendship();
       } catch (err) {
-        console.log('Failed to fetch user data');
+        debugLog('Failed to fetch user data');
       } finally {
         window.scrollTo(0, 0);
       }
