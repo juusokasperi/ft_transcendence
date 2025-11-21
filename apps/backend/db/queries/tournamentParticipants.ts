@@ -68,6 +68,15 @@ export function listTournamentParticipants(tournamentId: number): TournamentPart
   return rows.map(mapParticipantRecord);
 }
 
+export function listTournamentParticipantsByUser(userUuid: string): TournamentParticipant[] {
+  const rows = db
+    .prepare(
+      'SELECT * FROM TournamentParticipants WHERE user_uuid = ? ORDER BY joined_at ASC, id ASC',
+    )
+    .all(userUuid) as TournamentParticipantDb[];
+  return rows.map(mapParticipantRecord);
+}
+
 export function createTournamentParticipant(
   input: CreateTournamentParticipantInput,
 ): TournamentParticipant | undefined {

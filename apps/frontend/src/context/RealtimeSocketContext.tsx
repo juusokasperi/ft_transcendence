@@ -67,7 +67,6 @@ export function RealtimeSocketProvider({ children }: RealtimeSocketProviderProps
       if (data.type === 'blockedList') {
         setIsConnected(true);
         ws.send(JSON.stringify({ type: 'setName', username }));
-        return;
       }
 
       // Notify all registered handlers
