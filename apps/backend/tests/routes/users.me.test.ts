@@ -15,6 +15,8 @@ vi.mock('../../utils/config.ts', () => ({
   TFA_ISSUER: 'TestApp',
   ACCESS_TOKEN_COOKIE_NAME: 'token',
   REFRESH_TOKEN_COOKIE_NAME: 'refresh_token',
+  TOURNAMENT_REQUIRED_PARTICIPANTS: 4,
+  REDIS_URL: 'redis://localhost:6379',
 }));
 
 // 2) Mock the DB queries INSIDE the factory (no top-level refs!)
