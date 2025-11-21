@@ -23,7 +23,6 @@ import {
   createTournamentParticipant,
   getTournamentParticipantById,
   listTournamentParticipants,
-  removeTournamentParticipant,
   updateTournamentParticipant,
 } from '../db/queries/tournamentParticipants.ts';
 import {
