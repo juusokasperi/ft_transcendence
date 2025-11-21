@@ -14,10 +14,10 @@ const Confirmation = () => {
     }
   }, []);
   useEffect(() => {
-    const confirmAccount = async () => {
+    const confirmAccount = async (token: string) => {
       try {
-        debugLog(confirmationToken);
-        await axios.post(`/api/signup/validate/${confirmationToken}`);
+        debugLog('confirmAccount:start', { token });
+        await axios.post(`/api/signup/validate/${token}`);
 
         setStatus('success');
         enqueueSnackbar({
@@ -38,9 +38,9 @@ const Confirmation = () => {
     };
 
     if (confirmationToken) {
-      confirmAccount();
+      confirmAccount(confirmationToken);
     }
-  }, [confirmationToken, axios, navigate]);
+  }, [confirmationToken, axios, navigate, enqueueSnackbar, debugLog]);
 
   return (
     <div className="flex h-screen items-center justify-center">

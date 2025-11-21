@@ -36,7 +36,7 @@ const TournamentChatAnnouncer: React.FC<TournamentChatAnnouncerProps> = ({
       message: `Match starting: ${firstPlayer} vs ${secondPlayer} (Stage: ${stage})`,
       recipients: participantUuids,
     });
-    debugLog(sig, sent);
+    debugLog('tournamentAnnouncement', { sig, sent });
 
     if (sent) {
       lastSigRef.current = sig;
