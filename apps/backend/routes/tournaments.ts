@@ -59,6 +59,7 @@ import {
   updateTournamentStatusSchema,
   reportMatchResultSchema,
   forfeitParticipantSchema,
+  serviceForfeitParticipantSchema,
 } from '../schemas/tournamentSchemas.ts';
 import db from '../db/client.ts';
 
@@ -788,6 +789,49 @@ export async function tournamentRoutes(app: FastifyInstance) {
         });
       } catch (error) {
         req.log.error({ error }, 'Failed to forfeit participant');
+        return res.status(500).send({ message: 'Failed to forfeit participant' });
+      }
+    },
+  );
+
+  app.post(
+    '/:tournamentId/participants/:participantId/auto-forfeit',
+    {
+      schema: serviceForfeitParticipantSchema,
+      preHandler: [matchAuthPreHandler],
+    },
+    async (req, res) => {
+      try {
+        const { tournamentId, participantId } = req.params as {
+          tournamentId: number;
+          participantId: number;
+        };
+
+        const participant = getTournamentParticipantById(participantId);
+        if (!participant || participant.tournamentId !== tournamentId)
+          return res.status(404).send({ message: 'Participant not found for tournament' });
+
+        const progression = forfeitParticipantInTournament(tournamentId, participantId);
+
+        if (progression.readyMatches?.length) {
+          await notifyMatchesReady(tournamentId, progression.readyMatches);
+        }
+        await notifyTournamentStateUpdated(tournamentId);
+
+        const updatedParticipant = getTournamentParticipantById(participantId)!;
+        const match = progression.completedMatchId
+          ? getTournamentMatchById(progression.completedMatchId)
+          : null;
+
+        return res.status(200).send({
+          participant: updatedParticipant,
+          match,
+          progression: progression.readyMatches?.length
+            ? { readyMatches: progression.readyMatches, autoAdvancedMatches: [] }
+            : null,
+        });
+      } catch (error) {
+        req.log.error({ error }, 'Failed to auto-forfeit participant');
         return res.status(500).send({ message: 'Failed to forfeit participant' });
       }
     },
