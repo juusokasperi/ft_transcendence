@@ -90,6 +90,30 @@ export class ResultReporter {
           }));
           technicalGamesHistory = [...gamesHistory, ...technicalGames];
         }
+      } else if (eastScore === 0 && westScore === 0 && matchOver.winner) {
+        // fallback to the legacy handler
+        // matchOver.winner is a TABLE SIDE ('east' | 'west')
+        const sideWinner =
+          matchOver.winner === 'east' || matchOver.winner === 'west'
+            ? (matchOver.winner as 'east' | 'west')
+            : 'east';
+
+        // Map side winner -> seat winner using the final playerAtEnd,
+        // then map seat winner -> player-space row ('east' for P1, 'west' for P2).
+        const playerAtEnd = model.state.playerAtEnd;
+        const seatWinner: Seat = sideWinner === 'east' ? playerAtEnd.east : playerAtEnd.west;
+        const playerSpaceWinner: 'east' | 'west' = seatWinner === 'P1' ? 'east' : 'west';
+
+        const technicalScore = reservation.tournament ? 3 : 2;
+        eastScore = playerSpaceWinner === 'east' ? technicalScore : 0;
+        westScore = playerSpaceWinner === 'west' ? technicalScore : 0;
+
+        technicalGamesHistory = Array.from({ length: technicalScore }, (_, index) => ({
+          gameIndex: index + 1,
+          east: playerSpaceWinner === 'east' ? 11 : 0, // east row == P1
+          west: playerSpaceWinner === 'west' ? 11 : 0, // west row == P2
+          winner: playerSpaceWinner,
+        }));
       }
 
       const token = this.signToken();
