@@ -4,8 +4,8 @@ import type { MatchSnapshot } from '@pong/shared';
 import type { OnlineMatchSummary } from './types';
 import { createLatencyWarning } from './latency';
 
-const WAITING_MIN_TIMEOUT_MS = 3000;
-const WAITING_MAX_TIMEOUT_MS = 4000;
+const WAITING_MIN_TIMEOUT_MS = 8000;
+const WAITING_MAX_TIMEOUT_MS = 10000;
 const WAITING_EXTRA_GRACE_MS = 1000;
 
 export type MatchLifecycleDeps = {
