@@ -66,7 +66,6 @@ export class ReconnectManager {
       session.model.clearStartTimeout();
       session.model.markStopped();
       this.broadcaster.broadcastRoomState(session, 'WAITING_FOR_OPPONENT');
-      return;
     }
 
     const graceMs = reconnectGraceMs(Boolean(session.reservation.tournament), this.config);
@@ -75,8 +74,10 @@ export class ReconnectManager {
       '[ReconnectManager] Starting disconnect grace period',
     );
 
-    this.runner.stop(session, { pauseOnly: true });
-    this.broadcaster.notifyOpponentDisconnected(session, seat, graceMs);
+    if (session.model.started) {
+      this.runner.stop(session, { pauseOnly: true });
+      this.broadcaster.notifyOpponentDisconnected(session, seat, graceMs);
+    }
 
     const cancel = this.scheduler.setTimeout(async () => {
       const latest = session.players.get(seat);
