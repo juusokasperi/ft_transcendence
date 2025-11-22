@@ -41,6 +41,9 @@ services:
       - ./.env
     environment:
       <<: *prod-env
+    depends_on:
+      redis:
+        condition: service_healthy
     networks:
       - prod-public
       - prod-private
