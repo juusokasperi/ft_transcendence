@@ -49,7 +49,7 @@ The platform consists of containerized microservices communicating through a com
   - State machine for illegal transition prevention
   - Redis pub/sub subscription for room readiness
   - Redis stream consumer for tournament updates
-</details>
+  </details>
 
 <details>
 <summary><strong>Game Server</strong></summary>
@@ -64,7 +64,7 @@ The platform consists of containerized microservices communicating through a com
   - Resume token generation for disconnections
   - Match result reporting to database
   - Room readiness broadcasting via Redis pub/sub
-</details>
+  </details>
 
 <details>
 <summary><strong>Allocator</strong></summary>
@@ -77,7 +77,7 @@ The platform consists of containerized microservices communicating through a com
   2. Selects least-loaded server
   3. Reserves room via game server HTTP endpoint
   4. Returns join claims to matchmaking service
-</details>
+  </details>
 
 <details>
 <summary><strong>Scorer</strong></summary>
@@ -105,7 +105,7 @@ The platform consists of containerized microservices communicating through a com
   2. Retrieves room-to-server mapping
   3. Proxies WebSocket connection to target game server
   4. Ensures single-use token enforcement
-</details>
+  </details>
 
 <details>
 <summary><strong>Chat Service</strong></summary>
@@ -132,7 +132,7 @@ The platform consists of containerized microservices communicating through a com
   - **Pub/Sub**: Room readiness notifications (fire-and-forget)
   - **Streams**: Tournament state updates (reliable delivery)
   - **Key-Value Store**: Server scores, room mappings, token validation
-</details>
+  </details>
 
 <details>
 <summary><strong>Nginx</strong></summary>
@@ -143,7 +143,7 @@ The platform consists of containerized microservices communicating through a com
   - Token-based rate limiting
   - HTTPS termination (production)
   - External access control
-</details>
+  </details>
 
 <details>
 <summary><strong>SQLite</strong></summary>
@@ -160,22 +160,22 @@ The platform consists of containerized microservices communicating through a com
 
 ## Communication Patterns
 
-| Source | Destination | Method | Purpose |
-|--------|-------------|--------|---------|
-| Client | Frontend | HTTP/WS | UI interactions |
-| Client | Matchmaking | WebSocket | Queue management |
-| Client | Chat | WebSocket | Messaging & presence |
-| Client | Game Gateway | WebSocket | Game connections |
-| Matchmaking | Allocator | HTTP | Server allocation |
-| Allocator | Game Server | HTTP | Room reservation |
-| Allocator | Redis | Query | Server scores |
-| Game Server | Database | HTTP | Match results |
-| Game Server | Redis | Pub/Sub | Room readiness |
-| Game Gateway | Redis | Query | Token validation |
-| Game Gateway | Game Server | HTTP Proxy | Connection routing |
-| Scorer | Prometheus | PromQL | Metrics collection |
-| Scorer | Redis | Write | Score storage |
-| Database | Redis | Stream | Tournament updates |
+| Source       | Destination  | Method     | Purpose              |
+| ------------ | ------------ | ---------- | -------------------- |
+| Client       | Frontend     | HTTP/WS    | UI interactions      |
+| Client       | Matchmaking  | WebSocket  | Queue management     |
+| Client       | Chat         | WebSocket  | Messaging & presence |
+| Client       | Game Gateway | WebSocket  | Game connections     |
+| Matchmaking  | Allocator    | HTTP       | Server allocation    |
+| Allocator    | Game Server  | HTTP       | Room reservation     |
+| Allocator    | Redis        | Query      | Server scores        |
+| Game Server  | Database     | HTTP       | Match results        |
+| Game Server  | Redis        | Pub/Sub    | Room readiness       |
+| Game Gateway | Redis        | Query      | Token validation     |
+| Game Gateway | Game Server  | HTTP Proxy | Connection routing   |
+| Scorer       | Prometheus   | PromQL     | Metrics collection   |
+| Scorer       | Redis        | Write      | Score storage        |
+| Database     | Redis        | Stream     | Tournament updates   |
 
 ## Security
 
@@ -204,17 +204,20 @@ make prod
 ## Development
 
 All backend services follow a consistent stack:
+
 - **Runtime**: Node.js
 - **Framework**: Fastify
 - **Language**: TypeScript
 
 The frontend uses:
+
 - **Library**: React
 - **Language**: TypeScript
 
 ## Monitoring
 
 Access monitoring dashboards:
+
 - **Grafana**: Metrics visualization
 - **Kibana**: Log analysis
 - **Prometheus**: Raw metrics queries
