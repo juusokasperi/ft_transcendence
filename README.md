@@ -182,6 +182,8 @@ The platform consists of containerized microservices communicating through a com
 - Containerized services in isolated Docker network
 - Single external entry point (Nginx)
 - Token-based authentication and rate limiting
+- Two-factor authentication
+- Google Sign-In
 - Single-use join tokens enforced by gateway
 - HTTPS in production environment
 
