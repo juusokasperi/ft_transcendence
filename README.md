@@ -1,6 +1,15 @@
-# 3D Pong Game Hub
+# Arcade Transcendence
 
-A distributed, microservices-based 3D Pong game platform supporting both online matchmaking and local multiplayer gameplay.
+[![Backend CI](https://github.com/juusokasperi/ft_transcendence/actions/workflows/BackendCI.yml/badge.svg)](https://github.com/juusokasperi/ft_transcendence/actions/workflows/BackendCI.yml)
+[![Frontend CI](https://github.com/juusokasperi/ft_transcendence/actions/workflows/FrontendCI.yml/badge.svg)](https://github.com/juusokasperi/ft_transcendence/actions/workflows/FrontendCI.yml)
+[![Makefile CI](https://github.com/juusokasperi/ft_transcendence/actions/workflows/MakefileCI.yml/badge.svg)](https://github.com/juusokasperi/ft_transcendence/actions/workflows/MakefileCI.yml)
+[![Prod Build CI](https://github.com/juusokasperi/ft_transcendence/actions/workflows/ProdBuildCI.yml/badge.svg)](https://github.com/juusokasperi/ft_transcendence/actions/workflows/ProdBuildCI.yml)
+[![Syntax Check](https://github.com/juusokasperi/ft_transcendence/actions/workflows/SyntaxCheck.yml/badge.svg)](https://github.com/juusokasperi/ft_transcendence/actions/workflows/SyntaxCheck.yml)
+
+A distributed, microservices-based game platform supporting both online matchmaking and local multiplayer gameplay.
+Contains a fully playable 3D Pong game with real-time chat and user presence tracking.
+
+![Home Screen](docs/screenshots/home.png)
 
 ## Overview
 
