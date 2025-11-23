@@ -29,11 +29,9 @@ Game Hub is a modern web-based gaming platform built with a scalable microservic
 
 ## Architecture
 
-The platform consists of containerized microservices communicating through a combination of HTTP REST APIs, WebSockets, Redis pub/sub and Redis stream messaging. All services run in Docker containers within a shared network, with Nginx serving as the sole external access point.
+The platform consists of containerized microservices communicating through a combination of HTTP REST APIs, WebSockets, Redis pub/sub and Redis stream messaging. Everything is developed in a single pnpm monorepo and deployed as Docker services inside a shared network, with Nginx acting as the sole external access point.
 
 ### Core Services
-
-All services run inside a single pnpm monorepo.
 
 <details>
 <summary><strong>Frontend</strong></summary>
