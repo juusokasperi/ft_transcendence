@@ -387,7 +387,10 @@ export class WSServer {
         } catch {}
         (async () => {
           try {
-            const summary = await this.reporter.report(session, { winner: winnerSide });
+            const summary = await this.reporter.report(session, {
+              winner: winnerSide,
+              reason: 'forfeit',
+            });
             this.broadcaster.notifyMatchEnd(session, 'forfeit', winnerSide, summary);
             // Proactively close player sockets to stop resume rotations and cleanly end session.
             try {
@@ -463,7 +466,10 @@ export class WSServer {
 
       (async () => {
         try {
-          const summary = await this.reporter.report(session, { winner: winnerSide });
+          const summary = await this.reporter.report(session, {
+            winner: winnerSide,
+            reason: 'forfeit',
+          });
           this.broadcaster.notifyMatchEnd(session, 'forfeit', winnerSide, summary);
           try {
             for (const p of session.players.values()) {

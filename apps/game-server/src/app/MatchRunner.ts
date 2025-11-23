@@ -8,7 +8,7 @@ import { ResultReporter } from './ResultReporter.ts';
 import { SERVE_SELECT_TOTAL_MS } from '@pong/shared';
 import type { FastifyBaseLogger } from '@utils/logger';
 
-type MatchOverEvent = { winner?: string } | undefined;
+type MatchOverEvent = { winner?: string; reason?: 'natural' | 'forfeit' | 'timeout' } | undefined;
 
 export class MatchRunner {
   private readonly scheduler: Scheduler;

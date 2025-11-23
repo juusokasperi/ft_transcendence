@@ -5,7 +5,7 @@ import type { MatchSession, PlayerConnectionState } from './RoomRegistry.ts';
 import type { FastifyBaseLogger } from '@utils/logger';
 import type { Seat, ExpectedPlayer } from '../domain/MatchTypes.ts';
 
-type MatchOverEvent = { winner?: string };
+type MatchOverEvent = { winner?: string; reason?: 'natural' | 'forfeit' | 'timeout' };
 
 type ResolvedPlayer = {
   seat: Seat;
@@ -58,8 +58,40 @@ export class ResultReporter {
       let westScore = gamesHistory.filter((g) => g.winner === 'west').length;
       let technicalGamesHistory = gamesHistory;
 
-      // Handle technical win (disconnect/forfeit) when no game history exists.
-      if (eastScore === 0 && westScore === 0 && matchOver.winner) {
+      // Handle technical win (disconnect/forfeit/timeout) by overriding game history.
+      // Only apply for non-natural completions to preserve legitimate match results.
+      if (matchOver.winner && matchOver.reason !== 'natural') {
+        // matchOver.winner is a TABLE SIDE ('east' | 'west')
+        const sideWinner =
+          matchOver.winner === 'east' || matchOver.winner === 'west'
+            ? (matchOver.winner as 'east' | 'west')
+            : 'east';
+
+        // Map side winner -> seat winner using the final playerAtEnd,
+        // then map seat winner -> player-space row ('east' for P1, 'west' for P2).
+        const playerAtEnd = model.state.playerAtEnd;
+        const seatWinner: Seat = sideWinner === 'east' ? playerAtEnd.east : playerAtEnd.west;
+        const playerSpaceWinner: 'east' | 'west' = seatWinner === 'P1' ? 'east' : 'west';
+
+        const targetScore = 3; // best-of-5
+        const currentWinnerScore = playerSpaceWinner === 'east' ? eastScore : westScore;
+        const currentLoserScore = playerSpaceWinner === 'east' ? westScore : eastScore;
+        const minimumWinnerScore = Math.max(targetScore, currentLoserScore + 1); // winner needs to have at least 1 more point than loser
+        const gamesNeeded = Math.max(0, minimumWinnerScore - currentWinnerScore);
+
+        if (gamesNeeded > 0) {
+          eastScore = playerSpaceWinner === 'east' ? targetScore : eastScore;
+          westScore = playerSpaceWinner === 'west' ? targetScore : westScore;
+          const technicalGames = Array.from({ length: gamesNeeded }, (_, index) => ({
+            gameIndex: gamesHistory.length + index + 1,
+            east: playerSpaceWinner === 'east' ? 11 : 0,
+            west: playerSpaceWinner === 'west' ? 11 : 0,
+            winner: playerSpaceWinner,
+          }));
+          technicalGamesHistory = [...gamesHistory, ...technicalGames];
+        }
+      } else if (eastScore === 0 && westScore === 0 && matchOver.winner) {
+        // fallback to the legacy handler
         // matchOver.winner is a TABLE SIDE ('east' | 'west')
         const sideWinner =
           matchOver.winner === 'east' || matchOver.winner === 'west'
