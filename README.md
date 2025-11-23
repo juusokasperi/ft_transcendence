@@ -11,6 +11,8 @@ Contains a fully playable 3D Pong game with real-time chat and user presence tra
 
 ![Home Screen](docs/screenshots/home.png)
 
+**Live Demo**: https://irychkov.com:8443/
+
 ## Overview
 
 Game Hub is a modern web-based gaming platform built with a scalable microservices architecture. The platform features real-time matchmaking, intelligent load balancing, persistent chat functionality, and comprehensive monitoring capabilities.
@@ -31,10 +33,12 @@ The platform consists of containerized microservices communicating through a com
 
 ### Core Services
 
+All services run inside a single pnpm monorepo.
+
 <details>
 <summary><strong>Frontend</strong></summary>
 
-- **Technology**: React, TypeScript, TailwindCSS
+- **Technology**: React, Vite, TypeScript, TailwindCSS, Babylon.js
 - **Description**: Client-side application that renders game state and handles user interactions
 </details>
 
