@@ -1,6 +1,17 @@
-# 3D Pong Game Hub
+# Arcade Transcendence
 
-A distributed, microservices-based 3D Pong game platform supporting both online matchmaking and local multiplayer gameplay.
+[![Backend CI](https://github.com/juusokasperi/ft_transcendence/actions/workflows/BackendCI.yml/badge.svg)](https://github.com/juusokasperi/ft_transcendence/actions/workflows/BackendCI.yml)
+[![Frontend CI](https://github.com/juusokasperi/ft_transcendence/actions/workflows/FrontendCI.yml/badge.svg)](https://github.com/juusokasperi/ft_transcendence/actions/workflows/FrontendCI.yml)
+[![Makefile CI](https://github.com/juusokasperi/ft_transcendence/actions/workflows/MakefileCI.yml/badge.svg)](https://github.com/juusokasperi/ft_transcendence/actions/workflows/MakefileCI.yml)
+[![Prod Build CI](https://github.com/juusokasperi/ft_transcendence/actions/workflows/ProdBuildCI.yml/badge.svg)](https://github.com/juusokasperi/ft_transcendence/actions/workflows/ProdBuildCI.yml)
+[![Syntax Check](https://github.com/juusokasperi/ft_transcendence/actions/workflows/SyntaxCheck.yml/badge.svg)](https://github.com/juusokasperi/ft_transcendence/actions/workflows/SyntaxCheck.yml)
+
+A distributed, microservices-based game platform supporting both online matchmaking and local multiplayer gameplay.
+Contains a fully playable 3D Pong game with real-time chat and user presence tracking.
+
+![Home Screen](docs/screenshots/home.png)
+
+**Live Demo**: https://irychkov.com
 
 ## Overview
 
@@ -18,14 +29,14 @@ Game Hub is a modern web-based gaming platform built with a scalable microservic
 
 ## Architecture
 
-The platform consists of containerized microservices communicating through a combination of HTTP REST APIs, WebSockets, Redis pub/sub and Redis stream messaging. All services run in Docker containers within a shared network, with Nginx serving as the sole external access point.
+The platform consists of containerized microservices communicating through a combination of HTTP REST APIs, WebSockets, Redis pub/sub and Redis stream messaging. Everything is developed in a single pnpm monorepo and deployed as Docker services inside a shared network, with Nginx acting as the sole external access point.
 
 ### Core Services
 
 <details>
 <summary><strong>Frontend</strong></summary>
 
-- **Technology**: React, TypeScript, TailwindCSS
+- **Technology**: React, Vite, TypeScript, TailwindCSS, Babylon.js
 - **Description**: Client-side application that renders game state and handles user interactions
 </details>
 
@@ -152,11 +163,22 @@ The platform consists of containerized microservices communicating through a com
 - **Access**: Exclusively through database service
 </details>
 
+### Tooling & Quality Assurance
+
+- **Package & Dependency Management**: PNPM manages the monorepo workspace while syncpack keeps dependency versions aligned across packages.
+- **Code Style Automation**: Prettier enforces a consistent formatting baseline before every commit.
+- **Testing & Verification**: Vitest powers unit and integration suites for backend services to catch regressions early.
+- **Game Performance Tooling**: A custom latency compensation layer pairs Babylon.js rendering with client-side prediction and authoritative server reconciliation to keep gameplay smooth without sacrificing fairness.
+- **Debugging Utilities**: Browser DevTools remain the go-to for tracing frontend issues, profiling performance, and inspecting WebSocket/HTTP traffic.
+
 ### DevOps & Monitoring
 
-- **Prometheus**: Metrics collection from game servers
-- **Grafana**: Metrics visualization and dashboards
-- **ELK Stack** (Elasticsearch, Logstash, Kibana): Centralized logging and log analysis
+- **CI/CD Automation**: GitHub Actions workflows cover build, lint, test, and syntax checks on every push and pull request.
+- **Containerization & Orchestration**: Docker images for each service are orchestrated with Docker Compose for both local development and reproducible deployments.
+- **Observability Stack**: Prometheus scrapes service metrics that are visualized in Grafana dashboards, enabling proactive capacity tracking.
+- **Centralized Logging**: The ELK stack (Elasticsearch, Logstash, Kibana) aggregates logs for search, correlation, and alert investigations.
+- **Runtime Platform**: Oracle Cloud hosts the production stack while Cloudflare adds TLS termination, caching, and edge security hardening.
+- **Automation Scripts**: Bash scripts (primarily via Makefiles) encapsulate repetitive dev and deployment tasks for consistency.
 
 ## Communication Patterns
 
