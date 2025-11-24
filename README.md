@@ -11,7 +11,7 @@ Contains a fully playable 3D Pong game with real-time chat and user presence tra
 
 ![Home Screen](docs/screenshots/home.png)
 
-**Live Demo**: https://irychkov.com:8443/
+**Live Demo**: https://irychkov.com
 
 ## Overview
 
@@ -163,11 +163,22 @@ The platform consists of containerized microservices communicating through a com
 - **Access**: Exclusively through database service
 </details>
 
+### Tooling & Quality Assurance
+
+- **Package & Dependency Management**: PNPM manages the monorepo workspace while syncpack keeps dependency versions aligned across packages.
+- **Code Style Automation**: Prettier enforces a consistent formatting baseline before every commit.
+- **Testing & Verification**: Vitest powers unit and integration suites for backend services to catch regressions early.
+- **Game Performance Tooling**: A custom latency compensation layer pairs Babylon.js rendering with client-side prediction and authoritative server reconciliation to keep gameplay smooth without sacrificing fairness.
+- **Debugging Utilities**: Browser DevTools remain the go-to for tracing frontend issues, profiling performance, and inspecting WebSocket/HTTP traffic.
+
 ### DevOps & Monitoring
 
-- **Prometheus**: Metrics collection from game servers
-- **Grafana**: Metrics visualization and dashboards
-- **ELK Stack** (Elasticsearch, Logstash, Kibana): Centralized logging and log analysis
+- **CI/CD Automation**: GitHub Actions workflows cover build, lint, test, and syntax checks on every push and pull request.
+- **Containerization & Orchestration**: Docker images for each service are orchestrated with Docker Compose for both local development and reproducible deployments.
+- **Observability Stack**: Prometheus scrapes service metrics that are visualized in Grafana dashboards, enabling proactive capacity tracking.
+- **Centralized Logging**: The ELK stack (Elasticsearch, Logstash, Kibana) aggregates logs for search, correlation, and alert investigations.
+- **Runtime Platform**: Oracle Cloud hosts the production stack while Cloudflare adds TLS termination, caching, and edge security hardening.
+- **Automation Scripts**: Bash scripts (primarily via Makefiles) encapsulate repetitive dev and deployment tasks for consistency.
 
 ## Communication Patterns
 
