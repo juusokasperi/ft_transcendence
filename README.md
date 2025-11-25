@@ -1,192 +1,251 @@
-# FT Transcendence
+# Arcade Transcendence
 
----
+[![Backend CI](https://github.com/juusokasperi/ft_transcendence/actions/workflows/BackendCI.yml/badge.svg)](https://github.com/juusokasperi/ft_transcendence/actions/workflows/BackendCI.yml)
+[![Frontend CI](https://github.com/juusokasperi/ft_transcendence/actions/workflows/FrontendCI.yml/badge.svg)](https://github.com/juusokasperi/ft_transcendence/actions/workflows/FrontendCI.yml)
+[![Makefile CI](https://github.com/juusokasperi/ft_transcendence/actions/workflows/MakefileCI.yml/badge.svg)](https://github.com/juusokasperi/ft_transcendence/actions/workflows/MakefileCI.yml)
+[![Prod Build CI](https://github.com/juusokasperi/ft_transcendence/actions/workflows/ProdBuildCI.yml/badge.svg)](https://github.com/juusokasperi/ft_transcendence/actions/workflows/ProdBuildCI.yml)
+[![Syntax Check](https://github.com/juusokasperi/ft_transcendence/actions/workflows/SyntaxCheck.yml/badge.svg)](https://github.com/juusokasperi/ft_transcendence/actions/workflows/SyntaxCheck.yml)
 
-## 👥 Team & Responsibilities
+A distributed, microservices-based game platform supporting both online matchmaking and local multiplayer gameplay.
+Contains a fully playable 3D Pong game with real-time chat and user presence tracking.
 
-| Member      | Role                                                                                                |
-| ----------- | --------------------------------------------------------------------------------------------------- |
-| Matias      | **Frontend** (React + Tailwind + TypeScript) – user flows: registration, login, deletion, dashboard |
-| Juuso/Iurii | **Backend (REST API + Database Models)** – user management, stats, friends system                   |
-| Juuso/Iurii | **WebSocket Backend** – real-time matchmaking & chat                                                |
-| Nicolas     | **Game Logic Server** – server-side Pong engine, game physics, Babylon 3D rendering                 |
-| Léon        | **DevOps** – Docker, CI/CD, monitoring, deployment                                                  |
+![Home Screen](docs/screenshots/home.png)
 
----
+**Live Demo**: https://irychkov.com
 
-## 🛠 Tech Stack
+## Overview
 
-- **Backend Framework:** Fastify (Node.js)
-- **Database:** SQLite with `better-sqlite3` + `umzug` migrations
-- **Frontend:** Vite + React + Tailwind CSS + TypeScript
-- **Game Engine:** Babylon.js (advanced 3D)
-- **Authentication:** JWT + Google Sign-In + Two-Factor Authentication (2FA)
-- **Real-time:** WebSockets (Iurii’s server for matchmaking/chat + Nicolas’s game server)
-- **DevOps:** Docker, log management, monitoring, microservices design
-- **Optional:** Avalanche + Solidity for blockchain tournament score storage
+Game Hub is a modern web-based gaming platform built with a scalable microservices architecture. The platform features real-time matchmaking, intelligent load balancing, persistent chat functionality, and comprehensive monitoring capabilities.
 
----
+## Features
 
-## 📂 Database Schema
+- **3D Pong Gameplay**: Fully playable online and local multiplayer 3D Pong game
+- **Real-time Matchmaking**: Queue-based matchmaking system with state management
+- **Tournament Support**: A tournament system for 4-player tournaments with gold, silver and bronze matches.
+- **Reconnection Handling**: Resume tokens allow players to rejoin disconnected matches within a grace period
+- **Live Chat System**: Real-time messaging with user profiles, invitations, and blocking functionality
+- **Online Status Tracking**: Real-time user presence indicators
+- **Intelligent Load Balancing**: Dynamic game server allocation based on resource metrics
 
-### Users
+## Architecture
 
-- `uuid` (PK)
-- `username` (unique)
-- `email` (unique)
-- `password_hash` (nullable if Google Sign-in)
-- `two_factor_enabled` (boolean)
-- `created_at` (datetime)
-- `avatar`
-- `ranking_points` (int, default 1000)
-- `google_id` (nullable, unique)
+The platform consists of containerized microservices communicating through a combination of HTTP REST APIs, WebSockets, Redis pub/sub and Redis stream messaging. Everything is developed in a single pnpm monorepo and deployed as Docker services inside a shared network, with Nginx acting as the sole external access point.
 
-### Games
+### Core Services
 
-- `id` (PK)
-- `team1_score`
-- `team2_score`
-- `ended_at` (datetime)
+<details>
+<summary><strong>Frontend</strong></summary>
 
-### GamePlayers
+- **Technology**: React, Vite, TypeScript, TailwindCSS, Babylon.js
+- **Description**: Client-side application that renders game state and handles user interactions
+</details>
 
-- `id` (PK)
-- `game_id` (FK → Games.id)
-- `user_uuid` (FK → Users.uuid, nullable if deleted)
-- `team_number` (1 or 2)
+<details>
+<summary><strong>Database Service</strong></summary>
 
-### Friends
+- **Technology**: Node.js, Fastify, TypeScript, SQLite
+- **Description**: Centralized data layer providing REST API access to the database
+- **Communication**: HTTP REST API
+</details>
 
-- `id` (PK)
-- `friend1_uuid` (FK → Users.uuid)
-- `friend2_uuid` (FK → Users.uuid)
-- `added_at` (datetime)
-- `accepted` (boolean)
+<details>
+<summary><strong>Matchmaking Service</strong></summary>
 
----
+- **Technology**: Node.js, Fastify, TypeScript
+- **Description**: Manages player queues using a bucket system, handles match allocation, and enforces state transitions
+- **Communication**: WebSocket (client), HTTP (allocator service)
+- **Features**:
+  - Queue-based matchmaking
+  - Tournament and invite match routing
+  - State machine for illegal transition prevention
+  - Redis pub/sub subscription for room readiness
+  - Redis stream consumer for tournament updates
+  </details>
 
-## 📅 Planning
+<details>
+<summary><strong>Game Server</strong></summary>
 
-**Phase 1 – Initial Backend & Frontend (Matias + Juuso/Iurii)**
+- **Technology**: Node.js, Fastify, TypeScript
+- **Description**: Authoritative server handling all game logic and physics
+- **Communication**: WebSocket (via gateway)
+- **Responsibilities**:
+  - Game state simulation and validation
+  - Paddle movement processing
+  - Collision detection and scoring
+  - Resume token generation for disconnections
+  - Match result reporting to database
+  - Room readiness broadcasting via Redis pub/sub
+  </details>
 
-- Duration: Weeks 1–2
-- Tasks:
-  - Set up backend (Fastify + SQLite)
-  - Database models & migrations
-  - REST API for users, games, friends
-  - Frontend signup/login/dashboard pages
-  - Connect frontend to API
+<details>
+<summary><strong>Allocator</strong></summary>
 
-**Phase 2 – Real-Time & 3D Game**
+- **Technology**: Node.js, Fastify, TypeScript
+- **Description**: Queries Redis for optimal game server selection and reserves rooms
+- **Communication**: HTTP (matchmaking, game servers)
+- **Process**:
+  1. Retrieves server scores from Redis
+  2. Selects least-loaded server
+  3. Reserves room via game server HTTP endpoint
+  4. Returns join claims to matchmaking service
+  </details>
 
-- Duration: Weeks 3–5
-- Tasks:
-  - Docker, monitoring, CI/CD pipelines
-  - Server-side Pong engine + Babylon.js 3D rendering
-  - WebSocket matchmaking & chat
+<details>
+<summary><strong>Scorer</strong></summary>
 
-**Phase 3 – Security & Optional Features**
+- **Technology**: Node.js, Fastify, TypeScript
+- **Description**: Continuously monitors game server health and calculates load scores
+- **Communication**: PromQL (Prometheus), HTTP fallback
+- **Metrics Tracked**:
+  - Active players
+  - Active matches
+  - CPU load
+  - File descriptor usage
+  - Maximum capacity
+- **Storage**: Stores scores in Redis for allocator consumption
+</details>
 
-- Duration: Weeks 5–6
-- Tasks:
-  - JWT + Google Sign-In + 2FA
-  - Optional blockchain tournament score storage
-  - Stats dashboards & minor features
+<details>
+<summary><strong>Game Gateway</strong></summary>
 
-> Note: Phases overlap slightly; backend and frontend are the foundation for everything else.
+- **Technology**: Node.js, Fastify, HTTP proxy
+- **Description**: Routes client connections to appropriate game servers with token validation
+- **Communication**: WebSocket (client), HTTP proxy (game servers)
+- **Process**:
+  1. Validates join/resume tokens against Redis
+  2. Retrieves room-to-server mapping
+  3. Proxies WebSocket connection to target game server
+  4. Ensures single-use token enforcement
+  </details>
 
----
+<details>
+<summary><strong>Chat Service</strong></summary>
 
-## 🏆 Modules & Scoring
+- **Technology**: Node.js, Fastify, TypeScript
+- **Description**: Lightweight real-time messaging and presence system
+- **Communication**: WebSocket
+- **Features**:
+  - Private and public messaging
+  - User blocking/unblocking
+  - Profile viewing
+  - Match invitations
+  - Online status tracking
+- **Storage**: In-memory chat history (React context), persisted block list (database)
+</details>
 
-### Web
+### Infrastructure Components
 
-- ✅ **(1.0) Major:** Backend with Fastify (Node.js)
-- ✅ **(0.5) Minor:** Frontend with React + Tailwind + TS
-- ✅ **(0.5) Minor:** Database with SQLite
-- ❓ **(1.0) Major:** Blockchain tournament scores (Avalanche + Solidity)
+<details>
+<summary><strong>Redis</strong></summary>
 
-### User Management
+- **Role**: Inter-service communication and state management
+- **Usage**:
+  - **Pub/Sub**: Room readiness notifications (fire-and-forget)
+  - **Streams**: Tournament state updates (reliable delivery)
+  - **Key-Value Store**: Server scores, room mappings, token validation
+  </details>
 
-- ✅ **(1.0) Major:** User management & authentication
-- ✅ **(1.0) Major:** Remote authentication (Google Sign-in + JWT)
+<details>
+<summary><strong>Nginx</strong></summary>
 
-### Gameplay & UX
+- **Role**: Reverse proxy and API gateway
+- **Features**:
+  - Service routing
+  - Token-based rate limiting
+  - HTTPS termination (production)
+  - External access control
+  </details>
 
-- ✅ **(1.0) Major:** Remote players
-- ❓ **(1.0) Major:** Multiplayer (>2 players)
-- ❓ **(0.5) Minor:** Game customization options
-- ❓ **(1.0) Major:** Live chat
+<details>
+<summary><strong>SQLite</strong></summary>
 
-### AI & Algorithms
+- **Role**: Persistent data storage
+- **Access**: Exclusively through database service
+</details>
 
-- ❓ **(1.0) Major:** AI opponent
-- ✅ **(0.5) Minor:** Stats dashboards
+### Tooling & Quality Assurance
 
-### Cybersecurity
+- **Package & Dependency Management**: PNPM manages the monorepo workspace while syncpack keeps dependency versions aligned across packages.
+- **Code Style Automation**: Prettier enforces a consistent formatting baseline before every commit.
+- **Testing & Verification**: Vitest powers unit and integration suites for backend services to catch regressions early.
+- **Game Performance Tooling**: A custom latency compensation layer pairs Babylon.js rendering with client-side prediction and authoritative server reconciliation to keep gameplay smooth without sacrificing fairness.
+- **Debugging Utilities**: Browser DevTools remain the go-to for tracing frontend issues, profiling performance, and inspecting WebSocket/HTTP traffic.
 
-- ❓ **(1.0) Major:** WAF + Vault for secrets
-- ✅ **(0.5) Minor:** GDPR compliance
-- ✅ **(1.0) Major:** 2FA + JWT
+### DevOps & Monitoring
 
-### DevOps
+- **CI/CD Automation**: GitHub Actions workflows cover build, lint, test, and syntax checks on every push and pull request.
+- **Containerization & Orchestration**: Docker images for each service are orchestrated with Docker Compose for both local development and reproducible deployments.
+- **Observability Stack**: Prometheus scrapes service metrics that are visualized in Grafana dashboards, enabling proactive capacity tracking.
+- **Centralized Logging**: The ELK stack (Elasticsearch, Logstash, Kibana) aggregates logs for search, correlation, and alert investigations.
+- **Runtime Platform**: Oracle Cloud hosts the production stack while Cloudflare adds TLS termination, caching, and edge security hardening.
+- **Automation Scripts**: Bash scripts (primarily via Makefiles) encapsulate repetitive dev and deployment tasks for consistency.
 
-- ✅ **(1.0) Major:** Infrastructure setup with log management
-- ✅ **(0.5) Minor:** Monitoring system
-- ❓**(1.0) Major:** Backend as microservices
+## Communication Patterns
 
-### Graphics
+| Source       | Destination  | Method     | Purpose              |
+| ------------ | ------------ | ---------- | -------------------- |
+| Client       | Frontend     | HTTP/WS    | UI interactions      |
+| Client       | Matchmaking  | WebSocket  | Queue management     |
+| Client       | Chat         | WebSocket  | Messaging & presence |
+| Client       | Game Gateway | WebSocket  | Game connections     |
+| Matchmaking  | Allocator    | HTTP       | Server allocation    |
+| Allocator    | Game Server  | HTTP       | Room reservation     |
+| Allocator    | Redis        | Query      | Server scores        |
+| Game Server  | Database     | HTTP       | Match results        |
+| Game Server  | Redis        | Pub/Sub    | Room readiness       |
+| Game Gateway | Redis        | Query      | Token validation     |
+| Game Gateway | Game Server  | HTTP Proxy | Connection routing   |
+| Scorer       | Prometheus   | PromQL     | Metrics collection   |
+| Scorer       | Redis        | Write      | Score storage        |
+| Database     | Redis        | Stream     | Tournament updates   |
 
-- ✅ **(1.0) Major:** Advanced 3D with Babylon.js
+## Security
 
-### Accessibility
+- Containerized services in isolated Docker network
+- Single external entry point (Nginx)
+- Token-based authentication and rate limiting
+- Two-factor authentication
+- Google Sign-In
+- Single-use join tokens enforced by gateway
+- HTTPS in production environment
 
-- ❓ **(0.5) Minor:** Cross-device support
-- ❓ **(0.5) Minor:** Browser compatibility
-- ✅ **(0.5) Minor:** Multi-language support
-- ❓ **(0.5) Minor:** Accessibility features
-- ❓ **(0.5) Minor:** Server-Side Rendering (SSR)
+## Getting Started
 
-### Server-Side Pong
+```bash
+# Start all except monitoring services in dev
+make
+# Start all services in dev
+make mon
+# Start all except monitoring services in prod
+make prod-slim
+# Start all services in prod
+make prod
 
-- ✅ **(1.0) Major:** Replace Pong with server-side Pong + API
-- ❓ **(1.0) Major:** CLI Pong vs Web API users
+# Access the application
+# Navigate to http://localhost:8080
+```
 
-**✅ Confirmed Score: 9.5**  
-**➕ Optional modules can push higher.**
+## Development
 
----
+All backend services follow a consistent stack:
 
-## 🛠 Development Workflow
+- **Runtime**: Node.js
+- **Framework**: Fastify
+- **Language**: TypeScript
 
-### 1. Backend (Juuso || Iurii)
+The frontend uses:
 
-- Set up Fastify with SQLite (`better-sqlite3`, `umzug`)
-- Define database models (Users, Games, GamePlayers, Friends)
-- Implement REST API endpoints (users, games, friends)
-- Add authentication (JWT, Google Sign-In, 2FA)
+- **Library**: React
+- **Language**: TypeScript
 
-### 2. Frontend (Matias)
+## Monitoring
 
-- Build UI for signup, login, dashboard, friends
-- Connect frontend to REST API
-- Add WebSocket integration (chat + game updates)
+Access monitoring dashboards:
 
-### 3. Game Logic (Nicolas)
+- **Grafana**: Metrics visualization
+- **Kibana**: Log analysis
+- **Prometheus**: Raw metrics queries
 
-- Implement server-side Pong engine
-- Handle game state & physics server-side
-- Send state updates to clients via WebSockets
-- Babylon.js 3D rendering for gameplay
+## Contributors
 
-### 4. WebSockets (Juuso || Iurii)
-
-- Build matchmaking system
-- Implement real-time chat
-- Sync with game server
-
-### 5. DevOps (Léon)
-
-- Dockerize backend, frontend, database, game server
-- Add monitoring & log management
-- Setup CI/CD pipelines for deployment
+Created by [Iurii](https://github.com/RychkovIurii), [Juuso](https://github.com/juusokasperi), [Nicolas](https://github.com/To0nsa), [Matias](https://github.com/kerito-cl) and [Léon](https://github.com/LeonMercier)
