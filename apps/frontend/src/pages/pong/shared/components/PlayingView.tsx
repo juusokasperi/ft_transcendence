@@ -81,6 +81,7 @@ export const PlayingView: React.FC<PlayingViewProps> = ({
   const [isMobileLike, setIsMobileLike] = useState(false);
   const [fullscreenSupported, setFullscreenSupported] = useState(false);
   const [fullscreenActive, setFullscreenActive] = useState(false);
+  const [touchControlsVisible, setTouchControlsVisible] = useState(false);
   const lastTapRef = React.useRef<number | null>(null);
   const rootRef = React.useRef<HTMLDivElement | null>(null);
   const focusCanvas = useCallback(() => {
@@ -162,6 +163,22 @@ export const PlayingView: React.FC<PlayingViewProps> = ({
     events.forEach((event) => document.addEventListener(event, updateState));
     return () => {
       events.forEach((event) => document.removeEventListener(event, updateState));
+    };
+  }, []);
+
+  useEffect(() => {
+    const root = rootRef.current;
+    if (!root || typeof MutationObserver === 'undefined') return;
+
+    const updatePresence = () => {
+      setTouchControlsVisible(Boolean(root.querySelector('.pong-touch-root')));
+    };
+    const observer = new MutationObserver(updatePresence);
+    observer.observe(root, { childList: true, subtree: true });
+    updatePresence();
+
+    return () => {
+      observer.disconnect();
     };
   }, []);
 
@@ -301,7 +318,7 @@ export const PlayingView: React.FC<PlayingViewProps> = ({
           </span>
         </button>
 
-        {(fullscreenSupported || fullscreenActive) && (
+        {(fullscreenSupported || fullscreenActive) && !touchControlsVisible && (
           <button
             type="button"
             onClick={handleFullscreenToggle}
