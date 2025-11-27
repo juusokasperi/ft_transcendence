@@ -1,5 +1,4 @@
 import type { AudioCommandBus } from '../audio/commands';
-import { isMobile } from '../utils/platform';
 import speakerOnRaw from './icons/speaker-on.svg?raw';
 import speakerOffRaw from './icons/speaker-off.svg?raw';
 
@@ -18,9 +17,29 @@ function createEl<K extends keyof HTMLElementTagNameMap>(
   return el;
 }
 
+const fullscreenEventNames = [
+  'fullscreenchange',
+  'webkitfullscreenchange',
+  'mozfullscreenchange',
+  'MSFullscreenChange',
+] as const;
+
+const getFullscreenElement = (): Element | null => {
+  if (typeof document === 'undefined') return null;
+  const docAny = document as any;
+  return (
+    docAny.fullscreenElement ||
+    docAny.webkitFullscreenElement ||
+    docAny.mozFullScreenElement ||
+    docAny.msFullscreenElement ||
+    null
+  );
+};
+
 export function createVolumeUI(bus: AudioCommandBus, initialVolume = 1): VolumeUI {
   // Attach a single mute/unmute button directly to body (no container box)
-  const parent = document.body;
+  const defaultParent = document.body;
+  let currentParent: HTMLElement | null = defaultParent;
 
   // State
   let volume = Math.max(0, Math.min(1, initialVolume));
@@ -32,7 +51,7 @@ export function createVolumeUI(bus: AudioCommandBus, initialVolume = 1): VolumeU
   btn.title = muted ? 'Unmute' : 'Mute';
   btn.style.position = 'absolute';
   btn.style.zIndex = '3000';
-  parent.appendChild(btn);
+  defaultParent.appendChild(btn);
   // Pre-parse icons and clone on use for performance
   const iconOn = svgFromRaw(speakerOnRaw);
   const iconOff = svgFromRaw(speakerOffRaw);
@@ -62,6 +81,10 @@ export function createVolumeUI(bus: AudioCommandBus, initialVolume = 1): VolumeU
     } else {
       applyVolume(lastNonZero || 0.8);
     }
+    const focusable = boundCanvas as HTMLElement | null;
+    if (focusable && typeof focusable.focus === 'function') {
+      focusable.focus();
+    }
   });
 
   // Positioning relative to canvas
@@ -77,16 +100,10 @@ export function createVolumeUI(bus: AudioCommandBus, initialVolume = 1): VolumeU
   };
   const sync = () => {
     if (!boundCanvas) return;
-    const mobile = isMobile();
     const rect = boundCanvas.getBoundingClientRect();
     const margin = 8;
-    const h = btn.offsetHeight || 0;
     btn.style.left = rect.left + margin + 'px';
-    if (mobile) {
-      btn.style.top = rect.top + margin + 'px';
-    } else {
-      btn.style.top = rect.bottom - h - margin + 'px';
-    }
+    btn.style.top = rect.top + margin + 'px';
   };
 
   const attachToElement = (el: HTMLElement) => {
@@ -98,12 +115,35 @@ export function createVolumeUI(bus: AudioCommandBus, initialVolume = 1): VolumeU
   };
   const attachToCanvas = (canvas: HTMLCanvasElement) => attachToElement(canvas);
 
+  const handleFullscreenChange = () => {
+    if (!defaultParent || !btn) return;
+    const fullscreenElement = getFullscreenElement();
+    const targetParent =
+      fullscreenElement instanceof HTMLElement &&
+      boundCanvas &&
+      fullscreenElement.contains(boundCanvas)
+        ? fullscreenElement
+        : defaultParent;
+    if (targetParent !== currentParent) {
+      targetParent.appendChild(btn);
+      currentParent = targetParent;
+      schedule();
+    }
+  };
+
   window.addEventListener('resize', schedule);
   window.addEventListener('scroll', schedule, { passive: true });
+  fullscreenEventNames.forEach((event) =>
+    document.addEventListener(event, handleFullscreenChange),
+  );
+  handleFullscreenChange();
 
   const dispose = () => {
     window.removeEventListener('resize', schedule);
     window.removeEventListener('scroll', schedule);
+    fullscreenEventNames.forEach((event) =>
+      document.removeEventListener(event, handleFullscreenChange),
+    );
     if (raf !== null) cancelAnimationFrame(raf);
     if (ro) ro.disconnect();
     if (btn.parentElement) btn.parentElement.removeChild(btn);

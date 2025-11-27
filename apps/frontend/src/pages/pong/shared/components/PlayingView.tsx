@@ -1,4 +1,4 @@
-import React, { useEffect, useLayoutEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useLayoutEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { TABLE_LENGTH_X, TABLE_WIDTH_Z, isMobile } from '@pong/render';
 
@@ -37,6 +37,40 @@ function containSize(viewW: number, viewH: number, aspect: number) {
   return { w, h };
 }
 
+const getFullscreenElement = () => {
+  if (typeof document === 'undefined') return null;
+  const doc = document as any;
+  return (
+    doc.fullscreenElement ||
+    doc.webkitFullscreenElement ||
+    doc.mozFullScreenElement ||
+    doc.msFullscreenElement ||
+    null
+  );
+};
+
+const canElementFullscreen = (el: Element | null | undefined) => {
+  if (!el) return false;
+  const elAny = el as any;
+  return Boolean(
+    elAny.requestFullscreen ||
+      elAny.webkitRequestFullscreen ||
+      elAny.mozRequestFullScreen ||
+      elAny.msRequestFullscreen,
+  );
+};
+
+const isFullscreenApiSupported = () => {
+  if (typeof document === 'undefined') return false;
+  const doc = document as any;
+  return Boolean(
+    doc.fullscreenEnabled ||
+      doc.webkitFullscreenEnabled ||
+      doc.mozFullScreenEnabled ||
+      doc.msFullscreenEnabled,
+  );
+};
+
 export const PlayingView: React.FC<PlayingViewProps> = ({
   canvasRef,
   onQuit,
@@ -45,8 +79,47 @@ export const PlayingView: React.FC<PlayingViewProps> = ({
   const [size, setSize] = useState<{ w: number; h: number }>({ w: 0, h: 0 });
   const [orientation, setOrientation] = useState<Orientation>('landscape');
   const [isMobileLike, setIsMobileLike] = useState(false);
+  const [fullscreenSupported, setFullscreenSupported] = useState(false);
+  const [fullscreenActive, setFullscreenActive] = useState(false);
   const lastTapRef = React.useRef<number | null>(null);
   const rootRef = React.useRef<HTMLDivElement | null>(null);
+  const focusCanvas = useCallback(() => {
+    const canvas = canvasRef.current;
+    if (canvas && typeof canvas.focus === 'function') {
+      canvas.focus();
+    }
+  }, [canvasRef]);
+  const lockLandscapeOrientation = useCallback(async () => {
+    if (typeof window === 'undefined') return;
+    const screenAny = window.screen as any;
+    const orientationApi = screenAny?.orientation;
+    if (orientationApi && typeof orientationApi.lock === 'function') {
+      await orientationApi.lock('landscape').catch(() => {});
+      return;
+    }
+    const legacyLock =
+      screenAny?.lockOrientation || screenAny?.mozLockOrientation || screenAny?.msLockOrientation;
+    if (typeof legacyLock === 'function') {
+      try {
+        legacyLock.call(screenAny, 'landscape');
+      } catch {
+        // Ignore legacy lock failures.
+      }
+    }
+  }, []);
+
+  const unlockOrientation = useCallback(() => {
+    if (typeof window === 'undefined') return;
+    const screenAny = window.screen as any;
+    const orientationApi = screenAny?.orientation;
+    try {
+      if (orientationApi && typeof orientationApi.unlock === 'function') {
+        orientationApi.unlock();
+      }
+    } catch {
+      // Ignore unlock errors; not all browsers support this.
+    }
+  }, []);
 
   useEffect(() => {
     const update = () => {
@@ -71,23 +144,102 @@ export const PlayingView: React.FC<PlayingViewProps> = ({
   }, [aspect]);
 
   useEffect(() => {
+    if (typeof document === 'undefined') return;
+    const checkSupport = () => {
+      const el = rootRef.current ?? canvasRef.current;
+      setFullscreenSupported(isFullscreenApiSupported() || canElementFullscreen(el));
+    };
+    checkSupport();
+  }, [canvasRef]);
+
+  useEffect(() => {
+    if (typeof document === 'undefined') return;
+    const updateState = () => {
+      setFullscreenActive(Boolean(getFullscreenElement()));
+    };
+    updateState();
+    const events = ['fullscreenchange', 'webkitfullscreenchange', 'mozfullscreenchange', 'MSFullscreenChange'];
+    events.forEach((event) => document.addEventListener(event, updateState));
     return () => {
-      const screenAny = window.screen as any;
-      const orientationApi = screenAny?.orientation;
-      try {
-        if (orientationApi && typeof orientationApi.unlock === 'function') {
-          orientationApi.unlock();
-        }
-      } catch {
-        // Ignore unlock errors; not all browsers support this.
-      }
+      events.forEach((event) => document.removeEventListener(event, updateState));
     };
   }, []);
 
+  useEffect(() => {
+    return () => {
+      unlockOrientation();
+    };
+  }, [unlockOrientation]);
+
+  useEffect(() => {
+    if (!fullscreenActive) {
+      unlockOrientation();
+    }
+  }, [fullscreenActive, unlockOrientation]);
+
   useLayoutEffect(() => {
-    const c = canvasRef.current;
-    if (c && typeof c.focus === 'function') c.focus();
-  }, [canvasRef]);
+    focusCanvas();
+  }, [focusCanvas]);
+
+  const enterFullscreen = useCallback(async () => {
+    if (typeof document === 'undefined') return false;
+    const fullscreenTarget: any = rootRef.current ?? canvasRef.current;
+    if (!fullscreenTarget) return false;
+
+    try {
+      if (!getFullscreenElement()) {
+        const request =
+          fullscreenTarget.requestFullscreen ||
+          fullscreenTarget.webkitRequestFullscreen ||
+          fullscreenTarget.mozRequestFullScreen ||
+          fullscreenTarget.msRequestFullscreen;
+        if (!request) {
+          return false;
+        }
+        await request.call(fullscreenTarget);
+      }
+      await lockLandscapeOrientation();
+      focusCanvas();
+      return true;
+    } catch (error) {
+      if (import.meta.env?.DEV) {
+        debugLog('[PlayingView] Failed to enter fullscreen', error);
+      }
+      return false;
+    }
+  }, [canvasRef, focusCanvas, lockLandscapeOrientation]);
+
+  const exitFullscreen = useCallback(async () => {
+    if (typeof document === 'undefined') return;
+    const docAny = document as any;
+    try {
+      if (docAny.exitFullscreen) {
+        await docAny.exitFullscreen();
+      } else if (docAny.webkitExitFullscreen) {
+        await docAny.webkitExitFullscreen();
+      } else if (docAny.mozCancelFullScreen) {
+        await docAny.mozCancelFullScreen();
+      } else if (docAny.msExitFullscreen) {
+        await docAny.msExitFullscreen();
+      }
+    } catch (error) {
+      if (import.meta.env?.DEV) {
+        debugLog('[PlayingView] Failed to exit fullscreen', error);
+      }
+    } finally {
+      unlockOrientation();
+      focusCanvas();
+    }
+  }, [focusCanvas, unlockOrientation]);
+
+  const handleFullscreenToggle = useCallback(async () => {
+    if (fullscreenActive) {
+      await exitFullscreen();
+    } else {
+      await enterFullscreen();
+    }
+    focusCanvas();
+  }, [enterFullscreen, exitFullscreen, focusCanvas, fullscreenActive]);
 
   const canvasStyle = useMemo<React.CSSProperties>(
     () => ({ width: `${size.w}px`, height: `${size.h}px` }),
@@ -106,46 +258,8 @@ export const PlayingView: React.FC<PlayingViewProps> = ({
       return;
     }
 
-    const rootEl = rootRef.current;
-    const fullscreenTarget: any = rootEl ?? canvasRef.current;
-    if (!fullscreenTarget) return;
-
-    try {
-      if (!document.fullscreenElement) {
-        if (fullscreenTarget.requestFullscreen) {
-          await fullscreenTarget.requestFullscreen();
-        } else if (fullscreenTarget.webkitRequestFullscreen) {
-          await fullscreenTarget.webkitRequestFullscreen();
-        } else if (fullscreenTarget.mozRequestFullScreen) {
-          await fullscreenTarget.mozRequestFullScreen();
-        } else if (fullscreenTarget.msRequestFullscreen) {
-          await fullscreenTarget.msRequestFullscreen();
-        }
-      }
-
-      const screenAny = window.screen as any;
-      const orientationApi = screenAny?.orientation;
-      if (orientationApi && typeof orientationApi.lock === 'function') {
-        await orientationApi.lock('landscape').catch(() => {});
-      } else {
-        const legacyLock =
-          screenAny?.lockOrientation ||
-          screenAny?.mozLockOrientation ||
-          screenAny?.msLockOrientation;
-        if (typeof legacyLock === 'function') {
-          try {
-            legacyLock.call(screenAny, 'landscape');
-          } catch {
-            // Ignore legacy lock failures.
-          }
-        }
-      }
-    } catch (error) {
-      // Silently ignore fullscreen errors on unsupported/mobile browsers.
-      if (import.meta.env?.DEV) {
-        // eslint-disable-next-line no-console
-        debugLog('[PlayingView] Failed to enter fullscreen', error);
-      }
+    if (fullscreenSupported) {
+      await enterFullscreen();
     }
   };
 
@@ -186,6 +300,17 @@ export const PlayingView: React.FC<PlayingViewProps> = ({
             Quit
           </span>
         </button>
+
+        {(fullscreenSupported || fullscreenActive) && (
+          <button
+            type="button"
+            onClick={handleFullscreenToggle}
+            className="absolute bottom-5 left-5 rounded-full border border-white/30 bg-white/10 px-4 py-2 text-sm font-medium text-white backdrop-blur transition hover:bg-white/20 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/80"
+            aria-pressed={fullscreenActive}
+          >
+            {fullscreenActive ? 'X Fullscreen' : 'Fullscreen'}
+          </button>
+        )}
       </div>
 
       {showRotateOverlay
