@@ -110,10 +110,8 @@ export default function Chat({ onClose, channel, isOpen = true }: ChatProps) {
       return;
     }
 
-    const coarsePointerQuery = window.matchMedia
-      ? window.matchMedia('(pointer: coarse)')
-      : null;
-    const isLikelyTouch = coarsePointerQuery?.matches ?? ('ontouchstart' in window);
+    const coarsePointerQuery = window.matchMedia ? window.matchMedia('(pointer: coarse)') : null;
+    const isLikelyTouch = coarsePointerQuery?.matches ?? 'ontouchstart' in window;
     if (!isLikelyTouch) return;
 
     const viewport = window.visualViewport;
