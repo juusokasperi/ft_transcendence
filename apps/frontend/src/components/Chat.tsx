@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import type { CSSProperties } from 'react';
 import { X } from 'lucide-react';
 import { useAppContext } from '../context/AppContext';
 import { useLocation } from 'react-router-dom';
@@ -15,6 +16,9 @@ const debugLog = (...args: unknown[]) => {
     console.debug('[OnlineGame]', ...args);
   }
 };
+
+const CHAT_VIEWPORT_PADDING = 24; // 1.5rem in Tailwind's default root font size
+const KEYBOARD_VISIBILITY_THRESHOLD = 32; // px delta before considering keyboard active
 
 async function fetchUserByUsername(
   axios: AxiosInstance,
@@ -66,12 +70,15 @@ export default function Chat({ onClose, channel, isOpen = true }: ChatProps) {
   const [profileOpen, setProfileOpen] = useState(false);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [pendingNavId, setPendingNavId] = useState<string | null>(null);
+  const [keyboardOffset, setKeyboardOffset] = useState(0);
+  const [touchViewportHeight, setTouchViewportHeight] = useState<number | null>(null);
 
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
   const inputRef = useRef<HTMLInputElement | null>(null);
   const wasOpenRef = useRef(isOpen);
   const shouldAutoScrollRef = useRef(true);
+  const baseViewportHeightRef = useRef<number | null>(null);
   const privateMessageCount = useMemo(
     () =>
       messages.reduce(
@@ -97,6 +104,59 @@ export default function Chat({ onClose, channel, isOpen = true }: ChatProps) {
       node.setAttribute('inert', '');
     }
   }, [isOpen]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    const coarsePointerQuery = window.matchMedia ? window.matchMedia('(pointer: coarse)') : null;
+    const isLikelyTouch = coarsePointerQuery?.matches ?? 'ontouchstart' in window;
+    if (!isLikelyTouch) return;
+
+    const viewport = window.visualViewport;
+    if (!viewport) return;
+
+    // Track visual viewport to keep the chat panel above virtual keyboards.
+    let raf = 0;
+    const handleViewportChange = () => {
+      if (raf) {
+        cancelAnimationFrame(raf);
+      }
+      raf = window.requestAnimationFrame(() => {
+        const { height, offsetTop } = viewport;
+        const baseHeight = baseViewportHeightRef.current ?? height;
+        const heightDelta = baseHeight - height;
+        const hasKeyboard = heightDelta > KEYBOARD_VISIBILITY_THRESHOLD;
+
+        if (hasKeyboard) {
+          const overlap = Math.max(0, window.innerHeight - (height + offsetTop));
+          setKeyboardOffset(overlap);
+          setTouchViewportHeight(height);
+        } else {
+          baseViewportHeightRef.current = height;
+          setKeyboardOffset(0);
+          setTouchViewportHeight(null);
+        }
+      });
+    };
+
+    viewport.addEventListener('resize', handleViewportChange);
+    viewport.addEventListener('scroll', handleViewportChange);
+    window.addEventListener('resize', handleViewportChange);
+    window.addEventListener('orientationchange', handleViewportChange);
+    handleViewportChange();
+
+    return () => {
+      if (raf) {
+        cancelAnimationFrame(raf);
+      }
+      viewport.removeEventListener('resize', handleViewportChange);
+      viewport.removeEventListener('scroll', handleViewportChange);
+      window.removeEventListener('resize', handleViewportChange);
+      window.removeEventListener('orientationchange', handleViewportChange);
+    };
+  }, []);
 
   useEffect(() => {
     if (isOpen) {
@@ -291,6 +351,17 @@ export default function Chat({ onClose, channel, isOpen = true }: ChatProps) {
   const panelStateCls = isOpen
     ? 'pointer-events-auto opacity-100 translate-y-0 scale-100'
     : 'pointer-events-none opacity-0 translate-y-4 scale-[0.98]';
+  const panelStyle = useMemo<CSSProperties | undefined>(() => {
+    const style: CSSProperties = {};
+    if (touchViewportHeight) {
+      const availableHeight = Math.max(0, touchViewportHeight - CHAT_VIEWPORT_PADDING);
+      style.maxHeight = availableHeight;
+    }
+    if (keyboardOffset > 0) {
+      style.marginBottom = keyboardOffset;
+    }
+    return Object.keys(style).length ? style : undefined;
+  }, [keyboardOffset, touchViewportHeight]);
 
   return (
     <div
@@ -300,6 +371,7 @@ export default function Chat({ onClose, channel, isOpen = true }: ChatProps) {
       aria-hidden={!isOpen}
       data-state={isOpen ? 'open' : 'closed'}
       className={`fixed inset-x-3 bottom-3 z-[70] flex h-[40rem] max-h-[calc(100vh-1.5rem)] w-[36rem] max-w-[calc(100vw-1.5rem)] flex-col overflow-hidden rounded-2xl border border-white/20 text-white shadow-2xl backdrop-blur-md transition duration-200 ease-out sm:inset-auto sm:bottom-6 sm:left-auto sm:right-6 ${panelStateCls} bg-gray-900/20`}
+      style={panelStyle}
     >
       {/* Header */}
       <div className="flex items-center justify-between border-b border-white/20 px-3 py-2">
@@ -441,7 +513,7 @@ export default function Chat({ onClose, channel, isOpen = true }: ChatProps) {
 
         <input
           ref={inputRef}
-          className="flex-1 bg-transparent px-3 py-2 text-sm outline-none"
+          className="flex-1 bg-transparent px-3 py-2 text-base outline-none sm:text-sm"
           value={input}
           onChange={(e) => {
             const text = e.target.value;
