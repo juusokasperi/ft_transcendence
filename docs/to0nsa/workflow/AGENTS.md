@@ -79,4 +79,3 @@ When you extend behavior:
   - Tournament behavior → link to `docs/to0nsa/tournament/*`.
 
 Avoid duplicating entire explanations that already live in those folders; give a short summary and a pointer.
-

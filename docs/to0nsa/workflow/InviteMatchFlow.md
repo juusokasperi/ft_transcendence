@@ -505,4 +505,3 @@ For a user‑journey view, combine this doc with:
 
 - `ChatAndPresence.md` (chat UX and messages).
 - `OnlinePongNetwork.md` (online match lifecycle after handoff).
-

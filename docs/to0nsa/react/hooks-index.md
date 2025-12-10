@@ -30,8 +30,8 @@ These hooks are the “official” way to access React context providers set up 
 
 - `useMatchActivity()` / `useSetMatchActivity()`  
   **File:** `apps/frontend/src/context/MatchActivityContext.tsx`  
-  **What they do:**  
-  - `useMatchActivity()` – read‑only flag indicating whether a Pong match is currently active. Used by `App.tsx` to hide chat during a match.  
+  **What they do:**
+  - `useMatchActivity()` – read‑only flag indicating whether a Pong match is currently active. Used by `App.tsx` to hide chat during a match.
   - `useSetMatchActivity()` – setter function used by Pong pages (`OnlineGame`, local modes) to mark when a match starts or ends.
 
 - `useRealtimeSocket()`  
@@ -119,7 +119,7 @@ These hooks are shared across local and online Pong pages.
   - When fired, optionally extracts details from the event.
   - Calls `onMatchOver(detail)` for the caller.
   - If `onAutoExit` is provided, triggers it after `autoExitDelayMs` milliseconds.
-  Used by local modes; online mode relies primarily on server‑sent `MATCH_END`.
+    Used by local modes; online mode relies primarily on server‑sent `MATCH_END`.
 
 - `useBodyClass(className, active)`  
   **File:** `apps/frontend/src/pages/pong/shared/hooks/useBodyClass.ts`  
@@ -140,7 +140,7 @@ These hooks support the tournament views and flows under `apps/frontend/src/page
   **What it does:** Fetches and manages a list of tournaments from the backend:
   - Handles loading/error states and pagination.
   - Optionally auto‑refreshes the list at an interval.
-  Used by tournament index pages.
+    Used by tournament index pages.
 
 - `useMatchLifecycle({ canvasRef, active, onEnd, tournamentContext })`  
   **File:** `apps/frontend/src/pages/pong/tournament/hooks/useMatchLifecycle.ts`  
@@ -173,4 +173,3 @@ When you see a custom hook in a component (e.g. `useGameBootstrap`, `useMatchmak
 3. Cross‑reference with:
    - `docs/to0nsa/react/React.md` for overall React structure, and
    - `docs/to0nsa/workflow/*.md` for how the hook participates in the wider online Pong workflow.
-

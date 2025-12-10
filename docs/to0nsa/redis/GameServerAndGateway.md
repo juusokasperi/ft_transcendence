@@ -227,4 +227,3 @@ Redis in the **data plane** is used for:
 - **Rate limiting:** `gs:rl` buckets throttle player input to protect the game server.
 
 Combined with the control‑plane usage described in `MatchmakingAndAllocator.md`, Redis provides a fast, centralized coordination layer that keeps online Pong safe, scalable, and resilient to replay and abuse.
-

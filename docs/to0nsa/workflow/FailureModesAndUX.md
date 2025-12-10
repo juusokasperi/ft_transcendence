@@ -61,7 +61,7 @@ Use this as an annex to:
 
 **Where:**
 
-- Matchmaking → allocator (`createMatch` in `apps/matchmaking/utils/queue.ts`).  
+- Matchmaking → allocator (`createMatch` in `apps/matchmaking/utils/queue.ts`).
 - Allocator or game server errors (HTTP failures).
 
 **Wire behavior:**
@@ -70,7 +70,11 @@ Use this as an annex to:
   - Matchmaking sends an `ERROR` to both players:
 
     ```jsonc
-    { "type": "ERROR", "code": "ALLOCATOR", "message": "Game servers are currently busy, try again later." }
+    {
+      "type": "ERROR",
+      "code": "ALLOCATOR",
+      "message": "Game servers are currently busy, try again later.",
+    }
     ```
 
 **Frontend behavior:**
@@ -99,7 +103,11 @@ Use this as an annex to:
   - Matchmaking sends:
 
     ```jsonc
-    { "type": "ERROR", "code": "RATELIMIT", "message": "You are sending messages too fast. Please try again shortly." }
+    {
+      "type": "ERROR",
+      "code": "RATELIMIT",
+      "message": "You are sending messages too fast. Please try again shortly.",
+    }
     ```
 
 **Frontend behavior:**
@@ -121,7 +129,7 @@ Use this as an annex to:
 
 **Where:**
 
-- `PendingMatch` timers in `apps/matchmaking/utils/queue.ts`.  
+- `PendingMatch` timers in `apps/matchmaking/utils/queue.ts`.
 
 **Wire behavior:**
 
@@ -175,7 +183,7 @@ Use this as an annex to:
 
 **Where:**
 
-- Gateway: `apps/game-gateway/index.ts` (validates join tokens and room mapping).  
+- Gateway: `apps/game-gateway/index.ts` (validates join tokens and room mapping).
 - Game server: `WSServer.handleJoinConnection` validates join tokens, reservation, and join window.
 
 **Close codes (`CLOSE_CODES` in `protocol/net.ts`):**

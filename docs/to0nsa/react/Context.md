@@ -227,4 +227,3 @@ In this app, the rule of thumb is:
 
 - **Auth, networking, and “session‑level” concerns → contexts.**
 - **Per‑screen UI and small interactions → local state in that screen.**
-

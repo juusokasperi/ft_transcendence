@@ -151,4 +151,3 @@ This layered approach lets you correlate:
 - Application issues (e.g., spikes in 5xx from matchmaking).
 - Infrastructure constraints (e.g., CPU/memory pressure).
 - Front‑door behavior (e.g., surges in WS connections or API requests).
-

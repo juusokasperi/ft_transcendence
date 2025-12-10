@@ -172,4 +172,3 @@ Alertmanager routes these to:
 - Grafana uses Prometheus as a data source to visualize these metrics; see `Grafana.md`.
 
 Together, Prometheus and Alertmanager are the **central metrics brain** of the observability stack.
-

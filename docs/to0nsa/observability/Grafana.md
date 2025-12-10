@@ -60,7 +60,11 @@ grafana:
     - ./monitoring/grafana/provisioning:/etc/grafana/provisioning
     - ./monitoring/grafana/dashboards/:/etc/grafana/dashboards
   healthcheck:
-    test: ["CMD-SHELL", "curl -sf http://localhost:${GRAFANA_PORT:-3002}/api/health | grep -q '\"database\": \"ok\"'"]
+    test:
+      [
+        'CMD-SHELL',
+        'curl -sf http://localhost:${GRAFANA_PORT:-3002}/api/health | grep -q ''"database": "ok"''',
+      ]
   networks:
     - prod-private
     - prod-public
@@ -168,4 +172,3 @@ Grafana is the **human interface** for metrics and (optionally) logs:
 - It is safely exposed on a host‑only monitoring port.
 
 When debugging online Pong issues, Grafana is typically the first place to look for spikes in errors, latency, queue sizes, or node load. For more on what to check, see `MonitoringAndObservability.md`.
-

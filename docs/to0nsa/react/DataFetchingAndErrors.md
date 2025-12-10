@@ -253,4 +253,3 @@ When adding new data‑fetching code:
 - Use `useSnackbar` for user‑visible failures or confirmations; use inline text for field‑level errors.
 - For WebSocket‑driven features (online, tournaments, chat), handle protocol‑level errors in hooks (`useMatchmakingClient`, tournament hooks) and convert them into state + snackbars.
 - Keep behavior consistent with existing pages by following patterns in `Home.tsx`, `Profile.tsx`, `Stats.tsx`, `OnlineGame.tsx`, and the auth pages.
-

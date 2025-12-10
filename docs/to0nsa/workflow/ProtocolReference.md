@@ -36,11 +36,11 @@ All messages are JSON objects with a `type` field.
 
 - `JOIN_QUEUE` (`JoinQueueRequest`)
   - **Sent by:** Browser.
-  - **Payload:**  
+  - **Payload:**
     - `preferredSide?: 'west' | 'east'` (optional hint).
   - **When:** User clicks “Join queue”.
-  - **Server reaction:**  
-    - If client is idle → add to queue, send `QUEUE_JOINED`.  
+  - **Server reaction:**
+    - If client is idle → add to queue, send `QUEUE_JOINED`.
     - If client is in a tournament or invite lobby → send `CONFIRM_REQUIRED` instead.
 
 - `LEAVE_QUEUE` (`LeaveQueueRequest`)
@@ -52,23 +52,23 @@ All messages are JSON objects with a `type` field.
   - **Sent by:** Browser.
   - **Payload:** `matchId: string` (server’s match identifier).
   - **When:** User clicks “Accept” on a found match.
-  - **Server reaction:**  
-    - Mark this client as having accepted.  
+  - **Server reaction:**
+    - Mark this client as having accepted.
     - When both sides accept and room is allocated, sends `HANDOFF`.
 
 - `DECLINE_MATCH` (`DeclineMatchRequest`)
   - **Sent by:** Browser.
   - **Payload:** `matchId: string`.
   - **When:** User clicks “Decline”.
-  - **Server reaction:**  
-    - Cancels the pending match.  
+  - **Server reaction:**
+    - Cancels the pending match.
     - Sends `MATCH_DECLINED` to relevant clients.
 
 - `CONFIRM_JOIN` (`ConfirmJoinRequest`)
   - **Sent by:** Browser.
   - **When:** User confirms leaving an existing tournament or invite lobby to join the ranked queue (in response to `CONFIRM_REQUIRED`).
-  - **Server reaction:**  
-    - Clears competing state (tournament/invite).  
+  - **Server reaction:**
+    - Clears competing state (tournament/invite).
     - Moves client into main queue and sends `QUEUE_JOINED`.
 
 #### Tournament‑related client messages
@@ -77,8 +77,8 @@ Used when the user interacts with tournament UIs via matchmaking:
 
 - `CREATE_TOURNAMENT` (`CreateTournamentRequest`)
   - **Sent by:** Browser.
-  - **Payload:**  
-    - `size: 4 | 8 | 16` – bracket size.  
+  - **Payload:**
+    - `size: 4 | 8 | 16` – bracket size.
     - `name?: string` – optional tournament name.
   - **Server reaction:** Create a new tournament; mirror state via `TOURNAMENT_LOBBY_UPDATED` and bracket snapshots.
 
@@ -115,14 +115,14 @@ These messages are sent from matchmaking to the browser.
 - `CONNECTED` (`ConnectedMessage`)
   - **Payload:** `clientId: string`.
   - **When:** Immediately after a new WS connection is authenticated.
-  - **Client reaction:**  
-    - Store `clientId` in state.  
+  - **Client reaction:**
+    - Store `clientId` in state.
     - Mark matchmaking status as `'connecting'` → `'idle'`.
 
 - `QUEUE_JOINED` (`QueueJoinedMessage`)
   - **When:** Client successfully joins the queue.
-  - **Client reaction:**  
-    - Set state to `'in_queue'`.  
+  - **Client reaction:**
+    - Set state to `'in_queue'`.
     - Start queue timer UI.
 
 - `QUEUE_LEFT` (`QueueLeftMessage`)
@@ -132,76 +132,76 @@ These messages are sent from matchmaking to the browser.
 #### Matchmaking results
 
 - `MATCH_FOUND` (`MatchFoundMessage`)
-  - **Payload:**  
-    - `matchId: string` – internal match identifier.  
+  - **Payload:**
+    - `matchId: string` – internal match identifier.
     - `opponent: { username: string; mmr: number }`.
   - **When:** Server pairs the client with an opponent.
-  - **Client reaction:**  
-    - Transition to `'match_found'`.  
+  - **Client reaction:**
+    - Transition to `'match_found'`.
     - Show opponent info and accept/decline UI.
 
 - `MATCH_DECLINED` (`MatchDeclinedMessage`)
   - **Payload:** `matchId: string`.
   - **When:** Match is cancelled (opponent declined or timed out).
-  - **Client reaction:**  
-    - Transition to `'idle'` or `'in_queue'` depending on logic.  
+  - **Client reaction:**
+    - Transition to `'idle'` or `'in_queue'` depending on logic.
     - Show snackbar “Match declined or unavailable.”
 
 - `MATCH_TIMEOUT` (`MatchTimeoutMessage`)
   - **When:** Pending match times out waiting for acceptance.
-  - **Client reaction:**  
-    - Transition to `'idle'` or `'in_queue'`.  
+  - **Client reaction:**
+    - Transition to `'idle'` or `'in_queue'`.
     - Show snackbar “Pending match timed out.”
 
 #### Handoff to game server
 
 - `HANDOFF` (`HandoffMessage`)
-  - **Payload:**  
-    - `matchId: string` – same as above.  
-    - `roomIdentifier: string` – game room ID.  
-    - `gameServerWSUrl: string` – WS URL (typically `/g/:roomId`).  
-    - `side: 'west' | 'east'` – logical side.  
-    - `joinToken: string` – single‑use join token.  
-    - `joinTokenTTLSeconds: number` – TTL hint.  
-    - `randomSeed: number` – game seed for deterministic logic.  
-    - `simulationStartTick: number` – sync tick for simulation start.  
+  - **Payload:**
+    - `matchId: string` – same as above.
+    - `roomIdentifier: string` – game room ID.
+    - `gameServerWSUrl: string` – WS URL (typically `/g/:roomId`).
+    - `side: 'west' | 'east'` – logical side.
+    - `joinToken: string` – single‑use join token.
+    - `joinTokenTTLSeconds: number` – TTL hint.
+    - `randomSeed: number` – game seed for deterministic logic.
+    - `simulationStartTick: number` – sync tick for simulation start.
     - `tournament?: TournamentContext` – additional tournament metadata.
   - **When:** Both players accept the match and allocator/game node have created a room.
-  - **Client reaction:**  
-    - Store handoff payload in state.  
-    - Build a `bootstrapConfig` for `useGameBootstrap`.  
+  - **Client reaction:**
+    - Store handoff payload in state.
+    - Build a `bootstrapConfig` for `useGameBootstrap`.
     - Connect to `/g/:roomId` via game gateway using `joinToken`.
 
 - `HANDOFF_TIMEOUT` (`HandoffTimeoutMessage`)
-  - **Payload:**  
-    - `roomIdentifier: string`.  
+  - **Payload:**
+    - `roomIdentifier: string`.
     - `message: string` – human‑readable explanation.
   - **When:** Handoff fails or takes too long (e.g., allocator or game node didn’t create room in time).
-  - **Client reaction:**  
-    - Return to safe state (e.g., `'idle'`).  
+  - **Client reaction:**
+    - Return to safe state (e.g., `'idle'`).
     - Show error snackbar using `message`.
 
 #### Info and errors
 
 - `ERROR` (`ErrorMessage`)
-  - **Payload:**  
-    - `code: string` – e.g., `'AUTH'`, `'ALLOCATOR'`, `'RATELIMIT'`, or others.  
+  - **Payload:**
+    - `code: string` – e.g., `'AUTH'`, `'ALLOCATOR'`, `'RATELIMIT'`, or others.
     - `message: string` – description.
   - **When:** Various error conditions:
     - Auth failure (missing/invalid token).
     - Allocator or game server errors.
     - Rate limiting violations.
-  - **Client reaction:**  
+  - **Client reaction:**
     - Use the `code` to pick a handler:
-      - `'AUTH'` → attempt refresh or log out (`handleAuthError` in `OnlineGame.tsx`).  
-      - `'ALLOCATOR'` → show allocator/server busy message.  
+      - `'AUTH'` → attempt refresh or log out (`handleAuthError` in `OnlineGame.tsx`).
+      - `'ALLOCATOR'` → show allocator/server busy message.
       - `'RATELIMIT'` → show rate‑limit message.
     - Reset queue/match state appropriately.
 
 - `INFO` (`InfoMessage`)
   - **Payload:** `message: string`.
   - **When:** Informational notifications (e.g., notifying about a new connection replacing the old one).
-  - **Client reaction:**  
+  - **Client reaction:**
     - Usually logs; special cases may mark a socket as intentionally closed (to avoid noisy reconnects).
 
 #### Confirmation
@@ -209,8 +209,8 @@ These messages are sent from matchmaking to the browser.
 - `CONFIRM_REQUIRED` (`ConfirmRequiredMessage`)
   - **Payload:** `message: string`.
   - **When:** Client tries to join the queue while already in a tournament or invite lobby.
-  - **Client reaction:**  
-    - Show a confirmation dialog with `message`.  
+  - **Client reaction:**
+    - Show a confirmation dialog with `message`.
     - If the user agrees, send `CONFIRM_JOIN`.
 
 #### Tournament state messages
@@ -218,38 +218,38 @@ These messages are sent from matchmaking to the browser.
 These messages drive the tournament UI via matchmaking:
 
 - `TOURNAMENT_LOBBY_UPDATED` (`TournamentLobbyUpdatedMessage`)
-  - **Payload:**  
-    - `tournamentId: number`.  
-    - `status: string`.  
-    - `maxParticipants: number | null`.  
+  - **Payload:**
+    - `tournamentId: number`.
+    - `status: string`.
+    - `maxParticipants: number | null`.
     - `participants: TournamentParticipantState[]`.
   - **When:** Tournament lobby membership or status changes.
   - **Client reaction:** Update lobby view (participants list, status).
 
 - `TOURNAMENT_BRACKET_SNAPSHOT` (`TournamentBracketSnapshotMessage`)
-  - **Payload:**  
-    - `tournamentId: number`.  
+  - **Payload:**
+    - `tournamentId: number`.
     - `matches: TournamentMatchState[]`.
   - **When:** Full bracket snapshot is needed (e.g., on join or major updates).
   - **Client reaction:** Render or refresh bracket view.
 
 - `TOURNAMENT_MATCHES_READY` (`TournamentMatchesReadyMessage`)
-  - **Payload:**  
-    - `tournamentId: number`.  
+  - **Payload:**
+    - `tournamentId: number`.
     - `matches: { tournamentMatchId, stage, participants[] }[]`.
   - **When:** Backend decides a set of tournament matches are ready to be scheduled (via Redis streams).
   - **Client reaction:** Show scheduled matches in tournament UI; prompt players to accept match (`ACCEPT_SCHEDULED`).
 
 - `TOURNAMENT_MATCH_COUNTDOWN` (`TournamentMatchCountdownMessage`)
-  - **Payload:**  
-    - `tournamentId`, `tournamentMatchId`, `stage`.  
-    - `secondsRemaining`, `targetStartEpochMs`.  
-    - `status: 'running' | 'cancelled' | 'started'`.  
+  - **Payload:**
+    - `tournamentId`, `tournamentMatchId`, `stage`.
+    - `secondsRemaining`, `targetStartEpochMs`.
+    - `status: 'running' | 'cancelled' | 'started'`.
     - Optional `reason` for cancellation (`'offline' | 'forfeited' | 'stopped'`).
   - **When:** Tournament match countdown starts/updates/cancels/starts.
-  - **Client reaction:**  
-    - Show countdown in UI.  
-    - React to cancellation reasons (e.g., show “opponent offline” message).  
+  - **Client reaction:**
+    - Show countdown in UI.
+    - React to cancellation reasons (e.g., show “opponent offline” message).
     - Transition to match view when `status === 'started'`.
 
 ---
@@ -269,87 +269,87 @@ Messages are:
 ### 2.1 Server → client: `GameServerControlMessage`
 
 - `ROOM_STATE` (`RoomStateMessage`)
-  - **Payload:**  
-    - `roomIdentifier: string`.  
-    - `state: 'WAITING_FOR_OPPONENT' | 'READY' | 'PLAYING'`.  
-    - `seat?: 'P1' | 'P2'` – which seat the client occupies.  
-    - `startAtEpochMs?`, `randomSeed?`, `tickRateHz?` – scheduling hints.  
+  - **Payload:**
+    - `roomIdentifier: string`.
+    - `state: 'WAITING_FOR_OPPONENT' | 'READY' | 'PLAYING'`.
+    - `seat?: 'P1' | 'P2'` – which seat the client occupies.
+    - `startAtEpochMs?`, `randomSeed?`, `tickRateHz?` – scheduling hints.
     - `players?: { P1?: { alias? }, P2?: { alias? } }` – display names.
   - **When:** Room state changes (player joins/leaves, match becomes ready).
-  - **Client reaction:**  
-    - Update room status UI (e.g., “Waiting for opponent”, “Ready”).  
+  - **Client reaction:**
+    - Update room status UI (e.g., “Waiting for opponent”, “Ready”).
     - In reconnect scenarios, may synthesize a `START` from this if needed.
 
 - `START` (`StartMessage`)
-  - **Payload:**  
-    - `roomIdentifier`.  
-    - `startAtEpochMs` – when the simulation should start.  
-    - `randomSeed` – deterministic seed.  
-    - `tickRateHz` – server tick rate.  
+  - **Payload:**
+    - `roomIdentifier`.
+    - `startAtEpochMs` – when the simulation should start.
+    - `randomSeed` – deterministic seed.
+    - `tickRateHz` – server tick rate.
     - `players?` – aliases for P1/P2.
   - **When:** Match is ready to begin; both players have joined.
-  - **Client reaction:**  
-    - Resolve `awaitStart()` in `connect-online.ts`.  
+  - **Client reaction:**
+    - Resolve `awaitStart()` in `connect-online.ts`.
     - Kick off local simulation/rendering synchronized to `startAtEpochMs`.
 
 - `FRAME` (`FrameMessage`)
-  - **Payload:**  
-    - `state: any` – authoritative game state for this tick/frame.  
-    - `events: any` – events (e.g., goals, serves).  
-    - `match: MatchSnapshot` – simplified match snapshot (scores, history).  
-    - `tick: number` – simulation tick index.  
+  - **Payload:**
+    - `state: any` – authoritative game state for this tick/frame.
+    - `events: any` – events (e.g., goals, serves).
+    - `match: MatchSnapshot` – simplified match snapshot (scores, history).
+    - `tick: number` – simulation tick index.
     - `axis?: number` – opponent input axis for this tick (from recipient’s POV).
   - **When:** At a regular rate (e.g., 20–25 Hz) during the match.
-  - **Client reaction:**  
-    - Update game logic/rendering in `@pong/render`.  
+  - **Client reaction:**
+    - Update game logic/rendering in `@pong/render`.
     - Feed state/events into visual updates and animations.
 
 - `OPPONENT_DISCONNECTED` (`OpponentDisconnectedMessage`)
   - **Payload:** `gracePeriodMs: number`.
   - **When:** Opponent disconnects and reconnect grace timer starts.
-  - **Client reaction:**  
-    - Show UI indicating opponent disconnect.  
-    - Possibly show countdown based on `gracePeriodMs`.  
+  - **Client reaction:**
+    - Show UI indicating opponent disconnect.
+    - Possibly show countdown based on `gracePeriodMs`.
     - If opponent doesn’t return, match will end in a forfeit/timeout.
 
 - `OPPONENT_RECONNECTED` (`OpponentReconnectedMessage`)
   - **When:** Opponent reconnects within the grace window.
-  - **Client reaction:**  
-    - Clear disconnect UI.  
+  - **Client reaction:**
+    - Clear disconnect UI.
     - Resume normal play.
 
 - `MATCH_END` (`MatchEndMessage`)
-  - **Payload:**  
-    - `reason: 'opponent_timeout' | 'completed' | 'error' | 'forfeit'`.  
-    - `winner?: 'east' | 'west'`.  
+  - **Payload:**
+    - `reason: 'opponent_timeout' | 'completed' | 'error' | 'forfeit'`.
+    - `winner?: 'east' | 'west'`.
     - `summary?: OnlineMatchSummary | null` – full match summary when available.
   - **When:** Match is over:
     - Natural conclusion (best‑of complete).
     - Forfeit (explicit or via disconnect timeout).
     - Error.
-  - **Client reaction:**  
-    - `useOnlineMatchEnd` interprets reason, shows snackbars.  
+  - **Client reaction:**
+    - `useOnlineMatchEnd` interprets reason, shows snackbars.
     - Moves online state machine to `'postmatch'` and renders post‑match summary.
     - Clears resume tokens for this room.
 
 - `RESUME_TOKEN` (`ResumeTokenMessage`)
-  - **Payload:**  
-    - `token: string` – signed resume token.  
-    - `isTournament?: boolean` – flagged for tournaments.  
+  - **Payload:**
+    - `token: string` – signed resume token.
+    - `isTournament?: boolean` – flagged for tournaments.
     - `tournamentId?: number` – when applicable.
   - **When:** Game server periodically rotates resume tokens for connected players.
-  - **Client reaction:**  
-    - Store token (e.g., in session/local storage) via `saveResumeTokenToSession`.  
+  - **Client reaction:**
+    - Store token (e.g., in session/local storage) via `saveResumeTokenToSession`.
     - Use on reconnect via `Sec-WebSocket-Protocol: resume,<token>`; see `SecurityAndTokens.md`.
 
 - `PONG` (`PongMessage`)
-  - **Payload:**  
-    - `clientSentAt: number`.  
-    - `serverReceivedAt: number`.  
+  - **Payload:**
+    - `clientSentAt: number`.
+    - `serverReceivedAt: number`.
     - `serverSentAt: number`.
   - **When:** In response to client `ping` messages.
-  - **Client reaction:**  
-    - Compute RTT and smoothed latency in `connect-online.ts`.  
+  - **Client reaction:**
+    - Compute RTT and smoothed latency in `connect-online.ts`.
     - Use for latency displays and potentially time sync adjustments.
 
 ---

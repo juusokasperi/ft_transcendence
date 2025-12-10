@@ -314,4 +314,3 @@ This summarizes the key tournament‑related messages handled by matchmaking (se
     - `TOURNAMENT_API`, `TOURNAMENT_LIMIT`, `TOURNAMENT_INVALID`, etc.
 
 Understanding how these messages map to frontend handlers in `TournamentFrontend.md` and to backend APIs in `BackendAndAPIs.md` will give you a full picture of the tournament control plane.
-

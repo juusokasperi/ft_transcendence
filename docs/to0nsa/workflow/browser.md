@@ -101,7 +101,7 @@ Understanding:
 
 - **DOM elements** (divs, canvas, buttons) are your building blocks.
 - **CSS classes** control how they look and where they sit.
-- **React** is the tool you use to declare *what* the DOM should look like; the **browser** actually renders it.
+- **React** is the tool you use to declare _what_ the DOM should look like; the **browser** actually renders it.
 
 ---
 

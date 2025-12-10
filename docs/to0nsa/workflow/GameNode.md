@@ -102,15 +102,27 @@ export class GameServer {
 
     this.registry = new RoomRegistry({ logger: this.logger });
     this.broadcaster = new Broadcaster({ config: this.config, logger: this.logger });
-    this.reporter = new ResultReporter({ apiUrl: this.config.apiUrl, matchSecret: this.config.matchSecret, logger: this.logger });
+    this.reporter = new ResultReporter({
+      apiUrl: this.config.apiUrl,
+      matchSecret: this.config.matchSecret,
+      logger: this.logger,
+    });
 
-    const onMatchComplete = (session: MatchSession, summary: OnlineMatchSummary | null, winner?: 'east' | 'west') => {
+    const onMatchComplete = (
+      session: MatchSession,
+      summary: OnlineMatchSummary | null,
+      winner?: 'east' | 'west',
+    ) => {
       // Log, close sockets, clear session...
     };
 
-    this.runner = new MatchRunner({ /* tick loop + result handling */ });
+    this.runner = new MatchRunner({
+      /* tick loop + result handling */
+    });
     this.resumeTokens = new ResumeTokenService({ redis: this.redis, logger: this.logger });
-    this.reconnects = new ReconnectManager({ /* grace window handling */ });
+    this.reconnects = new ReconnectManager({
+      /* grace window handling */
+    });
 
     this.wsServer = new WSServer({
       config: this.config,
@@ -366,7 +378,14 @@ import { quantizeMs } from './PauseQuantizer.ts';
 export type MatchController = ReturnType<typeof createMatchController>;
 export type Intent = { leftAxis: number; rightAxis: number };
 
-export function stepOnce({ state, intent, dt, tickHz, controller, lagCompensationSec }: StepOnceArgs): StepResult {
+export function stepOnce({
+  state,
+  intent,
+  dt,
+  tickHz,
+  controller,
+  lagCompensationSec,
+}: StepOnceArgs): StepResult {
   const withPaddles = stepPaddles(state, intent, dt);
   const prevPhase = withPaddles.phase;
   const stepped = handleSteps(withPaddles, dt, lagCompensationSec ?? 0);
@@ -485,7 +504,13 @@ export class ResumeTokenService {
     };
     const resumeToken = signResumeToken(claims);
     const key = `resume-token:${claims.jti}`;
-    const setResult = await this.redis.set(key, JSON.stringify({ roomIdentifier: claims.roomIdentifier }), 'EX', ttlSeconds, 'NX');
+    const setResult = await this.redis.set(
+      key,
+      JSON.stringify({ roomIdentifier: claims.roomIdentifier }),
+      'EX',
+      ttlSeconds,
+      'NX',
+    );
     if (setResult !== 'OK') throw new Error('resume-token-persist');
     return { resumeToken, claims };
   }

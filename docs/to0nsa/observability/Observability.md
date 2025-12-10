@@ -44,4 +44,3 @@ At runtime (main points):
 - Kibana sits on top of ElasticSearch for log search and analysis.
 
 All of this runs alongside the app via Docker Compose (see `docs/to0nsa/docker/MonitoringStack.md`).
-

@@ -220,4 +220,3 @@ When adding a new realtime service:
 - Use the same Fastify + `@fastify/websocket` setup.
 - Add `/health` and `/metrics`.
 - Use `createFastifyLoggerConfig` for consistent log formats.
-

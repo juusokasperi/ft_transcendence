@@ -199,9 +199,7 @@ After registering plugins and routes:
 await app.ready();
 app.swagger();
 
-app.log.info(
-  `Swagger API documentation served at http://localhost:${BACKEND_PORT}/docs`,
-);
+app.log.info(`Swagger API documentation served at http://localhost:${BACKEND_PORT}/docs`);
 
 app.listen({ host: BACKEND_HOST, port: BACKEND_PORT }, function (err) {
   if (err) {
@@ -234,4 +232,3 @@ When adding new API functionality:
 5. **Update Swagger schemas** if needed (most are inferred from route definitions).
 
 Keep the common backend patterns (logging, metrics, error handling) intact so the API remains consistent and observable across new endpoints.
-

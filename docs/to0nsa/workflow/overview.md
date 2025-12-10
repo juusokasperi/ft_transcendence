@@ -144,26 +144,26 @@ The rest of this file is an index and short summary of the other docs so you can
 
 Depending on what you’re trying to do, you can use different paths through these docs.
 
-- **Frontend‑heavy (React + client networking)**  
-  1. `browser.md`  
-  2. `OnlinePongNetwork.md`  
-  3. `OnlinePongDataPlane.md`  
-  4. `MatchmakingService.md` (sections about client messages)  
+- **Frontend‑heavy (React + client networking)**
+  1. `browser.md`
+  2. `OnlinePongNetwork.md`
+  3. `OnlinePongDataPlane.md`
+  4. `MatchmakingService.md` (sections about client messages)
   5. `SecurityAndTokens.md` (join/resume token overview)
 
-- **Backend/matchmaking/game‑server**  
-  1. `BackendAndAPIs.md`  
-  2. `MatchmakingService.md`  
-  3. `AllocatorAndScorer.md`  
-  4. `GatewayAndWebSockets.md`  
-  5. `GameNode.md`  
-  6. `OnlinePongDataPlane.md`  
+- **Backend/matchmaking/game‑server**
+  1. `BackendAndAPIs.md`
+  2. `MatchmakingService.md`
+  3. `AllocatorAndScorer.md`
+  4. `GatewayAndWebSockets.md`
+  5. `GameNode.md`
+  6. `OnlinePongDataPlane.md`
   7. `ResultsAndRanking.md` and `SecurityAndTokens.md`
 
-- **Infra/ops (deploy, debug, monitor)**  
-  1. `DeploymentOnlinePong.md`  
-  2. `MonitoringAndObservability.md`  
-  3. `GatewayAndWebSockets.md` and `AllocatorAndScorer.md`  
+- **Infra/ops (deploy, debug, monitor)**
+  1. `DeploymentOnlinePong.md`
+  2. `MonitoringAndObservability.md`
+  3. `GatewayAndWebSockets.md` and `AllocatorAndScorer.md`
   4. `GameNode.md` (for interpreting game‑server metrics and logs)
 
 Use this overview as a map: when you encounter a concept in code (e.g., join tokens, `/g/:roomId`, `ResultReporter`, `/matchmaking`), you can jump directly to the matching doc here to get the bigger picture.

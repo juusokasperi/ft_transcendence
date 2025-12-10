@@ -65,7 +65,7 @@ frontend-builder:
       SERVICE_NAME: frontend-builder
       SERVICE_DIR: frontend
   image: ft-transcendence-frontend-builder-prod:latest
-  command: ["bash", "-lc", "corepack pnpm install --frozen-lockfile && corepack pnpm build"]
+  command: ['bash', '-lc', 'corepack pnpm install --frozen-lockfile && corepack pnpm build']
   volumes:
     - .:/work:cached
     - frontend_dist:/work/apps/frontend/dist
@@ -275,4 +275,3 @@ In production, Docker Compose:
 - Shares configuration via environment anchors and centralized logging.
 
 Understanding `docker-compose-prod.yml` alongside the Nginx, Node, and Redis docs gives you a full picture of how the online Pong stack runs in a containerized production environment.
-

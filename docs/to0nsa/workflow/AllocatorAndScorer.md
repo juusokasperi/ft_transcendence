@@ -319,7 +319,11 @@ Scorer prefers Prometheus, with HTTP fallback:
       const maxFds = parsePrometheusText(metricsText, 'process_max_fds') || 1024;
       const matches = parsePrometheusText(metricsText, 'game_server_matches');
       // Compute score...
-      await redis.hset('game-node:scores', node.id, JSON.stringify({ id, http, ws, score, fallback: true }));
+      await redis.hset(
+        'game-node:scores',
+        node.id,
+        JSON.stringify({ id, http, ws, score, fallback: true }),
+      );
     }
   }
   ```

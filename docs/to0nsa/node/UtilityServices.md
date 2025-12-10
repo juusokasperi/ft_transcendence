@@ -87,7 +87,10 @@ Runtime logic:
 const start = async () => {
   try {
     await app.listen({ port: SCORER_PORT, host: '0.0.0.0' });
-    app.log.info({ nodes: nodes.map((n) => n.id), prometheusUrl: PROMETHEUS_URL }, '[Scorer] Running scorer with nodes');
+    app.log.info(
+      { nodes: nodes.map((n) => n.id), prometheusUrl: PROMETHEUS_URL },
+      '[Scorer] Running scorer with nodes',
+    );
     setInterval(updateScores, 5000);
     updateScores();
   } catch (err) {
@@ -129,4 +132,3 @@ If you add another small control‑plane/utility Node service:
    - Use small `config.ts` modules to read env vars and fail fast if misconfigured.
 
 Following these patterns keeps new Node services consistent with the rest of the stack and easy to monitor and operate.
-

@@ -114,4 +114,3 @@ If you want to understand Docker usage in this repo:
 - Use `MonitoringStack.md` to see how Prometheus, Grafana, and ELK are wired.
 
 These docs, together with the Nginx, Node, and Redis docs, give you a complete infrastructure picture for ft_transcendence.
-

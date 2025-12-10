@@ -116,7 +116,7 @@ Usage:
 
 ```ts
 const s = identity('hello'); // T inferred as string → s: string
-const n = identity(42);      // T inferred as number → n: number
+const n = identity(42); // T inferred as number → n: number
 ```
 
 You can also specify `T` explicitly if needed:
@@ -134,8 +134,8 @@ function pair<A, B>(a: A, b: B): [A, B] {
   return [a, b];
 }
 
-const coords = pair(10, 20);          // A=number, B=number → [number, number]
-const labeled = pair('x', 20);        // A=string, B=number → [string, number]
+const coords = pair(10, 20); // A=number, B=number → [number, number]
+const labeled = pair('x', 20); // A=string, B=number → [string, number]
 const userAndToken = pair(user, jwt); // A=User, B=string
 ```
 
@@ -187,9 +187,9 @@ function wrapInArray<T>(value: T): T[] {
   return [value];
 }
 
-const numbers = wrapInArray(42);          // T inferred as number → number[]
-const strings = wrapInArray('pong');      // T inferred as string → string[]
-const users = wrapInArray({ id: 1 });     // T inferred as { id: number } → { id: number }[]
+const numbers = wrapInArray(42); // T inferred as number → number[]
+const strings = wrapInArray('pong'); // T inferred as string → string[]
+const users = wrapInArray({ id: 1 }); // T inferred as { id: number } → { id: number }[]
 ```
 
 Inference works for:
@@ -261,7 +261,7 @@ function getId<T extends { id: string | number }>(entity: T) {
 }
 
 getId({ id: 123, name: 'Alice' }); // ok
-getId({ id: 'abc' });              // ok
+getId({ id: 'abc' }); // ok
 // getId({ name: 'Bob' });         // error: property 'id' is missing
 ```
 
@@ -318,7 +318,7 @@ function pluck<T, K extends keyof T>(obj: T, key: K): T[K] {
 }
 
 const user = { id: 1, name: 'Alice' };
-const id = pluck(user, 'id');   // T={id:number; name:string}, K='id' → id: number
+const id = pluck(user, 'id'); // T={id:number; name:string}, K='id' → id: number
 // pluck(user, 'age');          // error: 'age' is not a key of user
 ```
 
@@ -413,7 +413,7 @@ class Box<T> {
 }
 
 const stringBox = new Box('hello'); // Box<string>
-const numBox = new Box(123);        // Box<number>
+const numBox = new Box(123); // Box<number>
 ```
 
 The same pattern applies:
@@ -435,21 +435,27 @@ type ResponseData<T = unknown> = {
   data: T;
 };
 
-const r1: ResponseData = { ok: true, data: 42 };         // T=unknown
+const r1: ResponseData = { ok: true, data: 42 }; // T=unknown
 const r2: ResponseData<string> = { ok: true, data: '' }; // T=string
 ```
 
 We saw this earlier in:
 
 ```ts
-export function useMatchOverEvent<TDetail = unknown>(/* ... */) { /* ... */ }
+export function useMatchOverEvent<TDetail = unknown>(/* ... */) {
+  /* ... */
+}
 ```
 
 and in the React components:
 
 ```ts
-type SurfaceCardProps<T extends React.ElementType = 'div'> = { /* ... */ };
-const SurfaceCard = <T extends React.ElementType = 'div'>(props: SurfaceCardProps<T>) => { /* ... */ };
+type SurfaceCardProps<T extends React.ElementType = 'div'> = {
+  /* ... */
+};
+const SurfaceCard = <T extends React.ElementType = 'div'>(props: SurfaceCardProps<T>) => {
+  /* ... */
+};
 ```
 
 Defaults are especially handy when:
@@ -511,7 +517,9 @@ Key ideas:
 `useMatchOverEvent<TDetail>` is a generic hook for handling a custom canvas event:
 
 ```ts
-export function useMatchOverEvent<TDetail = unknown>({ /* ... */ }: UseMatchOverEventOptions<TDetail>) {
+export function useMatchOverEvent<
+  TDetail = unknown,
+>({} /* ... */ : UseMatchOverEventOptions<TDetail>) {
   // ...
 }
 ```

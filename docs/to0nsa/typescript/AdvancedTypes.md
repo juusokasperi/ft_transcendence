@@ -1,7 +1,7 @@
 # Advanced Type Features and Utility Types in TypeScript
 
 This is a mini-course on **advanced types** and **utility types** as they actually appear in this codebase.  
-The goal is to help you *read and write* the kind of TypeScript you see in the Pong game, UI, and backend.
+The goal is to help you _read and write_ the kind of TypeScript you see in the Pong game, UI, and backend.
 
 We’ll focus on:
 
@@ -75,7 +75,7 @@ Here:
 Combining `keyof` and indexed access:
 
 ```ts
-type GameKeys = keyof Ruleset['game'];              // union of game config keys
+type GameKeys = keyof Ruleset['game']; // union of game config keys
 type GameValue<K extends GameKeys> = Ruleset['game'][K]; // value type for a specific key
 ```
 
@@ -115,8 +115,12 @@ import type { Ruleset } from '@pong/shared';
 
 export function tableTennisRules(overrides?: Partial<Ruleset>): Ruleset {
   const base = {
-    game: { /* defaults */ },
-    match: { /* defaults */ },
+    game: {
+      /* defaults */
+    },
+    match: {
+      /* defaults */
+    },
   } satisfies Ruleset;
 
   const merged: Ruleset = {
@@ -197,7 +201,9 @@ Example from `docs/dev/matchmaking/blueprint.md`:
 
 ```ts
 type ReadonlyInput = Readonly<{ tick: number; up: boolean; down: boolean }>;
-type ReadonlySnapshot = Readonly<{ /* ... */ }>;
+type ReadonlySnapshot = Readonly<{
+  /* ... */
+}>;
 ```
 
 In practice, we often use shorthand like:
@@ -428,8 +434,12 @@ The `satisfies` operator is great for config objects:
 
 ```ts
 const base = {
-  game: { /* ... */ },
-  match: { /* ... */ },
+  game: {
+    /* ... */
+  },
+  match: {
+    /* ... */
+  },
 } satisfies Ruleset;
 ```
 

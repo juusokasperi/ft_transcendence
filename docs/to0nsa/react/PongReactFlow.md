@@ -200,7 +200,10 @@ Rendering:
     return (
       <PageContainer>
         <PageSection className="flex min-h-[60vh] items-center justify-center">
-          <PostMatchOnlineView summary={state.postMatchSummary} onBackToMenu={() => navigate('/pong')} />
+          <PostMatchOnlineView
+            summary={state.postMatchSummary}
+            onBackToMenu={() => navigate('/pong')}
+          />
         </PageSection>
       </PageContainer>
     );
@@ -308,4 +311,3 @@ When working on Pong features:
 - For **UI/layout** changes, start from `UIComponentsAndLayout.md` and the corresponding page component (`LocalGame`, `OnlineGame`, `TournamentPage`).
 - For **network/flow** changes, cross‑reference `OnlinePongNetwork.md` and the hooks in `hooks-index.md`.
 - For **React behavior** changes (effects, state machines, contexts), this doc plus `React.md`/`NativeHooks.md` should give you the mental model for how the pieces currently fit together.
-

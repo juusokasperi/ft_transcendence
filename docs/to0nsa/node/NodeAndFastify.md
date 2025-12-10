@@ -180,4 +180,3 @@ When you open any service under `apps/`:
    - Matchmaking/gateway/game server → `docs/to0nsa/workflow/OnlinePongNetwork.md`, `MatchmakingService.md`, `GameNode.md`, `GatewayAndWebSockets.md`.
 
 Together, this Node/Fastify doc and the others in `docs/to0nsa/node` give you a map for understanding and extending the backend side of ft_transcendence.
-

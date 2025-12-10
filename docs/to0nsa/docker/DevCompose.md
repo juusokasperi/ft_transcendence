@@ -51,7 +51,7 @@ deps:
   working_dir: /work
   environment:
     PNPM_STORE_DIR: /pnpm/store
-    COREPACK_ENABLE_DOWNLOAD_PROMPT: "0"
+    COREPACK_ENABLE_DOWNLOAD_PROMPT: '0'
     COREPACK_HOME: /tmp/corepack
   command: >
     bash -lc "
@@ -95,14 +95,14 @@ frontend:
   working_dir: /work/apps/frontend
   environment:
     PNPM_STORE_DIR: /pnpm/store
-    CHOKIDAR_USEPOLLING: "true"
-    WATCHPACK_POLLING: "true"
+    CHOKIDAR_USEPOLLING: 'true'
+    WATCHPACK_POLLING: 'true'
   command: bash -lc "corepack pnpm dev"
   depends_on:
     deps:
       condition: service_completed_successfully
   ports:
-    - "${FRONTEND_PORT:-5173}:5173"
+    - '${FRONTEND_PORT:-5173}:5173'
   volumes:
     - .:/work:cached
     - pnpm-store:/pnpm/store
@@ -137,7 +137,7 @@ backend:
     deps:
       condition: service_completed_successfully
   ports:
-    - "${BACKEND_PORT:-3001}:3001"
+    - '${BACKEND_PORT:-3001}:3001'
   volumes:
     - .:/work:cached
     - pnpm-store:/pnpm/store
@@ -165,7 +165,7 @@ nginx:
     - frontend
     - backend
   ports:
-    - "${NGINX_PORT:-8080}:80"
+    - '${NGINX_PORT:-8080}:80'
   volumes:
     - ./nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
 ```
@@ -270,7 +270,7 @@ redis:
   volumes:
     - redis_data:/data
   ports:
-    - "6379:6379"
+    - '6379:6379'
 ```
 
 - Shared by matchmaking, allocator, game server, scorer, backend tournament bridge.
@@ -294,4 +294,3 @@ Typical workflow:
    - Single‑origin dev via Nginx: `http://localhost:8080`
 
 You can stop everything with `docker compose down`. Volumes (`pnpm-store`, `node_modules`, DB data) persist between runs unless removed.
-

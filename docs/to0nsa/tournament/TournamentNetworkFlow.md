@@ -542,35 +542,35 @@ Frontend behavior:
 
 Putting it all together, the typical user journey for a tournament looks like:
 
-1. **Browse tournaments**  
-   - Visit `/pong/tournaments`.  
+1. **Browse tournaments**
+   - Visit `/pong/tournaments`.
    - Frontend loads tournaments via HTTP and subscribes to `/matchmaking`.
 
-2. **Create or join a tournament**  
-   - Send `CREATE_TOURNAMENT` or `JOIN_TOURNAMENT`.  
+2. **Create or join a tournament**
+   - Send `CREATE_TOURNAMENT` or `JOIN_TOURNAMENT`.
    - Matchmaking calls backend, sets `IN_TOURNAMENT`, and broadcasts `TOURNAMENT_LOBBY_UPDATED` + `TOURNAMENT_BRACKET_SNAPSHOT`.
 
-3. **Wait in lobby / watch bracket**  
-   - Lobby and bracket updates arrive over WebSocket.  
+3. **Wait in lobby / watch bracket**
+   - Lobby and bracket updates arrive over WebSocket.
    - Frontend renders participant list and matches by stage.
 
-4. **Receive a scheduled match**  
-   - Backend + matchmaking decide a match is ready.  
+4. **Receive a scheduled match**
+   - Backend + matchmaking decide a match is ready.
    - Players receive `TOURNAMENT_MATCHES_READY` and `TOURNAMENT_MATCH_COUNTDOWN` as the start approaches.
 
-5. **Countdown and readiness**  
-   - Countdown runs; both players must be present in `/matchmaking`.  
+5. **Countdown and readiness**
+   - Countdown runs; both players must be present in `/matchmaking`.
    - If someone is absent or forfeits:
      - Countdown cancels; auto‑forfeit logic may apply; state updates.
 
-6. **Match handoff and gameplay**  
-   - When conditions are good, matchmaking calls allocator and sends `HANDOFF` with tournament context.  
-   - Frontend bootstraps an online match using the same host as `/pong/online`.  
+6. **Match handoff and gameplay**
+   - When conditions are good, matchmaking calls allocator and sends `HANDOFF` with tournament context.
+   - Frontend bootstraps an online match using the same host as `/pong/online`.
    - Gameplay, reconnects, and latency handling are identical to casual matches.
 
-7. **Match end and bracket update**  
-   - Game server reports tournament result to backend.  
-   - Backend updates bracket and pushes a state update; matchmaking broadcasts `TOURNAMENT_LOBBY_UPDATED` + `TOURNAMENT_BRACKET_SNAPSHOT`.  
+7. **Match end and bracket update**
+   - Game server reports tournament result to backend.
+   - Backend updates bracket and pushes a state update; matchmaking broadcasts `TOURNAMENT_LOBBY_UPDATED` + `TOURNAMENT_BRACKET_SNAPSHOT`.
    - Frontend bracket view updates, and the player either moves on to the next round or is eliminated.
 
 For deeper details, follow the links in `overview.md`, especially:
@@ -578,4 +578,3 @@ For deeper details, follow the links in `overview.md`, especially:
 - `TournamentMatchmaking.md` for matchmaking internals.
 - `TournamentMatchFlow.md` for the per‑match handoff and game server path.
 - `ProtocolReference.md` for exact tournament message shapes.
-

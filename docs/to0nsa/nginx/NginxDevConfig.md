@@ -256,4 +256,3 @@ In dev, Nginx’s main jobs are:
 - Route HTTP and WebSocket requests to the correct Docker containers (`frontend`, `backend`, `matchmaking-service`, `game-gateway`, `chat-service`, `game-server`).
 - Provide a single origin for testing the integrated system.
 - Expose Nginx metrics for the monitoring stack.
-

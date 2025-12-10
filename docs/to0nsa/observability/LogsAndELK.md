@@ -147,4 +147,3 @@ The ELK stack in this project:
 - Exposes them to developers/operators via Kibana under `/kibana/`.
 
 Combined with Grafana and Prometheus, this gives you both the **metrics view** (rates, latencies, load) and the **log view** (exact errors, context) needed to debug and operate the online Pong stack.
-

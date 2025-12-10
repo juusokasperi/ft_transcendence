@@ -78,8 +78,9 @@ Server: `apps/matchmaking/index.ts`
 `OnlineGame` calls:
 
 ```ts
-const { joinQueue, leaveQueue, acceptMatch, declineMatch, confirmJoin } =
-  useMatchmakingClient({ /* ... */ });
+const { joinQueue, leaveQueue, acceptMatch, declineMatch, confirmJoin } = useMatchmakingClient({
+  /* ... */
+});
 ```
 
 `useMatchmakingClient`:
@@ -105,7 +106,9 @@ On the server:
 In `useMatchmakingClient`, `createMatchmakingClient` is given a callback:
 
 ```ts
-const client = createMatchmakingClient((msg: MatchmakingMessage) => { /* switch (msg.type) */ });
+const client = createMatchmakingClient((msg: MatchmakingMessage) => {
+  /* switch (msg.type) */
+});
 ```
 
 Main message types from `packages/pong/shared/src/protocol/net.ts`:
@@ -325,7 +328,13 @@ const bootstrapConfig = useBootstrapConfig(state);
 `useBootstrapConfig` makes sure all required fields are present:
 
 ```ts
-if (!state.serverUrl || !state.matchId || !state.roomIdentifier || state.joinToken === null || state.randomSeed === null) {
+if (
+  !state.serverUrl ||
+  !state.matchId ||
+  !state.roomIdentifier ||
+  state.joinToken === null ||
+  state.randomSeed === null
+) {
   return null;
 }
 return {
@@ -360,10 +369,16 @@ Only when `bootstrapConfig` is non‑null is the client ready to bootstrap the g
     bootingRef.current = true;
     (async () => {
       // dynamic import to load heavy bundle
-      const { createOnlineWorld, bootstrapOnlinePong } = await import('../../../../games/pong/host/online-embed');
+      const { createOnlineWorld, bootstrapOnlinePong } = await import(
+        '../../../../games/pong/host/online-embed'
+      );
       // createOnlineWorld sets up Babylon scene, camera, etc.
       // bootstrapOnlinePong connects to the game server via WebSocket, using the join token.
-      const instance = await bootstrapOnlinePong({ canvas: canvasRef.current, config, onEnd: onEnded });
+      const instance = await bootstrapOnlinePong({
+        canvas: canvasRef.current,
+        config,
+        onEnd: onEnded,
+      });
       appRef.current = instance;
       onStarted();
     })().catch(/* handle bootstrap failure */);

@@ -170,4 +170,3 @@ In tournament flows, Redis enables:
 - **Loose coupling and resilience:** if matchmaking is briefly down, events accumulate in the streams; on restart, it drains pending entries and catches up.
 
 This keeps tournament logic **authoritative in the backend** while letting matchmaking and game servers handle the real‑time aspects, all stitched together by Redis.
-

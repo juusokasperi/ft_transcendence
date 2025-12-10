@@ -216,4 +216,3 @@ Redis in these services acts as:
   - Rate‑limit buckets protect matchmaking from abuse.
 
 This makes the control plane **stateless** at the process level: any instance can answer questions by reading Redis, and failures of an individual process don’t corrupt the global view of online matches.
-

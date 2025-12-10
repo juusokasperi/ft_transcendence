@@ -464,4 +464,3 @@ Result: match continues after a short pause; from the UX perspective, the game f
 - For the **high‑level online journey**, see `OnlinePongNetwork.md`.
 - For token structure and secrets, see `SecurityAndTokens.md`.
 - For game‑server internals and result reporting, see `GameNode.md` and `ResultsAndRanking.md`.
-

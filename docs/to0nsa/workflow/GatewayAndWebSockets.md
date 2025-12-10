@@ -60,10 +60,18 @@ The browser always uses the **standard WebSocket API**:
 
 ```ts
 const ws = new WebSocket(url);
-ws.onopen = () => { /* ... */ };
-ws.onmessage = (ev) => { /* ... */ };
-ws.onerror = (err) => { /* ... */ };
-ws.onclose = () => { /* ... */ };
+ws.onopen = () => {
+  /* ... */
+};
+ws.onmessage = (ev) => {
+  /* ... */
+};
+ws.onerror = (err) => {
+  /* ... */
+};
+ws.onclose = () => {
+  /* ... */
+};
 ws.send(JSON.stringify(payload));
 ```
 
@@ -543,4 +551,4 @@ With this understanding, you can:
 
 - Safely adjust gateway behavior (e.g., logging, retry logic, header handling).
 - Add new WebSocket‑based features (new channels/protocols).
-- Diagnose issues that span browser → gateway → game nodes.***
+- Diagnose issues that span browser → gateway → game nodes.\*\*\*

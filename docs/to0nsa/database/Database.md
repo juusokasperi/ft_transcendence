@@ -35,11 +35,11 @@ Configuration (`client.ts`):
 ```ts
 const db = new Database(DATABASE_PATH);
 db.pragma('foreign_keys = ON');
-db.pragma('busy_timeout = 5000');      // wait up to 5s on lock
-db.pragma('journal_mode = WAL');       // allow reads during writes
-db.pragma('synchronous = NORMAL');     // balance durability vs speed
-db.pragma('cache_size = -524288');     // ~512MB cache
-db.pragma('temp_store = memory');      // temp tables/sorts in RAM
+db.pragma('busy_timeout = 5000'); // wait up to 5s on lock
+db.pragma('journal_mode = WAL'); // allow reads during writes
+db.pragma('synchronous = NORMAL'); // balance durability vs speed
+db.pragma('cache_size = -524288'); // ~512MB cache
+db.pragma('temp_store = memory'); // temp tables/sorts in RAM
 ```
 
 This setup:
@@ -128,4 +128,3 @@ Migrations are managed with:
 - `QueriesAndPatterns.md` – common query patterns and mapping approaches in the backend.
 
 These docs build on this overview to give you a clear mental map of the backend database design.
-

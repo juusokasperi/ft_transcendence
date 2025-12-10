@@ -82,7 +82,7 @@ useEffect(() => {
 
 ```tsx
 const canvasRef = useRef<HTMLCanvasElement | null>(null); // DOM ref
-const bootingRef = useRef(false);                          // mutable flag
+const bootingRef = useRef(false); // mutable flag
 ```
 
 **Where it’s used here:**
@@ -233,12 +233,11 @@ The majority of the app uses the hooks above. Occasionally you may also see:
 
 If you want concrete examples to reinforce these concepts:
 
-- **Follow `OnlineGame.tsx`**  
-  - Identify where `useState`, `useReducer`, `useEffect`, `useMemo`, `useCallback`, and `useRef` appear.  
-  - Cross‑reference with this doc to remind yourself *why* each hook is used there.
+- **Follow `OnlineGame.tsx`**
+  - Identify where `useState`, `useReducer`, `useEffect`, `useMemo`, `useCallback`, and `useRef` appear.
+  - Cross‑reference with this doc to remind yourself _why_ each hook is used there.
 
-- **Look at custom hooks in `hooks-index.md`**  
+- **Look at custom hooks in `hooks-index.md`**
   - Many custom hooks (e.g. `useMatchmakingClient`, `useGameBootstrap`) are “mini‑courses” in combining native hooks to solve a real problem (WebSockets, async bootstrapping, state machines).
 
 Together with `React.md`, this should give you a solid mental model for both **native React hooks** and the **project‑specific hooks** built on top of them.
-

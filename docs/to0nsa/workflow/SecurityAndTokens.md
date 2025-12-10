@@ -19,7 +19,7 @@ You may want to pair it with:
 - `GameNode.md` – how resume tokens are issued and consumed by the game server.
 - `ChatAndPresence.md` – how the chat service reuses the site token for `/chat`.
 - `docs/to0nsa/redis/GameServerAndGateway.md` – Redis backing for join/resume token single‑use enforcement.
- - `OnlinePongReconnect.md` – end‑to‑end reconnect/resume flow (grace windows, reconnector behavior, UX).
+- `OnlinePongReconnect.md` – end‑to‑end reconnect/resume flow (grace windows, reconnector behavior, UX).
 
 ---
 

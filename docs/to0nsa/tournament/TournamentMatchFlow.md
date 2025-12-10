@@ -257,4 +257,3 @@ When working on tournament features, always remember:
 
 - **Control plane** (scheduling, brackets, absences) lives mostly in backend + matchmaking.
 - **Data plane** (frames, ticks, reconnect) is shared with online Pong and fully described in `OnlinePongDataPlane.md` and `OnlinePongReconnect.md`.
-

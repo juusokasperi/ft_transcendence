@@ -100,7 +100,9 @@ export function authPreHandler(req, res, done) {
   } else if (req.cookies?.[ACCESS_TOKEN_COOKIE_NAME]) {
     token = req.cookies[ACCESS_TOKEN_COOKIE_NAME] as string;
   }
-  if (!token) { /* clear cookies, 401 */ }
+  if (!token) {
+    /* clear cookies, 401 */
+  }
   try {
     const payload = verifyAccessToken(token);
     req.user = payload as any;

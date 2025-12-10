@@ -286,4 +286,3 @@ If you’re working on frontend tournament behavior:
   - `TournamentNetworkFlow.md` – to see how frontend events align with backend/matchmaking.
   - `TournamentMatchmaking.md` – to understand how messages and HTTP calls are generated server‑side.
   - `OnlinePongNetwork.md` and `OnlinePongReconnect.md` – for the in‑match host behavior that tournaments reuse.
-

@@ -235,4 +235,3 @@ Understanding this schema makes it much easier to follow:
 - How match results end up as history and rankings.
 - How tournaments are represented and progressed.
 - How the backend enforces relationships between users, matches, and tournaments.
-

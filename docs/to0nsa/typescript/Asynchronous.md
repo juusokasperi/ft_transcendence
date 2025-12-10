@@ -2,7 +2,7 @@
 
 This is a practical guide to asynchronous programming in TypeScript, with a focus on the patterns you actually see in this project (timers, event listeners, promises, `async` / `await`, and game/network loops).
 
-The key idea: **TypeScript does not change how async works at runtime**. All the asynchronous behavior comes from JavaScript and the browser/Node environment. TypeScript adds *types* on top of that behavior so you get better autocomplete and error checking.
+The key idea: **TypeScript does not change how async works at runtime**. All the asynchronous behavior comes from JavaScript and the browser/Node environment. TypeScript adds _types_ on top of that behavior so you get better autocomplete and error checking.
 
 ---
 
@@ -15,7 +15,7 @@ JavaScript runs (conceptually) on a **single thread**:
 
 To stay responsive, JavaScript uses **asynchronous operations**:
 
-- Instead of blocking, you *start* an operation (network request, timer, file read, etc.).
+- Instead of blocking, you _start_ an operation (network request, timer, file read, etc.).
 - You give JavaScript a **callback** or a **promise**, and your code resumes later when the operation finishes.
 - In TypeScript, we describe these operations with types like `Promise<T>`, callback parameter types, etc.
 
@@ -38,7 +38,7 @@ You don’t need a perfect mental model to be productive, but a basic one helps:
 Important consequences:
 
 - Asynchronous callbacks **never interrupt** currently running code; they only run between tasks.
-- Even `setTimeout(fn, 0)` runs *later*, after the current synchronous work finishes.
+- Even `setTimeout(fn, 0)` runs _later_, after the current synchronous work finishes.
 - `async` / `await` is “syntax sugar” over promises, which are scheduled by this event loop.
 
 You usually don’t touch the event loop directly; you use higher-level APIs (promises, timers, `async` / `await`) and let the runtime manage the queue.
@@ -205,7 +205,7 @@ TypeScript makes this easier by:
 
 ## 4. Typing functions and callbacks in TypeScript
 
-In TypeScript, *functions themselves* have types. This is crucial for async code because you pass functions around constantly.
+In TypeScript, _functions themselves_ have types. This is crucial for async code because you pass functions around constantly.
 
 ### 4.1 Function types
 
@@ -227,12 +227,7 @@ const scheduleSync: TickFn = () => {
 Or inline:
 
 ```ts
-function createRenderLoop(
-  engine: Engine,
-  scene: Scene,
-  preRender?: () => void,
-  targetFps = 60,
-) {
+function createRenderLoop(engine: Engine, scene: Scene, preRender?: () => void, targetFps = 60) {
   let loop: (() => void) | null = null;
   // ...
 }
@@ -257,7 +252,7 @@ function withRetry<T>(fn: () => Promise<T>, retries: number): Promise<T> {
 
 Here:
 
-- `withRetry` accepts a function that *returns a promise*, and itself returns a `Promise<T>`.
+- `withRetry` accepts a function that _returns a promise_, and itself returns a `Promise<T>`.
 - TypeScript tracks `T` through the whole chain, so the compiler knows what `await withRetry(...)` returns.
 
 ---
@@ -471,7 +466,9 @@ Mitigation:
 let timer: number | null = null;
 
 function start() {
-  timer = window.setInterval(() => { /* ... */ }, 1000);
+  timer = window.setInterval(() => {
+    /* ... */
+  }, 1000);
 }
 
 function stop() {
@@ -532,6 +529,6 @@ await Promise.all(items.map((item) => doSomething(item)));
 
 As you read and write async TypeScript code in this project, try to ask:
 
-- *What is the asynchronous boundary here?* (timer, fetch, event, engine loop)
-- *What is the function type crossing that boundary?* (callback or `Promise<T>`)
-- *How is TypeScript helping me express and check that boundary?*
+- _What is the asynchronous boundary here?_ (timer, fetch, event, engine loop)
+- _What is the function type crossing that boundary?_ (callback or `Promise<T>`)
+- _How is TypeScript helping me express and check that boundary?_

@@ -268,4 +268,3 @@ In production, Nginx:
 - Exposes Nginx metrics for Prometheus and monitoring UIs (Grafana/Kibana) on a dedicated port.
 
 This keeps the public surface area small and well‑controlled, while the internal Node/Fastify services focus on application logic.
-

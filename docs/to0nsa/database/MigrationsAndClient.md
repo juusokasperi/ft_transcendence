@@ -26,11 +26,11 @@ const db = new Database(DATABASE_PATH);
 
 // Enforce constraints and tune performance
 db.pragma('foreign_keys = ON');
-db.pragma('busy_timeout = 5000');      // wait up to 5s on lock
-db.pragma('journal_mode = WAL');       // allow reads during writes
-db.pragma('synchronous = NORMAL');     // balance durability vs speed
-db.pragma('cache_size = -524288');     // ~512MB cache
-db.pragma('temp_store = memory');      // temp tables in RAM
+db.pragma('busy_timeout = 5000'); // wait up to 5s on lock
+db.pragma('journal_mode = WAL'); // allow reads during writes
+db.pragma('synchronous = NORMAL'); // balance durability vs speed
+db.pragma('cache_size = -524288'); // ~512MB cache
+db.pragma('temp_store = memory'); // temp tables in RAM
 
 export default db;
 ```
@@ -163,6 +163,7 @@ When you need to change the schema:
    - In prod: ensure the backend container runs `runMigrations()` on startup (already wired).
 
 > Note: On older SQLite versions, `DROP COLUMN` is not supported. In those cases, either:
+>
 > - Declare the migration irreversible (throw in `down`), or
 > - Use the “rebuild table” pattern described in `backend-db-review.md`.
 
@@ -215,4 +216,3 @@ This separation makes it easier to:
 - Query modules wrap raw SQL into typed helpers, mapping DB rows into domain types.
 
 Understanding this layer helps you safely modify the schema, add new data, or reason about DB performance and correctness changes.
-

@@ -232,9 +232,7 @@ socket.on('message', async (raw: RawData) => {
     // ... tournament-related cases ...
     default:
       log('Unknown message', { type: (data as any).type ?? 'UNKNOWN' });
-      client.socket.send(
-        JSON.stringify({ type: 'ERROR', message: 'Unknown message from client' }),
-      );
+      client.socket.send(JSON.stringify({ type: 'ERROR', message: 'Unknown message from client' }));
   }
 });
 ```
@@ -440,7 +438,6 @@ For a junior‑level understanding, it’s enough to know:
 Two important pieces:
 
 1. **Per‑client rate limiting**:
-
    - Implemented via `RedisTokenBucket` (`@utils/rate-limiter`) and `utils/ratelimit.ts`.
    - `isRateLimited(client, rateLimiter)` is called on every incoming message:
 
@@ -454,7 +451,6 @@ Two important pieces:
    - Prevents spam and protects matchmaking from abuse.
 
 2. **Pending match timeouts**:
-
    - `PendingMatch` includes a `timer`.
    - If players do not accept in time:
      - `MATCH_TIMEOUT` is sent.

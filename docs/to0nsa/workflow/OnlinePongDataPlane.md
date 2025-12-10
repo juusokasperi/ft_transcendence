@@ -59,10 +59,7 @@ Scheduling start (`MatchRunner.scheduleStart`):
 
 ```ts
 const now = this.clock.now();
-const target = Math.max(
-  session.reservation.simulationStartTick,
-  now + this.config.minStartDelayMs,
-);
+const target = Math.max(session.reservation.simulationStartTick, now + this.config.minStartDelayMs);
 session.reservation.simulationStartTick = target;
 session.model.startAtEpochMs = target;
 
@@ -404,4 +401,3 @@ Understanding these details helps when:
 - Debugging desyncs between client and server.
 - Tuning tick rate, lag compensation, and reconnect grace windows.
 - Extending the protocol (e.g., adding new events to `FRAME`, or new latency diagnostics).
-

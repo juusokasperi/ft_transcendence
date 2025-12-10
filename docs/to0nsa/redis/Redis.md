@@ -163,4 +163,3 @@ To dive deeper, read:
 - `TournamentsAndBackend.md` – Redis streams and tournament coordination.
 
 These docs show concrete key names, TTLs, and how each part of the stack uses Redis day‑to‑day.
-

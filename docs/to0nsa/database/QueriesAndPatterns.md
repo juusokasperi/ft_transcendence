@@ -189,4 +189,3 @@ When adding new queries:
 4. Use the helper in the appropriate route or service file.
 
 Following these patterns keeps the DB access layer consistent and easier to reason about.
-

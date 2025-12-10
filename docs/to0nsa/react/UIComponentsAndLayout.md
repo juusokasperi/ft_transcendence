@@ -106,9 +106,7 @@ API (simplified):
 
   ```tsx
   <PageContainer>
-    <PageSection>
-      {/* main content */}
-    </PageSection>
+    <PageSection>{/* main content */}</PageSection>
   </PageContainer>
   ```
 
@@ -205,21 +203,20 @@ You generally don’t need to tweak `PlayingView` unless you’re changing how t
 
 When creating or modifying React pages in this repo:
 
-- **Use `PongLayout` for `/pong/...` routes**  
+- **Use `PongLayout` for `/pong/...` routes**
   - Don’t re‑implement a background or navbar for Pong pages; rely on the shell.
 
-- **Wrap main page content in `PageContainer` and `PageSection`**  
+- **Wrap main page content in `PageContainer` and `PageSection`**
   - Keeps pages centered with consistent spacing.
   - Makes it easier to adjust global layout later (only these components need changes).
 
-- **Use `SurfaceCard` for primary content blocks**  
+- **Use `SurfaceCard` for primary content blocks**
   - Panel‑like views (matchmaking, stats, settings) should almost always sit in a card, not directly on the background.
 
-- **Use `PlayingView` for match screens**  
+- **Use `PlayingView` for match screens**
   - Avoid custom canvas layout logic in individual pages; reuse this component so orientation, fullscreen, and overlays behave the same everywhere.
 
-- **Prefer Tailwind utility classes for per‑component layout**  
+- **Prefer Tailwind utility classes for per‑component layout**
   - When you need custom spacing or flexbox behavior inside a card/section, use Tailwind classes in the JSX rather than ad‑hoc CSS files, to stay consistent with the rest of the app.
 
 Following these patterns will make new pages and UI changes feel “native” to ft_transcendence without having to re‑invent layout choices each time.
-

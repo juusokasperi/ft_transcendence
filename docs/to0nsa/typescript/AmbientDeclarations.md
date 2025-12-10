@@ -15,7 +15,7 @@ Goals:
 
 An **ambient declaration** is TypeScript’s way of saying:
 
-> “This thing exists at runtime, but its implementation is somewhere else. Here is its *type*.”
+> “This thing exists at runtime, but its implementation is somewhere else. Here is its _type_.”
 
 You write ambient declarations in:
 
@@ -212,7 +212,7 @@ You could also:
 - Add missing event types to a complex EventEmitter.
 - Add helper methods installed by a plugin to a library class.
 
-This lets you keep strong types *and* keep using upstream library types without forking.
+This lets you keep strong types _and_ keep using upstream library types without forking.
 
 ---
 

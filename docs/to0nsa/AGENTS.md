@@ -64,7 +64,7 @@ When you need to explain a flow:
   - See `workflow/AGENTS.md` for more specific rules.
 
 - `react/` – front‑end patterns:
-  - Document how React is used *in this app* (contexts, hooks, layout, data fetching).
+  - Document how React is used _in this app_ (contexts, hooks, layout, data fetching).
   - Keep examples short and refer directly to `apps/frontend` code.
 
 - `redis/`, `node/`, `nginx/`, `docker/`, `observability/`, `database/`, `tournament/`:

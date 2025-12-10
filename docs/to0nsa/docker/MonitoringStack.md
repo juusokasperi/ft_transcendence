@@ -186,4 +186,3 @@ nginx-exporter:
   - Kibana provides log search and visualization.
 
 This gives a full observability suite running alongside the app, wired together entirely via Docker networks and Compose.
-

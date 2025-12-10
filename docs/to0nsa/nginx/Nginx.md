@@ -86,4 +86,3 @@ Nginx behaves slightly differently in dev and prod:
   - Hosts monitoring UIs (`/grafana/`, `/kibana/`) on a dedicated monitoring port.
 
 The next docs break down each config in more detail.
-
