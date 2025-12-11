@@ -1,3 +1,9 @@
+// Tests the upgrade flow of the game gateway for `/g/:roomId`:
+//   - URL parsing and rejection of invalid paths
+//   - handling of missing/invalid Sec-WebSocket-Protocol headers and join tokens
+//   - behavior when no room-to-node mapping exists in Redis
+//   - single-use join token enforcement and related HTTP status codes
+//   - successful proxying when all checks pass
 import { EventEmitter } from 'events';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import type { IncomingMessage } from 'http';
