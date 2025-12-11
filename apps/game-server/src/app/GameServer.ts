@@ -15,29 +15,61 @@ import type { OnlineMatchSummary } from '@pong/shared/protocol/net';
 import type { CreateRoomRequest } from '../domain/RoomReservation.ts';
 import { createLogger, type FastifyBaseLogger } from '@utils/logger';
 
+/**
+ * GameServer is the composition root for the game-server process.
+ *
+ * It wires together:
+ *   - configuration, clock and scheduler
+ *   - Redis client (for resume tokens and shared state)
+ *   - RoomRegistry (reservations + live MatchSession objects)
+ *   - Broadcaster (server → client WS messages)
+ *   - ResultReporter (HTTP callbacks to the backend API)
+ *   - MatchRunner (authoritative tick loop)
+ *   - ResumeTokenService + ReconnectManager (disconnect / resume flow)
+ *   - WSServer (public `/ws` game endpoint)
+ *   - HTTP server (health, metrics, `/admin/rooms`)
+ *
+ * The only external entrypoint is `index.ts`, which instantiates GameServer
+ * and calls `start()`.
+ */
 export class GameServer {
+  // Process-wide configuration loaded from environment.
   private config: AppConfig;
+  // Time/source of "now" and scheduling abstraction (wrappable in tests).
   private clock: Clock;
   private scheduler: Scheduler;
+  // Service-level logger shared by all sub-components.
   private logger: FastifyBaseLogger;
+  // Shared Redis connection used by resume tokens and other infra.
   private redis: Redis;
+  // In-memory registry of room reservations and active match sessions.
   private registry: RoomRegistry;
+  // Helper for emitting ROOM_STATE/START/FRAME/MATCH_END/etc. WS messages.
   private broadcaster: Broadcaster;
+  // Responsible for reporting final results back to the backend API.
   private reporter: ResultReporter;
+  // Owns the authoritative simulation loop for each match.
   private runner: MatchRunner;
+  // Coordinates disconnect / reconnect / forfeit logic.
   private reconnects: ReconnectManager;
+  // WebSocket server accepting player connections.
   private wsServer: WSServer;
+  // Issues and consumes resume tokens for reconnect flows.
   private resumeTokens: ResumeTokenService;
 
   constructor() {
+    // Core runtime wiring: config, time, scheduler, logger.
     this.config = loadConfig();
     this.clock = systemClock();
     this.scheduler = nodeScheduler();
     this.logger = createLogger({ service: 'game-server' });
 
+    // Redis is shared between ResumeTokenService (resume tokens) and any
+    // future game-server Redis usages.
     const redisFactory = createRedisFactory(this.config.redisUrl);
     this.redis = redisFactory.create();
 
+    // In-memory state holders and helpers.
     this.registry = new RoomRegistry({ logger: this.logger });
     this.broadcaster = new Broadcaster({ config: this.config, logger: this.logger });
     this.reporter = new ResultReporter({
@@ -51,6 +83,8 @@ export class GameServer {
       _summary: OnlineMatchSummary | null,
       winner?: 'east' | 'west',
     ) => {
+      // Summary is currently only used for logging/notification; the actual
+      // reporting is done in ResultReporter before this callback is invoked.
       void _summary;
       const room = session.reservation.roomIdentifier;
       this.logger.info({ room, winner }, '[GameServer] Match finished');
@@ -79,6 +113,8 @@ export class GameServer {
       }
     };
 
+    // MatchRunner owns the game loop and calls back into `onMatchComplete`
+    // once a match has naturally finished (or errored).
     this.runner = new MatchRunner({
       scheduler: this.scheduler,
       clock: this.clock,
@@ -118,6 +154,7 @@ export class GameServer {
       reporter: this.reporter,
     });
 
+    // Small Fastify HTTP server for health/metrics/admin (`/admin/rooms`).
     createHttpServer({
       adminSecret: this.config.adminSecret,
       port: this.config.httpPort,
@@ -129,6 +166,13 @@ export class GameServer {
     });
   }
 
+  /**
+   * Start the game server:
+   *   - bind the WebSocket server on the configured port
+   *   - log that startup is complete
+   *
+   * The HTTP server is started eagerly in the constructor.
+   */
   async start(): Promise<void> {
     await this.wsServer.listen();
     this.logger.info({}, '[GameServer] Startup complete');
