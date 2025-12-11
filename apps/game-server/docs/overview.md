@@ -39,7 +39,7 @@ This document gives a high‑level overview of the game server codebase: how it 
       - `CMD ["node", "dist/index.js"]`.
       - `dist/index.js` is the compiled version of `apps/game-server/index.ts`, again creating `GameServer`.
 
-So conceptually: *“Docker (dev or prod) starts Node → Node runs `index.ts` → `GameServer` composes everything else.”*
+So conceptually: _“Docker (dev or prod) starts Node → Node runs `index.ts` → `GameServer` composes everything else.”_
 
 ---
 

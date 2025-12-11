@@ -101,7 +101,7 @@ The game server is the authoritative Pong simulation node. It runs the match loo
   - Match reporting,
   - Token handling,
   - or `WSServer` message handling,
-  add or adjust tests to cover both happy path and failure modes.
+    add or adjust tests to cover both happy path and failure modes.
 - For local dev:
   - Run `pnpm -F @app/game-server test` for this service.
   - Use `docker-compose.yml` to spin up the full stack and verify WS flows from the frontend.
