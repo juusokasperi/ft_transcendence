@@ -13,6 +13,16 @@ import {
 import { registerMetrics } from '@utils/metrics';
 import { createFastifyLoggerConfig } from '@utils/logger';
 
+/**
+ * Scorer service
+ *
+ * Periodically:
+ *   - fetches metrics about all game-server nodes from Prometheus (or via HTTP fallback)
+ *   - computes a normalized "load score" per node based on CPU, file descriptors, and active matches
+ *   - writes those scores to Redis under `game-node:scores`
+ *
+ * The allocator reads `game-node:scores` to decide which node should host a new room.
+ */
 const redis = new Redis(REDIS_URL);
 const MATCHES_SOFT_CAP = 200;
 
@@ -22,6 +32,7 @@ const app = fastify({
 
 registerMetrics(app, { labels: { service: 'scorer' } });
 
+// Deterministic list of nodes (game-server, game-server-2, ...) built from config.
 const nodes = Array.from({ length: GAME_NODES_AMOUNT }, (_, i) => {
   let host = GAME_SERVER_SERVICE;
   if (i > 0) host += `-${i + 1}`;
@@ -34,6 +45,15 @@ const nodes = Array.from({ length: GAME_NODES_AMOUNT }, (_, i) => {
 
 app.get('/health', async () => ({ status: 'ok' }));
 
+/**
+ * Query Prometheus for node-level metrics needed to compute scores:
+ *   - CPU usage (1-minute rate of process_cpu_seconds_total)
+ *   - open file descriptors (process_open_fds)
+ *   - max file descriptors (process_max_fds)
+ *   - current matches (game_server_matches)
+ *
+ * Returns a Map keyed by node id (host:port) with the aggregated metrics.
+ */
 async function getMetricsFromPrometheus() {
   const cpuQuery = `rate(process_cpu_seconds_total{instance=~"game-server.*"}[1m])`;
   const fdQuery = `process_open_fds{instance=~"game-server.*"}`;
@@ -79,12 +99,27 @@ async function getMetricsFromPrometheus() {
   return metricsByNode;
 }
 
+/**
+ * Parse a single numeric metric from Prometheus text exposition format.
+ *
+ * Used by the HTTP fallback when Prometheus is not reachable.
+ */
 function parsePrometheusText(text: string, metricName: string) {
   const regex = new RegExp(`^${metricName}(?:\\{[^}]*\\})?\\s+([0-9eE.+-]+)$`, 'm');
   const match = text.match(regex);
   return match && typeof match[1] === 'string' ? parseFloat(match[1]) : null;
 }
 
+/**
+ * Fallback scoring path when Prometheus is unavailable:
+ *   - queries each game node's `/metrics` endpoint directly
+ *   - parses a small subset of metrics (fds, max_fds, matches)
+ *   - computes a "score" using fd load and match load
+ *   - writes `game-node:scores` entries with `fallback: true`
+ *
+ * Nodes that fail the HTTP request or for which metrics cannot be parsed
+ * are removed from the Redis scores hash.
+ */
 async function updateScoresFromHttpFallback() {
   //app.log.warn('Executing fallback scoring: querying nodes directly via HTTP.');
 
@@ -128,6 +163,21 @@ async function updateScoresFromHttpFallback() {
   }
 }
 
+/**
+ * Main scoring function using Prometheus metrics:
+ *   - fetches metrics for all game-server instances
+ *   - for each configured node:
+ *       * if metrics missing -> remove from scores
+ *       * else compute:
+ *           cpuLoad    = cpu
+ *           fdLoad     = fd / maxFds
+ *           matchesLoad = matches / MATCHES_SOFT_CAP
+ *         and combine into a single score:
+ *           score = cpuLoad * 0.5 + fdLoad * 0.2 + matchesLoad * 0.3
+ *   - writes scores to Redis under `game-node:scores`
+ *
+ * On error (e.g., Prometheus unavailable) falls back to direct HTTP scraping.
+ */
 async function updateScores() {
   try {
     const metricsByNode = await getMetricsFromPrometheus();
@@ -164,6 +214,12 @@ async function updateScores() {
   }
 }
 
+/**
+ * Bootstrap the scorer:
+ *   - start Fastify on SCORER_PORT (for health/metrics)
+ *   - log configured nodes and Prometheus URL
+ *   - schedule periodic score updates (every 5s) and run one immediately
+ */
 const start = async () => {
   try {
     await app.listen({ port: SCORER_PORT, host: '0.0.0.0' });
