@@ -10,6 +10,18 @@ import { AllocateSchema } from './utils/schema.ts';
 import { registerMetrics } from '@utils/metrics';
 import { log } from '@utils/logger';
 
+/**
+ * Allocator service
+ *
+ * Responsibilities:
+ *  - receive `/allocate` requests from matchmaking/backend with:
+ *      * idempotencyKey, mode, players, randomSeed, simulationStartTick, tournament context
+ *  - pick the "best" game node based on scores in Redis (`game-node:scores`)
+ *  - register a room on that node via its `/admin/rooms` HTTP API
+ *  - persist `room-to-node:<roomIdentifier>` in Redis so the gateway can route WS to that node
+ *  - mint per-player join tokens (`iss: 'mm'`, `aud: 'game-node'`) and return them to the caller
+ *  - cache the allocation result under an idempotency key to make retries safe
+ */
 const redis = new Redis(REDIS_URL);
 
 const app = fastify();
@@ -39,6 +51,7 @@ app.post(
           tournament?: TournamentContext;
         };
 
+      // Idempotency: if we have already allocated a room for this key, return cached response.
       const cached = await redis.get(IDEMPOTENCY_PREFIX + idempotencyKey);
       if (cached) {
         log('Idempotency cache hit', {
@@ -51,6 +64,7 @@ app.post(
       const roomIdentifier = `r-${uuid()}`;
       const joinDeadlineAtEpochMs = Date.now() + 15000;
 
+      // Read game-node scores from Redis and pick the node with the lowest score.
       const nodeScores = await redis.hgetall('game-node:scores');
       let bestScore = Infinity;
       let bestNodeInfo = null;
@@ -67,11 +81,14 @@ app.post(
         return reply.status(503).send({ message: 'No available game nodes' });
       }
 
+      // Resolve HTTP and WS endpoints for the selected game node.
       const nodeUrl = `${bestNodeInfo.http}`;
       const wsNodeUrl = `${bestNodeInfo.ws}`;
+      // Store routing information so the game-gateway can forward /g/:roomId to this node.
       await redis.set(`room-to-node:${roomIdentifier}`, wsNodeUrl, 'EX', 900);
 
       try {
+        // Ask the game node to register a room reservation via its admin HTTP API.
         await axios.post(
           `${nodeUrl}/admin/rooms`,
           {
@@ -99,6 +116,7 @@ app.post(
         return reply.status(503).send({ message: "Server's are busy." });
       }
 
+      // Build per-player join tokens that the frontend will later present to the gateway/game-node.
       const perPlayerJoinTokens: Record<string, string> = {};
       const nowSec = Math.floor(Date.now() / 1000);
       const expSec = nowSec + 60;
@@ -136,6 +154,7 @@ app.post(
           endpointUrl,
         });
       }
+      // Cache the response for idempotent retries (e.g., client/network issues).
       await redis.set(IDEMPOTENCY_PREFIX + idempotencyKey, JSON.stringify(response), 'EX', 300);
 
       return reply.send(response);

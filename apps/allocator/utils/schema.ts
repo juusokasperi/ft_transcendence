@@ -1,3 +1,14 @@
+/**
+ * JSON schema for the `/allocate` request body.
+ *
+ * Used by Fastify to validate allocator requests before processing. Fields:
+ *  - idempotencyKey: UUID used to deduplicate repeated allocation attempts.
+ *  - mode: "ranked" | "tournament" | "invite".
+ *  - players: list of players with identifiers, sides, and MMR (plus optional tournament fields).
+ *  - simulationStartTick: target simulation start time (epoch ms).
+ *  - randomSeed: seed passed to the game node for deterministic physics.
+ *  - tournament: tournament context (when mode === 'tournament').
+ */
 export const AllocateSchema = {
   body: {
     type: 'object',
