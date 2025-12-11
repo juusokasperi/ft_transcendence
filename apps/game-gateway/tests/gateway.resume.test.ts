@@ -1,3 +1,7 @@
+// Tests the resume-token path in the game gateway:
+//   - validation of resume tokens (iss/aud and room binding)
+//   - rejection of invalid or failed resume verification with 4401
+//   - successful proxying when resume token is valid and routing exists
 import { EventEmitter } from 'events';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import type { IncomingMessage } from 'http';
