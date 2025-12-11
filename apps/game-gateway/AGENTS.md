@@ -57,7 +57,7 @@ The game gateway terminates external WebSocket connections for `/g/:roomId` and 
     - Treat a failed `NX` set as a hard “token already consumed” error.
   - Do not bypass this check or add alternate paths that admit players without join/resume tokens.
 - WebSocket protocols:
-  - Respect `Sec-WebSocket-Protocol` and *do not* strip it:
+  - Respect `Sec-WebSocket-Protocol` and _do not_ strip it:
     - The gateway must forward `bearer,<token>` or `resume,<token>` to the game server intact.
   - When changing how tokens are encoded in subprotocols, update:
     - `docs/to0nsa/workflow/GatewayAndWebSockets.md`
@@ -91,7 +91,7 @@ The game gateway terminates external WebSocket connections for `/g/:roomId` and 
   - token validation rules,
   - Redis key shapes or semantics,
   - error/close codes,
-  update or add tests that exercise both success and failure paths.
+    update or add tests that exercise both success and failure paths.
 - Use Vitest with the existing mocking patterns (Fastify, Redis, http-proxy).
 
 ---
