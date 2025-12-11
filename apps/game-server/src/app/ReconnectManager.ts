@@ -7,6 +7,19 @@ import { reconnectGraceMs, seatToSide } from '../domain/Policies.ts';
 import type { MatchRunner } from './MatchRunner.ts';
 import type { FastifyBaseLogger } from '@utils/logger';
 
+/**
+ * ReconnectManager coordinates what happens when players disconnect and reconnect
+ * during a match.
+ *
+ * Responsibilities:
+ *   - Start a "disconnect grace" timer when one player drops.
+ *   - Pause or stop the MatchRunner as appropriate.
+ *   - Notify the remaining player (OPPONENT_DISCONNECTED/RECONNECTED).
+ *   - If the grace expires without reconnect, auto‑award the win and report results.
+ *
+ * This keeps reconnect logic in one place instead of scattering it across WSServer
+ * and MatchRunner.
+ */
 export class ReconnectManager {
   private readonly scheduler: Scheduler;
   private readonly logger: FastifyBaseLogger;
@@ -42,6 +55,25 @@ export class ReconnectManager {
     this.onForfeit = args.onForfeit;
   }
 
+  /**
+   * Called when a player's WebSocket closes.
+   *
+   * Behavior:
+   *   - If both players are now absent:
+   *       * stop the runner and mark the match as stopped (no winner here;
+   *         GameServer's onCompleted callback decides final cleanup policy)
+   *   - If match has not started:
+   *       * clear start timeout
+   *       * mark model as stopped
+   *       * broadcast WAITING_FOR_OPPONENT so the remaining player sees lobby state
+   *   - Compute reconnect grace based on whether this is a tournament match
+   *   - If match started:
+   *       * pause the runner (stop loop but keep match "started")
+   *       * notify remaining player with OPPONENT_DISCONNECTED + graceMs
+   *   - Start a timer:
+   *       * if disconnecting player does not return before grace ends → auto‑win
+   *         for remaining player (opponent_timeout + ResultReporter.report)
+   */
   onDisconnect(session: MatchSession, seat: 'P1' | 'P2'): void {
     const remainingSeat = seat === 'P1' ? 'P2' : 'P1';
     const remainingPlayer = session.players.get(remainingSeat);
@@ -118,6 +150,17 @@ export class ReconnectManager {
     session.model.startDisconnectGrace(seat, cancel);
   }
 
+  /**
+   * Called when a previously disconnected player successfully reconnects.
+   *
+   * Behavior:
+   *   - Cancel any pending disconnect grace timer.
+   *   - If the match never started and both players are now present:
+   *       * reschedule start (player may have dropped during countdown).
+   *   - Else:
+   *       * notify both players with OPPONENT_RECONNECTED.
+   *       * if the match was started, resume the MatchRunner loop.
+   */
   onReconnect(session: MatchSession, seat: 'P1' | 'P2'): void {
     void seat;
     session.model.cancelDisconnectGrace();

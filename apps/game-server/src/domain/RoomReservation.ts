@@ -8,6 +8,12 @@ import type {
   TableSide,
 } from './MatchTypes.ts';
 
+/**
+ * Shape of a room creation request coming from the allocator/admin HTTP API.
+ *
+ * This is converted into a RoomReservation by createRoomReservation and stored
+ * in RoomRegistry until players join.
+ */
 export type CreateRoomRequest = {
   idempotencyKey: string;
   roomIdentifier: string;
@@ -24,10 +30,25 @@ export type CreateRoomRequest = {
   tournament?: TournamentReservation;
 };
 
+/** Map table side ('east'/'west') to a logical seat (P1/P2). */
 export function seatForSide(side: TableSide): Seat {
   return side === 'east' ? 'P1' : 'P2';
 }
 
+/**
+ * Build a RoomReservation from a CreateRoomRequest.
+ *
+ * Responsibilities:
+ *   - validate basic invariants (idempotencyKey, roomIdentifier, expectedPlayers, capacity)
+ *   - derive randomSeed if not provided
+ *   - derive simulationStartTick and joinDeadlineAtEpochMs if not provided
+ *   - build expectedPlayers map keyed by playerIdentifier, enriched with:
+ *       * seat (P1/P2) derived from side
+ *       * joined = false
+ *       * participantId/alias from tournament participants when available
+ *       * mmr with a safe default
+ *   - initialize consumedJtis set for token single‑use enforcement
+ */
 export function createRoomReservation(payload: CreateRoomRequest): RoomReservation {
   if (!payload.idempotencyKey || !payload.roomIdentifier) {
     throw new Error('Missing idempotencyKey or roomIdentifier');
@@ -83,6 +104,11 @@ export function createRoomReservation(payload: CreateRoomRequest): RoomReservati
   };
 }
 
+/**
+ * Resolve the high‑level room state for ROOM_STATE messages given:
+ *   - whether the match has started
+ *   - whether both players are connected
+ */
 export function resolveRoomState(started: boolean, playersReady: boolean): RoomState {
   if (started) return 'PLAYING';
   return playersReady ? 'READY' : 'WAITING_FOR_OPPONENT';

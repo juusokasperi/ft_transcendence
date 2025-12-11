@@ -1,3 +1,7 @@
+// Tests the HTTP surface of the game server created by createHttpServer:
+//   - wiring of /health and /metrics endpoints and their responses
+//   - Prometheus gauges driven by RoomRegistry.metrics()
+//   - admin-secret protection and behavior of /admin/rooms (success and failure)
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 
 const getRoutes = new Map<string, any>();

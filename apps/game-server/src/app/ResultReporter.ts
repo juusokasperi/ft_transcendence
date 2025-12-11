@@ -7,6 +7,17 @@ import type { Seat, ExpectedPlayer } from '../domain/MatchTypes.ts';
 
 type MatchOverEvent = { winner?: string; reason?: 'natural' | 'forfeit' | 'timeout' };
 
+/**
+ * Internal representation of a player when reporting results.
+ *
+ * This combines:
+ *   - seat (P1/P2)
+ *   - identifier (user UUID)
+ *   - tournament participantId (if any)
+ *   - alias
+ *   - mmrBefore (for delta calculation)
+ *   - references to both live connection and reservation entry
+ */
 type ResolvedPlayer = {
   seat: Seat;
   identifier: string;
@@ -17,6 +28,18 @@ type ResolvedPlayer = {
   expected?: ExpectedPlayer;
 };
 
+/**
+ * ResultReporter is responsible for turning a finished MatchSession into:
+ *
+ *   - backend‑persisted match results (casual matches: /api/matches + stats)
+ *   - tournament results (tournament matches: /api/tournaments/.../result)
+ *   - an OnlineMatchSummary object used by the frontend post‑match UI
+ *
+ * It hides the details of:
+ *   - mapping player seats and table sides into "east"/"west" player‑space
+ *   - handling technical wins (disconnect/forfeit/timeout) vs natural completions
+ *   - calling backend APIs with a match service token
+ */
 export class ResultReporter {
   private readonly apiUrl: string;
   private readonly matchSecret: string;
@@ -28,6 +51,26 @@ export class ResultReporter {
     this.logger = args.logger;
   }
 
+  /**
+   * Main entrypoint: report the outcome of a match and build an OnlineMatchSummary.
+   *
+   * Steps:
+   *   - guard against double submission
+   *   - resolve "east" and "west" players in player‑space (P1/P2)
+   *   - derive scores from gamesHistory and apply technical win logic when needed
+   *   - sign a match service token and call backend APIs:
+   *       * tournament: reportTournament(...)
+   *       * casual: reportCasual(...) and collect MMR deltas
+   *   - mark resultSubmitted/Submitting flags
+   *   - construct an OnlineMatchSummary with:
+   *       * winner (east/west, player‑space)
+   *       * bestOf
+   *       * gamesHistory (including technical games, if any)
+   *       * names mapped by seat
+   *       * MMR before/after for each side
+   *
+   * Returns the summary on success, or null on error.
+   */
   async report(
     session: MatchSession,
     matchOver: MatchOverEvent,
@@ -39,7 +82,7 @@ export class ResultReporter {
     try {
       const { reservation } = session;
 
-      // --- KEY CHANGE: always resolve by fixed seats (player-space), not current table ends
+      // Always resolve by fixed seats (player-space), not current table ends
       const east = this.resolvePlayer(session, 'P1'); // "east" row == Player 1
       const west = this.resolvePlayer(session, 'P2'); // "west" row == Player 2
       if (!east || !west) {
@@ -180,6 +223,16 @@ export class ResultReporter {
     }
   }
 
+  /**
+   * Resolve a player's identity and metadata for a given seat.
+   *
+   * Uses:
+   *   - reservation.expectedPlayers to find the expected player for this seat
+   *   - session.players to see if they are currently connected
+   *
+   * Prioritizes live connection data (record) but falls back to reservation
+   * for alias, participantId, and mmr when necessary.
+   */
   private resolvePlayer(session: MatchSession, seat: Seat): ResolvedPlayer | null {
     const expected = Array.from(session.reservation.expectedPlayers.values()).find(
       (p) => p.seat === seat,
@@ -200,11 +253,26 @@ export class ResultReporter {
     };
   }
 
+  /**
+   * Create a short‑lived JWT used by the game server to authenticate its
+   * requests to backend match/tournament APIs.
+   *
+   * Signed with MATCH_SECRET; identifies the service as 'game-node'.
+   */
   private signToken(): string {
     const now = Math.floor(Date.now() / 1000);
     return jwt.sign({ service: 'game-node', iat: now, exp: now + 3600 }, this.matchSecret);
   }
 
+  /**
+   * Report a tournament match result to the backend.
+   *
+   * Sends:
+   *   POST /api/tournaments/:tournamentId/matches/:tournamentMatchId/result
+   *   with winner/loser participant ids, user uuids, and per‑game history.
+   *
+   * Throws if participant ids are missing; higher‑level caller handles errors.
+   */
   private async reportTournament(
     roomIdentifier: string,
     token: string,
@@ -257,6 +325,17 @@ export class ResultReporter {
     this.logger.info({ room: roomIdentifier }, '[ResultReporter] Tournament result reported');
   }
 
+  /**
+   * Report a casual (ranked) match:
+   *
+   *   1) POST /api/matches to create the match and update ELO/MMR.
+   *      - We assume 1v1; deltas are taken from team1/team2[0].
+   *   2) POST /api/matches/:id/stats with per‑player stats (best‑effort).
+   *      - Points scored/conceded, gamesWon/Lost, maxPointLead.
+   *
+   * Returns the MMR deltas for east/west so the caller can update local state.
+   * Stats posting failure logs a warning but does not fail the overall reporting.
+   */
   private async reportCasual(
     token: string,
     east: ResolvedPlayer,
