@@ -1,3 +1,13 @@
+/**
+ * Tests for scheduled tournament match orchestration in matchmaking.
+ *
+ * Focuses on the countdown/reminder logic in `utils/scheduledMatches.ts` when
+ * backend publishes `TOURNAMENT_MATCHES_READY`:
+ *   - emits `TOURNAMENT_MATCH_COUNTDOWN` ticks and auto-starts a match when both
+ *     participants are online.
+ *   - retries invitations via reminders when players are offline, then starts
+ *     once they reconnect and clears reminder state.
+ */
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { WebSocket } from 'ws';
 import { ClientState, type ClientInfo } from '../types/types';

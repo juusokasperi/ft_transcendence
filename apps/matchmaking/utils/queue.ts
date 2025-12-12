@@ -14,56 +14,88 @@ export interface TournamentMatchContext {
   participants?: Array<{ participantId: number; userUuid: string; alias?: string }>;
 }
 
+/**
+ * Ranked/casual queue and allocator handoff.
+ *
+ * Flow overview:
+ *   1. Frontend sends `JOIN_QUEUE` over `/matchmaking` WS → `handleJoinQueue(...)`.
+ *   2. Clients are inserted into in‑memory MMR buckets.
+ *   3. A periodic ticker in `apps/matchmaking/index.ts` calls `tryMatchQueue(...)`.
+ *   4. When a pair is found we create a PendingMatch (`MATCH_FOUND` → accept/decline).
+ *   5. On mutual accept we call `createMatch(..., 'ranked')` which:
+ *        - asks allocator for a game node + per‑player join tokens
+ *        - sends `HANDOFF` to both players
+ *        - registers join timeouts via `handleHandoff(...)`.
+ *
+ * The same `createMatch(...)` helper is reused for invite matches (`invites.ts`)
+ * and tournament scheduled matches (`scheduledMatches.ts`).
+ */
+
+// Bucket width for MMR-based matchmaking.
 const MMR_BUCKET_SIZE = 50;
+// In-memory buckets keyed by floor(mmr / MMR_BUCKET_SIZE).
 const buckets = new Map<number, ClientInfo[]>();
 
 /**
- * Clients are spread into buckets based on MMR. First index of each bucket
- * contains the oldest player in said bucket, so we make an array of those indexes,
- * sort them based on the joinedAt value and start matching.
- * This helps us avoid starvation problem, where f.ex. oldest player has a
- * higher MMR than the rest of the queue potentially blocking from anybody getting matched.
+ * Try to form ranked/casual pairs from the queue buckets.
  *
- * @param pendingMatches
+ * Clients are spread into buckets based on MMR. The first index of each bucket
+ * contains the oldest player in that bucket, so we:
+ *   - take the oldest from each bucket
+ *   - sort those by joinedAt
+ *   - for each oldest player, scan nearby buckets within a widening MMR window.
+ *
+ * This helps avoid starvation where the oldest high‑MMR player blocks matching.
  */
 export function tryMatchQueue(pendingMatches: Map<string, PendingMatch>) {
+  // Collect one "oldest" candidate per non-empty bucket.
   const oldestPlayers: ClientInfo[] = [];
   for (const clients of buckets.values()) {
     if (clients.length > 0 && clients[0]) oldestPlayers.push(clients[0]);
   }
   if (oldestPlayers.length === 0) return;
 
+  // Process candidates oldest-first across buckets.
   oldestPlayers.sort((a, b) => a.joinedAt - b.joinedAt);
 
+  // Track ids already paired in this tick.
   const matchedPlayerIds = new Set<string>();
 
   for (const a of oldestPlayers) {
+    // Skip if already matched while processing an earlier candidate.
     if (matchedPlayerIds.has(a.id)) continue;
 
+    // Ensure `a` is still the oldest in its bucket (may have moved since collection).
     const bucketId = Math.floor(a.mmr / MMR_BUCKET_SIZE);
     const aBucket = buckets.get(bucketId);
     if (!aBucket || aBucket[0]?.id !== a.id) continue;
 
+    // Widen the acceptable MMR window as the player waits.
     const waitedMs = Date.now() - a.joinedAt;
     const window = Math.min(500, MMR_BUCKET_SIZE + Math.floor(waitedMs / 2500) * MMR_BUCKET_SIZE);
     const bucketsToCheck = Math.ceil(window / MMR_BUCKET_SIZE);
 
+    // Scan neighboring buckets for the first opponent inside the current window.
     for (let offset = -bucketsToCheck; offset <= bucketsToCheck; ++offset) {
       const searchBucket = buckets.get(bucketId + offset);
       if (!searchBucket) continue;
 
+      // If searching our own bucket, skip index 0 because that's `a`.
       const startIdx = offset === 0 ? 1 : 0;
       let matchFound = false;
       for (let i = startIdx; i < searchBucket.length; ++i) {
         const b = searchBucket[i]!;
 
+        // Accept the first opponent whose MMR fits in the window.
         if (Math.abs(a.mmr - b.mmr) <= window) {
+          // Remove both from their buckets before creating the PendingMatch.
           aBucket.shift();
           searchBucket.splice(i, 1);
 
           matchedPlayerIds.add(a.id);
           matchedPlayerIds.add(b.id);
 
+          // Drop empty buckets to keep iteration cheap.
           cleanupBucket(bucketId);
           cleanupBucket(bucketId + offset);
 
@@ -73,6 +105,7 @@ export function tryMatchQueue(pendingMatches: Map<string, PendingMatch>) {
             window,
             totalBuckets: buckets.size,
           });
+          // Notify clients and start accept/decline timer.
           addToPendingMatches(a, b, pendingMatches);
           matchFound = true;
           break;
@@ -83,8 +116,14 @@ export function tryMatchQueue(pendingMatches: Map<string, PendingMatch>) {
   }
 }
 
+/**
+ * Remove a client from the ranked queue and restore their previous state.
+ *
+ * Called on `LEAVE_QUEUE` from the frontend.
+ */
 export function handleLeaveQueue(client: ClientInfo) {
   if (removeFromQueue(client.id)) {
+    // If they entered queue from tournament/invite, restore that; otherwise idle.
     const targetState = client.previousState ?? ClientState.IDLE;
     client.previousState = undefined;
 
@@ -94,16 +133,26 @@ export function handleLeaveQueue(client: ClientInfo) {
   }
 }
 
+/**
+ * Handle a client confirming queue join after a prompt.
+ *
+ * Used when the client is not idle and presses JOIN_QUEUE (see `sendJoinConfirm`).
+ */
 export async function handleJoinConfirm(client: ClientInfo) {
+  // Preserve originating state so we can restore it on leave/timeout.
   if (client.state === ClientState.IN_TOURNAMENT || client.state === ClientState.IN_INVITE_LOBBY) {
     client.previousState = client.state;
   }
   handleJoinQueue(client);
 }
 
+/**
+ * Insert an authenticated client into their MMR bucket and mark them IN_QUEUE.
+ */
 export async function handleJoinQueue(client: ClientInfo) {
   if (!isAuthenticated(client)) return;
 
+  // joinedAt is used for fairness (older players are matched first).
   client.joinedAt = Date.now();
   const bucketId = Math.floor(client.mmr / MMR_BUCKET_SIZE);
   if (!buckets.has(bucketId)) buckets.set(bucketId, []);
@@ -119,6 +168,14 @@ export async function handleJoinQueue(client: ClientInfo) {
   setClientState(client, ClientState.IN_QUEUE, 'joined_queue');
 }
 
+/**
+ * Create a PendingMatch offer and notify both players to accept/decline.
+ *
+ * Pending matches live in memory until:
+ *   - both accept → allocate + handoff (`createMatch`)
+ *   - one declines → other returns to queue
+ *   - timeout elapses → accepted player returns to queue.
+ */
 export function addToPendingMatches(
   a: ClientInfo,
   b: ClientInfo,
@@ -126,6 +183,7 @@ export function addToPendingMatches(
 ) {
   const matchId = uuid();
   const accepted = new Set<string>();
+  // Timeout for MATCH_FOUND responses.
   const timer = setTimeout(() => {
     const msg = { type: 'MATCH_TIMEOUT', matchId };
     a.socket.send(JSON.stringify(msg));
@@ -141,6 +199,7 @@ export function addToPendingMatches(
     else setClientState(b, ClientState.IDLE, 'match_timeout');
   }, 15000);
 
+  // Store the pending match for later accept/decline handling.
   pendingMatches.set(matchId, { a, b, accepted, timer });
   log('Match found awaiting confirmation', { matchId, players: [a.uuid, b.uuid] });
   const msgA = { type: 'MATCH_FOUND', matchId, opponent: { username: b.username, mmr: b.mmr } };
@@ -151,6 +210,9 @@ export function addToPendingMatches(
   b.socket.send(JSON.stringify(msgB));
 }
 
+/**
+ * Mark a player as accepted; when both accepted, allocate a room.
+ */
 export function handleAcceptMatch(
   matchId: string,
   client: ClientInfo,
@@ -158,14 +220,17 @@ export function handleAcceptMatch(
 ) {
   const match = pendingMatches.get(matchId);
   if (!match) return;
+  // Record acceptance and move client into the handoff-wait state.
   match.accepted.add(client.id);
   setClientState(client, ClientState.AWAITING_HANDOFF, 'match_accepted');
   log(`Match accepted`, { matchId, uuid: client.uuid });
   if (match.accepted.has(match.a.id) && match.accepted.has(match.b.id)) {
+    // Both accepted: stop waiting and start allocation.
     clearTimeout(match.timer);
     pendingMatches.delete(matchId);
     try {
       log('Both players accepted math', { matchId });
+      // Fire-and-forget; errors are caught below.
       createMatch(match.a, match.b, 'ranked');
     } catch (err) {
       log(
@@ -179,6 +244,12 @@ export function handleAcceptMatch(
   }
 }
 
+/**
+ * Handle a decline:
+ *   - notify the other player
+ *   - return them to queue
+ *   - clear the PendingMatch.
+ */
 export function handleDeclineMatch(
   matchId: string,
   client: ClientInfo,
@@ -201,6 +272,11 @@ export function handleDeclineMatch(
   pendingMatches.delete(matchId);
 }
 
+/**
+ * Allocate a game room for two players and hand them off to a game node.
+ *
+ * Called from ranked accept path, invite flow, and tournament scheduling.
+ */
 export async function createMatch(
   a: ClientInfo,
   b: ClientInfo,
@@ -209,16 +285,20 @@ export async function createMatch(
 ) {
   const matchId = uuid();
 
+  // Ranked players are already removed by `tryMatchQueue`; other modes remove here.
   if (mode !== 'ranked') {
     removeFromQueue(a.id);
     removeFromQueue(b.id);
   }
 
+  // Random seed is shared so client/server simulations stay deterministic.
   const randomSeed = Math.floor(Math.random() * 0x100000000);
+  // Epoch-based start time; clients convert to local tick schedule.
   const simulationStartTick = Date.now() + 5000;
 
   let allocatorRes;
   try {
+    // Ask allocator to reserve a room and mint per-player join tokens.
     log('Requesting allocation', {
       matchId,
       players: [a.uuid, b.uuid],
@@ -227,6 +307,7 @@ export async function createMatch(
     });
 
     allocatorRes = await axios.post(`${ALLOCATOR_URL}/allocate`, {
+      // Idempotency lets allocator dedupe retries on transient failures.
       idempotencyKey: matchId,
       mode,
       players: [
@@ -248,6 +329,7 @@ export async function createMatch(
       tournament: options?.tournament,
     });
   } catch (err) {
+    // Allocation failed: tell both players and reset state.
     log(
       'Allocator failed, sending error msg to client',
       {
@@ -272,6 +354,7 @@ export async function createMatch(
 
   [a, b].forEach((player, idx) => {
     const side = idx === 0 ? 'west' : 'east';
+    // Transition into HANDOFF state and tell client where/when to connect.
     setClientState(player, ClientState.HANDOFF_TO_GAME, 'handoff_initiated');
     player.socket.send(
       JSON.stringify({
@@ -287,6 +370,7 @@ export async function createMatch(
         tournament: options?.tournament,
       }),
     );
+    // Start join-timeout window until game-server publishes `room_ready`.
     handleHandoff(player, roomIdentifier, mode);
   });
   log(`Match created`, {
@@ -297,6 +381,11 @@ export async function createMatch(
   });
 }
 
+/**
+ * Remove a client from whichever bucket they are currently in.
+ *
+ * Returns true if they were found and removed.
+ */
 export function removeFromQueue(id: string): boolean {
   for (const [bucketId, clients] of buckets) {
     const idx = clients.findIndex((c) => c.id === id);
@@ -309,6 +398,7 @@ export function removeFromQueue(id: string): boolean {
   return false;
 }
 
+/** Clear all buckets (used on service shutdown). */
 export function clearQueue() {
   buckets.clear();
 }
@@ -323,13 +413,13 @@ function cleanupBucket(bucketId: number) {
 /**
  * In case of f.ex. client A accepts, client B declines,
  * client A is returned to the right place in queue to ensure fair matchmaking.
- *
- * @param client
  */
 function returnToQueue(client: ClientInfo) {
   if (!isAuthenticated(client)) return;
+  // Mark them back in queue before reinserting into buckets.
   setClientState(client, ClientState.IN_QUEUE, 'returned_to_queue');
 
+  // Reinsert into bucket and keep oldest-first ordering.
   const bucketId = Math.floor(client.mmr / MMR_BUCKET_SIZE);
   if (!buckets.has(bucketId)) buckets.set(bucketId, []);
   const bucket = buckets.get(bucketId)!;

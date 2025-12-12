@@ -5,12 +5,25 @@ import type { IncomingMessage } from 'http';
 import type { ClientInfo } from '../types/types.ts';
 import { log } from '@utils/logger';
 
+/**
+ * Verify a site token (frontend auth cookie) and extract user identity.
+ *
+ * The token is a JWT signed with the same SECRET as the backend; payload
+ * contains `username` and `uuid`.
+ */
 export async function verifySiteToken(token: string): Promise<{ username: string; uuid: string }> {
   const payload = jwt.verify(token, SECRET) as { username: string; uuid: string };
   return { uuid: payload.uuid, username: payload.username };
 }
 
-//fix the fetch url here..
+/**
+ * Fetch the user's MMR from the backend API using their site token.
+ *
+ * Returns:
+ *  - a numeric ranking when available,
+ *  - or a default 1000 if ranking is missing,
+ *  - or null when the request fails.
+ */
 export async function fetchUserMMR(uuid: string, siteToken: string): Promise<number | null> {
   try {
     const res = await fetch(`${API_URL}/api/users/${uuid}`, {
@@ -28,6 +41,12 @@ export async function fetchUserMMR(uuid: string, siteToken: string): Promise<num
   }
 }
 
+/**
+ * Extract the `token` cookie from an incoming WS upgrade request.
+ *
+ * If the cookie or token is missing, sends an AUTH error to the client and
+ * closes the socket.
+ */
 export function extractToken(socket: WebSocket, req: IncomingMessage): string | undefined {
   const cookieHeader = req.headers.cookie;
   if (!cookieHeader) {
@@ -46,6 +65,15 @@ export function extractToken(socket: WebSocket, req: IncomingMessage): string | 
   return match[2];
 }
 
+/**
+ * Authenticate a newly connected matchmaking client based on the site token.
+ *
+ * Steps:
+ *   - verify the JWT (username + uuid)
+ *   - if the user is already connected, close the previous socket
+ *   - fetch MMR from the backend
+ *   - populate ClientInfo fields and mark as authenticated
+ */
 export async function handleAuth(
   client: ClientInfo,
   token: string,
@@ -65,7 +93,7 @@ export async function handleAuth(
     client.socket.close();
     return false;
   }
-  // If user is already connected, close the old connection and allow the new one
+  // If user is already connected, close the old connection and allow the new one.
   const existingClient = findExistingClient(user.uuid, clients);
   if (existingClient) {
     log('User reconnecting, closing old connection', {
@@ -79,6 +107,7 @@ export async function handleAuth(
     existingClient.socket.close();
     clients.delete(existingClient.id);
   }
+  // Fetch user MMR from backend
   const mmr = await fetchUserMMR(user.uuid, token);
   if (typeof mmr !== 'number') {
     log("Error: Couldn't fetch users MMR", { clientId: client.id });
@@ -86,6 +115,7 @@ export async function handleAuth(
     client.socket.close();
     return false;
   }
+  // Populate client info
   client.username = user.username;
   client.uuid = user.uuid;
   client.authenticated = true;
@@ -108,6 +138,11 @@ function findExistingClient(
   return undefined;
 }
 
+/**
+ * Guard that ensures a client is authenticated before proceeding.
+ *
+ * Sends an AUTH error when the client is not authenticated.
+ */
 export function isAuthenticated(client: ClientInfo): boolean {
   if (!client.authenticated)
     client.socket.send(

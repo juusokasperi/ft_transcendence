@@ -1,3 +1,15 @@
+/**
+ * Tests for tournament "bridge" behavior in matchmaking.
+ *
+ * These cases validate the tournament handlers in `utils/scheduledMatches.ts`:
+ *   - `handleCreateTournament`:
+ *       * calls backend create + participant APIs,
+ *       * updates client membership,
+ *       * and sends initial `TOURNAMENT_LOBBY_UPDATED` + `TOURNAMENT_BRACKET_SNAPSHOT`.
+ *   - `handleTournamentMatchesReady` / `handleAcceptScheduled`:
+ *       * ensures a directed tournament match is only allocated (via `createMatch`)
+ *         once both participants are present and have accepted.
+ */
 import { describe, expect, it, beforeEach, vi } from 'vitest';
 import type { WebSocket } from 'ws';
 import { ClientState, type ClientInfo } from '../types/types';

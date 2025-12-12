@@ -1,5 +1,8 @@
 import type { WebSocket } from 'ws';
 
+/**
+ * States a matchmaking client can be in while connected to the service.
+ */
 export enum ClientState {
   IDLE,
   IN_QUEUE,
@@ -10,6 +13,16 @@ export enum ClientState {
   HANDOFF_TO_GAME,
 }
 
+/**
+ * In-memory representation of a connected matchmaking client.
+ *
+ * This is held only in the matchmaking process; persistence and auth are handled
+ * by other services. It tracks:
+ *  - identity and auth (uuid, username, authenticated, siteToken),
+ *  - rating (mmr),
+ *  - connection state (socket, joinedAt, state/previousState),
+ *  - tournament context when applicable.
+ */
 export interface ClientInfo {
   id: string;
   mmr: number;
@@ -27,6 +40,9 @@ export interface ClientInfo {
   previousState: ClientState | undefined;
 }
 
+/**
+ * Pending match between two clients awaiting mutual acceptance.
+ */
 export interface PendingMatch {
   a: ClientInfo;
   b: ClientInfo;
@@ -34,6 +50,12 @@ export interface PendingMatch {
   timer: NodeJS.Timeout;
 }
 
+/**
+ * Invite lobby metadata used for invite-only matches.
+ *
+ * Tracks which players are involved, which clients (sockets) are currently
+ * attached, and a timer for lobby timeout.
+ */
 export interface InviteLobby {
   lobbyId: string;
   player1Uuid: string;
@@ -44,4 +66,5 @@ export interface InviteLobby {
   timer?: NodeJS.Timeout;
 }
 
+/** Supported match modes for matchmaking and allocator/gateway flows. */
 export type MatchMode = 'ranked' | 'tournament' | 'invite';
