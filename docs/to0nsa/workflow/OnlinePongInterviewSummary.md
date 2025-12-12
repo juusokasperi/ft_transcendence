@@ -11,6 +11,14 @@ It covers:
 - Reconnect/resume behavior.
 - Invites and tournaments at a high level.
 
+TL;DR happy path:
+
+1. User opens `/pong/online` → WS to `/matchmaking`.
+2. `JOIN_QUEUE` → `MATCH_FOUND` → both `ACCEPT_MATCH`.
+3. Matchmaking calls allocator `/allocate` → receives room + join tokens.
+4. Matchmaking sends `HANDOFF` → clients connect to `/g/:roomId` through gateway.
+5. Game node runs ticks and streams `FRAME`s → ends with `MATCH_END` and reports results.
+
 ---
 
 ## 1. High‑level architecture
@@ -58,7 +66,7 @@ Key components:
     - Proxies WebSockets to the correct game node.
 
 - **Redis, Nginx, Docker, Observability**:
-  - Redis: queues, room‑to‑node mapping, join/resume tokens, tournaments.
+  - Redis: room routing (`room-to-node:*`), join/resume single‑use registries (`join-token:*`, `resume-token:*`), tournament streams + `room_ready` pub/sub, matchmaking rate limiting.
   - Nginx: terminates HTTP/WS and routes to backend, frontend, realtime services, observability stack.
   - Docker compose: dev/prod stacks.
   - Prometheus/Grafana/ELK/cAdvisor: metrics & logs.
@@ -70,12 +78,12 @@ Key components:
 ### 2.1 Frontend entry and matchmaking connection
 
 Route: `/pong/online`  
-Component: `OnlineGame.tsx`
+Component: `apps/frontend/src/pages/pong/online/OnlineGame.tsx`
 
 On load:
 
 - React renders `OnlineGame` in `PongLayout`.
-- `useMatchmakingClient`:
+- `useMatchmakingClient` (`apps/frontend/src/pages/pong/online/hooks/useMatchmakingClient.ts`):
   - Creates a WebSocket client via `createMatchmakingClient`.
   - Connects to `/matchmaking`.
   - Handles `MatchmakingMessage` events and drives a small reducer state machine (idle, in_queue, match_found, starting, playing, postmatch).
@@ -101,7 +109,8 @@ When user clicks “Join queue”:
 
 - Matchmaking:
   - Validates auth and client state.
-  - Puts client in a rating bucket queue.
+  - Puts client in an **in‑memory** rating bucket queue (`apps/matchmaking/utils/queue.ts`).
+  - If the client isn’t idle (tournament / invite lobby), matchmaking first sends `CONFIRM_REQUIRED` and waits for `CONFIRM_JOIN`.
   - Sends `QUEUE_JOINED`.
 
 Background ticker (`tryMatchQueue`):
@@ -109,6 +118,7 @@ Background ticker (`tryMatchQueue`):
 - Periodically scans buckets.
 - When it finds a good pair:
   - Creates a `PendingMatch`.
+  - Starts a short accept window (~15s) before fallback/requeue.
   - Moves both players to `PENDING_MATCH_ACCEPTANCE`.
   - Sends `MATCH_FOUND` to each with opponent username/mmr.
 
@@ -132,16 +142,19 @@ If user accepts:
 Allocator call:
 
 - Matchmaking posts to allocator `/allocate` with:
+  - `idempotencyKey` (match id) to make retries safe.
   - `mode` (ranked/invite/tournament).
   - `players` (playerIdentifier, side, alias, mmr).
   - `randomSeed`.
-  - `simulationStartTick`.
+  - `simulationStartTick` (epoch‑ms planned start time; name is historical).
   - Optional `tournament` context.
 
 Allocator:
 
 - Picks a game node based on scorer’s scores.
 - Calls game node admin HTTP to register a room.
+- Writes `room-to-node:<roomIdentifier>` in Redis so the gateway can route `/g/:roomId`.
+- Caches allocations under the idempotency key to dedupe transient retries.
 - Issues **join tokens** for each player:
   - `JoinTokenClaims` include:
     - `roomIdentifier`.
@@ -150,7 +163,7 @@ Allocator:
     - `simulationStartTick`.
     - Expiration and unique `jti`.
     - Optional `tournament` fields.
-  - Signed HMAC tokens, single‑use, persisted via Redis `join-token:<jti>`.
+  - Signed HMAC tokens; single‑use enforced by the gateway via Redis `join-token:<jti>`.
 
 Allocator returns:
 
@@ -179,6 +192,7 @@ The frontend:
 - `useGameBootstrap`:
   - Builds a config from handoff.
   - Calls `connectOnline` to open a WebSocket to the game via the gateway.
+- Matchmaking starts a short handoff window; if a player doesn’t join in time it sends `HANDOFF_TIMEOUT` and rolls back/requeues as needed.
 
 ### 2.5 Gateway and room lookup
 
@@ -201,9 +215,12 @@ Gateway:
 Game server:
 
 - Re‑validates the join token.
+- Verifies that `join-token:<jti>` exists in Redis (guard against bypassing the gateway).
 - Attaches the player’s socket to a `MatchSession` with appropriate seat (P1/P2, east/west).
 - When both players are connected:
   - Schedules the match start and begins sending room state and frames (data plane).
+
+Matchmaking finishes the control plane when it hears `room_ready` from Redis and closes `/matchmaking` sockets.
 
 At this point, control plane is done; data plane takes over.
 
@@ -283,11 +300,11 @@ There are three main layers of tokens:
      - Expiration and unique `jti`.
      - Optional tournament context.
    - Enforced:
-     - Single use (Redis key `join-token:<jti>`).
+     - Single use: gateway writes `join-token:<jti>` with `NX` + TTL; game server checks it exists.
      - Room/side consistency.
 
 3. **Resume tokens** (game server → client → gateway → game server):
-   - Issued by `ResumeTokenService` on the game server.
+   - Issued by `ResumeTokenService` on the game server (`apps/game-server/src/app/ResumeTokenService.ts`).
    - Rotated periodically while connected; stored in Redis as `resume-token:<jti>`.
    - Contain:
      - `roomIdentifier`, `sub` (player identifier), `sessionIdentifier`.
@@ -315,7 +332,7 @@ Goal: survive short network glitches and refreshes without losing the match.
     - Fresh token (`resumeToken`) and expiry.
     - Enough TTL to cover reconnect grace plus rotation period.
 - On disconnect:
-  - `ReconnectManager`:
+  - `ReconnectManager` (`apps/game-server/src/app/ReconnectManager.ts`):
     - Starts a grace timer (casual vs tournament grace).
     - If match started:
       - Pauses tick loop.
@@ -331,8 +348,9 @@ Goal: survive short network glitches and refreshes without losing the match.
 ### 5.2 On the client
 
 - `connectOnline`:
+  - (`apps/frontend/src/games/pong/modes/online/connect-online.ts`)
   - Tracks the latest resume token (in memory and in `sessionStorage`).
-  - Has a reconnection engine (`createReconnector`):
+  - Has a reconnection engine (`createReconnector` in `apps/frontend/src/games/pong/modes/online/reconnect.ts`):
     - When the WS closes unexpectedly (non‑permanent code) and a resume token is still valid:
       - Attempts to reconnect using `resume` subprotocol with exponential backoff (bounded).
     - Distinguishes:
