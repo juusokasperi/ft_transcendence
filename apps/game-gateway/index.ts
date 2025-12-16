@@ -8,6 +8,16 @@ import { verifyJoinToken, verifyResumeToken } from '@pong/shared/auth/tokenSign'
 import { registerMetrics } from '@utils/metrics';
 import { createFastifyLoggerConfig } from '@utils/logger';
 
+/**
+ * Game Gateway
+ *
+ * This service terminates external WebSocket connections for `/g/:roomId` and
+ * forwards them to the correct game-node (game-server instance) based on
+ * Redis routing keys. It also enforces:
+ *   - join token validation and single-use (`join-token:<jti>` in Redis)
+ *   - resume token validation for reconnects
+ *   - basic retry on connection errors when proxying.
+ */
 const redis = new Redis(REDIS_URL);
 
 const app = fastify({
@@ -16,17 +26,35 @@ const app = fastify({
 
 registerMetrics(app, { labels: { service: 'game-gateway' } });
 
+/**
+ * Parse a `Sec-WebSocket-Protocol` header into a list of tokens.
+ *
+ * Example:
+ *   "bearer,abc.def" -> ["bearer", "abc.def"]
+ *   "resume,xyz"     -> ["resume", "xyz"]
+ */
 const parseProtocols = (header: string | string[] | undefined) =>
   (typeof header === 'string' ? header : '')
     .split(',')
     .map((p) => p.trim())
     .filter(Boolean);
 
+/**
+ * Extract the token that follows a given tag in the protocol list.
+ *
+ * Used to grab the join/resume token after "bearer" or "resume".
+ */
 const extractToken = (protocols: string[], tag: string) => {
   const idx = protocols.findIndex((p) => p.toLowerCase() === tag);
   return idx !== -1 ? protocols[idx + 1] : undefined;
 };
 
+/**
+ * Validate a join token for a given room:
+ *   - verifies HMAC + expiry via shared verifyJoinToken
+ *   - checks roomIdentifier matches the URL
+ *   - enforces iss/aud ('mm' → 'game-node') for allocator-minted tokens.
+ */
 const validateJoin = (token: string | undefined, roomId: string) => {
   if (!token) return null;
   const claims = verifyJoinToken(token);
@@ -37,6 +65,12 @@ const validateJoin = (token: string | undefined, roomId: string) => {
   return claims;
 };
 
+/**
+ * Validate a resume token for a given room:
+ *   - verifies HMAC + expiry via shared verifyResumeToken
+ *   - checks roomIdentifier matches the URL
+ *   - enforces iss/aud ('game-server' → 'game-server') for node-issued tokens.
+ */
 const validateResume = (token: string | undefined, roomId: string) => {
   if (!token) return null;
   const claims = verifyResumeToken(token);
@@ -47,6 +81,7 @@ const validateResume = (token: string | undefined, roomId: string) => {
   return claims;
 };
 
+// Single http-proxy instance reused for all upgrades.
 const proxy = new createProxyServer({ ws: true });
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -55,6 +90,13 @@ const MAX_PROXY_RETRIES = 4;
 const INITIAL_RETRY_DELAY_MS = 100;
 const MAX_RETRY_DELAY_MS = 1000;
 
+/**
+ * Proxy a WebSocket upgrade to a target game node with basic retry logic.
+ *
+ * Retries on connection-refused / reset errors with exponential backoff
+ * (bounded by MAX_RETRY_DELAY_MS), preserving the Sec-WebSocket-Protocol
+ * header so subprotocols (bearer/resume) reach the game-server untouched.
+ */
 const proxyWithRetry = async (
   req: IncomingMessage,
   socket: Duplex,
@@ -112,6 +154,19 @@ const proxyWithRetry = async (
   return false;
 };
 
+/**
+ * Upgrade handler: authenticates WS connections and routes them to a game-node.
+ *
+ * Flow:
+ *   - Validate URL pattern `/g/:roomId`.
+ *   - Parse `Sec-WebSocket-Protocol` to extract:
+ *       * resume token (if present)
+ *       * else bearer join token
+ *   - Validate tokens and room binding (validateResume / validateJoin).
+ *   - Look up target node via `room-to-node:<roomId>` in Redis.
+ *   - For join tokens, persist single-use `join-token:<jti>` in Redis with EX+NX.
+ *   - Hand off the TCP connection to http-proxy via `proxyWithRetry`.
+ */
 app.server.on('upgrade', async (req: IncomingMessage, socket: Duplex, head: Buffer) => {
   app.log.info('[Gateway] Upgrade connection started');
   const match = req.url?.match(/^\/g\/([a-zA-Z0-9_-]+)/);
@@ -210,6 +265,12 @@ app.get('/health', async () => {
   return { status: 'ok' };
 });
 
+/**
+ * Start the gateway HTTP server and bind the upgrade handler.
+ *
+ * In dev/prod this is called once at process startup; a failure here should
+ * crash the process so orchestration can restart it.
+ */
 const start = async () => {
   try {
     await app.listen({ port: PORT, host: '0.0.0.0' });

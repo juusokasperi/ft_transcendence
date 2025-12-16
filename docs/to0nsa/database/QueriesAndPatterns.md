@@ -1,0 +1,191 @@
+# Query Helpers & Patterns
+
+This document explains how **query helpers** in `apps/backend/db/queries` are structured and how they map SQLite data into TypeScript domain types.
+
+It focuses on a few key modules:
+
+- `users.ts` – user and auth queries.
+- `matches.ts` – match history and stats.
+- `tournaments.ts` – tournament operations.
+
+For full code, open the corresponding files under `apps/backend/db/queries`.
+
+---
+
+## 1. Users and auth (`users.ts`)
+
+**File:** `apps/backend/db/queries/users.ts`
+
+Responsibility:
+
+- Fetch and manipulate user data and user settings.
+
+Patterns:
+
+- Use `UserDb` from `dbtypes.ts` as the raw row type.
+- Map to domain `User` type used across the backend.
+
+Example mapper:
+
+```ts
+function mapUserRecord(user: UserDb): User {
+  return {
+    uuid: user.uuid,
+    username: user.username,
+    email: user.email,
+    passwordHash: user.password_hash,
+    tfa: !!user.tfa,
+    tfaSecret: user.tfa_secret,
+    avatar: user.avatar,
+    ranking: user.ranking,
+    createdAt: user.created_at,
+    googleId: user.google_id,
+  };
+}
+```
+
+Key helpers:
+
+- `getUserByUuid`, `getUserByUsernameOrEmail`, `getUserByGoogleId`, etc.
+  - All follow the pattern:
+
+    ```ts
+    const user = db.prepare('SELECT * FROM Users WHERE uuid = ?').get(uuid) as UserDb | null;
+    if (!user) return undefined;
+    return mapUserRecord(user);
+    ```
+
+- `addUser`, `createUserFromGoogle`, `updateGoogleUser`:
+  - Perform inserts/updates and either return booleans or mapped `User` objects.
+
+User settings:
+
+- Functions like `getUserSettings`, `updateUserSettings` read/write from `UserSettings` and map to `UserSettings` types.
+
+---
+
+## 2. Matches and stats (`matches.ts`)
+
+**File:** `apps/backend/db/queries/matches.ts`
+
+Responsibility:
+
+- Create and read matches and per‑player stats.
+- Provide match history views for a user.
+
+Core patterns:
+
+- Insert match:
+  - Insert into `Matches`, then `MatchPlayers`, then `MatchPlayerStats` as needed.
+- Read match history:
+  - Use CTEs and joins to fetch matches with their players and stats in one query.
+
+Example (conceptual) pattern for user match history:
+
+```ts
+WITH UserMatches AS (
+  SELECT m.id, m.team_1_score, m.team_2_score, m.tournament_id, m.tournament_stage, m.created_at
+  FROM Matches m
+  JOIN MatchPlayers mp ON mp.match_id = m.id
+  WHERE mp.user_uuid = ?
+  ORDER BY m.created_at DESC
+  LIMIT ? OFFSET ?
+)
+SELECT ...
+FROM UserMatches um
+JOIN MatchPlayers mp ON mp.match_id = um.id
+LEFT JOIN Users u ON mp.user_uuid = u.uuid
+LEFT JOIN MatchPlayerStats s ON s.match_player_id = mp.id;
+```
+
+TypeScript side:
+
+- Rows are typed as `MatchWithPlayersForUserDb` (`dbtypes.ts`).
+- They’re mapped into richer domain objects:
+  - Including derived fields like `result` from scores.
+  - Grouping players by team.
+
+ELO updates:
+
+- When a match is reported (via `ResultReporter` in the game server and `/api/matches` in the backend), backend functions:
+  - Read current rankings.
+  - Compute ELO deltas.
+  - Update `Users.ranking` and `MatchPlayers.ranking_delta`.
+  - Insert `MatchPlayerStats`.
+
+See `docs/to0nsa/workflow/ResultsAndRanking.md` for the full flow; this doc highlights that the backend uses **explicit SQL queries** instead of ORMs.
+
+---
+
+## 3. Tournaments (`tournaments.ts`)
+
+**File:** `apps/backend/db/queries/tournaments.ts`
+
+Responsibility:
+
+- CRUD operations on tournaments and their statuses.
+- Listing and counting tournaments by status.
+
+Mapper:
+
+```ts
+function mapTournamentRecord(row: TournamentDb): Tournament {
+  return {
+    id: row.id,
+    name: row.name,
+    description: row.description,
+    format: row.format,
+    status: row.status,
+    maxParticipants: row.max_participants,
+    startAt: normalizeDateTime(row.start_at),
+    completedAt: normalizeDateTime(row.completed_at),
+    createdAt: normalizeDateTime(row.created_at)!,
+    updatedAt: normalizeDateTime(row.updated_at)!,
+  };
+}
+```
+
+Key helpers:
+
+- `getTournamentById(id)`: selects from `Tournaments` and maps via `mapTournamentRecord`.
+- `listTournaments({ status? })`: conditionally filters by `status`.
+- `createTournament(input)`: inserts a new row and returns the mapped tournament.
+- `updateTournamentStatus(id, status)` and `markTournamentCompleted(id)`: update status/timestamps.
+- `findUserActiveTournament(userUuid)`: joins `Tournaments` and `TournamentParticipants` to find the most recent active/draft tournament for a user.
+- `countTournamentsByStatus(status | status[])`: returns a simple count.
+
+These helpers allow routes to work with **typed `Tournament` objects** rather than raw SQL rows.
+
+---
+
+## 4. General patterns & best practices
+
+Across query modules, the backend follows these patterns:
+
+- **Singleton DB client**:
+  - All queries use the shared `db` from `client.ts`, ensuring common PRAGMAs and connection settings.
+
+- **Explicit SQL**:
+  - Queries are written by hand, not generated by an ORM.
+  - This makes SQL behavior clear and allows careful tuning (e.g., proper joins and pagination).
+
+- **Typed row interfaces (`dbtypes.ts`)**:
+  - Define the shape of raw DB rows.
+  - Keep types in sync with migrations.
+
+- **Mappers for domain types**:
+  - Convert `UserDb` → `User`, `MatchDb` → `Match`, `TournamentDb` → `Tournament`, etc.
+  - Coerce SQLite‑specific types as needed (e.g., `tfa` as `number` → `boolean` with `!!`).
+
+- **Error handling**:
+  - Many helpers catch and return `undefined` or `false` on error, letting routes decide how to respond.
+  - Critical queries should be wrapped carefully to avoid hiding systemic issues; `backend-db-review.md` has notes on improvements.
+
+When adding new queries:
+
+1. Add or update row interfaces in `dbtypes.ts`.
+2. Write explicit SQL in a query module under `apps/backend/db/queries`.
+3. Map rows into domain types in that module.
+4. Use the helper in the appropriate route or service file.
+
+Following these patterns keeps the DB access layer consistent and easier to reason about.

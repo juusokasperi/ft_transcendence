@@ -1,6 +1,12 @@
+// Tests WSServer's resume-token rotation behavior:
+//   - issued resume tokens use TTL = reconnectGrace + rotatePeriod
+//   - rotation interval period matches the computed rotatePeriod
+//   - replacing a connection updates the interval, and only the new
+//     connection's close clears the active interval
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { EventEmitter } from 'events';
 import { WSServer } from '../src/infra/ws/WSServer.ts';
+import type { AppConfig } from '../src/app/Config.ts';
 
 class FakeSocket extends EventEmitter {
   public OPEN = 1;
@@ -11,7 +17,7 @@ class FakeSocket extends EventEmitter {
   });
 }
 
-function createConfig() {
+function createConfig(): AppConfig {
   return {
     httpPort: 0,
     wsPort: 0,
@@ -21,6 +27,9 @@ function createConfig() {
     matchSecret: 'm',
     tickHz: 60,
     minStartDelayMs: 1500,
+    // Use a small but non-zero lag compensation for tests; value does not
+    // affect rotation logic being validated here.
+    lagCompensationMs: 30,
     reconnectGraceMs: { casualMs: 15000, tournamentMs: 10000 },
   };
 }
@@ -44,15 +53,12 @@ describe('WSServer resume rotation and interval lifecycle', () => {
 
     const resumeIssue = vi
       .fn<
-        [
-          {
-            roomIdentifier: string;
-            playerIdentifier: string;
-            sessionIdentifier: string;
-            ttlMs: number;
-          },
-        ],
-        Promise<{ resumeToken: string; claims: any }>
+        (params: {
+          roomIdentifier: string;
+          playerIdentifier: string;
+          sessionIdentifier: string;
+          ttlMs: number;
+        }) => Promise<{ resumeToken: string; claims: any }>
       >()
       .mockResolvedValue({ resumeToken: 't', claims: {} });
 
@@ -73,6 +79,8 @@ describe('WSServer resume rotation and interval lifecycle', () => {
       redis: { publish: vi.fn(), exists: vi.fn(), defineCommand: vi.fn() } as any,
       logger,
       auth: { verifyJoinToken: vi.fn() } as any,
+      // Reporter is not used in this test path; provide a minimal stub.
+      reporter: { report: vi.fn() } as any,
     });
 
     const session: any = {
@@ -130,6 +138,7 @@ describe('WSServer resume rotation and interval lifecycle', () => {
       redis: { publish: vi.fn(), exists: vi.fn(), defineCommand: vi.fn() } as any,
       logger,
       auth: { verifyJoinToken: vi.fn() } as any,
+      reporter: { report: vi.fn() } as any,
     });
 
     const session: any = {

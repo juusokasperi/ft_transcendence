@@ -170,15 +170,26 @@ export type MatchmakingMessage =
   | ConfirmRequiredMessage
   | ErrorMessage;
 
+// Claims embedded in join tokens issued by allocator/matchmaking.
+// These are validated by the game gateway and game server before admitting a player to a room.
 export type JoinTokenClaims = {
+  /** Issuer - expected to be 'mm' (matchmaking). */
   iss: string;
+  /** Audience - expected to be 'game-node' (game server). */
   aud: string;
+  /** Issued-at time (seconds since epoch). */
   iat: number;
+  /** Expiration time (seconds since epoch). */
   exp: number;
+  /** Unique token id, used for single-use enforcement (e.g. Redis join-token:<jti>). */
   jti: string;
+  /** Game room identifier this token is valid for. */
   roomIdentifier: string;
+  /** Subject – user UUID of the player this token belongs to. */
   sub: string;
+  /** Logical table side for this player at match start. */
   side: 'west' | 'east';
+  /** Scheduled simulation start time, used to align client/server start. */
   simulationStartTick: number;
 } & Partial<TournamentContext>;
 

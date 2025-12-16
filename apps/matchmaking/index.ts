@@ -42,17 +42,34 @@ import { RedisTokenBucket } from '@utils/rate-limiter';
 import { isRateLimited } from './utils/ratelimit.ts';
 import Redis from 'ioredis';
 
+/**
+ * Matchmaking service
+ *
+ * Responsibilities:
+ *   - authenticate clients via site tokens (shared with backend)
+ *   - manage ranked queue and pair players by MMR using buckets
+ *   - coordinate invite-only lobbies and invite matches
+ *   - orchestrate tournament joins, lobbies, scheduled matches, and auto-wins
+ *   - request allocations from the allocator and hand off players to game-server nodes
+ *   - react to Redis signals (room_ready, tournament streams) via MatchmakingRedisBridge
+ */
 const app = Fastify({
   logger: createFastifyLoggerConfig({ service: 'matchmaking' }),
 });
 
 registerMetrics(app, { labels: { service: 'matchmaking' } });
 
+// Attach WebSocket support on the /matchmaking route.
 await app.register(websocket);
 
+// In-memory registries of connected clients and pending match offers.
 const clients = new Map<string, ClientInfo>();
 const pendingMatches = new Map<string, PendingMatch>();
 
+// Shared Redis connections:
+//   - redis: general commands + rate limiting
+//   - redisStream: Redis Streams consumer for tournaments
+//   - redisPubSub: pub/sub for room_ready notifications from game-server
 const redis = new Redis(REDIS_URL);
 const redisStream = redis.duplicate();
 const redisPubSub = redis.duplicate();
@@ -75,19 +92,29 @@ function getClientByUuid(uuid: string) {
   return undefined;
 }
 
-// Route for creating invite match lobby
+// HTTP route for creating invite-match lobbies used by the chat/invite flow.
 await app.register(inviteRoute, { prefix: '/invite-match', getClientByUuid });
 
+// Periodic tick used to try to match players in the ranked queue.
 const queueTicker = setInterval(() => {
   tryMatchQueue(pendingMatches);
 }, 500);
 
 app.get('/health', async () => ({ status: 'ok' }));
 
+// Main WebSocket entrypoint for matchmaking clients.
 app.get('/matchmaking', { websocket: true }, (socket: WebSocket, req) => {
   void handleConnection(socket, req);
 });
 
+/**
+ * Handle a new matchmaking WebSocket connection:
+ *   - extract and validate site token
+ *   - create a ClientInfo, run auth, and register the client
+ *   - restore any active tournament membership
+ *   - if the client has a pending invite lobby, join it
+ *   - attach message/close handlers to drive the matchmaking state machine
+ */
 async function handleConnection(socket: WebSocket, req: FastifyRequest) {
   const token = extractToken(socket, req.raw);
   if (!token) return;
@@ -111,16 +138,20 @@ async function handleConnection(socket: WebSocket, req: FastifyRequest) {
   if (!authenticated) return;
   clients.set(id, client);
 
+  // Inform the client of their server-side clientId (used by the frontend).
   socket.send(JSON.stringify({ type: 'CONNECTED', clientId: id }));
 
+  // Reattach the client to any active tournament they were part of.
   await restoreTournamentMembership(client, clients);
 
+  // If this user was invited into a lobby before connecting, join that lobby now.
   if (await isInLobby(client)) {
     await handleInviteLobbyJoin(client);
     return;
   }
 
   socket.on('message', async (raw: RawData) => {
+    // Per-message rate limiting to protect the service from spammy clients.
     if (await isRateLimited(client, rateLimiter)) return;
 
     let data: MatchmakingClientMessage;
@@ -130,6 +161,7 @@ async function handleConnection(socket: WebSocket, req: FastifyRequest) {
       log(`Invalid message from ${id}:`, { raw: raw.toString() }, 'warn');
       return;
     }
+    // Dispatch based on client message type, enforcing state machine invariants.
     switch (data.type) {
       case 'JOIN_QUEUE':
         if (client.state === ClientState.IDLE) handleJoinQueue(client);
@@ -177,15 +209,19 @@ async function handleConnection(socket: WebSocket, req: FastifyRequest) {
   socket.on('close', async () => {
     log('Client disconnected', { id });
 
+    // Clean up any invite lobby the client was participating in.
     clearLobbiesWithClient(client);
 
+    // Update tournament state (unsubscribing, scheduling reminders, etc.).
     handleClientDisconnectFromTournament(client, clients);
+    // If the client had a pending match offer, treat this as a decline.
     for (const [matchId, match] of pendingMatches) {
       if (match.a.id === id || match.b.id === id) {
         handleDeclineMatch(matchId, client, pendingMatches);
         break;
       }
     }
+    // Remove from ranked queue and forget the client.
     removeFromQueue(id);
     clients.delete(id);
   });

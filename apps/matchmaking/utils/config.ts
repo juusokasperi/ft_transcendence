@@ -1,9 +1,18 @@
 import dotenv from 'dotenv';
 import { log } from '@utils/logger';
 
+// Load matchmaking-specific environment variables from .env.
 dotenv.config();
 
-// We have a script that ensures these are set in CI and production. We can get rid of this check if we want to.
+/**
+ * Required environment variables for the matchmaking service:
+ *  - MATCHMAKING_PORT: WS/HTTP port used by the matchmaking Fastify app.
+ *  - SECRET: JWT secret for verifying site tokens (same as backend).
+ *  - API_URL: base URL for backend HTTP API.
+ *  - ALLOCATOR_PORT: port of the allocator service (host is "allocator" in compose).
+ *  - REDIS_PORT: port of the shared Redis instance (host "redis").
+ *  - MATCH_SECRET: JWT secret used to call backend match/tournament APIs.
+ */
 const REQUIRED = [
   'MATCHMAKING_PORT',
   'SECRET',
@@ -31,15 +40,23 @@ function numberFromEnv(name: string, defaultValue: number) {
   return parsed;
 }
 
+/** Port where the matchmaking server listens for WebSocket connections. */
 export const PORT = Number(process.env.MATCHMAKING_PORT!);
+/** Shared JWT secret for verifying site tokens from the frontend. */
 export const SECRET = process.env.SECRET!;
+/** Backend API base URL (for user MMR, tournaments, etc.). */
 export const API_URL = process.env.API_URL!;
+/** Secret used to sign "match service" tokens for backend APIs. */
 export const MATCH_SECRET = process.env.MATCH_SECRET!;
+/** Allocator HTTP base URL built from Docker service name and port. */
 export const ALLOCATOR_URL = `http://allocator:${process.env.ALLOCATOR_PORT!}`;
+/** Redis URL used for matchmaking state, rate limiting, and Redis streams. */
 export const REDIS_URL = `redis://redis:${process.env.REDIS_PORT!}`;
 
-export const LOBBY_TTL_MS = 5 * 60 * 1000; // 5 minutes. We need a timeout to avoid stale lobbies.
+/** Invite lobby TTL; lobbies older than this are considered stale and are removed. */
+export const LOBBY_TTL_MS = 5 * 60 * 1000;
 export const LOBBY_SIZE = 2;
+/** How long join tokens issued by allocator are considered valid, in seconds. */
 export const JOIN_TOKEN_TTL_SECONDS = 60;
 export const TOURNAMENT_REMINDER_DELAY_MS = numberFromEnv('TOURNAMENT_REMINDER_DELAY_MS', 5000);
 export const TOURNAMENT_MAX_REMINDERS = numberFromEnv('TOURNAMENT_MAX_REMINDERS', 3);

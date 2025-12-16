@@ -8,7 +8,8 @@ import type { RoomRegistry, MatchSession, PlayerConnectionState } from '../../ap
 import type { Broadcaster } from '../../app/Broadcaster.ts';
 import type { MatchRunner } from '../../app/MatchRunner.ts';
 import type { ReconnectManager } from '../../app/ReconnectManager.ts';
-import { AuthService, type VerifiedJoinTokenClaims } from '../../app/AuthService.ts';
+import { AuthService } from '../../app/AuthService.ts';
+import type { JoinTokenClaims } from '@pong/shared/protocol/net';
 import type { ResumeTokenService } from '../../app/ResumeTokenService.ts';
 import type { FastifyBaseLogger } from '@utils/logger';
 import { reconnectGraceMs } from '../../domain/Policies.ts';
@@ -17,8 +18,21 @@ import type { ResultReporter } from '../../app/ResultReporter.ts';
 import { RedisTokenBucket } from '@utils/rate-limiter';
 import { CLOSE_CODES } from '@pong/shared/protocol/net';
 
-type JoinClaims = VerifiedJoinTokenClaims;
-
+/**
+ * WSServer exposes the game WebSocket endpoint (`/g/:roomId`) for players.
+ *
+ * Responsibilities:
+ *   - Accept new connections and parse subprotocols:
+ *       * `bearer,<joinToken>` for first joins.
+ *       * `resume,<resumeToken>` for reconnects.
+ *   - Validate join/resume tokens (AuthService + ResumeTokenService).
+ *   - Attach/detach players in RoomRegistry and wire their sockets.
+ *   - Drive reconnect behavior with ReconnectManager.
+ *   - Forward input messages (`axis`, `forfeit`, `ping`) into the game loop.
+ *   - Emit server → client messages via Broadcaster (ROOM_STATE, FRAME, etc.).
+ *
+ * Constructed from GameServer and started via `wsServer.listen()`.
+ */
 export class WSServer {
   private readonly config: AppConfig;
   readonly registry: RoomRegistry;
@@ -60,11 +74,20 @@ export class WSServer {
     this.app = fastify({ logger: true });
   }
 
+  /**
+   * Register the websocket plugin and routes.
+   *
+   * Separated from `listen()` so tests can call `init()` against an
+   * in-memory Fastify instance without binding a port.
+   */
   async init(): Promise<void> {
     await this.app.register(websocket);
     this.registerRoutes();
   }
 
+  /**
+   * Start listening for game WebSocket connections on the configured port.
+   */
   async listen(): Promise<void> {
     await this.init();
     await this.app.listen({
@@ -74,6 +97,13 @@ export class WSServer {
     this.logger.info({ port: this.config.wsPort }, '[WSServer] Listening');
   }
 
+  /**
+   * Parse the Sec-WebSocket-Protocol header into a list of tokens.
+   *
+   * Example:
+   *   "bearer,abc.def" -> ["bearer", "abc.def"]
+   *   "resume,xyz"     -> ["resume", "xyz"]
+   */
   private parseProtocols(headers: Record<string, unknown>): string[] {
     const raw = headers['sec-websocket-protocol'];
     if (typeof raw !== 'string') return [];
@@ -83,6 +113,11 @@ export class WSServer {
       .filter(Boolean);
   }
 
+  /**
+   * Extract the token that follows a specific tag in the protocol list.
+   *
+   * Used to grab the join/resume token after "bearer" or "resume".
+   */
   private extractProtocolToken(protocols: string[], tag: string): string | undefined {
     const idx = protocols.findIndex((p) => p.toLowerCase() === tag);
     return idx === -1 ? undefined : protocols[idx + 1];
@@ -95,6 +130,14 @@ export class WSServer {
     }
   }
 
+  /**
+   * Bind a WebSocket connection to a PlayerConnectionState for a given seat.
+   *
+   * Handles:
+   *   - closing any previous live socket for that player (in case of resume).
+   *   - starting periodic resume-token rotation tied to this connection.
+   *   - wiring message/close handlers to delegate to handleMessage/handleClose.
+   */
   private async bindPlayerConnection(
     session: MatchSession,
     seat: 'P1' | 'P2',
@@ -167,6 +210,12 @@ export class WSServer {
     this.logger.info('[WSServer] Player connection bound');
   }
 
+  /**
+   * Register the `/g/:roomId` WebSocket route.
+   *
+   * The handler delegates to `handleConnection`, which decides whether this
+   * is a join or resume based on subprotocols.
+   */
   private registerRoutes(): void {
     this.app.register((fastify) => {
       fastify.get('/g/:roomId', { websocket: true }, async (connection, req) => {
@@ -180,6 +229,16 @@ export class WSServer {
     });
   }
 
+  /**
+   * Entry point for a new WebSocket connection.
+   *
+   * Steps:
+   *   - ensure roomId is present.
+   *   - parse Sec-WebSocket-Protocol:
+   *       * if "resume" present -> handleResumeConnection
+   *       * else require "bearer" join token -> handleJoinConnection
+   *   - close with an appropriate CLOSE_CODE if anything is invalid.
+   */
   private async handleConnection(
     connection: WebSocket,
     params: { roomId: string },
@@ -206,6 +265,14 @@ export class WSServer {
     await this.handleJoinConnection(connection, roomIdentifier, joinToken);
   }
 
+  /**
+   * Handle a reconnect using a resume token.
+   *
+   * Verifies the token, ensures the session is still active and that the
+   * room and session identifiers match, then re-attaches (or recreates)
+   * a PlayerConnectionState before binding the connection and notifying
+   * ReconnectManager.
+   */
   private async handleResumeConnection(
     connection: WebSocket,
     roomIdentifier: string,
@@ -271,12 +338,23 @@ export class WSServer {
     this.broadcaster.broadcastRoomState(session);
   }
 
+  /**
+   * Handle an initial join using a one-time join token.
+   *
+   * Validates join token (AuthService), checks Redis to prevent reuse of
+   * the same jti, ensures the room exists and is still joinable, then
+   * attaches the player to the RoomRegistry and binds the connection.
+   *
+   * On success, also triggers `afterPlayerJoin` to possibly start or resume
+   * the match and publishes a "room_ready" message when both players joined.
+   */
   private async handleJoinConnection(
     connection: WebSocket,
     roomIdentifier: string,
     joinToken: string,
   ): Promise<void> {
-    let claims: JoinClaims;
+    // Validate the join token and extract claims to connect the player.
+    let claims: JoinTokenClaims;
     try {
       claims = this.auth.verifyJoinToken(joinToken, roomIdentifier);
     } catch (err) {
@@ -285,6 +363,7 @@ export class WSServer {
       return;
     }
 
+    // Ensure the join token has not been previously consumed.
     const redisKey = `join-token:${claims.jti}`;
     try {
       const exists = await this.redis.exists(redisKey);
@@ -298,17 +377,20 @@ export class WSServer {
       return;
     }
 
+    // Validate that the room exists and is joinable.
     const reservation = this.registry.getReservation(roomIdentifier);
     if (!reservation) {
       connection.close(CLOSE_CODES.ROOM_NOT_FOUND, 'room-not-found');
       return;
     }
 
+    // Ensure the join window has not expired.
     if (Date.now() > reservation.joinDeadlineAtEpochMs) {
       connection.close(CLOSE_CODES.JOIN_WINDOW_EXPIRED, 'join-window-expired');
       return;
     }
 
+    // Attach the player to the room and bind their connection.
     let session: MatchSession;
     try {
       session = this.registry.ensureSession(roomIdentifier);
@@ -348,6 +430,12 @@ export class WSServer {
     }
   }
 
+  /**
+   * Check whether the player for a given seat/room is currently rate-limited.
+   *
+   * Uses a RedisTokenBucket keyed by player identifier so abusive clients
+   * cannot flood the server with input messages.
+   */
   private async isRateLimited(roomIdentifier: string, seat: 'P1' | 'P2'): Promise<boolean> {
     const session = this.registry.getSession(roomIdentifier);
     const playerId = session?.players.get(seat)?.playerIdentifier;
@@ -360,6 +448,15 @@ export class WSServer {
     return true;
   }
 
+  /**
+   * Handle a single WS message from a player.
+   *
+   * Supported message types:
+   *   - `ping`: client latency measurement (responds with PONG timestamps).
+   *   - `axis`: paddle movement input (updates RoomRegistry axis).
+   *   - `forfeit`: explicit give-up, immediately ending the match and
+   *               awarding the win to the opponent.
+   */
   private async handleMessage(
     roomIdentifier: string,
     seat: 'P1' | 'P2',
@@ -415,6 +512,12 @@ export class WSServer {
     }
   }
 
+  /**
+   * Reply to a `ping` message with a `PONG` containing client and server
+   * timestamps so the client can estimate latency and clock skew.
+   *
+   * Uses performance.now() for monotonic server timing.
+   */
   private sendPong(
     roomIdentifier: string,
     seat: 'P1' | 'P2',
@@ -439,6 +542,17 @@ export class WSServer {
     }
   }
 
+  /**
+   * Handle a WebSocket close event for a seat.
+   *
+   * Behavior:
+   *   - Detach the player from RoomRegistry and broadcast updated ROOM_STATE.
+   *   - If both players are now absent:
+   *       * treat the last quitter as winner (double-quit fallback) and
+   *         report a forfeit result + clear session.
+   *   - Otherwise, delegate to ReconnectManager.onDisconnect to start
+   *     the reconnect grace flow.
+   */
   private handleClose(roomIdentifier: string, seat: 'P1' | 'P2'): void {
     const session = this.registry.getSession(roomIdentifier);
     if (!session) return;
@@ -493,6 +607,14 @@ export class WSServer {
     this.reconnects.onDisconnect(session, seat);
   }
 
+  /**
+   * Called after a player successfully joins via a join token.
+   *
+   * If both seats are present:
+   *   - if match not started yet: scheduleStart and publish "room_ready"
+   *     (used by allocator/tournaments).
+   *   - else: resume the match loop (reconnect during an ongoing game).
+   */
   private afterPlayerJoin(session: MatchSession): void {
     if (session.players.get('P1') && session.players.get('P2')) {
       if (!session.model.started) {
@@ -509,6 +631,10 @@ export class WSServer {
     }
   }
 
+  /**
+   * Map domain error messages thrown by RoomRegistry/attachPlayer into
+   * shared CLOSE_CODES so the client can react consistently.
+   */
   private resolveCloseCode(err: unknown): number {
     const message = err instanceof Error ? err.message : String(err);
     switch (message) {

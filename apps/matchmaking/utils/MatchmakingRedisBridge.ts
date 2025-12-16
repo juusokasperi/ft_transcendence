@@ -18,6 +18,17 @@ type InitHandlers = {
   onStateUpdated: (payload: { tournamentId: number }) => Promise<void>;
 };
 
+/**
+ * MatchmakingRedisBridge
+ *
+ * Bridges Redis pub/sub + streams into in-process callbacks for matchmaking:
+ *   - Subscribes to `room_ready` channel:
+ *       * used by game-server to signal that both players have joined a room.
+ *   - Consumes tournament-related Redis streams:
+ *       * `STREAM_TOURNAMENT_MATCHES_READY`
+ *       * `STREAM_TOURNAMENT_STATE_UPDATED`
+ *     and forwards payloads to handlers that update local matchmaking state.
+ */
 export class MatchmakingRedisBridge {
   private readonly handlers: InitHandlers;
   private readonly consumerId = `matchmaking-${uuid()}`;
@@ -33,8 +44,10 @@ export class MatchmakingRedisBridge {
   }
 
   async init(): Promise<void> {
+    // Mark the bridge as active and validate Redis connections.
     this.consuming = true;
     if (!this.subscriber || !this.stream) throw new Error('Redis pub/sub or stream undefined');
+    // Attach error logging so connection issues are visible.
     this.subscriber.on('error', (err) =>
       log('Redis pub/sub error', { error: err?.message ?? String(err) }, 'error'),
     );
@@ -42,6 +55,7 @@ export class MatchmakingRedisBridge {
       log('Redis stream error', { error: err?.message ?? String(err) }, 'error'),
     );
 
+    // Subscribe to room_ready pub/sub and forward events to matchmaking.
     await this.subscriber.subscribe('room_ready');
     this.subscriber.on('message', (channel, message) => {
       if (channel !== 'room_ready') return;
@@ -57,6 +71,7 @@ export class MatchmakingRedisBridge {
       }
     });
 
+    // Start background Redis Streams consumer for tournament events.
     this.consumerPromise = this.startStreamConsumer().catch((err) => {
       if (this.consuming) {
         log(
@@ -69,19 +84,24 @@ export class MatchmakingRedisBridge {
   }
 
   async close(): Promise<void> {
+    // Stop the consumer loop and unsubscribe from pub/sub.
     this.consuming = false;
     if (this.subscriber) {
       await this.subscriber.unsubscribe('room_ready');
     }
+    // Wait for the stream consumer to exit cleanly.
     if (this.consumerPromise) await this.consumerPromise.catch(() => {});
   }
 
   private async startStreamConsumer(): Promise<void> {
     if (!this.stream) throw new Error('Stream connection missing');
 
+    // Ensure consumer groups exist for all tournament streams.
     await this.ensureGroups();
+    // Drain any pending entries left by previous consumers/crashes.
     await this.drainPending();
 
+    // Main loop: block-read new entries until close() flips consuming=false.
     while (this.consuming) {
       try {
         await this.readEvents('>', STREAM_BLOCK_MS);
@@ -100,6 +120,7 @@ export class MatchmakingRedisBridge {
   private async ensureGroups(): Promise<void> {
     if (!this.stream) return;
 
+    // Create XGROUP for each stream if it doesn't exist yet.
     for (const streamKey of TOURNAMENT_STREAM_KEYS) {
       try {
         await this.stream.xgroup('CREATE', streamKey, STREAM_GROUP, '0', 'MKSTREAM');
@@ -111,6 +132,7 @@ export class MatchmakingRedisBridge {
   }
 
   private async drainPending(): Promise<void> {
+    // Read and process pending entries (id="0") until none remain.
     while (this.consuming && (await this.readEvents('0'))) {
       // Loop until no pending events
     }
@@ -119,16 +141,20 @@ export class MatchmakingRedisBridge {
   private async readEvents(id: '>' | '0', blockMs?: number): Promise<boolean> {
     if (!this.stream || !this.consuming) return false;
 
+    // Build XREADGROUP arguments for our consumer group.
     const args = ['GROUP', STREAM_GROUP, this.consumerId, 'COUNT', STREAM_BATCH_SIZE.toString()];
 
+    // Optional BLOCK lets us wait for new entries when id === '>'.
     if (typeof blockMs === 'number') args.push('BLOCK', blockMs.toString());
 
+    // Read from all tournament streams at the given id ('>' new, '0' pending).
     const idArgs = TOURNAMENT_STREAM_KEYS.map(() => id);
     args.push('STREAMS', ...TOURNAMENT_STREAM_KEYS, ...idArgs);
 
     const responseRaw = await this.stream.call('XREADGROUP', ...args);
     const response = responseRaw as Array<[string, Array<[string, string[]]>]> | null;
     if (!response || response.every(([_, entries]) => entries.length === 0)) return false;
+    // For each entry, extract payload and dispatch to the right handler.
     for (const [streamKey, entries] of response) {
       for (const [entryId, fields] of entries) {
         const payload = extractPayload(fields);
@@ -147,12 +173,14 @@ export class MatchmakingRedisBridge {
   private async processEvent(streamKey: string, entryId: string, payload?: string): Promise<void> {
     if (!this.stream) return;
 
+    // Guard missing payloads and ack so we don't reprocess forever.
     if (!payload) {
       log('Tournament stream entry missing payload', { streamKey, entryId }, 'warn');
       await this.stream.xack(streamKey, STREAM_GROUP, entryId);
       return;
     }
 
+    // Dispatch by stream key into the provided init handlers.
     try {
       if (streamKey === STREAM_TOURNAMENT_MATCHES_READY) {
         await this.handlers.onMatchesReady(JSON.parse(payload));
@@ -166,6 +194,7 @@ export class MatchmakingRedisBridge {
         'error',
       );
     } finally {
+      // Always ack to advance the consumer group.
       await this.stream.xack(streamKey, STREAM_GROUP, entryId);
     }
   }

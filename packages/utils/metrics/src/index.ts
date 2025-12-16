@@ -2,6 +2,18 @@ import fastifyMetrics from 'fastify-metrics';
 import { register, Registry } from 'prom-client';
 import type { FastifyInstance } from 'fastify';
 
+/**
+ * Shared metrics helper for Fastify services.
+ *
+ * This module standardizes how services in the monorepo expose Prometheus
+ * metrics by:
+ *   - registering the fastify-metrics plugin on a given FastifyInstance
+ *   - applying default labels (env, version, service, etc.)
+ *   - allowing custom registries when needed (e.g. for tests)
+ *
+ * Typical usage from a service:
+ *   registerMetrics(app, { labels: { service: 'game-server' } });
+ */
 export interface MetricsLabels {
   service: string;
   env?: string;
@@ -36,6 +48,13 @@ const defaultConfig: Required<Omit<MetricsConfig, 'labels' | 'registry'>> = {
   defaultMetrics: { enabled: true },
 };
 
+/**
+ * Attach Prometheus metrics to a Fastify app with consistent defaults.
+ *
+ * - Sets default labels (env, version, plus any provided labels).
+ * - Registers fastify-metrics at the configured endpoint (default `/metrics`).
+ * - Uses the provided Registry or the global prom-client registry by default.
+ */
 export const registerMetrics = (app: FastifyInstance, config: MetricsConfig = {}): void => {
   const finalConfig = {
     ...defaultConfig,
@@ -67,5 +86,6 @@ export const registerMetrics = (app: FastifyInstance, config: MetricsConfig = {}
 // Export prom-client register for direct access if needed
 export { register } from 'prom-client';
 
-// Re-export common prom-client types
+// Re-export common prom-client types so services can create their own metrics
+// while still using a shared registry and configuration.
 export type { Counter, Gauge, Histogram, Summary, Registry, Metric } from 'prom-client';

@@ -1,3 +1,8 @@
+// Tests the ResumeTokenService end-to-end:
+//   - issuing single-use resume tokens backed by Redis
+//   - consuming a token only once
+//   - handling Redis NX failures when persisting tokens
+//   - rejecting tokens with invalid issuer/audience
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { ResumeTokenService } from '../src/app/ResumeTokenService.ts';
 import { signResumeToken } from '@pong/shared/auth/tokenSign';
